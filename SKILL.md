@@ -1,10 +1,10 @@
 ---
 name: ai-judge
 description: >
-  Multi-model AI jury system. Query 9 frontier models simultaneously, cross-validate 
-  their answers across 5 dimensions, and produce auditable verdicts with human final 
-  authority. Local-first, macOS-native, BSL-licensed.
-version: 2.0.0
+  Local-first multi-model AI jury system with a v2 scoring engine. Query 9 AI seats,
+  score claims with 10 auditable functions, detect bluff risk and echo-chamber
+  consensus, and keep final authority with the human.
+version: 2.1.0
 license: BSL-1.1
 homepage: https://github.com/reguorier/ai-judge
 tags: [ai, multi-model, jury, verdict, cross-validation, llm, audit, council]
@@ -22,6 +22,7 @@ Installs the AI Judge multi-model deliberation system as a Hermes-compatible ski
 - `ai-judge collect --run latest` — Collect independent answers from all seats
 - `ai-judge verdict --run latest` — Generate auditable verdict with evidence scoring
 - `ai-judge reflect --date YYYY-MM-DD` — Daily performance reflection
+- `ai-judge score-v2 --demo` — Run the public v2 scoring-engine demo
 
 ## Installation
 
@@ -45,6 +46,7 @@ docker pull ghcr.io/reguorier/ai-judge:latest
 ```bash
 ai-judge license status
 ai-judge --help
+ai-judge score-v2 --demo
 ```
 
 ## Open-Core Boundary
@@ -53,12 +55,13 @@ This skill package contains the **public open-core layer**:
 
 | Included (Public) | Not Included (Paid Core) |
 |---|---|
-| CLI surface and packaging | Production collector engine |
-| macOS bridge source code | Browser/CDP automation runtime |
-| Public documentation and schemas | Claim scoring engine implementation |
-| Docker entrypoint and compose | License validator (private) |
-| BSL 1.1 license terms | SaaS license server |
-| Prompt templates | Team/enterprise integrations |
+| CLI surface, packaging, and `score-v2 --demo` | Production collector engine |
+| v2 formula engine and demo pipeline | Production browser/CDP orchestration |
+| macOS bridge source code | Managed scoring service/runtime |
+| Public documentation and schemas | SaaS license server |
+| Docker entrypoint and compose | Team/enterprise integrations |
+| BSL 1.1 license terms | Support/SLA layer |
+| Prompt templates | Hosted deployment tooling |
 
 Production commands (`jury`, `collect`, `verdict`, `reflect`) require the paid `ai-judge-core` package.
 

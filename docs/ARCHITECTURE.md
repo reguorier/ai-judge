@@ -1,17 +1,18 @@
-# AI Judge Architecture
+# AI Judge v2 Architecture
 
 ## System Overview
 
 ```mermaid
-graph TD
-    U["👤 Your Question"] --> J["⚖️ Stage 1: jury<br/>Create session, 9 seats"]
-    J --> C["🔍 Stage 2: collect<br/>Parallel model query"]
-    C --> V["📊 Stage 3: verdict<br/>Cross-validate + score"]
-    V --> R["📝 Stage 4: reflect<br/>Daily insights"]
-    R --> H["👤 You Decide"]
-
-    style U fill:#cba6f7,color:#000
-    style H fill:#a6e3a1,color:#000
+flowchart LR
+    Q["User question"] --> S["9 independent seats"]
+    S --> L["Claim ledger"]
+    L --> G1["Gate 1: bluff EV"]
+    G1 --> G2["Gate 2: should bid"]
+    G2 --> G3["Gate 3: allocation score"]
+    G3 --> D["Diversity radar"]
+    D --> V["Graph value"]
+    V --> P["Peach projection"]
+    P --> H["Human verdict"]
 ```
 
 ## Model Access Layer
@@ -33,20 +34,24 @@ graph LR
     AX --> D1 & D2 & D3
 ```
 
-## Cross-Validation Engine
+## v2 Scoring Engine
 
 ```mermaid
 graph TD
-    A["9 Raw Answers"] --> CD["Claim Decomposition"]
-    CD --> SA["Source Authority"]
-    CD --> SE["Evidence Strength"]
-    CD --> SF["Freshness"]
-    CD --> SR["Reproducibility"]
-    CD --> SH["Historical Reliability"]
-    SA & SE & SF & SR & SH --> IS["Ising Consensus Detection"]
-    IS --> MD["Memory Decay Tracking"]
-    MD --> OUT["verdict.md + audit-trail.json"]
+    C["Claim"] --> B["evaluate_bluff_ev"]
+    B --> BID["should_bid"]
+    BID --> A["allocation_score"]
+    A --> CAL["log_score + brier_score"]
+    CAL --> VOI["calculate_voi"]
+    VOI --> RISK["half_kelly_cap + cheat_ev"]
+    RISK --> OUT["claim score + tier + explanation"]
 ```
+
+The public engine lives in `core/formula_engine.py` and `core/scoring_v2.py`. It is intentionally small enough to audit.
+
+## Consensus Layer
+
+`core/consensus_v2.py` estimates diversity health, clusters similar seats, and computes `graph_value_v2`. `core/peach_projection.py` then allocates primary weight to the top seats while keeping a floor for minority signals.
 
 ## Data Flow
 
@@ -54,7 +59,7 @@ graph TD
 ~/.ai-judge/runs/YYYY-MM-DD-NNN/
 ├── task-status.json       # Session metadata
 ├── answers.md             # 9 raw model answers
-├── claim-ledger.json      # Claim decomposition + 5-dim scores
+├── claim-ledger.json      # Claim decomposition + v2 score components
 ├── verdict.md             # Human-readable verdict
 ├── feature-ledger.json    # Seat performance trends
 ├── audit-trail.json       # Full traceability chain

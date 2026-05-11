@@ -26,14 +26,15 @@ No black boxes. Every conclusion traces back to which model said what.
 4. **Privacy by Architecture** — Local-first via browser sessions, not API keys
 5. **Discrete Stages** — jury → collect → verdict → reflect; each inspectable
 
-## The Divergence Map (Coming in v2.1)
+## The Divergence Map
 
 The most important feature for human-centric AI: **not more AI intelligence, but better human comprehension.**
 
-Instead of reading 9 full answers, you see a 30-second visual summary showing:
+Instead of reading 9 full answers first, v2 gives you a fast evidence map:
 - 🟢 What 7+ models agree on
 - 🟡 What's split 4-6
 - 🔴 What one model dissents on (with high confidence and data)
+- 🧮 Which claims passed bluff, bid, allocation, calibration, and graph-value checks
 
 > *The goal is not to build AI that thinks for you.*  
 > *The goal is to build AI that helps you think better.*

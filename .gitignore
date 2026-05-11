@@ -20,3 +20,7 @@ raw/
 *.log
 license.db
 cache.json
+deploy_key
+deploy_key.pub
+*.pem
+*.key

@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-judge"
-version = "2.0.0"
-description = "Multi-model AI jury system — 9 models deliberate, you hold the gavel"
+version = "2.1.0"
+description = "Local-first AI jury skill with 9 seats and a 10-function scoring engine"
 readme = "README.md"
 license = {text = "BSL-1.1"}
 requires-python = ">=3.11"
 authors = [{name = "AI Judge Contributors"}]
-keywords = ["ai", "jury", "multi-model", "verdict", "cross-validation", "llm", "audit", "council"]
+keywords = ["ai", "jury", "multi-model", "verdict", "cross-validation", "llm", "audit", "council", "codex-skill", "scoring"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

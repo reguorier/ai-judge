@@ -1,5 +1,23 @@
 # Quick Start — 5 Minutes to Your First Verdict
 
+## Public Demo: No License Required
+
+The public repo includes the v2 scoring engine and a reproducible demo fixture:
+
+```bash
+git clone https://github.com/reguorier/ai-judge.git
+cd ai-judge
+python3 cli/main.py score-v2 --demo
+```
+
+Expected signal:
+
+- 5 demo claims
+- 10 scoring functions available
+- bluff gate blocks the deliberately overconfident weak claims
+- diversity radar reports whether the seats are clustered
+- peach projection assigns primary weight to the top two seats
+
 ## Prerequisites
 
 - macOS
@@ -49,7 +67,7 @@ Sends your question to all 9 seats simultaneously. Takes 30-90 seconds.
 ai-judge verdict --run latest
 ```
 
-Produces a complete verdict with claim scoring, consensus detection, and audit trail.
+Produces a complete verdict with claim scoring, consensus detection, diversity analysis, and audit trail.
 
 ## Step 7: You Decide
 
@@ -69,6 +87,7 @@ docker compose run --rm ai-judge jury --question "..."
 |---------|-------------|------|
 | `jury` | Create session, assign 9 seats | < 1s |
 | `collect` | Send question, collect raw answers | 30-90s |
+| `score-v2 --demo` | Run the public v2 scoring-engine fixture | < 1s |
 | `verdict` | Score claims, detect consensus, generate audit trail | 5-15s |
 | `reflect` | Generate daily performance summary | < 1s |
 | `list` | Show recent runs | < 1s |

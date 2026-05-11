@@ -1,72 +1,66 @@
 #!/bin/bash
 set -euo pipefail
+cd "$(dirname "$0")"
 
-echo "🚀 AI Judge — GitHub Publisher"
-echo "================================"
-echo ""
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-# ── Check git ──
-if ! command -v git &>/dev/null; then
-  echo "❌ git not found. Install it first: https://git-scm.com"
-  exit 1
+REPO="${1:-git@github.com:reguorier/ai-judge.git}"
+
+echo -e "${CYAN}"
+echo "AI Judge v2.1.0 GitHub Publisher"
+echo "Two Peaches. Ten Functions. Human final."
+echo -e "${NC}"
+
+if [ ! -d .git ]; then
+  git init
+  git branch -M main
 fi
 
-# ── Repo name ──
-REPO_NAME="${1:-ai-judge}"
-REMOTE_URL="https://github.com/reguorier/${REPO_NAME}.git"
-# Use SSH if available, else HTTPS
-if [ -f "$HOME/.ssh/id_ed25519" ] || [ -f "$HOME/.ssh/id_rsa" ]; then
-  REMOTE_URL="git@github.com:reguorier/${REPO_NAME}.git"
-fi
+git remote add origin "$REPO" 2>/dev/null || git remote set-url origin "$REPO"
 
-echo "📦 Target: $REMOTE_URL"
-echo ""
+echo -e "${YELLOW}Staging public release files only...${NC}"
+git add -- \
+  .github/workflows/publish.yml \
+  .gitignore \
+  CONTRIBUTING.md \
+  Dockerfile \
+  LICENSE \
+  README.md \
+  RELEASE_v2.md \
+  SECURITY.md \
+  SKILL.md \
+  assets \
+  bridges \
+  cli \
+  core \
+  docker-compose.yml \
+  docs \
+  product \
+  prompts \
+  publish.sh \
+  pyproject.toml \
+  release.sh \
+  schemas
 
-# ── Clean any broken git state ──
-rm -rf .git 2>/dev/null || true
+git commit -m "Explain why AI Judge v2 needs auditable scoring
 
-# ── Init ──
-git init
-git branch -m main 2>/dev/null || true
-git config user.email "reguorider@gmail.com"
-git config user.name "AI Judge"
+The public package now presents AI Judge as a local-first, human-final
+jury workflow with a reproducible ten-function scoring demo and a
+clear comparison against generic skill wrappers, llm-council, and
+Perplexity Model Council.
 
-# ── Stage everything ──
-git add -A
+Constraint: Public release must not include local deploy keys or paid collector runtime
+Rejected: Force-push a rebuilt repository | destructive and easy to misuse
+Confidence: high
+Scope-risk: moderate
+Tested: python3 cli/main.py score-v2 --demo
+Not-tested: GitHub Actions after this local publish helper runs" 2>/dev/null || echo "No new commit needed."
 
-# ── Commit ──
-git commit -m "feat: AI Judge v2.0.0 — Hermes skill package
-
-Multi-model AI jury system (BSL 1.1).
-9 models deliberate. You hold the gavel.
-
-Includes:
-- CLI + core modules (license shim, Hermes output)
-- 3 Swift desktop bridges (Gemini, Qwen, Doubao)
-- JSON Schema contracts (task status, claim ledger, Hermes output)
-- System prompt templates
-- Docker + docker-compose
-- GitHub Actions CI/CD (Docker publish)
-- Product landing page with SVG courtroom diagram
-- Full documentation (Architecture, Comparison, Human-Centric design)
-- BSL 1.1 license → MIT after 4 years"
-
-echo ""
-echo "✅ Committed $(git rev-parse --short HEAD)"
-echo ""
-
-# ── Push ──
-echo "⬆️  Pushing to GitHub..."
-git remote add origin "$REMOTE_URL" 2>/dev/null || git remote set-url origin "$REMOTE_URL"
-git push -u origin main --force
+echo -e "${YELLOW}Pushing to ${REPO}...${NC}"
+git push -u origin main
 
 echo ""
-echo "================================="
-echo "✅ Published!"
-echo "🌐 https://github.com/reguorier/${REPO_NAME}"
-echo ""
-echo "📋 Next steps:"
-echo "   1. Visit the repo and check README renders correctly"
-echo "   2. Go to Settings → Pages → Source: GitHub Actions (auto-deploys landing page)"
-echo "   3. Share: https://github.com/reguorier/${REPO_NAME}"
-echo "================================="
+echo -e "${GREEN}AI Judge v2.1.0 is live: ${REPO}${NC}"

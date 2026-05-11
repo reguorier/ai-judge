@@ -1,0 +1,72 @@
+<svg width="1200" height="560" viewBox="0 0 1200 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">AI Judge v2 overview</title>
+  <desc id="desc">Nine AI seats feed a claim ledger, ten scoring functions audit the claims, and a human makes the final verdict.</desc>
+  <rect width="1200" height="560" rx="28" fill="#0B1020"/>
+  <rect x="24" y="24" width="1152" height="512" rx="22" fill="#11182D" stroke="#26324D" stroke-width="2"/>
+
+  <text x="600" y="78" text-anchor="middle" fill="#F8FAFC" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="42" font-weight="800">AI Judge v2</text>
+  <text x="600" y="112" text-anchor="middle" fill="#A9B4C9" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">9 seats deliberate. 10 functions audit. Human final.</text>
+
+  <g transform="translate(64 156)">
+    <rect width="256" height="274" rx="18" fill="#172033" stroke="#31405E"/>
+    <text x="128" y="38" text-anchor="middle" fill="#E2E8F0" font-family="Inter, ui-sans-serif, system-ui" font-size="20" font-weight="700">9 AI Seats</text>
+    <g font-family="Inter, ui-sans-serif, system-ui" font-size="12" font-weight="700">
+      <circle cx="58" cy="84" r="25" fill="#7DD3FC"/><text x="58" y="89" text-anchor="middle" fill="#0B1020">GPT</text>
+      <circle cx="128" cy="84" r="25" fill="#C4B5FD"/><text x="128" y="89" text-anchor="middle" fill="#0B1020">CLA</text>
+      <circle cx="198" cy="84" r="25" fill="#FDE68A"/><text x="198" y="89" text-anchor="middle" fill="#0B1020">GEM</text>
+      <circle cx="58" cy="154" r="25" fill="#86EFAC"/><text x="58" y="159" text-anchor="middle" fill="#0B1020">QWN</text>
+      <circle cx="128" cy="154" r="25" fill="#FDA4AF"/><text x="128" y="159" text-anchor="middle" fill="#0B1020">DSK</text>
+      <circle cx="198" cy="154" r="25" fill="#FDBA74"/><text x="198" y="159" text-anchor="middle" fill="#0B1020">PRP</text>
+      <circle cx="58" cy="224" r="25" fill="#A7F3D0"/><text x="58" y="229" text-anchor="middle" fill="#0B1020">GRK</text>
+      <circle cx="128" cy="224" r="25" fill="#BFDBFE"/><text x="128" y="229" text-anchor="middle" fill="#0B1020">MST</text>
+      <circle cx="198" cy="224" r="25" fill="#DDD6FE"/><text x="198" y="229" text-anchor="middle" fill="#0B1020">OAI</text>
+    </g>
+  </g>
+
+  <path d="M340 293H420" stroke="#7DD3FC" stroke-width="4" stroke-linecap="round"/>
+  <path d="M408 281L424 293L408 305" stroke="#7DD3FC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g transform="translate(442 156)">
+    <rect width="316" height="274" rx="18" fill="#13251F" stroke="#2F6B55"/>
+    <text x="158" y="38" text-anchor="middle" fill="#DCFCE7" font-family="Inter, ui-sans-serif, system-ui" font-size="20" font-weight="700">10 Scoring Functions</text>
+    <g font-family="Inter, ui-sans-serif, system-ui" font-size="14" fill="#BBF7D0">
+      <text x="32" y="82">01 log_score</text>
+      <text x="32" y="112">02 allocation_score</text>
+      <text x="32" y="142">03 bluff_ev gate</text>
+      <text x="32" y="172">04 should_bid</text>
+      <text x="32" y="202">05 brier_score</text>
+      <text x="32" y="232">06 value of information</text>
+      <text x="184" y="82">07 half_kelly_cap</text>
+      <text x="184" y="112">08 cheat_ev</text>
+      <text x="184" y="142">09 graph_value_v2</text>
+      <text x="184" y="172">10 auc_score</text>
+    </g>
+    <rect x="32" y="236" width="252" height="18" rx="9" fill="#22C55E" opacity=".28"/>
+    <rect x="32" y="236" width="188" height="18" rx="9" fill="#22C55E"/>
+  </g>
+
+  <path d="M782 293H862" stroke="#FDE68A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M850 281L866 293L850 305" stroke="#FDE68A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g transform="translate(888 156)">
+    <rect width="248" height="274" rx="18" fill="#2B2112" stroke="#7C5A20"/>
+    <text x="124" y="38" text-anchor="middle" fill="#FEF3C7" font-family="Inter, ui-sans-serif, system-ui" font-size="20" font-weight="700">Human Verdict</text>
+    <circle cx="124" cy="114" r="46" fill="#FDE68A"/>
+    <path d="M98 118C108 136 141 136 151 118" stroke="#0B1020" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="108" cy="100" r="5" fill="#0B1020"/>
+    <circle cx="140" cy="100" r="5" fill="#0B1020"/>
+    <text x="124" y="190" text-anchor="middle" fill="#FDE68A" font-family="Inter, ui-sans-serif, system-ui" font-size="16" font-weight="700">Machine suggests.</text>
+    <text x="124" y="220" text-anchor="middle" fill="#FDE68A" font-family="Inter, ui-sans-serif, system-ui" font-size="16" font-weight="700">Human decides.</text>
+  </g>
+
+  <g font-family="Inter, ui-sans-serif, system-ui" font-size="14" font-weight="700">
+    <rect x="218" y="458" width="178" height="42" rx="21" fill="#1E293B" stroke="#334155"/>
+    <text x="307" y="485" text-anchor="middle" fill="#CBD5E1">Claim ledger</text>
+    <rect x="426" y="458" width="178" height="42" rx="21" fill="#1E293B" stroke="#334155"/>
+    <text x="515" y="485" text-anchor="middle" fill="#CBD5E1">Diversity radar</text>
+    <rect x="634" y="458" width="178" height="42" rx="21" fill="#1E293B" stroke="#334155"/>
+    <text x="723" y="485" text-anchor="middle" fill="#CBD5E1">Graph value</text>
+    <rect x="842" y="458" width="178" height="42" rx="21" fill="#1E293B" stroke="#334155"/>
+    <text x="931" y="485" text-anchor="middle" fill="#CBD5E1">Peach projection</text>
+  </g>
+</svg>
