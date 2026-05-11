@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Judge — 9 models deliberate. You hold the gavel.</title>
+<style>
+  :root {
+    --bg: #080810;
+    --card: #0f0f1a;
+    --border: #1c1c30;
+    --text: #cbcdd8;
+    --muted: #6b6d80;
+    --purple: #b89ee0;
+    --blue: #7ea8f4;
+    --gold: #e8c84a;
+    --green: #5ec45e;
+    --red: #e06050;
+    --radius: 14px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin:0 auto; padding:0 24px; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center; padding: 80px 0 50px; position: relative; overflow: hidden;
+  }
+  .hero-stars {
+    position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;
+  }
+  .hero h1 {
+    font-size: 3.8rem; font-weight: 800; line-height: 1.15;
+    background: linear-gradient(135deg, var(--purple) 0%, var(--blue) 50%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px; position: relative;
+  }
+  .hero .tagline {
+    font-size: 1.3rem; color: var(--muted); margin-bottom: 10px; position: relative;
+  }
+  .hero .sub {
+    font-size: 0.95rem; color: var(--muted); margin-bottom: 32px; position: relative;
+  }
+  .btn {
+    display: inline-block; padding: 14px 30px; border-radius: 8px;
+    font-size: 0.95rem; font-weight: 600; text-decoration: none; transition: all .2s;
+    cursor: pointer; border: none;
+  }
+  .btn-primary { background: var(--purple); color: #080810; }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-ghost { border: 1px solid var(--border); color: var(--text); margin-left: 12px; }
+  .btn-ghost:hover { border-color: var(--purple); }
+  .btn-gold { background: var(--gold); color: #080810; margin-left: 12px; }
+  .btn-gold:hover { filter: brightness(1.15); }
+
+  /* ── Sections ── */
+  section { padding: 70px 0; border-top: 1px solid var(--border); }
+  section h2 { font-size: 1.9rem; margin-bottom: 12px; letter-spacing: -0.02em; }
+  section .desc { color: var(--muted); font-size: 1.05rem; margin-bottom: 28px; max-width: 700px; }
+
+  /* ── The Big Visual: Courtroom ── */
+  .courtroom { padding: 40px 0; }
+  .courtroom svg { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+
+  /* ── Flow ── */
+  .flow {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    flex-wrap: wrap; padding: 30px 0;
+  }
+  .flow-step {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px; text-align: center; min-width: 130px;
+    transition: all .3s;
+  }
+  .flow-step:hover { border-color: var(--purple); transform: translateY(-2px); }
+  .flow-step.final { border-color: var(--gold); }
+  .flow-step .icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .flow-step strong { display: block; margin-bottom: 4px; }
+  .flow-step small { color: var(--muted); font-size: 0.8rem; }
+  .flow-arrow { font-size: 1.6rem; color: var(--muted); }
+
+  /* ── Cards ── */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 24px 0; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin: 24px 0; }
+  @media (max-width: 768px) { .g2,.g3 { grid-template-columns: 1fr; } .hero h1 { font-size: 2.2rem; } }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 26px; transition: border-color .3s;
+  }
+  .card:hover { border-color: var(--purple); }
+  .card h3 { margin-bottom: 8px; color: var(--text); font-size: 1.1rem; }
+  .card p { color: var(--muted); font-size: 0.92rem; }
+  .card .emoji { font-size: 2rem; margin-bottom: 10px; }
+
+  /* ── Model Grid ── */
+  .model-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+  @media (max-width: 768px) { .model-grid { grid-template-columns: 1fr 1fr; } }
+  .model-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 12px;
+    transition: all .3s;
+  }
+  .model-card:hover { border-color: var(--blue); transform: translateY(-1px); }
+  .model-card .avatar {
+    width: 38px; height: 38px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .model-card .info strong { display: block; font-size: 0.9rem; }
+  .model-card .info span { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── Before/After Timeline ── */
+  .timeline { position: relative; padding: 20px 0 20px 40px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 16px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .tl-item {
+    position: relative; margin-bottom: 24px; padding-left: 16px;
+  }
+  .tl-item::before {
+    content: ''; position: absolute; left: -28px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--purple);
+  }
+  .tl-item.old::before { background: var(--muted); }
+  .tl-item .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .tl-item .text { font-size: 0.92rem; }
+
+  /* ── Stats ── */
+  .stat-row { display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; padding: 20px 0; }
+  .stat { text-align: center; }
+  .stat .num {
+    font-size: 2.6rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--purple), var(--blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat .label { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+
+  /* ── Pricing ── */
+  .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 20px 0; }
+  @media (max-width: 768px) { .pricing { grid-template-columns: 1fr; } }
+  .plan {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px; text-align: center; transition: all .3s;
+  }
+  .plan:hover { border-color: var(--purple); }
+  .plan.featured { border-color: var(--purple); background: #0f0c1a; }
+  .plan h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .plan .price { font-size: 2.2rem; font-weight: 800; margin-bottom: 12px; }
+  .plan .price small { font-size: 0.9rem; color: var(--muted); font-weight: 400; }
+  .plan ul { list-style: none; text-align: left; margin-bottom: 20px; }
+  .plan ul li { padding: 4px 0; font-size: 0.88rem; color: var(--muted); }
+  .plan ul li::before { content: '✓ '; color: var(--green); }
+
+  /* ── table ── */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th,td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  th { color: var(--purple); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+  .win { color: var(--green); font-weight: 600; }
+
+  /* ── Code ── */
+  pre {
+    background: #0a0a16; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; overflow-x: auto; font-size: 0.88rem;
+    font-family: 'SF Mono', 'Fira Code', monospace; line-height: 1.65;
+  }
+
+  /* ── Footer ── */
+  footer { text-align: center; padding: 50px 0; color: var(--muted); border-top: 1px solid var(--border); }
+  footer a { color: var(--blue); text-decoration: none; }
+
+  /* ── Alert box ── */
+  .alert {
+    background: #0f0c1a; border: 1px solid var(--purple);
+    border-radius: var(--radius); padding: 20px 26px; margin: 20px 0;
+  }
+  .alert strong { color: var(--purple); }
+
+  /* ── blockquote ── */
+  blockquote {
+    border-left: 3px solid var(--purple); padding: 12px 20px; margin: 20px 0;
+    background: var(--card); border-radius: 0 8px 8px 0; font-style: italic; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<div class="hero">
+  <div class="hero-stars">
+    <svg width="100%" height="100%" viewBox="0 0 900 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;opacity:0.15">
+      <circle cx="120" cy="80" r="2" fill="#b89ee0"/><circle cx="780" cy="60" r="2" fill="#7ea8f4"/>
+      <circle cx="300" cy="30" r="1.5" fill="#e8c84a"/><circle cx="650" cy="100" r="1.5" fill="#b89ee0"/>
+      <circle cx="450" cy="50" r="2" fill="#7ea8f4"/><circle cx="150" cy="180" r="1" fill="#e8c84a"/>
+      <circle cx="750" cy="200" r="1.5" fill="#b89ee0"/><circle cx="500" cy="150" r="1" fill="#7ea8f4"/>
+      <circle cx="80" cy="250" r="1" fill="#e8c84a"/><circle cx="820" cy="280" r="1" fill="#b89ee0"/>
+    </svg>
+  </div>
+
+  <h1>AI Judge</h1>
+  <p class="tagline">9 AI models deliberate independently. <strong style="color:var(--gold);">You hold the gavel.</strong></p>
+  <p class="sub">Don't trust one AI. Let nine argue it out. Read the evidence. Make your own call.</p>
+  <a href="#install" class="btn btn-primary">Try It Free →</a>
+  <a href="https://github.com/audimacmini/ai-judge" class="btn btn-ghost">GitHub</a>
+  <a href="mailto:reguorider@gmail.com" class="btn btn-gold">Get License</a>
+</div>
+
+<div class="wrap">
+
+  <!-- ═══════════════ THE PROBLEM (BEFORE/AFTER) ═══════════════ -->
+  <section>
+    <h2>One AI answer feels right. That's the problem.</h2>
+    <p class="desc">Every model has blind spots. Training data gaps. RLHF quirks. When you ask a single AI, you get a monologue — confident, polished, and impossible to cross-examine.</p>
+
+    <div class="g2">
+      <div class="card" style="border-color:var(--red);">
+        <div class="emoji">🫥</div>
+        <h3>The Old Way</h3>
+        <p>Ask ChatGPT → get one answer → hope it's right.<br><br>
+        You can't see what it rejected. You can't tell where it's guessing. You're trusting a monologue.</p>
+      </div>
+      <div class="card" style="border-color:var(--purple);">
+        <div class="emoji">🏛️</div>
+        <h3>The AI Judge Way</h3>
+        <p>Ask 9 models simultaneously → each answers independently → system cross-validates every claim → you read the verdict and <strong>you decide</strong>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ THE COURTROOM VISUAL ═══════════════ -->
+  <section>
+    <h2>Your Personal AI Courtroom</h2>
+    <p class="desc">One question. Nine independent testimonies. Cross-examined. Verdict in your hands.</p>
+
+    <div class="courtroom">
+      <svg width="900" height="520" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f0f1a"/><stop offset="100%" stop-color="#080810"/></linearGradient>
+        </defs>
+
+        <!-- Background -->
+        <rect width="900" height="520" rx="14" fill="url(#bgGrad)" stroke="#1c1c30" stroke-width="1"/>
+
+        <!-- ── Title bar ── -->
+        <rect x="0" y="0" width="900" height="42" rx="14" fill="#0f0f1a"/>
+        <rect x="0" y="20" width="900" height="22" fill="#0f0f1a"/>
+        <text x="450" y="28" text-anchor="middle" fill="#6b6d80" font-size="12">AI Judge · Session #2026-05-11-001 · Question: "Should we enter this market?"</text>
+
+        <!-- ── The Question (top center) ── -->
+        <rect x="280" y="60" width="340" height="44" rx="8" fill="#1a1025" stroke="#b89ee0" stroke-width="1.5" filter="url(#glow)"/>
+        <text x="450" y="88" text-anchor="middle" fill="#b89ee0" font-size="14" font-weight="600">👤  "Should we enter the Japanese market?"</text>
+
+        <!-- Arrows down from question to row 1 -->
+        <line x1="380" y1="104" x2="250" y2="140" stroke="#1c1c30" stroke-width="1"/>
+        <line x1="450" y1="104" x2="450" y2="140" stroke="#1c1c30" stroke-width="1"/>
+        <line x1="520" y1="104" x2="650" y2="140" stroke="#1c1c30" stroke-width="1"/>
+
+        <!-- ── Row 1: 3 model seats ── -->
+        <!-- Gemini -->
+        <rect x="110" y="140" width="200" height="80" rx="8" fill="#0f0f1a" stroke="#1c1c30" stroke-width="1"/>
+        <circle cx="148" cy="170" r="18" fill="#1a1025" stroke="#7ea8f4" stroke-width="1.5"/>
+        <text x="148" y="175" text-anchor="middle" fill="#7ea8f4" font-size="14" font-weight="700">G</text>
+        <text x="178" y="165" fill="#cbcdd8" font-size="13" font-weight="600">Gemini</text>
+        <text x="178" y="182" fill="#6b6d80" font-size="10">Google · Broad, multimodal</text>
+        <text x="178" y="197" fill="#6b6d80" font-size="9">→ "Market timing is favorable..."</text>
+
+        <!-- ChatGPT -->
+        <rect x="350" y="140" width="200" height="80" rx="8" fill="#0f0f1a" stroke="#1c1c30" stroke-width="1"/>
+        <circle cx="388" cy="170" r="18" fill="#1a1025" stroke="#b89ee0" stroke-width="1.5"/>
+        <text x="388" y="175" text-anchor="middle" fill="#b89ee0" font-size="14" font-weight="700">C</text>
+        <text x="418" y="165" fill="#cbcdd8" font-size="13" font-weight="600">ChatGPT</text>
+        <text x="418" y="182" fill="#6b6d80" font-size="10">OpenAI · Deep analysis</text>
+        <text x="418" y="197" fill="#6b6d80" font-size="9">→ "Three risks to consider..."</text>
+
+        <!-- DeepSeek -->
+        <rect x="590" y="140" width="200" height="80" rx="8" fill="#0f0f1a" stroke="#1c1c30" stroke-width="1"/>
+        <circle cx="628" cy="170" r="18" fill="#1a1025" stroke="#e8c84a" stroke-width="1.5"/>
+        <text x="628" y="175" text-anchor="middle" fill="#e8c84a" font-size="14" font-weight="700">D</text>
+        <text x="658" y="165" fill="#cbcdd8" font-size="13" font-weight="600">DeepSeek</text>
+        <text x="658" y="182" fill="#6b6d80" font-size="10">DeepSeek · Math rigor</text>
+        <text x="658" y="197" fill="#6b6d80" font-size="9">→ "Currency risk is higher than..."</text>
+
+        <!-- ── Row 2: 6 more seats ── -->
+        <rect x="110" y="235" width="200" height="56" rx="6" fill="#0f0f1a" stroke="#1c1c30" stroke-width="0.8"/>
+        <text x="210" y="255" text-anchor="middle" fill="#cbcdd8" font-size="12" font-weight="600">Qwen</text>
+        <text x="210" y="274" text-anchor="middle" fill="#6b6d80" font-size="9">Alibaba · Balanced · Swift Bridge</text>
+
+        <rect x="350" y="235" width="200" height="56" rx="6" fill="#0f0f1a" stroke="#1c1c30" stroke-width="0.8"/>
+        <text x="450" y="255" text-anchor="middle" fill="#cbcdd8" font-size="12" font-weight="600">Kimi</text>
+        <text x="450" y="274" text-anchor="middle" fill="#6b6d80" font-size="9">Moonshot AI · 200k context · Chrome CDP</text>
+
+        <rect x="590" y="235" width="200" height="56" rx="6" fill="#0f0f1a" stroke="#1c1c30" stroke-width="0.8"/>
+        <text x="690" y="255" text-anchor="middle" fill="#cbcdd8" font-size="12" font-weight="600">Grok</text>
+        <text x="690" y="274" text-anchor="middle" fill="#6b6d80" font-size="9">xAI · Bold hypotheses · Chrome CDP</text>
+
+        <rect x="230" y="302" width="200" height="48" rx="6" fill="#0f0f1a" stroke="#1c1c30" stroke-width="0.8"/>
+        <text x="330" y="320" text-anchor="middle" fill="#cbcdd8" font-size="12" font-weight="600">Yuanbao</text>
+        <text x="330" y="338" text-anchor="middle" fill="#6b6d80" font-size="9">Tencent · Constraint-aware</text>
+
+        <rect x="470" y="302" width="200" height="48" rx="6" fill="#0f0f1a" stroke="#1c1c30" stroke-width="0.8"/>
+        <text x="570" y="320" text-anchor="middle" fill="#cbcdd8" font-size="12" font-weight="600">MiMo + Doubao</text>
+        <text x="570" y="338" text-anchor="middle" fill="#6b6d80" font-size="9">Xiaomi · ByteDance · Swift Bridge</text>
+
+        <!-- ── Collection arrows (converge down) ── -->
+        <line x1="210" y1="360" x2="350" y2="410" stroke="#1c1c30" stroke-width="1"/>
+        <line x1="450" y1="360" x2="450" y2="410" stroke="#1c1c30" stroke-width="1"/>
+        <line x1="690" y1="360" x2="550" y2="410" stroke="#1c1c30" stroke-width="1"/>
+
+        <!-- ── Cross-Validation Engine ── -->
+        <rect x="230" y="410" width="440" height="46" rx="8" fill="#0d1520" stroke="#7ea8f4" stroke-width="1.5"/>
+        <text x="450" y="430" text-anchor="middle" fill="#7ea8f4" font-size="13" font-weight="600">⚡ Cross-Validation Engine</text>
+        <text x="450" y="447" text-anchor="middle" fill="#6b6d80" font-size="10">Claim decomposition · 5D scoring · Ising consensus · Memory decay · Audit trail</text>
+
+        <!-- ── Arrow to final ── -->
+        <line x1="450" y1="456" x2="450" y2="480" stroke="#e8c84a" stroke-width="2"/>
+
+        <!-- ── Final: Human Verdict ── -->
+        <rect x="300" y="478" width="300" height="34" rx="8" fill="#0d2010" stroke="#5ec45e" stroke-width="2"/>
+        <text x="450" y="500" text-anchor="middle" fill="#5ec45e" font-size="14" font-weight="700">👤 Your Verdict — you hold the gavel</text>
+      </svg>
+    </div>
+    <p style="text-align:center;color:var(--muted);margin-top:8px;font-size:0.9rem;">
+      9 independent answers → cross-validated → <strong style="color:var(--green);">you decide.</strong>
+    </p>
+  </section>
+
+  <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+  <section>
+    <h2>Four stages. Zero black boxes.</h2>
+    <p class="desc">Each stage is a discrete command. You can inspect, re-run, or question anything.</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="icon">⚖️</div>
+        <strong>1. jury</strong>
+        <small>Create session<br>9 seats assigned</small>
+      </div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">
+        <div class="icon">🔍</div>
+        <strong>2. collect</strong>
+        <small>9 models answer<br>independently</small>
+      </div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">
+        <div class="icon">📊</div>
+        <strong>3. verdict</strong>
+        <small>Cross-validate<br>5-dimension score</small>
+      </div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step final">
+        <div class="icon">👤</div>
+        <strong>4. you decide</strong>
+        <small>Human holds<br>final gavel</small>
+      </div>
+    </div>
+
+    <div class="alert" style="margin-top:24px;">
+      <strong>💡 Not another AI that tells you what to think.</strong> The system maps where 9 models agree and where they fight. It never makes the final call. That's your job.
+    </div>
+  </section>
+
+  <!-- ═══════════════ WHAT YOU GET ═══════════════ -->
+  <section>
+    <h2>Every question leaves a paper trail.</h2>
+    <p class="desc">After each jury run, you get a complete evidence package. Every conclusion traces back to which model said what, with what confidence.</p>
+
+    <div class="g3">
+      <div class="card">
+        <div class="emoji">📋</div>
+        <h3>Raw Answers</h3>
+        <p>All 9 unmodified responses in <code>answers.md</code>. Read them before the verdict if you want.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🔬</div>
+        <h3>Claim Breakdown</h3>
+        <p>Each answer decomposed into individual claims. Each claim scored across 5 dimensions in <code>claim-ledger.json</code>.</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🗺️</div>
+        <h3>Consensus Map</h3>
+        <p>See where 8 models agree and where one dissents with hard data. The dissent is often the most valuable signal.</p>
+      </div>
+    </div>
+
+    <div class="stat-row" style="margin-top:20px;">
+      <div class="stat"><div class="num">9</div><div class="label">AI Model Seats</div></div>
+      <div class="stat"><div class="num">5</div><div class="label">Scoring Dimensions</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">Pipeline Stages</div></div>
+      <div class="stat"><div class="num">100%</div><div class="label">Human Authority</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ VS LLM-COUNCIL ═══════════════ -->
+  <section>
+    <h2>Inspired by llm-council. Built for decisions.</h2>
+    <p class="desc">Karpathy's llm-council proved that multiple LLMs beat one. AI Judge takes that insight and adds what real decisions need: audit trails, privacy, and human authority.</p>
+
+    <table>
+      <tr><th>What Matters</th><th>llm-council</th><th>AI Judge</th></tr>
+      <tr><td>Who decides?</td><td>Chairman LLM</td><td class="win">You</td></tr>
+      <tr><td>Privacy</td><td>All data → OpenRouter API</td><td class="win">Local-first (browser sessions)</td></tr>
+      <tr><td>Models</td><td>4 (OpenRouter)</td><td class="win">9 (desktop + web via CDP/AX)</td></tr>
+      <tr><td>Evaluation</td><td>Anonymous ranking only</td><td class="win">5-dimension claim-level scoring</td></tr>
+      <tr><td>Can I trace a conclusion?</td><td>No</td><td class="win">Full audit trail</td></tr>
+      <tr><td>Production ready?</td><td>No (Karpathy: "won't support")</td><td class="win">Docker + CI/CD + key mgmt</td></tr>
+      <tr><td>License</td><td>MIT</td><td>BSL 1.1 → MIT (4yr)</td></tr>
+    </table>
+
+    <blockquote>
+      "Karpathy showed that a council beats a single model. But for real decisions — the kind where being wrong costs money — you need an audit trail, human authority, and evidence you can defend in a meeting. That's what AI Judge adds."
+    </blockquote>
+  </section>
+
+  <!-- ═══════════════ PRICING ═══════════════ -->
+  <section>
+    <h2>Pricing</h2>
+    <div class="pricing">
+      <div class="plan">
+        <h3>Community</h3>
+        <div class="price">Free</div>
+        <ul>
+          <li>Full CLI & docs</li>
+          <li>Swift bridge source</li>
+          <li>Docker packaging</li>
+          <li>GitHub Issues support</li>
+        </ul>
+        <a href="https://github.com/audimacmini/ai-judge" class="btn btn-ghost">GitHub</a>
+      </div>
+      <div class="plan featured">
+        <h3>Personal</h3>
+        <div class="price">$49 <small>one-time</small></div>
+        <ul>
+          <li>Everything in Community</li>
+          <li>9-seat jury runs</li>
+          <li>Full audit artifacts</li>
+          <li>2 machines</li>
+          <li>Email support</li>
+        </ul>
+        <a href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Personal%20License" class="btn btn-primary">Get License</a>
+      </div>
+      <div class="plan">
+        <h3>Team / Enterprise</h3>
+        <div class="price">$199+</div>
+        <ul>
+          <li>Execution Council</li>
+          <li>5+ machines</li>
+          <li>Custom seats</li>
+          <li>SSO · SLA · Audit</li>
+        </ul>
+        <a href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Team%20License" class="btn btn-gold">Contact Us</a>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin-top:12px;">
+      Questions? <a href="mailto:reguorider@gmail.com" style="color:var(--blue);">reguorider@gmail.com</a>
+    </p>
+  </section>
+
+  <!-- ═══════════════ INSTALL ═══════════════ -->
+  <section id="install">
+    <h2>Install in 30 seconds.</h2>
+    <pre><code>pip install ai-judge
+ai-judge license activate --key AJ-XXXX-XXXX-XXXX
+ai-judge jury --question "Should we enter this market?"
+ai-judge collect --run latest
+ai-judge verdict --run latest
+# You decide.</code></pre>
+    <div class="alert">
+      <strong>🔑 Need a license key?</strong> Community is free for evaluation. For production use, email <a href="mailto:reguorider@gmail.com" style="color:var(--blue);">reguorider@gmail.com</a>.
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>
+    <a href="https://github.com/audimacmini/ai-judge">GitHub</a> ·
+    <a href="SKILL.md">Skill</a> ·
+    <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+    <a href="docs/COMPARISON.md">vs llm-council</a> ·
+    <a href="mailto:reguorider@gmail.com">reguorider@gmail.com</a>
+  </p>
+  <p style="margin-top:8px;font-size:0.8rem;">Trust, but verify. With nine witnesses. &nbsp;|&nbsp; BSL 1.1 · AI Judge Contributors</p>
+</footer>
+
+</body>
+</html>

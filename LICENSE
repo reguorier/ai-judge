@@ -1,0 +1,50 @@
+Business Source License 1.1
+
+License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
+"Business Source License" is a trademark of MariaDB Corporation Ab.
+
+Parameters
+
+Licensor:             AI Judge Contributors
+Licensed Work:        AI Judge — Multi-model AI jury system
+Change Date:          2030-05-09
+Change License:       MIT License
+
+Notice
+
+The Business Source License (this document, or the "License") is not an Open
+Source license. However, the Licensed Work will eventually be made available
+under an Open Source License, as stated in this License.
+
+License Terms
+
+Subject to the terms of this License, Licensor hereby grants you the right to:
+
+- copy, modify, create derivative works, and redistribute the Licensed Work
+- make, have made, sell, offer for sale, import, and otherwise use the
+  Licensed Work
+
+for any purpose other than a Competing Use.
+
+Competing Use
+
+"Competing Use" means use of the Licensed Work in a production system that
+provides multi-model AI jury or deliberation services to third parties as a
+hosted or self-hosted product. Evaluation, development, testing, personal use,
+and internal business decision-making that does not resell the jury service are
+not Competing Uses.
+
+If you begin a Competing Use, you must either:
+
+(a) obtain a commercial license from the Licensor, or
+(b) cease using the Licensed Work for that Competing Use.
+
+Change License
+
+On the Change Date, or the fourth anniversary of the first public distribution
+of the Licensed Work, whichever is earlier, the Licensed Work will become
+available under the MIT License.
+
+Disclaimer
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.

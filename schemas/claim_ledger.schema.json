@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-judge.dev/schemas/claim-ledger.json",
+  "title": "Claim Ledger",
+  "description": "Claim-by-claim decomposition and scoring for a jury run.",
+  "type": "object",
+  "required": ["run_id", "claims"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "content", "source_seat"],
+        "properties": {
+          "claim_id": { "type": "string" },
+          "content": { "type": "string" },
+          "source_seat": { "type": "string" },
+          "agree_count": { "type": "integer", "minimum": 0, "maximum": 9 },
+          "total_seats": { "type": "integer", "default": 9 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "source_authority": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidence_strength": { "type": "number", "minimum": 0, "maximum": 1 },
+          "freshness": { "type": "number", "minimum": 0, "maximum": 1 },
+          "reproducibility": { "type": "number", "minimum": 0, "maximum": 1 },
+          "historical_reliability": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-judge.dev/schemas/task-status.json",
+  "title": "Task Status",
+  "description": "Jury session metadata recorded at session creation.",
+  "type": "object",
+  "required": ["run_id", "question", "timestamp", "seats"],
+  "properties": {
+    "run_id": { "type": "string", "description": "Unique run identifier (e.g., 20260509-143022)" },
+    "question": { "type": "string", "description": "The user's original question" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "seats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seat_id", "model"],
+        "properties": {
+          "seat_id": { "type": "string" },
+          "model": { "type": "string", "enum": ["gemini","chatgpt","deepseek","qwen","kimi","grok","yuanbao","mimo","doubao"] },
+          "access_method": { "type": "string", "enum": ["cdp","swift_bridge"] }
+        }
+      }
+    },
+    "status": { "type": "string", "enum": ["created","collecting","collected","verdict_generated"] }
+  }
+}
