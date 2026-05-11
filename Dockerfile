@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /opt/ai-judge
 COPY pyproject.toml .
+COPY README.md LICENSE ./
 COPY cli/ cli/
 COPY core/ core/
 
