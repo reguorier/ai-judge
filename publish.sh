@@ -13,10 +13,10 @@ fi
 
 # ── Repo name ──
 REPO_NAME="${1:-ai-judge}"
-REMOTE_URL="https://github.com/audimacmini/${REPO_NAME}.git"
+REMOTE_URL="https://github.com/reguorier/${REPO_NAME}.git"
 # Use SSH if available, else HTTPS
 if [ -f "$HOME/.ssh/id_ed25519" ] || [ -f "$HOME/.ssh/id_rsa" ]; then
-  REMOTE_URL="git@github.com:audimacmini/${REPO_NAME}.git"
+  REMOTE_URL="git@github.com:reguorier/${REPO_NAME}.git"
 fi
 
 echo "📦 Target: $REMOTE_URL"
@@ -63,10 +63,10 @@ git push -u origin main --force
 echo ""
 echo "================================="
 echo "✅ Published!"
-echo "🌐 https://github.com/audimacmini/${REPO_NAME}"
+echo "🌐 https://github.com/reguorier/${REPO_NAME}"
 echo ""
 echo "📋 Next steps:"
 echo "   1. Visit the repo and check README renders correctly"
 echo "   2. Go to Settings → Pages → Source: GitHub Actions (auto-deploys landing page)"
-echo "   3. Share: https://github.com/audimacmini/${REPO_NAME}"
+echo "   3. Share: https://github.com/reguorier/${REPO_NAME}"
 echo "================================="

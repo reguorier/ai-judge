@@ -6,7 +6,7 @@ description: >
   authority. Local-first, macOS-native, BSL-licensed.
 version: 2.0.0
 license: BSL-1.1
-homepage: https://github.com/audimacmini/ai-judge
+homepage: https://github.com/reguorier/ai-judge
 tags: [ai, multi-model, jury, verdict, cross-validation, llm, audit, council]
 platforms: [macOS]
 dependencies: [python3.11, chrome, docker]
@@ -30,7 +30,7 @@ Installs the AI Judge multi-model deliberation system as a Hermes-compatible ski
 pip install -e .
 
 # Or via Docker
-docker pull ghcr.io/audimacmini/ai-judge:latest
+docker pull ghcr.io/reguorier/ai-judge:latest
 ```
 
 ## Requirements

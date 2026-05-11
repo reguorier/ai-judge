@@ -46,10 +46,10 @@ echo -e "${YELLOW}⬆️  Step 3: Pushing to GitHub...${NC}"
 
 # Try SSH first, fall back to HTTPS
 if [ -f "$HOME/.ssh/id_ed25519" ] || [ -f "$HOME/.ssh/id_rsa" ]; then
-  REMOTE="git@github.com:audimacmini/ai-judge.git"
+  REMOTE="git@github.com:reguorier/ai-judge.git"
   echo "   Using SSH: $REMOTE"
 else
-  REMOTE="https://github.com/audimacmini/ai-judge.git"
+  REMOTE="https://github.com/reguorier/ai-judge.git"
   echo "   Using HTTPS: $REMOTE"
 fi
 
@@ -59,5 +59,5 @@ git push -u origin main --force
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════╗"
 echo "║  ✅ AI Judge is now live on GitHub!   ║"
-echo "║  🌐 github.com/audimacmini/ai-judge  ║"
+echo "║  🌐 github.com/reguorier/ai-judge  ║"
 echo "╚══════════════════════════════════════╝${NC}"

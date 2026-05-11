@@ -29,9 +29,9 @@ dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.5", "mypy>=1.10"]
 ai-judge = "cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/audimacmini/ai-judge"
-Repository = "https://github.com/audimacmini/ai-judge"
-Issues = "https://github.com/audimacmini/ai-judge/issues"
+Homepage = "https://github.com/reguorier/ai-judge"
+Repository = "https://github.com/reguorier/ai-judge"
+Issues = "https://github.com/reguorier/ai-judge/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["cli", "core"]

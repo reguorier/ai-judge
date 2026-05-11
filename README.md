@@ -67,6 +67,16 @@ No black boxes. No "trust me." Every conclusion traces back to which model said 
 
 ## Quick Start (5 minutes)
 
+### Install as a Codex Skill
+
+```text
+$skill-installer install https://github.com/reguorier/ai-judge
+```
+
+After installing, restart Codex so the skill is discovered.
+
+### Run the CLI
+
 ```bash
 # 1. Install
 pip install ai-judge
@@ -222,6 +232,7 @@ graph TD
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design & diagrams |
 | [COMPARISON.md](docs/COMPARISON.md) | Full llm-council comparison |
 | [HUMAN_CENTRIC.md](docs/HUMAN_CENTRIC.md) | Design philosophy |
+| [PROMOTION_KIT.md](docs/PROMOTION_KIT.md) | Launch copy, directory blurbs, and post drafts |
 | [SKILL.md](SKILL.md) | Cowork skill definition |
 
 ---

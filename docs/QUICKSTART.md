@@ -58,7 +58,7 @@ Open `~/.ai-judge/runs/latest/verdict.md`. Read the evidence. Make your decision
 ## Docker Alternative
 
 ```bash
-docker pull ghcr.io/audimacmini/ai-judge:latest
+docker pull ghcr.io/reguorier/ai-judge:latest
 docker compose up
 docker compose run --rm ai-judge jury --question "..."
 ```
