@@ -4,13 +4,33 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
   packages: write
 
 jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Harness Test Suite
+        run: |
+          PYTHONPATH=. python3 tests/run_harness.py
+      - name: Upload Harness Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-report
+          path: harness-report.html
+
   docker:
+    needs: harness
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "case_001",
+    "label": "shallow_strategic_jargon",
+    "text": "我认为这个方案的核心在于底层逻辑的重构。我一直觉得AI时代的核心竞争力就是认知架构的升级。毫无疑问，我们需要通过多模型协同构建可信智能决策闭环。这肯定是未来方向，不用讨论。",
+    "context": "strategy",
+    "expected": {
+      "smart_sounding_min": 0.80,
+      "judgment_quality_max": 0.75,
+      "gap_min": 0.12,
+      "risk_flags_contains": ["self_reference_closure"],
+      "hard_truth_level_min": 1
+    }
+  },
+  {
+    "id": "case_002",
+    "label": "evidence_grounded_reasoning",
+    "text": "我让9个模型分别答同一个价格验证问题，结果4个模型把截图当官方证据。我后来把prompt改成'无最终支付页不得计入真值'，错误率才下降。但我不确定这个方案在海外市场是否适用，需要实际测试。如果反过来想，也许问题不在模型，而在我们对'证据'的定义本身需要区分场景。",
+    "context": "strategy",
+    "expected": {
+      "smart_sounding_min": 0.60,
+      "judgment_quality_min": 0.80,
+      "risk_flags_contains": []
+    }
+  },
+  {
+    "id": "case_003",
+    "label": "abstract_concept_dump",
+    "text": "认知架构的核心在于底层逻辑的范式转移。通过引入多维度的协同效应，我们可以实现认知增强的闭环。这个系统本质上是一个自适应的智能决策框架，能够赋能全链路。",
+    "context": "strategy",
+    "expected": {
+      "smart_sounding_min": 0.75,
+      "judgment_quality_max": 0.85,
+      "risk_flags_contains": ["conceptual_fluency_without_grounding"]
+    }
+  },
+  {
+    "id": "case_004",
+    "label": "defensive_recovery",
+    "text": "你没理解我的意思。不是这个意思。我已经说过很多次了，这个方案的核心价值在底层逻辑。你太保守了，先别说风险。其他模型都支持我的判断。",
+    "context": "general",
+    "expected": {
+      "smart_sounding_min": 0.40,
+      "risk_flags_contains": ["self_reference_closure"]
+    }
+  },
+  {
+    "id": "case_005",
+    "label": "high_ambiguity_tolerance",
+    "text": "A方案的优势是快，B方案的优势是稳。在资源充足的场景下A更合适，但如果合规要求高则B更安全。我还需要看第三季度的实际数据才能做最终判断。有一种可能是两者可以并行——先用B建立基线，再逐步切换到A。不过这个假设需要验证。",
+    "context": "strategy",
+    "expected": {
+      "ambiguity_flexibility_min": 0.60,
+      "risk_flags_contains": []
+    }
+  }
+]

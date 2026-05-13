@@ -114,6 +114,9 @@ smart_sounding: 0.94 | judgment_quality: 0.70
 ## Quick Start
 
 ```bash
+# Run full harness test suite (benchmark + regression + smoke)
+PYTHONPATH=. python3 tests/run_harness.py
+
 # V3.1 neuro-cognitive demo
 python3 cli/main.py neuro-profile --demo
 
@@ -123,22 +126,30 @@ python3 cli/main.py hard-truth --demo
 # Full V3.1 pipeline
 python3 cli/main.py v3-pipeline --demo
 
-# Full smoke test
-PYTHONPATH=. python3 tests/smoke_test_v3.py
-
 # V2 scoring remains available
 python3 cli/main.py score-v2 --demo
 ```
 
-Install from GitHub:
+## Harness Engineering
 
-```bash
-git clone https://github.com/reguorider-gif/ai-judge.git
-cd ai-judge
-python3 cli/main.py v3-pipeline --demo
+The `harness/` layer provides systematic, reproducible pipeline execution:
+
+| Module | Purpose |
+|--------|---------|
+| `harness/runner.py` | Programmatic API for all pipeline operations |
+| `harness/benchmark.py` | Golden-dataset testing with pass/fail thresholds |
+| `harness/regression.py` | Cross-version consistency detection |
+| `harness/config.py` | YAML-based profiles (default, strict, fast, ci) |
+| `harness/reporter.py` | JSON, Markdown, and HTML output |
+
+```python
+from harness import AIJudgeHarness
+h = AIJudgeHarness(config="ci")
+result = h.run_full_v3("Your analysis text here")
+print(result.passed, result.data)
 ```
 
-Production collection commands still require the paid collector/runtime:
+CI runs `tests/run_harness.py` on every push and PR. Docker build is gated on harness passing.
 
 ```bash
 ai-judge jury --question "Your question here"

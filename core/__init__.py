@@ -21,6 +21,13 @@ V3 NEW Modules:
     recovery_after_negative, experience_grounding) + smart_sounding/judgment_quality dual scores
   - hard_truth: L0-L4 judgment-first feedback mode, heterogeneity exemption, performative acceptance detection
 
+Harness Layer (tests/harness/):
+  - harness/runner: Programmatic pipeline execution API
+  - harness/benchmark: Golden-dataset testing with pass/fail thresholds
+  - harness/regression: Cross-version consistency checking
+  - harness/config: YAML-based configuration profiles (default, strict, fast, ci)
+  - harness/reporter: Standardized output (JSON, Markdown, HTML)
+
 Production modules (paid core, not in this repository):
   - jury: Session creation and packet generation
   - collect: Browser/CDP answer collection
