@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   ai-judge:
-    image: ghcr.io/reguorier/ai-judge:latest
+    image: ghcr.io/reguorider-gif/ai-judge:latest
     container_name: ai-judge
     environment:
       - LICENSE_KEY=${LICENSE_KEY:-}

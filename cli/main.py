@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI Judge — Unified CLI entry point v3.0.0.
+"""AI Judge — Unified CLI entry point v3.1.0.
 
 Usage:
     ai-judge license status
@@ -11,7 +11,7 @@ Usage:
     ai-judge score-v2 --demo          # Phase 1 scoring demo
     ai-judge score-v2 --claims-file path/to/claim-ledger.json
 
-    # V2 New Commands:
+    # V3.0 commands:
     ai-judge determinism --demo       # Run determinism pipeline demo
     ai-judge anchor create --name "My Style" --pos ex1.txt --neg ex2.txt
     ai-judge cold-start status        # Check cold start stage
@@ -19,6 +19,11 @@ Usage:
     ai-judge log add "fragment text"  # Add thinking fragment
     ai-judge log distill              # Distill questions from fragments
     ai-judge achievement --user-id <id> # Show achievement snapshot
+
+    # V3.1 commands:
+    ai-judge neuro-profile --demo     # 4 neuro-cognitive proxy signals + dual scores
+    ai-judge hard-truth --demo        # L0-L4 judgment-first feedback
+    ai-judge v3-pipeline --demo       # Full determinism + neuro + hard truth pipeline
 """
 
 from __future__ import annotations
@@ -655,6 +660,9 @@ def cmd_v3_pipeline(args: argparse.Namespace) -> int:
         print("\n" + generate_hard_truth_output(profile, text))
 
     return 0
+
+
+def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
     if not hasattr(args, "func"):

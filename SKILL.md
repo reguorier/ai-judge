@@ -1,13 +1,13 @@
 ---
 name: ai-judge
 description: >
-  Local-first multi-model AI jury system with a v2 scoring engine. Query 9 AI seats,
-  score claims with 10 auditable functions, detect bluff risk and echo-chamber
-  consensus, and keep final authority with the human.
-version: 2.1.0
+  Local-first multi-model AI jury system with v3.1 hard truth mode. Query 9 AI seats,
+  score claims with auditable functions, detect bluff risk and echo-chamber consensus,
+  profile cognitive proxy signals, and keep final authority with the human.
+version: 3.1.0
 license: BSL-1.1
-homepage: https://github.com/reguorier/ai-judge
-tags: [ai, multi-model, jury, verdict, cross-validation, llm, audit, council]
+homepage: https://github.com/reguorider-gif/ai-judge
+tags: [ai, multi-model, jury, verdict, cross-validation, llm, audit, council, hard-truth]
 platforms: [macOS]
 dependencies: [python3.11, chrome, docker]
 ---
@@ -23,6 +23,9 @@ Installs the AI Judge multi-model deliberation system as a Hermes-compatible ski
 - `ai-judge verdict --run latest` — Generate auditable verdict with evidence scoring
 - `ai-judge reflect --date YYYY-MM-DD` — Daily performance reflection
 - `ai-judge score-v2 --demo` — Run the public v2 scoring-engine demo
+- `ai-judge neuro-profile --demo` — Run the v3.1 cognitive proxy demo
+- `ai-judge hard-truth --demo` — Preview L0-L4 judgment-first feedback
+- `ai-judge v3-pipeline --demo` — Run the full v3.1 pipeline
 
 ## Installation
 
@@ -31,7 +34,7 @@ Installs the AI Judge multi-model deliberation system as a Hermes-compatible ski
 pip install -e .
 
 # Or via Docker
-docker pull ghcr.io/reguorier/ai-judge:latest
+docker pull ghcr.io/reguorider-gif/ai-judge:latest
 ```
 
 ## Requirements
@@ -46,7 +49,7 @@ docker pull ghcr.io/reguorier/ai-judge:latest
 ```bash
 ai-judge license status
 ai-judge --help
-ai-judge score-v2 --demo
+ai-judge v3-pipeline --demo
 ```
 
 ## Open-Core Boundary
@@ -55,8 +58,8 @@ This skill package contains the **public open-core layer**:
 
 | Included (Public) | Not Included (Paid Core) |
 |---|---|
-| CLI surface, packaging, and `score-v2 --demo` | Production collector engine |
-| v2 formula engine and demo pipeline | Production browser/CDP orchestration |
+| CLI surface, packaging, and v2/v3 demos | Production collector engine |
+| v2 formula engine and v3 cognitive proxy demos | Production browser/CDP orchestration |
 | macOS bridge source code | Managed scoring service/runtime |
 | Public documentation and schemas | SaaS license server |
 | Docker entrypoint and compose | Team/enterprise integrations |

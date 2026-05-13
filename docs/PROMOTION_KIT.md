@@ -2,18 +2,18 @@
 
 ## One-liner
 
-AI Judge is a local-first Codex skill where 9 AI seats deliberate, 10 scoring functions audit their claims, and the human keeps the final verdict.
+AI Judge is a local-first Codex skill where 9 AI seats deliberate, scoring functions audit their claims, cognitive proxy signals expose "sounds smart" vs "is smart", and the human keeps the final verdict.
 
 ## Short description
 
-AI Judge turns one question into a structured jury session. Nine AI seats answer independently, their claims pass through a 10-function scoring engine, and the output is an auditable verdict package. It is built for people who want better evidence from AI systems without handing the final decision to another model.
+AI Judge turns one question into a structured jury session. Nine AI seats answer independently, their claims pass through auditable scoring, and v3.1 adds hard truth mode for judgment-quality gaps. It is built for people who want better evidence from AI systems without handing the final decision to another model.
 
 ## Links
 
-- GitHub: https://github.com/reguorier/ai-judge
-- Install in Codex: `$skill-installer install https://github.com/reguorier/ai-judge`
-- Quickstart: https://github.com/reguorier/ai-judge/blob/main/docs/QUICKSTART.md
-- Architecture: https://github.com/reguorier/ai-judge/blob/main/docs/ARCHITECTURE.md
+- GitHub: https://github.com/reguorider-gif/ai-judge
+- Install in Codex: `$skill-installer install https://github.com/reguorider-gif/ai-judge`
+- Quickstart: https://github.com/reguorider-gif/ai-judge/blob/main/docs/QUICKSTART.md
+- Architecture: https://github.com/reguorider-gif/ai-judge/blob/main/docs/ARCHITECTURE.md
 
 ## Hacker News
 
@@ -50,7 +50,7 @@ AI Judge creates a jury-style run: multiple seats answer, claims are broken into
 
 The part I am most interested in discussing is the evaluation shape: is claim-level cross-validation a useful interface for real decisions, or would you rather see a lighter comparison format?
 
-Repo: https://github.com/reguorier/ai-judge
+Repo: https://github.com/reguorider-gif/ai-judge
 ```
 
 ## Product Hunt

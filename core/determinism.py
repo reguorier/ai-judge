@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Determinism Engine v3.0 — L1/L2 consistency, confidence lights, human tax, hard truth trigger.
+"""Determinism Engine v3.1 — L1/L2 consistency, confidence lights, human tax, hard truth trigger.
 
 AI Judge V3 core module. Implements:
   - L1: 3-sample strict consistency check (temperature=0, JSON Schema, seed=fixed)
@@ -506,5 +506,5 @@ def run_full_v3_pipeline(
         }
 
     v2_report.update(v3_additions)
-    v2_report["pipeline_version"] = "3.0.0"
+    v2_report["pipeline_version"] = "3.1.0"
     return v2_report

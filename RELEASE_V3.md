@@ -1,5 +1,7 @@
 # AI Judge v3.1.0 — Release Notes
 
+![AI Judge v3.1 cognitive map](assets/ai-judge-v3-cognitive-map.svg)
+
 ## Overview
 
 v3.1.0 adds the **Neuro-Cognitive Signal Layer** — a suite of 4 textual proxy signals that distinguish "sounds smart" from "is smart." This is built on top of v3.0.0's V2 upgrades (determinism engine, goal anchoring, thinking fingerprint, 6-role parliament).
@@ -54,7 +56,16 @@ No breaking changes. All v2 and v3.0 commands continue to work. The V3 pipeline 
 ## Verification
 
 ```bash
+python3 cli/main.py neuro-profile --demo
+python3 cli/main.py hard-truth --demo
+python3 cli/main.py v3-pipeline --demo
 PYTHONPATH=. python3 tests/smoke_test_v3.py
 ```
 
 Expected: 6/6 tests pass, shallow text triggers L2 hard truth, deep text stays L0.
+
+## Release Package
+
+- Repository target: `https://github.com/reguorider-gif/ai-judge`
+- Archive asset: `ai-judge-v3.1.0-release.tar.gz`
+- Double-click helper: `Publish-AI-Judge-V3.command`

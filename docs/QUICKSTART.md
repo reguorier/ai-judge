@@ -2,21 +2,21 @@
 
 ## Public Demo: No License Required
 
-The public repo includes the v2 scoring engine and a reproducible demo fixture:
+The public repo includes the v3.1 neuro-cognitive demo, hard truth mode, and the v2 scoring engine:
 
 ```bash
-git clone https://github.com/reguorier/ai-judge.git
+git clone https://github.com/reguorider-gif/ai-judge.git
 cd ai-judge
-python3 cli/main.py score-v2 --demo
+python3 cli/main.py v3-pipeline --demo
+PYTHONPATH=. python3 tests/smoke_test_v3.py
 ```
 
 Expected signal:
 
-- 5 demo claims
-- 10 scoring functions available
-- bluff gate blocks the deliberately overconfident weak claims
-- diversity radar reports whether the seats are clustered
-- peach projection assigns primary weight to the top two seats
+- v3.1 dual scores separate `smart_sounding_score` from `judgment_quality_score`
+- hard truth mode escalates shallow strategic jargon to L2
+- evidence-grounded reasoning remains L0 normal feedback
+- v2 claim scoring, diversity radar, and peach projection remain available
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ Open `~/.ai-judge/runs/latest/verdict.md`. Read the evidence. Make your decision
 ## Docker Alternative
 
 ```bash
-docker pull ghcr.io/reguorier/ai-judge:latest
+docker pull ghcr.io/reguorider-gif/ai-judge:latest
 docker compose up
 docker compose run --rm ai-judge jury --question "..."
 ```
@@ -87,6 +87,9 @@ docker compose run --rm ai-judge jury --question "..."
 |---------|-------------|------|
 | `jury` | Create session, assign 9 seats | < 1s |
 | `collect` | Send question, collect raw answers | 30-90s |
+| `neuro-profile --demo` | Run the v3.1 cognitive proxy demo | < 1s |
+| `hard-truth --demo` | Preview L0-L4 judgment-first feedback | < 1s |
+| `v3-pipeline --demo` | Run determinism + neuro + hard truth pipeline | < 1s |
 | `score-v2 --demo` | Run the public v2 scoring-engine fixture | < 1s |
 | `verdict` | Score claims, detect consensus, generate audit trail | 5-15s |
 | `reflect` | Generate daily performance summary | < 1s |

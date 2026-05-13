@@ -1,9 +1,9 @@
 FROM python:3.11-slim
 
 LABEL org.opencontainers.image.title="AI Judge"
-LABEL org.opencontainers.image.description="Local-first AI jury skill with a 10-function scoring engine"
-LABEL org.opencontainers.image.version="2.1.0"
-LABEL org.opencontainers.image.source="https://github.com/reguorier/ai-judge"
+LABEL org.opencontainers.image.description="Local-first AI jury skill with hard truth mode and cognitive proxy signals"
+LABEL org.opencontainers.image.version="3.1.0"
+LABEL org.opencontainers.image.source="https://github.com/reguorider-gif/ai-judge"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates jq nodejs npm \

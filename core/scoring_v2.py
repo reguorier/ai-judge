@@ -198,7 +198,7 @@ def compute_v3_dual_scores(
         neuro_profile = compute_neuro_profile(combined_text)
 
     return {
-        "scoring_version": "3.0.0",
+        "scoring_version": "3.1.0",
         "phase1_scoring_v2": score_jury_v2(claims),
         "v3_neuro_profile": neuro_profile,
         "dual_scores": {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hard Truth Mode v3.0 — L0-L4 judgment-first feedback.
+"""Hard Truth Mode v3.1 — L0-L4 judgment-first feedback.
 
 AI Judge V3 core module. Implements:
   - L0-L4 escalation based on cognitive risk signals

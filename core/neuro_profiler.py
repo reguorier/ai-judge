@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Neuro Profiler v3.0 — Neural cognitive signal extraction from text.
+"""Neuro Profiler v3.1 — Cognitive proxy signal extraction from text.
 
 AI Judge V3 core module. Extracts 4 cognitive proxy signals from text:
   1. detect_self_closure()       — "自我视角闭环" (DMN proxy)
@@ -398,7 +398,7 @@ def compute_neuro_profile(
         gap_label = "judgment_exceeds_expression"
 
     return {
-        "profile_version": "3.0.0",
+        "profile_version": "3.1.0",
         "smart_sounding_score": round(smart_sounding, 4),
         "judgment_quality_score": round(judgment_quality, 4),
         "smart_vs_judgment_gap": round(gap, 4),

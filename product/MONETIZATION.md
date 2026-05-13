@@ -168,7 +168,7 @@
       <li>Docker packaging</li>
       <li>GitHub Issues support</li>
     </ul>
-    <a href="https://github.com/reguorier/ai-judge" class="btn">GitHub</a>
+    <a href="https://github.com/reguorider-gif/ai-judge" class="btn">GitHub</a>
   </div>
 
   <div class="plan featured">
