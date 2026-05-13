@@ -177,6 +177,40 @@ def score_jury_v2(claims: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def compute_v3_dual_scores(
+    claims: list[dict[str, Any]],
+    neuro_profile: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """V3: Compute smart_sounding_score and judgment_quality_score.
+
+    This is the bridge between V2 scoring and V3 neuro-cognitive profiling.
+    Called after score_jury_v2 to add cognitive quality dimensions.
+
+    Returns dual scores plus cognitive risk flags for hard_truth mode triggering.
+    """
+    from core.neuro_profiler import compute_neuro_profile
+
+    # If no neuro profile provided, compute from combined claim text
+    if neuro_profile is None:
+        combined_text = " ".join(
+            c.get("claim", "") for c in claims if isinstance(c, dict)
+        )
+        neuro_profile = compute_neuro_profile(combined_text)
+
+    return {
+        "scoring_version": "3.0.0",
+        "phase1_scoring_v2": score_jury_v2(claims),
+        "v3_neuro_profile": neuro_profile,
+        "dual_scores": {
+            "smart_sounding_score": neuro_profile.get("smart_sounding_score", 0.5),
+            "judgment_quality_score": neuro_profile.get("judgment_quality_score", 0.5),
+            "gap": neuro_profile.get("smart_vs_judgment_gap", 0),
+            "gap_label": neuro_profile.get("gap_label", "normal"),
+        },
+        "cognitive_risk_flags": neuro_profile.get("cognitive_risk_flags", []),
+    }
+
+
 def score_jury_full_pipeline(
     claims: list[dict[str, Any]],
     seat_vectors: dict[str, list[float]] | None = None,

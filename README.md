@@ -1,196 +1,144 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-2.1.0-blue" alt="v2.1.0">
-  <img src="https://img.shields.io/badge/scoring%20engine-v2.0-green" alt="v2.0 scoring engine">
-  <img src="https://img.shields.io/badge/functions-10-2ea44f" alt="10 auditable functions">
+  <img src="https://img.shields.io/badge/release-3.1.0-purple" alt="v3.1.0">
+  <img src="https://img.shields.io/badge/scoring%20engine-v3.0-green" alt="v3.0 scoring engine">
+  <img src="https://img.shields.io/badge/functions-14-2ea44f" alt="14 auditable functions">
+  <img src="https://img.shields.io/badge/neuro%20signals-4-orange" alt="4 neuro signals">
   <img src="https://img.shields.io/badge/license-BSL%201.1-orange" alt="BSL 1.1">
-  <img src="https://img.shields.io/badge/platform-macOS-black" alt="macOS">
-  <img src="https://img.shields.io/badge/codex-skill-gold" alt="Codex Skill">
 </p>
 
-<p align="center">
-  <img src="assets/ai-judge-v2-overview.svg" alt="AI Judge v2 overview" width="880">
-</p>
-
-<h1 align="center">AI Judge</h1>
-<p align="center"><strong>9 AI models deliberate. 10 scoring functions audit the claims. You hold the gavel.</strong></p>
-<p align="center">A local-first Codex skill for multi-model evaluation, claim scoring, and human-final verdicts.</p>
+<h1 align="center">AI Judge v3.1</h1>
+<p align="center"><strong>9 AI models deliberate. 14 functions audit the claims. 4 neuro-cognitive signals expose "sounds smart" vs "is smart". You hold the gavel.</strong></p>
+<p align="center">A local-first Codex skill for multi-model evaluation, claim scoring, neuro-cognitive profiling, and human-final verdicts.</p>
 
 ---
 
-## Why This Exists
+## v3.1: The Neuro-Cognitive Upgrade
 
-Single-model answers are fluent, but hard to cross-examine. Simple multi-model tools improve coverage, but often hand the final decision to another synthesizer model.
+v2 caught "surface performance" — edit friction, jargon inflation, A/B track gaps. **v3.1 goes deeper: distinguishing "sounds smart" from "is smart."**
 
-AI Judge v2 keeps the human in charge and makes the intermediate reasoning auditable:
+### Dual Scores
 
-1. Collect independent answers from 9 AI seats.
-2. Convert answers into claim-level evidence.
-3. Run a 10-function scoring engine over bluff risk, calibration, diversity, graph value, and scarcity allocation.
-4. Produce a verdict package that shows where models agree, where they diverge, and why a claim got its weight.
+Every evaluation now outputs TWO scores:
 
-```mermaid
-flowchart LR
-    Q["User Question"] --> S["9 Independent Seats"]
-    S --> L["Claim Ledger"]
-    L --> G1["Gate 1<br/>Bluff EV"]
-    G1 --> G2["Gate 2<br/>Should Bid"]
-    G2 --> G3["Gate 3<br/>Allocation Score"]
-    G3 --> D["Diversity Radar<br/>Variance + Clusters"]
-    D --> V["Graph Value<br/>Correctness-first"]
-    V --> P["Peach Projection<br/>Top-k weight allocation"]
-    P --> H["Human Verdict"]
+| Score | What it measures |
+|-------|-----------------|
+| `smart_sounding_score` | How confident, fluent, and structured it sounds |
+| `judgment_quality_score` | How reliable the actual thinking appears to be |
 
-    style Q fill:#d9ecff,color:#111
-    style G1 fill:#ffd6d2,color:#111
-    style D fill:#dff7df,color:#111
-    style P fill:#fff1b8,color:#111
-    style H fill:#d6f5d6,color:#111
+### 4 Neuro-Cognitive Proxy Signals
+
+| Signal | User-Facing Name | What It Detects |
+|--------|-----------------|-----------------|
+| Self-Closure | 自我视角闭环 | Whether "I" dominates where perspective-switching is needed |
+| Ambiguity Flexibility | 模糊性处理能力 | Side-choosing vs synthesis vs suspended exploration when facing contradiction |
+| Recovery After Negative | 反馈恢复模式 | Defensive collapse vs exploratory repair after being challenged |
+| Experience Grounding | 经验锚定度 | Concept-driven abstraction vs experience-anchored concrete thinking |
+
+### Hard Truth Mode (L0-L4)
+
+When `smart_sounding >> judgment_quality`, the system automatically escalates:
+
+| Level | Mode | Trigger |
+|:-----:|------|---------|
+| L0 | Normal | Healthy discussion |
+| L1 | Calibration | Mild cognitive gap detected |
+| L2 | Judgment-First | Sounds smart but judgment quality is low |
+| L3 | Forced Evidence | Repeated defense, no quality improvement |
+| L4 | Safety Downgrade | High-risk topics |
+
+**L2 sample output:**
+```
+═══ 判断优先模式 ═══
+
+smart_sounding: 0.94  |  judgment_quality: 0.70
+差距: 24% — 这段输出"听起来聪明"，但不应被直接采信。
+
+认知盲区：
+  1. 自我视角闭环：在应引入外部视角处仍以"我"主导。
+  2. 模糊性回避：面对矛盾时直接选边，未进行悬置探索。
+  3. 概念漂浮：大量抽象词汇缺乏经验锚定。
+
+最小修复动作：
+  a. 你的哪个主张可以被证伪？
+  b. 哪个反方观点可能是真的？
+  c. 你下一步用什么数据验证？
 ```
 
-## Install
+### Built-in Protections
 
-### As a Codex Skill
+- **Heterogeneity Exemption**: When highly deviant cognitive patterns produce genuinely novel ideas, standard penalties are suspended — protecting neurodiversity.
+- **Performative Acceptance Detection**: Rewards actual quality improvement, not just saying "you're right, I'll change."
+- **Cognitive Sovereignty**: Users can disable deep profiling at any time.
 
-```text
-$skill-installer install https://github.com/reguorier/ai-judge
-```
+---
 
-Restart Codex after installing so the skill is discovered.
-
-### As a CLI
+## Quick Start
 
 ```bash
-pip install ai-judge
+# V3 Neuro-Cognitive Demo
+ai-judge neuro-profile --demo
+
+# Hard Truth Mode Demo
+ai-judge hard-truth --demo
+
+# Full V3 Pipeline Demo
+ai-judge v3-pipeline --demo
+
+# V3 Smoke Test
+PYTHONPATH=. python3 tests/smoke_test_v3.py
+
+# V2 Scoring Demo (still available)
 ai-judge score-v2 --demo
+
+# Production commands (require paid core)
+ai-judge jury --question "Your question here"
+ai-judge collect --run latest
+ai-judge verdict --run latest
 ```
 
-```bash
-docker pull ghcr.io/reguorier/ai-judge:latest
-docker compose up
+---
+
+## Architecture
+
 ```
-
-Production commands (`jury`, `collect`, `verdict`, `reflect`) require the paid `ai-judge-core` package. The public repo includes the Codex skill, CLI surface, v2 scoring engine, schemas, docs, Docker packaging, and bridge source.
-
-## v1 vs v2
-
-| Dimension | v1 behavior | v2 scoring engine |
-|---|---|---|
-| Claim score | 5-factor multiplication; one weak factor can crush the whole claim | Weighted allocation plus explicit risk penalty |
-| Confidence | Discrete confidence bucket | Continuous `log_score`; overconfident misses cost exponentially more |
-| Bluff handling | No direct high-confidence/no-evidence gate | `evaluate_bluff_ev` blocks or flags unsupported certainty |
-| Participation | Every seat is pushed to answer | `should_bid` lets seats abstain when domain match or confidence is too low |
-| Consensus | Agreement is treated as comfort | `normalized_graph_variance` detects echo-chamber consensus |
-| Model families | No cluster visibility | `cluster_strategy_vectors` highlights implicit alignment |
-| Seat value | Historical reliability only | `graph_value_v2`: correctness first, rarity only after calibration passes |
-| Final weight | Broad shared weight | `peach_projection(k=2)` gives primary influence to the top two seats per claim |
-| Manipulation surface | Rule-based warnings | `cheat_ev`, `bluff_ev`, and stake settlement expose incentives |
-| Human role | Reads final answer | Reviews the claim ledger, risk flags, weight distribution, and final verdict |
-
-## Reproducible Demo
-
-Run:
-
-```bash
-ai-judge score-v2 --demo
-```
-
-The demo fixture simulates a 9-seat, 5-claim jury. It is not a benchmark against live providers; it is a reproducible scoring-engine check that shows the v2 gates and allocations working end to end.
-
-| Check | Demo result |
-|---|---:|
-| Claims scored | 5 |
-| Credible claims | 3 |
-| Rejected claims | 2 |
-| Claims blocked by bluff gate | 2 |
-| Average claim score | 0.4952 |
-| Average log score where outcome is known | 0.2485 |
-| Diversity index | 0.008405 |
-| Diversity health | CRITICAL echo-chamber risk |
-| Largest detected cluster | 9 seats |
-| Top graph-value seat | DeepSeek |
-| Average graph value | 0.939104 |
-| Peach winners | DeepSeek, Gemini |
-| Winner weights | DeepSeek 0.332302; Gemini 0.317698 |
-
-The practical difference: a claim with strong authority and evidence survives as nuanced evidence, while "Trust me, this market will 10x" at 0.99 confidence with zero evidence is blocked before it can influence the verdict.
-
-## The 10 Auditable Functions
-
-| # | Function | Phase | What it audits |
-|---:|---|:---:|---|
-| 1 | `log_score` | Calibration | Penalizes confident wrong predictions more than uncertain wrong predictions |
-| 2 | `allocation_score` | Claim scoring | Replaces brittle multiplication with weighted evidence allocation |
-| 3 | `evaluate_bluff_ev` | Bluff gate | Detects high confidence with insufficient evidence |
-| 4 | `should_bid` | Participation | Lets seats abstain when expected value is negative |
-| 5 | `brier_score` | Calibration | Measures probability calibration with squared error |
-| 6 | `calculate_voi` | Tool economics | Checks whether extra information was worth its cost |
-| 7 | `half_kelly_cap` | Risk sizing | Caps exposure when confidence, odds, or sample size are weak |
-| 8 | `cheat_ev` | Incentives | Surfaces positive expected value for manipulation |
-| 9 | `graph_value_v2` | Seat value | Values seats by correctness, with gated rarity/replay/demand bonuses |
-| 10 | `auc_score` | Ranking quality | Measures whether higher scores rank true claims above false ones |
-
-## How AI Judge Differs
-
-| System | Primary job | Model count | Final answer owner | Evidence model | Local-first | What AI Judge adds |
-|---|---|---:|---|---|:---:|---|
-| Hermes-compatible skill | Skill packaging and output envelope | N/A | User/host agent | Structured output contract | Yes | A full jury workflow plus v2 scoring functions |
-| llm-council | Multi-LLM peer review and chairman synthesis | Configurable | Chairman LLM synthesizes | Anonymous ranking and peer review | No, OpenRouter/API path | Claim ledger, bluff gate, diversity radar, human-final verdict |
-| Perplexity Model Council | Web research mode with a unified synthesized answer | 3 | Perplexity synthesizer model | Agreement/disagreement summary | No, web product | 9-seat local workflow, auditable formulas, Docker/CLI/skill packaging |
-| AI Judge v2 | Human-centric multi-model verdict system | 9 seats | Human | Claim-level functions, weights, risk flags, and audit trail | Yes | The whole stack |
-
-Source notes:
-
-- [llm-council](https://llm-council.dev/) describes a three-stage flow: parallel generation, anonymous peer review/ranking, and a Chairman LLM synthesis.
-- [Perplexity Model Council](https://www.perplexity.ai/help-center/zh-CN/articles/13641704-%E4%BB%80%E4%B9%88%E6%98%AF-model-council) is documented as a web-only Max/Enterprise Max feature that queries three models and synthesizes a unified answer showing agreement and disagreement.
-- [Hermes skills](https://hermes-agent.ai/blog/hermes-agent-skills-guide) are procedural `SKILL.md` packages; AI Judge treats Hermes compatibility as the delivery format, not the judge.
-
-## Repository Map
-
-```text
 ai-judge-skill/
-├── README.md                      # GitHub homepage
-├── RELEASE_v2.md                  # 10 functions + migration guide
-├── SKILL.md                       # Codex skill entrypoint
 ├── core/
-│   ├── formula_engine.py          # 10 auditable scoring functions
-│   ├── scoring_v2.py              # 3-gate claim scoring + pipeline
-│   ├── consensus_v2.py            # Diversity radar + clustering + graph value
-│   ├── peach_projection.py        # Two Peaches scarcity allocation
-│   ├── hermes_output.py           # Hermes output envelope
-│   └── license_validator.py       # Community license shim
-├── cli/main.py                    # ai-judge score-v2 --demo
-├── bridges/                       # Swift desktop bridges
-├── docs/                          # Architecture, comparison, philosophy, quickstart
-├── product/                       # Landing page and monetization notes
-├── Dockerfile
-├── docker-compose.yml
-└── .github/workflows/publish.yml
+│   ├── neuro_profiler.py      # V3: 4 neuro-cognitive signal extractors + dual scores
+│   ├── hard_truth.py           # V3: L0-L4 judgment-first mode + heterogeneity exemption
+│   ├── determinism.py          # V3: L1/L2 consistency + confidence lights + hard truth trigger
+│   ├── scoring_v2.py           # V3: 3-gate scoring + dual score pipeline
+│   ├── formula_engine.py       # 14 auditable scoring functions
+│   ├── anchor_engine.py        # Goal anchoring with taste cards
+│   ├── mirror.py               # Thinking fingerprint + growth narrative
+│   ├── performance_detect.py   # Process-friction performance detection
+│   ├── thinking_log.py         # Fragment collection + 6-role parliament
+│   ├── achievement.py          # Metrics + breakthrough detection
+│   ├── cold_start.py           # Progressive scaffolding
+│   ├── consensus_v2.py         # Diversity radar + clustering
+│   ├── peach_projection.py     # Scarcity-based weight allocation
+│   ├── hermes_output.py        # Output formatting
+│   └── license_validator.py    # License validation
+├── cli/main.py                 # Unified CLI (v2 + v3 commands)
+├── tests/
+│   ├── smoke_test_v2.py        # V2 pipeline smoke test
+│   └── smoke_test_v3.py        # V3 full pipeline smoke test
+└── README.md
 ```
 
-## Open-Core Boundary
+---
 
-| Public in this repo | Private/paid core |
-|---|---|
-| Codex skill metadata | Production collector runtime |
-| CLI surface and `score-v2 --demo` | Browser/CDP automation engine |
-| v2 scoring engine formulas | Production scoring orchestration |
-| Hermes output envelope | License server and team workflows |
-| Schemas, docs, Docker, CI | Enterprise integrations |
-| Swift bridge source | Managed SaaS deployment |
+## Version History
 
-## Documentation
+| Version | Date | Key Changes |
+|---------|------|------------|
+| 1.0 | 2025-11 | Multi-model jury framework |
+| 2.0 | 2026-03 | COUNCIL-003: Phase 1 scoring (log_score, allocation_score, bluff detection) |
+| 2.1 | 2026-04 | Phase 2 diversity monitoring + Two Peaches weight allocation |
+| 3.0 | 2026-05 | V2 Upgrade: determinism engine, goal anchoring, thinking fingerprint, 6-role parliament |
+| 3.1 | 2026-05 | **V3 Upgrade: neuro-cognitive signals, dual scores, hard truth mode, heterogeneity exemption** |
 
-| Document | Purpose |
-|---|---|
-| [RELEASE_v2.md](RELEASE_v2.md) | v2 scoring-engine notes and migration guide |
-| [docs/QUICKSTART.md](docs/QUICKSTART.md) | Setup and first run |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
-| [docs/COMPARISON.md](docs/COMPARISON.md) | Deeper comparison notes |
-| [docs/HUMAN_CENTRIC.md](docs/HUMAN_CENTRIC.md) | Why the human keeps final authority |
-| [SKILL.md](SKILL.md) | Codex skill definition |
+---
 
 ## License
 
-AI Judge is published under BSL 1.1. Public contributions are welcome for CLI usability, bridge review, docs, schemas, and sanitized examples.
-
-Contact: [reguorider@gmail.com](mailto:reguorider@gmail.com)
+BSL 1.1 — Source available. Production use requires a license.
