@@ -129,6 +129,9 @@ Agent builders get a repeatable way to inspect output quality before deployment.
 - [x] 90-second demo page: `product/demo-video.html`
 - [x] Architecture image: `assets/microsoft-agent-academy-architecture.svg`
 - [x] Copilot/Cowork packet: `examples/microsoft_agent_academy/copilot_cowork_packet.md`
+- [x] Recording guide: `docs/RECORDING_GUIDE.md`
+- [x] One-click launch recorder: `Record-AI-Judge-Demo.command`
+- [x] One-click Microsoft submission recorder: `Record-Microsoft-Agent-Academy.command`
 - [ ] Actual Microsoft agent recording
 - [ ] Final video export under five minutes
 - [ ] Submit on the official Microsoft form

@@ -16,6 +16,7 @@ AI Judge turns one question into a structured jury session. Multiple AI seats an
 - Quickstart: https://github.com/reguorider-gif/ai-judge/blob/main/docs/QUICKSTART.md
 - Architecture: https://github.com/reguorider-gif/ai-judge/blob/main/docs/ARCHITECTURE.md
 - Launch demo kit: https://github.com/reguorider-gif/ai-judge/blob/main/docs/LAUNCH_DEMO_KIT.md
+- Recording guide: https://github.com/reguorider-gif/ai-judge/blob/main/docs/RECORDING_GUIDE.md
 - 90-second demo source: https://github.com/reguorider-gif/ai-judge/blob/main/product/demo-video.html
 - Microsoft Agent Academy pack: https://github.com/reguorider-gif/ai-judge/blob/main/docs/MICROSOFT_AGENT_ACADEMY.md
 - Discussions: https://github.com/reguorider-gif/ai-judge/discussions
