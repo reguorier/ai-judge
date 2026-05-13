@@ -15,6 +15,9 @@ AI Judge turns one question into a structured jury session. Multiple AI seats an
 - Install in Codex: `$skill-installer install https://github.com/reguorider-gif/ai-judge`
 - Quickstart: https://github.com/reguorider-gif/ai-judge/blob/main/docs/QUICKSTART.md
 - Architecture: https://github.com/reguorider-gif/ai-judge/blob/main/docs/ARCHITECTURE.md
+- Launch demo kit: https://github.com/reguorider-gif/ai-judge/blob/main/docs/LAUNCH_DEMO_KIT.md
+- 90-second demo source: https://github.com/reguorider-gif/ai-judge/blob/main/product/demo-video.html
+- Microsoft Agent Academy pack: https://github.com/reguorider-gif/ai-judge/blob/main/docs/MICROSOFT_AGENT_ACADEMY.md
 - Discussions: https://github.com/reguorider-gif/ai-judge/discussions
 - Public roadmap issues: https://github.com/reguorider-gif/ai-judge/issues
 
@@ -134,7 +137,12 @@ GitHub: https://github.com/reguorider-gif/ai-judge
 ## Submission tracker
 
 - ForgeIndex: submitted on 2026-05-13 with v3.1 release link.
+- OSS AI Hub: submitted on 2026-05-13 and queued for moderation.
+- Global Agent Build-a-thon: submitted on 2026-05-13 and confirmation page received.
+- AISO Tools: attempted on 2026-05-13, blocked by site-side "Server misconfigured" error.
+- ToolIndex: attempted on 2026-05-13, blocked by site-side HTTP 502.
 - GitHub Discussions: enabled, with roadmap, benchmark-call, and next-evaluation prompts live.
 - GitHub issues: public roadmap items opened for Qwen/Ollama demo, launch demo, HTML verdict exports, directory submissions, and MiMo jury seat.
-- Next directory targets: OSS AI Hub, AgentsTide, Exgentic Open Agent Leaderboard.
+- Launch assets: 90-second demo source, Product Hunt copy, Show HN copy, Chinese short post, and Microsoft Agent Academy pack generated in-repo.
+- Next directory targets: AgentsTide, Exgentic Open Agent Leaderboard, retry AISO Tools and ToolIndex.
 - Next community targets: Show HN, Product Hunt, Reddit r/LocalLLaMA, V2EX, 即刻/小红书/Bilibili demo.

@@ -17,6 +17,7 @@
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
+  <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
   <a href="#what-v31-adds">What v3.1 Adds</a> ·
   <a href="#how-it-differs">Comparison</a> ·
   <a href="RELEASE_V3.md">Release Notes</a>
@@ -57,6 +58,18 @@ flowchart LR
     H --> V["Human Verdict"]
     P --> V
 ```
+
+## Launch Assets
+
+AI Judge now includes a ready-to-record launch and hackathon demo pack:
+
+| Asset | Use it for |
+|---|---|
+| [`product/demo-video.html`](product/demo-video.html) | Auto-playing 90-second launch demo source for screen recording |
+| [`docs/LAUNCH_DEMO_KIT.md`](docs/LAUNCH_DEMO_KIT.md) | Voiceover, shot list, Product Hunt copy, Show HN copy, Chinese short post |
+| [`docs/MICROSOFT_AGENT_ACADEMY.md`](docs/MICROSOFT_AGENT_ACADEMY.md) | Microsoft Agent Academy submission positioning and answers |
+| [`assets/microsoft-agent-academy-architecture.svg`](assets/microsoft-agent-academy-architecture.svg) | Architecture diagram for hackathon submissions |
+| [`examples/microsoft_agent_academy/copilot_cowork_packet.md`](examples/microsoft_agent_academy/copilot_cowork_packet.md) | Copilot/Cowork demo prompt, sample output, and AI Judge evaluation packet |
 
 ## What v3.1 Adds
 

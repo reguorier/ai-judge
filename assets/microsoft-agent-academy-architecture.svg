@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">AI Judge Microsoft Agent Academy Architecture</title>
+  <desc id="desc">Architecture diagram showing Microsoft agent output entering AI Judge, passing through evidence, scoring, harness, and human verdict layers.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="0.45" stop-color="#111827"/>
+      <stop offset="1" stop-color="#102019"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#162033"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8bd3ff"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <g opacity="0.28">
+    <path d="M0 112H1280M0 224H1280M0 336H1280M0 448H1280M0 560H1280" stroke="#314158" stroke-width="1"/>
+    <path d="M160 0V720M320 0V720M480 0V720M640 0V720M800 0V720M960 0V720M1120 0V720" stroke="#314158" stroke-width="1"/>
+  </g>
+
+  <text x="70" y="74" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">AI Judge for Microsoft Agent Academy</text>
+  <text x="70" y="112" fill="#b7c5d8" font-family="Inter, Arial, sans-serif" font-size="18">A Copilot/Cowork agent output becomes an auditable, CI-backed human verdict.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="178" width="238" height="118" rx="8" fill="url(#panel)" stroke="#38bdf8" stroke-opacity="0.55"/>
+    <text x="96" y="220" fill="#7dd3fc" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">01 Microsoft Agent</text>
+    <text x="96" y="252" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800">Copilot or Cowork</text>
+    <text x="96" y="278" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="14">plan, answer, review, or task output</text>
+
+    <rect x="386" y="178" width="238" height="118" rx="8" fill="url(#panel)" stroke="#22c55e" stroke-opacity="0.55"/>
+    <text x="412" y="220" fill="#86efac" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">02 Claim Ledger</text>
+    <text x="412" y="252" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800">Evidence Breakdown</text>
+    <text x="412" y="278" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="14">claims, assumptions, gaps, sources</text>
+
+    <rect x="702" y="178" width="238" height="118" rx="8" fill="url(#panel)" stroke="#f59e0b" stroke-opacity="0.62"/>
+    <text x="728" y="220" fill="#fbbf24" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">03 AI Judge Scoring</text>
+    <text x="728" y="252" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800">Auditable Signals</text>
+    <text x="728" y="278" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="14">10 formulas + 4 judgment proxies</text>
+
+    <rect x="1018" y="178" width="192" height="118" rx="8" fill="url(#panel)" stroke="#a78bfa" stroke-opacity="0.62"/>
+    <text x="1044" y="220" fill="#c4b5fd" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">04 Human Verdict</text>
+    <text x="1044" y="252" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800">You Decide</text>
+    <text x="1044" y="278" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="14">accept, revise, reject, rerun</text>
+  </g>
+
+  <path d="M318 237H374" stroke="#8bd3ff" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M634 237H690" stroke="#8bd3ff" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M950 237H1006" stroke="#8bd3ff" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="110" y="400" width="300" height="170" rx="8" fill="#0f1f2a" stroke="#38bdf8" stroke-opacity="0.35"/>
+    <text x="138" y="438" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Demo Scenario</text>
+    <text x="138" y="474" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">A Microsoft agent drafts a risky</text>
+    <text x="138" y="498" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">implementation plan. AI Judge finds</text>
+    <text x="138" y="522" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">unsupported claims and proposes the</text>
+    <text x="138" y="546" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">smallest verifiable next step.</text>
+
+    <rect x="490" y="400" width="300" height="170" rx="8" fill="#142319" stroke="#22c55e" stroke-opacity="0.35"/>
+    <text x="518" y="438" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Quality Gate</text>
+    <text x="518" y="474" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">Golden benchmarks and regression</text>
+    <text x="518" y="498" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">checks run locally and in GitHub</text>
+    <text x="518" y="522" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">Actions before changes are trusted.</text>
+    <text x="518" y="546" fill="#86efac" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">CI-backed, reproducible, inspectable.</text>
+
+    <rect x="870" y="400" width="300" height="170" rx="8" fill="#221b12" stroke="#f59e0b" stroke-opacity="0.42"/>
+    <text x="898" y="438" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Submission Proof</text>
+    <text x="898" y="474" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">Open repo, v3.1 release, harness</text>
+    <text x="898" y="498" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">report, demo script, architecture</text>
+    <text x="898" y="522" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="15">overview, and public roadmap issues.</text>
+    <text x="898" y="546" fill="#fbbf24" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">Ready for a five-minute video.</text>
+  </g>
+</svg>
