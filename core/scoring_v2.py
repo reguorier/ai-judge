@@ -14,7 +14,7 @@ Usage:
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Optional
 
 from core.formula_engine import (
     allocation_score,
@@ -265,5 +265,149 @@ def score_jury_full_pipeline(
             "total_claims": len(claims),
             "bluff_blocked": phase1.get("bluff_blocked", 0),
             "abstain_recommended": phase1.get("abstain_recommended", 0),
+        },
+    }
+
+
+# ── V3.2 Tianfu Agent Migration Pipeline ──
+
+def score_jury_full_pipeline_v3_2(
+    claims: list[dict[str, Any]],
+    task_info: Optional[dict[str, Any]] = None,
+    seat_vectors: Optional[dict[str, list[float]]] = None,
+    seat_performance: Optional[dict[str, dict[str, float]]] = None,
+    neuro_profile: Optional[dict[str, Any]] = None,
+    evidence_bundles: Optional[dict[str, "EvidenceBundle"]] = None,
+) -> dict[str, Any]:
+    """V3.2 Full Pipeline: V2 scoring + V3 neuro + Tianfu Agent migration.
+
+    Integrates all V3.2 modules (evidence, dissent, reasoning_trace, risk_router)
+    with the existing scoring_v2, determinism, consensus_v2, and hard_truth pipelines.
+
+    Args:
+        claims: List of claim dicts for score_claim_v2
+        task_info: Task metadata for risk_router and reasoning_trace
+        seat_vectors: Seat response vectors for consensus_v2
+        seat_performance: Seat performance metrics for consensus_v2
+        neuro_profile: Neuro-cognitive profile from neuro_profiler
+        evidence_bundles: Optional pre-built EvidenceBundle per claim_id
+
+    Returns:
+        Complete V3.2 pipeline result with new fields:
+          - v3_2_risk_classification
+          - v3_2_dissent_results
+          - v3_2_reasoning_tree
+          - v3_2_evidence_summary
+    """
+    from core.evidence import EvidenceBundle
+    from core.dissent import challenge_claim_with_dissent
+    from core.reasoning_trace import build_reasoning_tree_from_pipeline
+    from core.risk_router import compute_review_depth
+
+    evidence_bundles = evidence_bundles or {}
+    task_info = task_info or {}
+
+    # Phase 1: Claim-level scoring (existing)
+    phase1 = score_jury_v2(claims)
+
+    # Phase 2: Diversity monitoring (existing)
+    phase2 = None
+    if seat_vectors:
+        from core.consensus_v2 import diversity_alert_pipeline
+        perf = seat_performance or {}
+        phase2 = diversity_alert_pipeline(seat_vectors, perf)
+
+    # ── V3.2: Risk Classification (Tianfu: tiered scheduling) ──
+    risk = compute_review_depth(task_info, neuro_profile)
+
+    # ── V3.2: Evidence Summary (Tianfu: knowledge-tracing) ──
+    evidence_summary = {
+        "total_evidence_items": sum(
+            b.count for b in evidence_bundles.values()
+        ) if evidence_bundles else 0,
+        "bundles": {
+            cid: b.to_dict() for cid, b in evidence_bundles.items()
+        } if evidence_bundles else {},
+    }
+
+    # ── V3.2: Dissent Challenge (Tianfu: Verify phase + Gemini anti-collusion) ──
+    dissent_results = {}
+    if risk.get("needs_dissent"):
+        consensus_health = phase2.get("health") if phase2 else None
+        for i, claim in enumerate(claims):
+            claim_id = claim.get("claim_id", f"claim_{i}")
+            bundle = evidence_bundles.get(claim_id)
+            evidence_items = bundle.to_dict()["items"] if bundle else []
+
+            # Build restricted context from task_info (Gemini asymmetric view)
+            ast_complexity = task_info.get("ast_complexity")
+            lint_count = task_info.get("lint_violation_count")
+            sast_count = task_info.get("sast_high_severity_count")
+            effective_lines = task_info.get("lines_added", 0)
+
+            dissent = challenge_claim_with_dissent(
+                claim=claim.get("claim", ""),
+                evidence=evidence_items,
+                consensus_health=consensus_health,
+                ast_complexity=ast_complexity,
+                lint_count=lint_count,
+                sast_count=sast_count,
+                effective_lines=effective_lines,
+            )
+            dissent_results[claim_id] = dissent.to_dict()
+
+    # ── V3.2: Reasoning Tree (Tianfu: visualized reasoning chain) ──
+    evidence_items_for_tree = []
+    for b in evidence_bundles.values():
+        evidence_items_for_tree.extend(b.to_dict()["items"])
+
+    # Determine verdict summary
+    blockers = phase1.get("bluff_blocked", 0)
+    warnings = phase1.get("tier_distribution", {}).get("conditional", 0)
+    suggestions = phase1.get("tier_distribution", {}).get("unverified", 0)
+
+    if blockers > 0:
+        verdict_summary = f"阻断合并: {blockers} 个阻断问题, {warnings} 个警告"
+    elif warnings > 0:
+        verdict_summary = f"需人工复核: {warnings} 个警告, {suggestions} 个建议"
+    else:
+        verdict_summary = f"允许合并: {suggestions} 个建议"
+
+    # Get confidence light for the verdict
+    confidence_light = None
+    if neuro_profile:
+        from core.hard_truth import determine_mode
+        mode = determine_mode(neuro_profile)
+        confidence_light = {
+            "confidence": 0.85 if mode.get("mode_level", 0) == 0 else 0.60,
+            "level": mode.get("mode_name", "普通反馈"),
+        }
+
+    reasoning_tree = build_reasoning_tree_from_pipeline(
+        verdict_summary=verdict_summary,
+        task_info=task_info,
+        evidence_items=evidence_items_for_tree,
+        rule_matches=[],  # Populated by external rule engine
+        dissent_result=list(dissent_results.values())[0] if dissent_results else None,
+        confidence_light=confidence_light,
+    )
+
+    # ── Compose final result ──
+    return {
+        "scoring_version": "3.2.0-tianfu",
+        "phase1_scoring": phase1,
+        "phase2_diversity": phase2,
+        "v3_2_risk_classification": risk,
+        "v3_2_evidence_summary": evidence_summary,
+        "v3_2_dissent_results": dissent_results,
+        "v3_2_reasoning_tree": reasoning_tree,
+        "summary": {
+            "total_claims": len(claims),
+            "bluff_blocked": blockers,
+            "diversity_health": phase2["health"] if phase2 else "not_computed",
+            "review_depth": risk["review_depth"],
+            "dissent_triggered": risk["needs_dissent"],
+            "evidence_total": evidence_summary["total_evidence_items"],
+            "verdict": verdict_summary,
         },
     }

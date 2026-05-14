@@ -17,7 +17,7 @@ Instead of only showing a Copilot/Cowork agent completing a task, the demo shows
 ## Project Summary
 
 ```text
-AI Judge is an open-source, local-first evaluation harness for Microsoft agent outputs. A Copilot/Cowork agent drafts a plan, answer, or code-review recommendation; AI Judge converts that output into a claim ledger, scores it with auditable formulas, checks disagreement and calibration risk, runs v3.1 benchmark/regression harnesses, and returns a human-final verdict package.
+AI Judge is an open-source, local-first evaluation harness for Microsoft agent outputs. A Copilot/Cowork agent drafts a plan, answer, or code-review recommendation; AI Judge converts that output into a claim ledger, scores it with auditable formulas, attaches evidence objects, challenges weak claims with dissent, routes risk depth, and returns a human-final verdict package with a reasoning tree.
 ```
 
 ## Microsoft Product Lane
@@ -53,7 +53,7 @@ Evaluate the Microsoft agent's plan. Identify unsupported claims, missing tests,
 Expected demo result:
 
 ```text
-AI Judge finds which claims are evidence-backed, which are only plausible, which risks are under-tested, and what a human should verify before accepting the agent plan.
+AI Judge finds which claims are evidence-backed, which are only plausible, which risks are under-tested, which claims need dissent, and what a human should verify before accepting the agent plan.
 ```
 
 ## Architecture Overview
@@ -61,13 +61,13 @@ AI Judge finds which claims are evidence-backed, which are only plausible, which
 Use this image in the submission:
 
 ```text
-assets/microsoft-agent-academy-architecture.svg
+assets/ai-judge-v3.2-tianfu-stack.svg
 ```
 
 Architecture narrative:
 
 ```text
-The Microsoft agent produces a plan or answer. AI Judge ingests the output, extracts claims into an evidence ledger, applies auditable scoring functions and judgment-quality proxy signals, runs harness checks, and returns a human-final verdict with confidence gaps and next repair actions.
+The Microsoft agent produces a plan or answer. AI Judge ingests the output, extracts claims into an evidence ledger, applies auditable scoring functions and judgment-quality proxy signals, attaches evidence objects, runs dissent checks, routes review depth, and returns a human-final verdict with a reasoning tree.
 ```
 
 ## Five-Minute Demo Structure
@@ -77,8 +77,8 @@ The Microsoft agent produces a plan or answer. AI Judge ingests the output, extr
 | 0:00-0:30 | Problem | Agent answers can be fluent without being trustworthy |
 | 0:30-1:15 | Microsoft agent | Show Copilot/Cowork producing a plan |
 | 1:15-2:15 | AI Judge run | Feed the plan into AI Judge and produce verdict output |
-| 2:15-3:15 | Harness proof | Show golden benchmark, regression checks, and HTML report |
-| 3:15-4:15 | Architecture | Show the Microsoft agent -> claim ledger -> scoring -> human verdict flow |
+| 2:15-3:15 | Evidence proof | Show evidence objects, dissent checks, risk route, and reasoning tree |
+| 3:15-4:15 | Architecture | Show the Microsoft agent -> claim ledger -> evidence/dissent -> human verdict flow |
 | 4:15-5:00 | Why it wins | Local-first, auditable, human-final, open-source, useful beyond the demo |
 
 ## Application Answers
@@ -98,7 +98,7 @@ An open-source evaluation harness that turns Microsoft agent outputs into audita
 Long description:
 
 ```text
-AI Judge is a local-first evaluation harness for agent reliability. In the Microsoft Agent Academy demo, a Copilot/Cowork agent drafts a plan or answer, then AI Judge turns that output into an evidence ledger, scores it with auditable formulas, checks calibration and disagreement risk, runs v3.1 benchmark/regression gates, and returns a human-final verdict package.
+AI Judge is a local-first evaluation harness for agent reliability. In the Microsoft Agent Academy demo, a Copilot/Cowork agent drafts a plan or answer, then AI Judge turns that output into an evidence ledger, scores it with auditable formulas, checks calibration and disagreement risk, runs evidence/dissent/risk-routing gates, and returns a human-final verdict package.
 
 The project addresses a practical production problem: agents can sound confident while hiding unsupported claims, missing tests, or weak reasoning. AI Judge does not replace the human with another opaque judge model. It exposes the evidence, weak spots, and next falsifiable actions so the human can make a better final decision.
 ```
@@ -106,13 +106,13 @@ The project addresses a practical production problem: agents can sound confident
 What makes it original:
 
 ```text
-Most agent demos focus on task completion. AI Judge focuses on trust after task completion: claim auditing, disagreement inspection, bluff-risk detection, benchmark regression, Hard Truth Mode, and human-final verdicts. It is a meta-agent layer that can improve reliability across many Microsoft agent workflows.
+Most agent demos focus on task completion. AI Judge focuses on trust after task completion: claim auditing, disagreement inspection, bluff-risk detection, evidence tracing, dissent checks, reasoning trees, Hard Truth Mode, and human-final verdicts. It is a meta-agent layer that can improve reliability across many Microsoft agent workflows.
 ```
 
 Technical implementation:
 
 ```text
-Python CLI, Codex skill entrypoint, Docker/Docker Compose, GitHub Actions CI, golden benchmark fixtures, regression checks, HTML harness reports, auditable scoring functions, judgment-quality proxy signals, and Microsoft agent output packets.
+Python CLI, Codex skill entrypoint, Docker/Docker Compose, GitHub Actions CI, golden benchmark fixtures, regression checks, HTML harness reports, auditable scoring functions, judgment-quality proxy signals, evidence bundles, dissent challenge, risk router, reasoning-tree UI components, and Microsoft agent output packets.
 ```
 
 Impact:
@@ -124,10 +124,10 @@ Agent builders get a repeatable way to inspect output quality before deployment.
 ## Submission Checklist
 
 - [x] Public repo: https://github.com/reguorider-gif/ai-judge
-- [x] v3.1 release: https://github.com/reguorider-gif/ai-judge/releases/tag/v3.1.0
+- [x] v3.2 release: https://github.com/reguorider-gif/ai-judge/releases/tag/v3.2.0
 - [x] Harness report: `harness-report.html`
 - [x] 90-second demo page: `product/demo-video.html`
-- [x] Architecture image: `assets/microsoft-agent-academy-architecture.svg`
+- [x] Architecture image: `assets/ai-judge-v3.2-tianfu-stack.svg`
 - [x] Copilot/Cowork packet: `examples/microsoft_agent_academy/copilot_cowork_packet.md`
 - [x] Recording guide: `docs/RECORDING_GUIDE.md`
 - [x] One-click launch recorder: `Record-AI-Judge-Demo.command`

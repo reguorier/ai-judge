@@ -1,4 +1,4 @@
-# AI Judge v2 Architecture
+# AI Judge v3.2 Architecture
 
 ## System Overview
 
@@ -9,10 +9,15 @@ flowchart LR
     L --> G1["Gate 1: bluff EV"]
     G1 --> G2["Gate 2: should bid"]
     G2 --> G3["Gate 3: allocation score"]
+    G3 --> E["Evidence bundle"]
+    E --> R["Risk router"]
+    R --> X["Dissent agent"]
+    X --> T["Reasoning tree"]
     G3 --> D["Diversity radar"]
     D --> V["Graph value"]
     V --> P["Peach projection"]
-    P --> H["Human verdict"]
+    T --> H["Human verdict"]
+    P --> H
 ```
 
 ## Model Access Layer
@@ -49,6 +54,28 @@ graph TD
 
 The public engine lives in `core/formula_engine.py` and `core/scoring_v2.py`. It is intentionally small enough to audit.
 
+## v3.2 Tianfu Migration Layer
+
+```mermaid
+graph TD
+    CLAIM["Claim"] --> EV["Evidence Object"]
+    EV --> BUNDLE["EvidenceBundle metrics"]
+    BUNDLE --> ROUTE["RiskRouter review depth"]
+    ROUTE --> DISSENT["DissentAgent challenge"]
+    DISSENT --> TREE["ReasoningTracer JSON tree"]
+    TREE --> UI["ReasoningTree.tsx"]
+    UI --> HUMAN["Human-final verdict"]
+```
+
+| Module | Role | Output |
+|---|---|---|
+| `core/evidence.py` | Source tracing for tool, rule, harness, and precedent support | Evidence metrics and evidence items |
+| `core/dissent.py` | Devil's Advocate challenge before confidence is raised | Counterarguments and required checks |
+| `core/reasoning_trace.py` | Tree-structured reasoning chain | JSON tree for UI rendering |
+| `core/risk_router.py` | Risk-sensitive resource allocation | `full_jury`, `standard_dissent`, `standard`, `fast_check` |
+
+The v3.2 layer is additive. Existing v2/v3.1 APIs remain available; new integrations should prefer `score_jury_full_pipeline_v3_2()` when task metadata and evidence bundles exist.
+
 ## Consensus Layer
 
 `core/consensus_v2.py` estimates diversity health, clusters similar seats, and computes `graph_value_v2`. `core/peach_projection.py` then allocates primary weight to the top seats while keeping a floor for minority signals.
@@ -76,3 +103,5 @@ The public engine lives in `core/formula_engine.py` and `core/scoring_v2.py`. It
 | Data Format | JSON, Markdown |
 | Packaging | pip, Docker |
 | CI/CD | GitHub Actions |
+| UI reference | TypeScript components in `frontend/` |
+| Engine reference | Rust implementation in `rust-engine/` |

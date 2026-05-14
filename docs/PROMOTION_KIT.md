@@ -2,16 +2,16 @@
 
 ## One-liner
 
-AI Judge is a local-first AI jury and evaluation harness that catches the gap between answers that sound smart and answers that survive auditable judgment.
+AI Judge is a local-first AI jury and evaluation harness that catches the gap between answers that sound smart and answers that survive evidence, dissent, and auditable judgment.
 
 ## Short description
 
-AI Judge turns one question into a structured jury session. Multiple AI seats answer independently, their claims pass through auditable scoring, and v3.1 adds golden benchmark cases, regression checks, Hard Truth Mode, and CI-backed harness reports. It is built for developers and researchers who want stronger evidence from AI systems without handing the final decision to another model.
+AI Judge turns one question into a structured jury session. Multiple AI seats answer independently, their claims pass through auditable scoring, and v3.2 adds evidence objects, a dissent challenge agent, risk routing, and a visible reasoning tree. It is built for developers and researchers who want stronger evidence from AI systems without handing the final decision to another model.
 
 ## Links
 
 - GitHub: https://github.com/reguorider-gif/ai-judge
-- v3.1 release: https://github.com/reguorider-gif/ai-judge/releases/tag/v3.1.0
+- v3.2 release: https://github.com/reguorider-gif/ai-judge/releases/tag/v3.2.0
 - Install in Codex: `$skill-installer install https://github.com/reguorider-gif/ai-judge`
 - Quickstart: https://github.com/reguorider-gif/ai-judge/blob/main/docs/QUICKSTART.md
 - Architecture: https://github.com/reguorider-gif/ai-judge/blob/main/docs/ARCHITECTURE.md
@@ -35,7 +35,7 @@ First comment draft:
 ```text
 I built AI Judge because I kept running into the same trust problem: one model gives a fluent answer, another model gives a different fluent answer, and the hard part is still deciding which claims actually deserve confidence.
 
-The project turns a question into a jury session. Multiple AI seats answer independently, then AI Judge produces a claim-level ledger, bluff-risk gates, consensus notes, graph-value estimates, and an auditable verdict package. v3.1 also adds a harness layer: golden benchmark cases, regression checks, and a GitHub Actions workflow so changes can be evaluated continuously.
+The project turns a question into a jury session. Multiple AI seats answer independently, then AI Judge produces a claim-level ledger, bluff-risk gates, consensus notes, graph-value estimates, evidence bundles, dissent checks, and an auditable verdict package. v3.2 adds a reasoning tree so the path from facts to verdict is visible instead of buried in prose.
 
 The important design choice is that the final decision stays with the human. AI Judge is not trying to be another black-box judge model; it is meant to make model disagreement, weak evidence, and overconfident reasoning easier to inspect.
 
@@ -57,7 +57,7 @@ Post draft:
 ```text
 I wanted a workflow where several AI models answer the same question independently, but the final decision is still mine rather than another LLM's ranking.
 
-AI Judge creates a jury-style run: multiple seats answer, claims are broken into a ledger, bluff risk and calibration are scored, consensus and disagreement are surfaced, and the output is an auditable verdict package. v3.1 adds golden benchmark cases, regression tests, a generated harness report, and GitHub Actions CI.
+AI Judge creates a jury-style run: multiple seats answer, claims are broken into a ledger, bluff risk and calibration are scored, consensus and disagreement are surfaced, and the output is an auditable verdict package. v3.2 adds evidence objects, dissent challenges, risk routing, and a reasoning tree.
 
 The part I am most interested in discussing is the evaluation shape: is claim-level cross-validation a useful interface for real decisions, or would you rather see a lighter comparison format?
 
@@ -75,7 +75,7 @@ Tagline:
 Description:
 
 ```text
-AI Judge is a local-first multi-model deliberation system for people who want stronger evidence from AI. Ask one question, collect independent answers from multiple AI seats, run their claims through auditable scoring functions, and receive a verdict package while keeping the final decision human. v3.1 adds golden benchmarks, regression checks, and CI-backed harness reports.
+AI Judge is a local-first multi-model deliberation system for people who want stronger evidence from AI. Ask one question, collect independent answers from multiple AI seats, run their claims through auditable scoring functions, and receive a verdict package while keeping the final decision human. v3.2 adds evidence tracing, dissent challenges, risk routing, and reasoning-tree artifacts.
 ```
 
 ## Directory listing
@@ -87,7 +87,7 @@ Category: AI agents, developer tools, LLM evaluation, Codex skills
 Description:
 
 ```text
-AI Judge is a local-first Codex skill and CLI for multi-model deliberation and evaluation. It routes one question through multiple AI seats, records independent answers, scores claims with auditable formulas, generates a verdict package with human final authority, and ships v3.1 harness checks for golden benchmarks, regressions, and CI reports.
+AI Judge is a local-first Codex skill and CLI for multi-model deliberation and evaluation. It routes one question through multiple AI seats, records independent answers, scores claims with auditable formulas, generates a verdict package with human final authority, and ships v3.2 evidence tracing, dissent checks, risk routing, and reasoning-tree artifacts.
 ```
 
 Tags:
@@ -107,13 +107,13 @@ Hermes-style workflows are strong at producing polished agent outputs. AI Judge 
 Against generic LLM council workflows:
 
 ```text
-Most LLM councils stop at voting, ranking, or consensus prose. AI Judge adds auditable scoring formulas, hard-truth failure modes, neuro-profile signals, golden benchmark fixtures, and CI regression checks.
+Most LLM councils stop at voting, ranking, or consensus prose. AI Judge adds auditable scoring formulas, hard-truth failure modes, neuro-profile signals, evidence bundles, dissent checks, reasoning trees, and CI regression checks.
 ```
 
 Against Perplexity-style model committees:
 
 ```text
-Perplexity-style committees are optimized for answer discovery and synthesis. AI Judge is optimized for decision hygiene: evidence ledgers, bluff-risk gates, reproducible harness results, and human final authority.
+Perplexity-style committees are optimized for answer discovery and synthesis. AI Judge is optimized for decision hygiene: evidence ledgers, bluff-risk gates, dissent, reproducible harness results, reasoning visibility, and human final authority.
 ```
 
 ## Chinese launch copy
@@ -127,9 +127,9 @@ Title:
 Post:
 
 ```text
-AI Judge 是一个本地优先的多模型评审 skill/CLI。它不是再训练一个“裁判模型”，而是让多个 AI seat 独立回答同一个问题，再把回答拆成 claim ledger，用可审计评分函数、共识/分歧检查、bluff-risk gate、Hard Truth Mode 和 v3.1 的 golden benchmark/regression harness 去判断答案到底靠不靠谱。
+AI Judge 是一个本地优先的多模型评审 skill/CLI。它不是再训练一个“裁判模型”，而是让多个 AI seat 独立回答同一个问题，再把回答拆成 claim ledger，用可审计评分函数、证据对象、异议挑战、风险路由、推理树和 Hard Truth Mode 去判断答案到底靠不靠谱。
 
-我想解决的问题很简单：AI 回答越来越流畅，但人真正需要的是“我该不该信它，以及哪里不该信”。所以 AI Judge 的最后一票仍然保留给人，它只是把证据、分歧、风险和回归测试摊开。
+我想解决的问题很简单：AI 回答越来越流畅，但人真正需要的是“我该不该信它，以及哪里不该信”。所以 AI Judge 的最后一票仍然保留给人，它只是把证据、分歧、异议、风险和推理路径摊开。
 
 GitHub: https://github.com/reguorider-gif/ai-judge
 欢迎试用、提 issue，尤其欢迎提供容易骗过 LLM 的 benchmark case。
@@ -137,7 +137,7 @@ GitHub: https://github.com/reguorider-gif/ai-judge
 
 ## Submission tracker
 
-- ForgeIndex: submitted on 2026-05-13 with v3.1 release link.
+- ForgeIndex: submitted on 2026-05-13 with v3.1 release link; update to v3.2 release link after the GitHub release is published.
 - OSS AI Hub: submitted on 2026-05-13 and queued for moderation.
 - Global Agent Build-a-thon: submitted on 2026-05-13 and confirmation page received.
 - AISO Tools: attempted on 2026-05-13, blocked by site-side "Server misconfigured" error.

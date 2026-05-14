@@ -1,0 +1,24 @@
+{
+  "name": "ai-judge-ui",
+  "version": "3.1.2",
+  "private": true,
+  "description": "AI Judge — Auditable Jury Architecture UI Components",
+  "main": "src/ui/index.ts",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "lint": "eslint src/ui --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.0",
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

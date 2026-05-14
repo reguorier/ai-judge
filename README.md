@@ -1,26 +1,27 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.1.0-purple" alt="v3.1.0">
-  <img src="https://img.shields.io/badge/evaluation-14%20signals-2ea44f" alt="14 evaluation signals">
-  <img src="https://img.shields.io/badge/neuro--cognitive%20proxies-4-orange" alt="4 neuro-cognitive proxies">
+  <img src="https://img.shields.io/badge/release-3.2.0-purple" alt="v3.2.0">
+  <img src="https://img.shields.io/badge/evidence-traced-2ea44f" alt="evidence traced">
+  <img src="https://img.shields.io/badge/dissent-before%20confidence-orange" alt="dissent before confidence">
+  <img src="https://img.shields.io/badge/reasoning-tree%20ready-38bdf8" alt="reasoning tree ready">
   <img src="https://img.shields.io/badge/local--first-macOS%20%2B%20Docker-black" alt="local-first">
   <img src="https://img.shields.io/badge/license-BSL%201.1-blue" alt="BSL 1.1">
 </p>
 
 <p align="center">
-  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.1 product overview" width="960">
+  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.2 product overview" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.1</h1>
-<p align="center"><strong>9 AI seats deliberate. 10 scoring functions audit claims. 4 cognitive proxy signals expose "sounds smart" vs "is smart". You hold the gavel.</strong></p>
-<p align="center">A local-first Codex skill and CLI for multi-model evaluation, claim scoring, judgment-quality profiling, and human-final verdicts.</p>
+<h1 align="center">AI Judge v3.2</h1>
+<p align="center"><strong>9 AI seats deliberate. Evidence is traced. Dissent challenges weak claims. A reasoning tree shows why. You hold the gavel.</strong></p>
+<p align="center">A local-first Codex skill and CLI for multi-model evaluation, claim scoring, auditable reasoning, judgment-quality profiling, and human-final verdicts.</p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
-  <a href="#what-v31-adds">What v3.1 Adds</a> ·
+  <a href="#what-v32-adds">What v3.2 Adds</a> ·
   <a href="#how-it-differs">Comparison</a> ·
-  <a href="RELEASE_V3.md">Release Notes</a>
+  <a href="RELEASE_V3_2.md">Release Notes</a>
 </p>
 
 ---
@@ -28,36 +29,58 @@
 ## Why People Notice It
 
 Most AI comparison tools answer: **which model sounded best?**
-AI Judge v3.1 asks a harder question: **which answer shows reliable judgment?**
+AI Judge v3.2 asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment?**
 
 It separates polished language from actual thinking quality, then gives the human a compact evidence package instead of another black-box synthesis.
 
 ## 30-Second Product Tour
 
 <p align="center">
-  <img src="assets/ai-judge-v3-cognitive-map.svg" alt="AI Judge v3.1 cognitive evaluation map" width="900">
+  <img src="assets/ai-judge-v3.2-tianfu-stack.svg" alt="AI Judge v3.2 evidence and reasoning stack" width="900">
 </p>
 
 | Step | What happens | Why it matters |
 |---:|---|---|
 | 1 | 9 AI seats answer independently | Avoids one-model monologue bias |
 | 2 | Claims enter the v2 scoring lane | Bluff, calibration, evidence, diversity, and graph value are auditable |
-| 3 | Text enters the v3.1 cognitive lane | Finds polished-but-weak reasoning patterns |
-| 4 | Hard Truth Mode chooses L0-L4 | Feedback gets sharper only when judgment quality lags |
-| 5 | Human reads the evidence and decides | AI supports judgment, but does not replace it |
+| 3 | Evidence objects attach sources | Tool, rule, harness, and precedent evidence become inspectable |
+| 4 | Dissent challenges weak support | The system argues against itself before raising confidence |
+| 5 | Reasoning tree renders the path | Facts, evidence, rules, dissent, and conclusion become visible |
+| 6 | Human reads the evidence and decides | AI supports judgment, but does not replace it |
 
 ```mermaid
 flowchart LR
     Q["Question"] --> J["9 AI Seats"]
     J --> C["Claim Ledger"]
     C --> S["10 Scoring Functions"]
+    C --> E["Evidence Objects"]
+    E --> R["Risk Router"]
+    R --> X["Dissent Agent"]
+    X --> T["Reasoning Tree"]
     C --> N["4 Cognitive Proxy Signals"]
-    S --> D["Diversity + Graph Value"]
     N --> H["Hard Truth Mode L0-L4"]
+    S --> D["Diversity + Graph Value"]
     D --> P["Peach Projection"]
-    H --> V["Human Verdict"]
+    T --> V["Human Verdict"]
+    H --> V
     P --> V
 ```
+
+## What v3.2 Adds
+
+<p align="center">
+  <img src="assets/ai-judge-v3.2-reasoning-tree.svg" alt="AI Judge v3.2 reasoning tree visualization" width="900">
+</p>
+
+| Layer | What it does | User-visible output |
+|---|---|---|
+| Evidence objects | Gives each claim a source-backed evidence bundle | `tool_result`, `rule_match`, `harness_result`, `precedent` |
+| Dissent agent | Challenges weak evidence, single-source support, and overconfidence | Counterarguments and required checks |
+| Reasoning tree | Turns the verdict path into expandable JSON/UI nodes | Facts -> Evidence -> Rules -> Dissent -> Conclusion |
+| Risk router | Chooses review depth by sensitive surface and diff shape | `full_jury`, `standard_dissent`, `standard`, `fast_check` |
+| Enhanced confidence | Adds evidence strength and dissent penalty to confidence lights | More honest low/medium/high confidence |
+
+The full product package also adds a TypeScript reasoning-tree UI under `frontend/` and a Rust reference engine under `rust-engine/`.
 
 ## Launch Assets
 
@@ -74,7 +97,7 @@ AI Judge now includes a ready-to-record launch and hackathon demo pack:
 | [`assets/microsoft-agent-academy-architecture.svg`](assets/microsoft-agent-academy-architecture.svg) | Architecture diagram for hackathon submissions |
 | [`examples/microsoft_agent_academy/copilot_cowork_packet.md`](examples/microsoft_agent_academy/copilot_cowork_packet.md) | Copilot/Cowork demo prompt, sample output, and AI Judge evaluation packet |
 
-## What v3.1 Adds
+## v3.1 Foundation
 
 | Layer | What it does | User-visible output |
 |---|---|---|
@@ -99,11 +122,18 @@ These are **textual proxy signals**, not medical or diagnostic claims. They help
 
 ## Demo Result
 
-Reproducible local smoke test:
+Reproducible local smoke tests:
 
 ```bash
+PYTHONPATH=. python3 tests/smoke_test_v3_2.py
 PYTHONPATH=. python3 tests/smoke_test_v3.py
 ```
+
+Observed v3.2 demo behavior:
+
+| Fixture | Risk route | Evidence | Dissent | Result |
+|---|---|---:|---|---|
+| Security/payment checkout change | `full_jury` | 3 items | triggered | Reasoning tree exportable |
 
 Observed v3.1 demo behavior:
 
@@ -142,6 +172,10 @@ python3 cli/main.py hard-truth --demo
 # Full V3.1 pipeline
 python3 cli/main.py v3-pipeline --demo
 
+# V3.2 evidence + dissent + reasoning tree pipeline
+python3 cli/main.py v3.2-pipeline --demo
+PYTHONPATH=. python3 tests/smoke_test_v3_2.py
+
 # V2 scoring remains available
 python3 cli/main.py score-v2 --demo
 ```
@@ -173,24 +207,24 @@ ai-judge collect --run latest
 ai-judge verdict --run latest
 ```
 
-## v2 to v3.1
+## v2 to v3.2
 
-| Area | v2 | v3.1 |
-|---|---|---|
-| Claim quality | 10 scoring functions, bluff gates, diversity radar | Same, plus judgment-quality profiling |
-| Model value | `graph_value_v2` and Two Peaches allocation | Same, now informed by cognitive risk flags |
-| Human role | Final verdict owner | Final verdict owner, with clearer blind-spot feedback |
-| Failure mode caught | Unsupported confidence and echo-chamber consensus | Unsupported confidence, echo chambers, and performative intelligence |
-| Main new command | `score-v2 --demo` | `neuro-profile`, `hard-truth`, `v3-pipeline` |
+| Area | v2 | v3.1 | v3.2 |
+|---|---|---|---|
+| Claim quality | 10 scoring functions, bluff gates, diversity radar | Same, plus judgment-quality profiling | Same, plus evidence object tracing |
+| Model value | `graph_value_v2` and Two Peaches allocation | Same, now informed by cognitive risk flags | Same, now routed by risk depth and dissent |
+| Human role | Final verdict owner | Final verdict owner, with clearer blind-spot feedback | Final verdict owner, with visible reasoning path |
+| Failure mode caught | Unsupported confidence and echo-chamber consensus | Unsupported confidence, echo chambers, performative intelligence | Unsupported evidence, missing dissent, hidden risk surfaces |
+| Main new command | `score-v2 --demo` | `neuro-profile`, `hard-truth`, `v3-pipeline` | `v3.2-pipeline --demo` |
 
 ## How It Differs
 
-| System | Primary job | Final owner | What AI Judge v3.1 adds |
+| System | Primary job | Final owner | What AI Judge v3.2 adds |
 |---|---|---|---|
-| Hermes-compatible skill | Package an agent workflow | User/host agent | Full jury workflow, scoring engine, and v3.1 judgment profiling |
-| llm-council | Peer review and chairman synthesis | Chairman LLM | Human-final decision, claim ledger, local-first CLI/Docker package |
-| Perplexity Model Council | Web model comparison and synthesis | Perplexity synthesizer | Inspectable formulas, local workflow, releaseable Codex skill |
-| AI Judge v3.1 | Evidence workflow for consequential decisions | Human | Scoring, diversity, graph value, hard truth, and cognitive proxy signals |
+| Hermes-compatible skill | Package an agent workflow | User/host agent | Full jury workflow, scoring engine, judgment profiling, and auditable reasoning |
+| llm-council | Peer review and chairman synthesis | Chairman LLM | Human-final decision, claim ledger, dissent, and local-first CLI/Docker package |
+| Perplexity Model Council | Web model comparison and synthesis | Perplexity synthesizer | Inspectable formulas, reasoning-tree artifacts, and local workflow |
+| AI Judge v3.2 | Evidence workflow for consequential decisions | Human | Scoring, diversity, graph value, hard truth, evidence tracing, dissent, and risk routing |
 
 ## Repository Map
 
@@ -204,12 +238,18 @@ ai-judge/
 │   ├── neuro_profiler.py      # 4 proxy signals + dual scores
 │   ├── hard_truth.py          # L0-L4 judgment-first feedback
 │   ├── determinism.py         # consistency + confidence lights + v3 pipeline
-│   ├── scoring_v2.py          # v2 scoring plus v3 bridge
+│   ├── scoring_v2.py          # v2 scoring plus v3/v3.2 bridge
+│   ├── evidence.py            # v3.2 structured evidence objects
+│   ├── dissent.py             # v3.2 Devil's Advocate challenge
+│   ├── reasoning_trace.py     # v3.2 reasoning tree builder
+│   ├── risk_router.py         # v3.2 risk-based review depth
 │   ├── formula_engine.py      # 10 auditable scoring formulas
 │   ├── anchor_engine.py       # goal anchoring and taste cards
 │   ├── mirror.py              # thinking fingerprint and growth narrative
 │   └── ...
 ├── cli/main.py                # unified CLI
+├── frontend/                  # TypeScript reasoning-tree UI components
+├── rust-engine/               # Rust reference implementation
 ├── tests/smoke_test_v3.py
 ├── product/landing.html
 ├── Dockerfile
@@ -220,8 +260,8 @@ ai-judge/
 
 | Public in this repo | Paid/private runtime |
 |---|---|
-| CLI surface and v2/v3 demos | Production browser/CDP collector |
-| Scoring formulas and cognitive proxy functions | Managed multi-model runtime |
+| CLI surface and v2/v3/v3.2 demos | Production browser/CDP collector |
+| Scoring formulas, cognitive proxy functions, evidence/dissent demo | Managed multi-model runtime |
 | Codex/Hermes-compatible `SKILL.md` | SaaS license server |
 | Docker, schemas, docs, examples | Team deployment and support layer |
 | Swift bridge source | Hosted integrations |
@@ -230,10 +270,12 @@ ai-judge/
 
 | Document | Purpose |
 |---|---|
+| [RELEASE_V3_2.md](RELEASE_V3_2.md) | v3.2 release notes and Tianfu migration notes |
 | [RELEASE_V3.md](RELEASE_V3.md) | v3.1 release notes and migration notes |
 | [docs/QUICKSTART.md](docs/QUICKSTART.md) | Setup and first demos |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | Comparison with other council-style tools |
+| [docs/v3.2-source/](docs/v3.2-source/) | Full-package source discussion, technical spec, and roadmap |
 | [product/landing.html](product/landing.html) | Product landing page |
 
 ## License

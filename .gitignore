@@ -9,6 +9,7 @@ __pycache__/
 venv/
 dist/
 build/
+rust-engine/target/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/

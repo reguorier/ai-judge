@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI Judge — Unified CLI entry point v3.1.0.
+"""AI Judge — Unified CLI entry point v3.2.0.
 
 Usage:
     ai-judge license status
@@ -24,6 +24,9 @@ Usage:
     ai-judge neuro-profile --demo     # 4 neuro-cognitive proxy signals + dual scores
     ai-judge hard-truth --demo        # L0-L4 judgment-first feedback
     ai-judge v3-pipeline --demo       # Full determinism + neuro + hard truth pipeline
+
+    # V3.2 commands:
+    ai-judge v3.2-pipeline --demo     # Evidence + dissent + reasoning tree + risk router
 """
 
 from __future__ import annotations
@@ -240,7 +243,152 @@ def build_parser() -> argparse.ArgumentParser:
     v3.add_argument("--demo", action="store_true", help="Run full V3 pipeline demo")
     v3.set_defaults(func=cmd_v3_pipeline)
 
+    # v3.2-pipeline (Tianfu migration demo)
+    v32 = sub.add_parser("v3.2-pipeline", help="V3.2: Run evidence + dissent + reasoning tree demo")
+    v32.add_argument("--demo", action="store_true", help="Run V3.2 Tianfu migration demo")
+    v32.set_defaults(func=cmd_v3_2_pipeline)
+
+    # ── Personal Cognitive Commands (FUSE / DECIDE / DARE) ──
+    pc = sub.add_parser("self", help="Personal cognitive protocols (FUSE/DECIDE/DARE)")
+    pc_sub = pc.add_subparsers(dest="self_action")
+
+    # fuse
+    fuse = pc_sub.add_parser("fuse", help="Emotional trigger audit")
+    fuse_sub = fuse.add_subparsers(dest="fuse_action")
+    fuse_t = fuse_sub.add_parser("trigger", help="Record an emotional trigger")
+    fuse_t.add_argument("description", help="What triggered you?")
+    fuse_t.set_defaults(func=cmd_self_fuse_trigger)
+    fuse_r = fuse_sub.add_parser("reflect", help="24h reflection with 3-seat cross-examination")
+    fuse_r.set_defaults(func=cmd_self_fuse_reflect)
+    fuse_v = fuse_sub.add_parser("verdict", help="Your final judgment on the emotional event")
+    fuse_v.add_argument("verdict", help="Signal or overreaction?")
+    fuse_v.add_argument("reasoning", help="Why?")
+    fuse_v.set_defaults(func=cmd_self_fuse_verdict)
+
+    # decide
+    decide = pc_sub.add_parser("decide", help="Major decision calibration")
+    decide_sub = decide.add_subparsers(dest="decide_action")
+    decide_r = decide_sub.add_parser("record", help="Record a major decision")
+    decide_r.add_argument("decision", help="The decision")
+    decide_r.add_argument("--benefits", nargs="+", required=True, help="Upsides")
+    decide_r.add_argument("--concerns", nargs="+", required=True, help="Downsides")
+    decide_r.add_argument("--confidence", type=float, required=True, help="0.0-1.0")
+    decide_r.set_defaults(func=cmd_self_decide_record)
+    decide_rev = decide_sub.add_parser("review", help="Review 3-month-old decisions")
+    decide_rev.set_defaults(func=cmd_self_decide_review)
+    decide_c = decide_sub.add_parser("calibrate", help="Calibrate a past decision")
+    decide_c.add_argument("decision_id", type=int, help="Decision ID")
+    decide_c.add_argument("outcome", help="What actually happened?")
+    decide_c.add_argument("--new-confidence", type=float, default=0.5, help="What should your confidence have been?")
+    decide_c.set_defaults(func=cmd_self_decide_calibrate)
+
+    # dare
+    dare = pc_sub.add_parser("dare", help="Fear/withdrawal pattern tracking")
+    dare_sub = dare.add_subparsers(dest="dare_action")
+    dare_t = dare_sub.add_parser("trigger", help="Record a moment of fear/withdrawal")
+    dare_t.add_argument("description", help="What opportunity did you say no to?")
+    dare_t.set_defaults(func=cmd_self_dare_trigger)
+    dare_r = dare_sub.add_parser("reflect", help="24h fear analysis")
+    dare_r.set_defaults(func=cmd_self_dare_reflect)
+    dare_v = dare_sub.add_parser("verdict", help="Identify your fear pattern")
+    dare_v.add_argument("--fears", nargs="+", required=True, help="What were you really afraid of?")
+    dare_v.add_argument("--counterfactual", default="", help="Would a future you say yes?")
+    dare_v.set_defaults(func=cmd_self_dare_verdict)
+
+    # dashboard + nudge
+    pc_sub.add_parser("dashboard", help="Personal cognitive dashboard").set_defaults(func=cmd_self_dashboard)
+    pc_sub.add_parser("nudge", help="Periodic self-nudge check").set_defaults(func=cmd_self_nudge)
+
     return parser
+
+
+# ── Personal Cognitive Command Handlers ──
+
+_engine = None
+
+def _get_engine():
+    global _engine
+    if _engine is None:
+        from core.personal_cognitive import PersonalCognitiveEngine
+        _engine = PersonalCognitiveEngine()
+    return _engine
+
+
+def cmd_self_fuse_trigger(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.fuse_trigger(args.description)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_fuse_reflect(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.fuse_reflect()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_fuse_verdict(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.fuse_verdict(args.verdict, args.reasoning)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_decide_record(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.decide_record(args.decision, args.benefits, args.concerns, args.confidence)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_decide_review(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.decide_review()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_decide_calibrate(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.decide_calibrate(args.decision_id, args.outcome, args.new_confidence)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_dare_trigger(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.dare_trigger(args.description)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_dare_reflect(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.dare_reflect()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_dare_verdict(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.dare_verdict(args.fears, args.counterfactual)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_dashboard(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.dashboard()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_self_nudge(args: argparse.Namespace) -> int:
+    engine = _get_engine()
+    result = engine.periodic_nudge()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
 
 
 def cmd_score_v2(args: argparse.Namespace) -> int:
@@ -658,6 +806,93 @@ def cmd_v3_pipeline(args: argparse.Namespace) -> int:
     # If hard truth active, print the output
     if v3_result.get("hard_truth_mode", {}).get("active"):
         print("\n" + generate_hard_truth_output(profile, text))
+
+    return 0
+
+
+def cmd_v3_2_pipeline(args: argparse.Namespace) -> int:
+    """Run V3.2 Tianfu migration demo."""
+    if not args.demo:
+        print("Usage: ai-judge v3.2-pipeline --demo", file=sys.stderr)
+        return 2
+
+    from core.evidence import Evidence, EvidenceBundle
+    from core.neuro_profiler import compute_neuro_profile
+    from core.scoring_v2 import score_jury_full_pipeline_v3_2
+
+    claim = {
+        "claim_id": "c1",
+        "claim": "Checkout input is safe after the new sanitizer change.",
+        "source_authority": 0.78,
+        "evidence_strength": 0.82,
+        "evidence_count": 3,
+        "evidence_quality": 0.86,
+        "freshness": 0.92,
+        "reproducibility": 0.88,
+        "historical_reliability": 0.80,
+        "confidence": 0.84,
+        "risk_penalty": 0.02,
+    }
+
+    bundle = EvidenceBundle()
+    bundle.add(Evidence.from_tool(
+        "sast",
+        "sast_001",
+        "No high-severity injection finding in checkout sanitizer",
+        file_path="payment/checkout.ts",
+        line=89,
+        tool_confidence=0.94,
+    ))
+    bundle.add(Evidence.from_harness(
+        "pytest-checkout",
+        passed=True,
+        description="Regression test covers script tag and SQL metacharacter payloads",
+    ))
+    bundle.add(Evidence.from_rule(
+        "OWASP-A03",
+        "OWASP Top 10",
+        "Input handling must be supported by test evidence for injection-sensitive code.",
+        match_confidence=0.88,
+    ))
+
+    task_info = {
+        "task_id": "demo-v3.2-checkout",
+        "files_changed": 2,
+        "lines_added": 147,
+        "lines_deleted": 38,
+        "all_tests_pass": True,
+        "risk_surface": ["security", "payment"],
+        "test_status": "passed",
+        "touched_modules": ["checkout", "sanitizer"],
+        "sast_high_severity_count": 0,
+        "lint_violation_count": 1,
+        "ast_complexity": 18,
+        "files": [
+            {"path": "payment/checkout.ts", "additions": 91, "deletions": 22, "hunks": 3, "first_line": 89},
+            {"path": "tests/checkout.test.ts", "additions": 56, "deletions": 16, "hunks": 2, "first_line": 12},
+        ],
+    }
+
+    neuro_profile = compute_neuro_profile(
+        "The sanitizer is probably safe, but payment/security changes need dissent before confidence.",
+        task_context="security review",
+    )
+
+    result = score_jury_full_pipeline_v3_2(
+        claims=[claim],
+        task_info=task_info,
+        neuro_profile=neuro_profile,
+        evidence_bundles={"c1": bundle},
+    )
+
+    print(json.dumps({
+        "pipeline": result["scoring_version"],
+        "summary": result["summary"],
+        "risk": result["v3_2_risk_classification"],
+        "evidence": result["v3_2_evidence_summary"],
+        "dissent": result["v3_2_dissent_results"],
+        "reasoning_tree": result["v3_2_reasoning_tree"],
+    }, ensure_ascii=False, indent=2))
 
     return 0
 

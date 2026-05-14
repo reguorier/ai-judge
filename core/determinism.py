@@ -508,3 +508,86 @@ def run_full_v3_pipeline(
     v2_report.update(v3_additions)
     v2_report["pipeline_version"] = "3.1.0"
     return v2_report
+
+
+# ── V3.2 Enhanced Confidence (Tianfu GPRO-inspired) ──
+
+def compute_confidence_with_evidence(
+    l1_result: L1ConsistencyResult,
+    l2_result: Optional[L2JuryResult] = None,
+    *,
+    human_alignment: float = 0.8,
+    domain_coverage: float = 0.8,
+    evidence_strength: float = 0.5,
+    evidence_diversity: float = 0.5,
+    dissent_strength: float = 0.0,
+) -> ConfidenceLight:
+    """V3.2 Enhanced confidence: adds evidence and dissent to the 4-factor model.
+
+    Tianfu GPRO-inspired: each reasoning node gets a confidence score based on:
+      - L1 repeatability (0.25)
+      - L2 cross-model agreement (0.25)
+      - Evidence strength + diversity (0.25)
+      - Human alignment + domain coverage (0.15)
+      - Dissent penalty (subtractive, 0.10)
+    """
+    # L1 contribution
+    l1_score = l1_result.match_rate if l1_result.match_rate > 0 else 0.5
+
+    # L2 contribution
+    l2_score = 1.0
+    if l2_result:
+        tier_map = {"mild": 0.95, "moderate": 0.75, "severe": 0.50, "systematic": 0.30}
+        l2_score = tier_map.get(l2_result.disagreement_level, 0.5)
+
+    # Evidence contribution (NEW in v3.2)
+    evidence_score = 0.5 * evidence_strength + 0.5 * evidence_diversity
+
+    combined = (
+        0.25 * l1_score
+        + 0.25 * l2_score
+        + 0.25 * evidence_score
+        + 0.15 * human_alignment
+        + 0.10 * domain_coverage
+        - 0.10 * dissent_strength  # Tianfu-style dissent penalty
+    )
+
+    combined = max(0.0, min(combined, 0.95))
+
+    if combined >= 0.85:
+        level, emoji, label, num_range = "steady", "🟢", "稳", ">85%"
+    elif combined >= 0.60:
+        level, emoji, label, num_range = "uncertain", "🟡", "悬", "60-85%"
+    else:
+        level, emoji, label, num_range = "guess", "🔴", "猜", "<60%"
+
+    certain = []
+    uncertain = []
+
+    if l1_result.match_rate >= 1.0:
+        certain.append(f"评分重复一致性 {l1_result.match_rate:.0%}")
+    elif l1_result.match_rate > 0:
+        uncertain.append({"dimension": "评分重复性", "reason": f"多次采样存在差异"})
+
+    if l2_result and l2_result.disagreement_level == "mild":
+        certain.append(f"跨模型一致性良好")
+    elif l2_result:
+        uncertain.append({"dimension": "跨模型一致性", "reason": f"存在{l2_result.disagreement_level}分歧"})
+
+    if evidence_strength >= 0.8:
+        certain.append(f"证据强度高 ({evidence_strength:.0%})")
+    elif evidence_strength < 0.5:
+        uncertain.append({"dimension": "证据强度", "reason": f"证据不足 ({evidence_strength:.0%})"})
+
+    if dissent_strength > 0.5:
+        uncertain.append({"dimension": "异议未解决", "reason": f"反方异议强度 {dissent_strength:.0%}"})
+
+    return ConfidenceLight(
+        level=level, emoji=emoji, label_cn=label, numerical_range=num_range,
+        certain_judgments=certain, uncertain_judgments=uncertain,
+        ai_blind_spots=[
+            "我无法评估组织/政治可行性",
+            "我的训练数据可能过时",
+            "创造性维度判断具有内在主观性",
+        ],
+    )

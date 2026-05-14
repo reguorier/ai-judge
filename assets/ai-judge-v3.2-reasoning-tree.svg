@@ -1,0 +1,59 @@
+<svg width="1120" height="680" viewBox="0 0 1120 680" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">AI Judge v3.2 reasoning tree visualization</title>
+  <desc id="desc">Tree diagram showing a verdict conclusion supported by fact, evidence, rule, dissent, and confidence nodes.</desc>
+  <rect width="1120" height="680" rx="24" fill="#0A0F18"/>
+  <text x="560" y="64" text-anchor="middle" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="800">Tree-Structured Judgment</text>
+  <text x="560" y="95" text-anchor="middle" fill="#A7B3C7" font-family="Inter, Arial, sans-serif" font-size="16">Readable audit path for every important verdict</text>
+
+  <g transform="translate(352 132)">
+    <rect width="416" height="84" rx="16" fill="#162036" stroke="#60A5FA" stroke-width="2"/>
+    <text x="208" y="34" text-anchor="middle" fill="#EFF6FF" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">Conclusion</text>
+    <text x="208" y="58" text-anchor="middle" fill="#BBD7FF" font-family="Inter, Arial, sans-serif" font-size="13">Manual review required: security-sensitive checkout change</text>
+  </g>
+
+  <path d="M560 216V260" stroke="#52637E" stroke-width="2"/>
+  <path d="M214 260H906" stroke="#52637E" stroke-width="2"/>
+  <path d="M214 260V304" stroke="#52637E" stroke-width="2"/>
+  <path d="M444 260V304" stroke="#52637E" stroke-width="2"/>
+  <path d="M676 260V304" stroke="#52637E" stroke-width="2"/>
+  <path d="M906 260V304" stroke="#52637E" stroke-width="2"/>
+
+  <g transform="translate(88 304)">
+    <rect width="252" height="116" rx="16" fill="#111827" stroke="#94A3B8" stroke-width="2"/>
+    <text x="126" y="34" text-anchor="middle" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">Facts</text>
+    <text x="126" y="61" text-anchor="middle" fill="#CBD5E1" font-family="Inter, Arial, sans-serif" font-size="13">2 files changed</text>
+    <text x="126" y="83" text-anchor="middle" fill="#CBD5E1" font-family="Inter, Arial, sans-serif" font-size="13">+147 / -38 lines</text>
+  </g>
+
+  <g transform="translate(318 304)">
+    <rect width="252" height="116" rx="16" fill="#102018" stroke="#22C55E" stroke-width="2"/>
+    <text x="126" y="34" text-anchor="middle" fill="#ECFDF5" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">Evidence</text>
+    <text x="126" y="61" text-anchor="middle" fill="#BBF7D0" font-family="Inter, Arial, sans-serif" font-size="13">SAST result</text>
+    <text x="126" y="83" text-anchor="middle" fill="#BBF7D0" font-family="Inter, Arial, sans-serif" font-size="13">Harness pass + source links</text>
+  </g>
+
+  <g transform="translate(550 304)">
+    <rect width="252" height="116" rx="16" fill="#20190C" stroke="#F59E0B" stroke-width="2"/>
+    <text x="126" y="34" text-anchor="middle" fill="#FFF7ED" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">Dissent</text>
+    <text x="126" y="61" text-anchor="middle" fill="#FED7AA" font-family="Inter, Arial, sans-serif" font-size="13">Complexity over threshold</text>
+    <text x="126" y="83" text-anchor="middle" fill="#FED7AA" font-family="Inter, Arial, sans-serif" font-size="13">Needs explicit human check</text>
+  </g>
+
+  <g transform="translate(780 304)">
+    <rect width="252" height="116" rx="16" fill="#251215" stroke="#F87171" stroke-width="2"/>
+    <text x="126" y="34" text-anchor="middle" fill="#FEF2F2" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">Risk Route</text>
+    <text x="126" y="61" text-anchor="middle" fill="#FECACA" font-family="Inter, Arial, sans-serif" font-size="13">security + payment</text>
+    <text x="126" y="83" text-anchor="middle" fill="#FECACA" font-family="Inter, Arial, sans-serif" font-size="13">FullJury review depth</text>
+  </g>
+
+  <g transform="translate(188 486)">
+    <rect width="744" height="94" rx="18" fill="#0E1726" stroke="#38BDF8" stroke-width="2"/>
+    <text x="372" y="36" text-anchor="middle" fill="#E0F2FE" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">UI output</text>
+    <text x="372" y="62" text-anchor="middle" fill="#BDEBFF" font-family="Inter, Arial, sans-serif" font-size="14">ReasoningTree.tsx renders expandable nodes, confidence badges, dissent panels, and evidence links.</text>
+  </g>
+
+  <path d="M214 420V486H560" stroke="#52637E" stroke-width="2"/>
+  <path d="M444 420V486H560" stroke="#52637E" stroke-width="2"/>
+  <path d="M676 420V486H560" stroke="#52637E" stroke-width="2"/>
+  <path d="M906 420V486H560" stroke="#52637E" stroke-width="2"/>
+</svg>

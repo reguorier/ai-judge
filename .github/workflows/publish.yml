@@ -22,6 +22,7 @@ jobs:
       - name: Run Harness Test Suite
         run: |
           PYTHONPATH=. python3 tests/run_harness.py
+          PYTHONPATH=. python3 tests/smoke_test_v3_2.py
       - name: Upload Harness Report
         if: always()
         uses: actions/upload-artifact@v4
