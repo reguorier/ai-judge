@@ -95,7 +95,7 @@ v3.2 adds the auditability layer: evidence objects, dissent challenges, risk rou
 
 The final verdict stays with the human. AI Judge is meant to expose weak evidence and overconfident reasoning, not become another opaque judge model.
 
-Repo: https://github.com/reguorider-gif/ai-judge
+Repo: https://github.com/reguorier/ai-judge
 Demo page: product/demo-video.html in the repo
 
 I would especially like feedback on what benchmark cases should be added and whether claim-level evaluation is the right interface for real decisions.
@@ -112,7 +112,7 @@ v3.2 adds evidence objects, dissent checks, risk routing, and reasoning trees.
 
 The point is not to let AI take the gavel. The point is to help humans see what should and should not be trusted.
 
-Try it on GitHub: reguorider-gif/ai-judge.
+Try it on GitHub: reguorier/ai-judge.
 ```
 
 ## Chinese Short Post
@@ -124,6 +124,6 @@ AI Judge v3.2 已经上线。
 
 核心原则：最后一票仍然是人。AI Judge 只负责把证据缺口、过度自信、分歧、异议和可验证下一步摊开。
 
-GitHub: https://github.com/reguorider-gif/ai-judge
+GitHub: https://github.com/reguorier/ai-judge
 欢迎提交容易骗过 LLM 的真实案例。
 ```

@@ -5,7 +5,7 @@
 The public repo includes the v3.2 evidence/dissent demo, v3.1 neuro-cognitive demo, hard truth mode, and the v2 scoring engine:
 
 ```bash
-git clone https://github.com/reguorider-gif/ai-judge.git
+git clone https://github.com/reguorier/ai-judge.git
 cd ai-judge
 python3 cli/main.py v3-pipeline --demo
 python3 cli/main.py v3.2-pipeline --demo
@@ -79,7 +79,7 @@ Open `~/.ai-judge/runs/latest/verdict.md`. Read the evidence. Make your decision
 ## Docker Alternative
 
 ```bash
-docker pull ghcr.io/reguorider-gif/ai-judge:latest
+docker pull ghcr.io/reguorier/ai-judge:latest
 docker compose up
 docker compose run --rm ai-judge jury --question "..."
 ```

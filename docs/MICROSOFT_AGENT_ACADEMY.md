@@ -123,8 +123,8 @@ Agent builders get a repeatable way to inspect output quality before deployment.
 
 ## Submission Checklist
 
-- [x] Public repo: https://github.com/reguorider-gif/ai-judge
-- [x] v3.2 release: https://github.com/reguorider-gif/ai-judge/releases/tag/v3.2.0
+- [x] Public repo: https://github.com/reguorier/ai-judge
+- [x] v3.2 release: https://github.com/reguorier/ai-judge/releases/tag/v3.2.0
 - [x] Harness report: `harness-report.html`
 - [x] 90-second demo page: `product/demo-video.html`
 - [x] Architecture image: `assets/ai-judge-v3.2-tianfu-stack.svg`

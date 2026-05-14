@@ -72,7 +72,7 @@ Expected behavior:
 
 ## Release Package
 
-- Repository target: `https://github.com/reguorider-gif/ai-judge`
+- Repository target: `https://github.com/reguorier/ai-judge`
 - Source packages used for this update:
   - `core/ai-judge-v3.2.0.tar.gz`
   - `core/ai-judge-v3.2.0-full.tar.gz`

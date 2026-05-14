@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-OWNER="reguorider-gif"
+OWNER="reguorier"
 REPO="ai-judge"
 REPO_FULL="${OWNER}/${REPO}"
 REPO_URL="https://github.com/${REPO_FULL}.git"

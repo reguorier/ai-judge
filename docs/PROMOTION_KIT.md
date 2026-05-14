@@ -10,17 +10,17 @@ AI Judge turns one question into a structured jury session. Multiple AI seats an
 
 ## Links
 
-- GitHub: https://github.com/reguorider-gif/ai-judge
-- v3.2 release: https://github.com/reguorider-gif/ai-judge/releases/tag/v3.2.0
-- Install in Codex: `$skill-installer install https://github.com/reguorider-gif/ai-judge`
-- Quickstart: https://github.com/reguorider-gif/ai-judge/blob/main/docs/QUICKSTART.md
-- Architecture: https://github.com/reguorider-gif/ai-judge/blob/main/docs/ARCHITECTURE.md
-- Launch demo kit: https://github.com/reguorider-gif/ai-judge/blob/main/docs/LAUNCH_DEMO_KIT.md
-- Recording guide: https://github.com/reguorider-gif/ai-judge/blob/main/docs/RECORDING_GUIDE.md
-- 90-second demo source: https://github.com/reguorider-gif/ai-judge/blob/main/product/demo-video.html
-- Microsoft Agent Academy pack: https://github.com/reguorider-gif/ai-judge/blob/main/docs/MICROSOFT_AGENT_ACADEMY.md
-- Discussions: https://github.com/reguorider-gif/ai-judge/discussions
-- Public roadmap issues: https://github.com/reguorider-gif/ai-judge/issues
+- GitHub: https://github.com/reguorier/ai-judge
+- v3.2 release: https://github.com/reguorier/ai-judge/releases/tag/v3.2.0
+- Install in Codex: `$skill-installer install https://github.com/reguorier/ai-judge`
+- Quickstart: https://github.com/reguorier/ai-judge/blob/main/docs/QUICKSTART.md
+- Architecture: https://github.com/reguorier/ai-judge/blob/main/docs/ARCHITECTURE.md
+- Launch demo kit: https://github.com/reguorier/ai-judge/blob/main/docs/LAUNCH_DEMO_KIT.md
+- Recording guide: https://github.com/reguorier/ai-judge/blob/main/docs/RECORDING_GUIDE.md
+- 90-second demo source: https://github.com/reguorier/ai-judge/blob/main/product/demo-video.html
+- Microsoft Agent Academy pack: https://github.com/reguorier/ai-judge/blob/main/docs/MICROSOFT_AGENT_ACADEMY.md
+- Discussions: https://github.com/reguorier/ai-judge/discussions
+- Public roadmap issues: https://github.com/reguorier/ai-judge/issues
 
 ## Hacker News
 
@@ -39,7 +39,7 @@ The project turns a question into a jury session. Multiple AI seats answer indep
 
 The important design choice is that the final decision stays with the human. AI Judge is not trying to be another black-box judge model; it is meant to make model disagreement, weak evidence, and overconfident reasoning easier to inspect.
 
-Repo: https://github.com/reguorider-gif/ai-judge
+Repo: https://github.com/reguorier/ai-judge
 
 I would especially like feedback on the harness format, the human-in-the-loop verdict flow, and what benchmark cases should be added next.
 ```
@@ -61,7 +61,7 @@ AI Judge creates a jury-style run: multiple seats answer, claims are broken into
 
 The part I am most interested in discussing is the evaluation shape: is claim-level cross-validation a useful interface for real decisions, or would you rather see a lighter comparison format?
 
-Repo: https://github.com/reguorider-gif/ai-judge
+Repo: https://github.com/reguorier/ai-judge
 ```
 
 ## Product Hunt
@@ -131,7 +131,7 @@ AI Judge 是一个本地优先的多模型评审 skill/CLI。它不是再训练�
 
 我想解决的问题很简单：AI 回答越来越流畅，但人真正需要的是“我该不该信它，以及哪里不该信”。所以 AI Judge 的最后一票仍然保留给人，它只是把证据、分歧、异议、风险和推理路径摊开。
 
-GitHub: https://github.com/reguorider-gif/ai-judge
+GitHub: https://github.com/reguorier/ai-judge
 欢迎试用、提 issue，尤其欢迎提供容易骗过 LLM 的 benchmark case。
 ```
 

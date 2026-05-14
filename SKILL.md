@@ -7,7 +7,7 @@ description: >
   and keep final authority with the human.
 version: 3.2.0
 license: BSL-1.1
-homepage: https://github.com/reguorider-gif/ai-judge
+homepage: https://github.com/reguorier/ai-judge
 tags: [ai, multi-model, jury, verdict, cross-validation, llm, audit, council, hard-truth, evidence, dissent, reasoning-tree]
 platforms: [macOS]
 dependencies: [python3.11, chrome, docker]
@@ -36,7 +36,7 @@ Installs the AI Judge multi-model deliberation system as a Hermes-compatible ski
 pip install -e .
 
 # Or via Docker
-docker pull ghcr.io/reguorider-gif/ai-judge:latest
+docker pull ghcr.io/reguorier/ai-judge:latest
 ```
 
 ## Requirements

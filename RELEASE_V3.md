@@ -66,6 +66,6 @@ Expected: 6/6 tests pass, shallow text triggers L2 hard truth, deep text stays L
 
 ## Release Package
 
-- Repository target: `https://github.com/reguorider-gif/ai-judge`
+- Repository target: `https://github.com/reguorier/ai-judge`
 - Archive asset: `ai-judge-v3.1.0-release.tar.gz`
 - Double-click helper: `Publish-AI-Judge-V3.command`

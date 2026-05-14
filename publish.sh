@@ -7,7 +7,7 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-REPO="${1:-git@github.com:reguorider-gif/ai-judge.git}"
+REPO="${1:-git@github.com:reguorier/ai-judge.git}"
 
 echo -e "${CYAN}"
 echo "AI Judge v3.1.0 GitHub Publisher"
