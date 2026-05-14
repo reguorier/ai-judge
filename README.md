@@ -281,3 +281,7 @@ ai-judge/
 ## License
 
 BSL 1.1. Source available. Production use requires a license.
+
+## Contact
+
+For license keys, support, or partnership questions, email [reguorider@gmail.com](mailto:reguorider@gmail.com).
