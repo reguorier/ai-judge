@@ -101,7 +101,7 @@ def main():
             "evidence_quality": 0.75, "freshness": 0.82, "reproducibility": 0.68,
             "historical_reliability": 0.77, "confidence": 0.72, "risk_penalty": 0.0,
         },
-        "MIMO": {
+        "MiMo": {
             "claim": "人类的不可替代性在于'创造新的评价标准'。AI可以在既有标准下做到最好，但'这个标准本身该不该被替换'——这种对评价体系本身的反思和重建，是人类独有的。",
             "source_authority": 0.84, "evidence_strength": 0.80, "evidence_count": 3,
             "evidence_quality": 0.83, "freshness": 0.89, "reproducibility": 0.76,
