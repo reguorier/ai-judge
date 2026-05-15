@@ -1,4 +1,4 @@
-"""AI Judge Core — Multi-model AI jury package v3.2.0 (Tianfu Agent Migration).
+"""AI Judge Core — Multi-model AI jury package v3.3.0 (COUNCIL-004 persona and trace release).
 
 Public modules (this repository):
   - license_validator: Community license shim
@@ -21,6 +21,10 @@ V3 Modules:
     recovery_after_negative, experience_grounding) + smart_sounding/judgment_quality dual scores
   - hard_truth: L0-L4 judgment-first feedback mode, heterogeneity exemption, performative acceptance detection
 
+V3.3 / COUNCIL-004 Modules (MiroFish Augmentation Phase 1):
+  - seat_personas: 9 fixed seat persona cards with MBTI, risk, cognitive bias, ideology
+  - evidence_trace: Cross-model L1/L2/L3 citation tracing + contamination detection
+
 V3.2 NEW Modules (Tianfu Agent Migration):
   - evidence: Structured evidence objects with source tracing (Tianfu: knowledge-tracing)
   - dissent: Devil's Advocate counterargument generation (Tianfu: Verify phase + Gemini anti-collusion)
@@ -41,6 +45,6 @@ Production modules (paid core, not in this repository):
   - reflect: Performance trend analysis
 """
 
-__version__ = "3.2.0"
+__version__ = "3.3.0"
 __author__ = "AI Judge Contributors"
 __license__ = "BSL-1.1"

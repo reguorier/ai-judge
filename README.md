@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.2.0-purple" alt="v3.2.0">
+  <img src="https://img.shields.io/badge/release-3.3.0-purple" alt="v3.3.0">
+  <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
   <img src="https://img.shields.io/badge/evidence-traced-2ea44f" alt="evidence traced">
   <img src="https://img.shields.io/badge/dissent-before%20confidence-orange" alt="dissent before confidence">
   <img src="https://img.shields.io/badge/reasoning-tree%20ready-38bdf8" alt="reasoning tree ready">
@@ -8,20 +9,22 @@
 </p>
 
 <p align="center">
-  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.2 product overview" width="960">
+  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.3 product overview" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.2</h1>
-<p align="center"><strong>9 AI seats deliberate. Evidence is traced. Dissent challenges weak claims. A reasoning tree shows why. You hold the gavel.</strong></p>
+<h1 align="center">AI Judge v3.3</h1>
+<p align="center"><strong>9 fixed persona seats deliberate. Evidence is traced across L1/L2/L3. Dissent challenges weak claims. You hold the gavel.</strong></p>
 <p align="center">A local-first Codex skill and CLI for multi-model evaluation, claim scoring, auditable reasoning, judgment-quality profiling, and human-final verdicts.</p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
+  <a href="#what-v33-adds">What v3.3 Adds</a> ·
   <a href="#what-v32-adds">What v3.2 Adds</a> ·
   <a href="#how-it-differs">Comparison</a> ·
-  <a href="RELEASE_V3_2.md">Release Notes</a>
+  <a href="RELEASE_V3_3.md">v3.3 Notes</a> ·
+  <a href="RELEASE_V3_2.md">v3.2 Notes</a>
 </p>
 
 ---
@@ -29,7 +32,7 @@
 ## Why People Notice It
 
 Most AI comparison tools answer: **which model sounded best?**
-AI Judge v3.2 asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment?**
+AI Judge v3.3 asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment without nine models quietly copying the same source?**
 
 It separates polished language from actual thinking quality, then gives the human a compact evidence package instead of another black-box synthesis.
 
@@ -41,7 +44,7 @@ It separates polished language from actual thinking quality, then gives the huma
 
 | Step | What happens | Why it matters |
 |---:|---|---|
-| 1 | 9 AI seats answer independently | Avoids one-model monologue bias |
+| 1 | 9 fixed persona seats answer independently | Creates structured divergence instead of bland consensus |
 | 2 | Claims enter the v2 scoring lane | Bluff, calibration, evidence, diversity, and graph value are auditable |
 | 3 | Evidence objects attach sources | Tool, rule, harness, and precedent evidence become inspectable |
 | 4 | Dissent challenges weak support | The system argues against itself before raising confidence |
@@ -64,6 +67,28 @@ flowchart LR
     T --> V["Human Verdict"]
     H --> V
     P --> V
+```
+
+## What v3.3 Adds
+
+COUNCIL-004 turns the nine seats from interchangeable model names into stable, inspectable judging roles. Each seat now carries a fixed persona card with MBTI-style operating mode, risk preference, cognitive bias, ideology, strengths, weaknesses, and a system-prompt injection for jury dispatch.
+
+| Layer | What it does | User-visible output |
+|---|---|---|
+| Fixed seat personas | Keeps Gemini, ChatGPT, DeepSeek, Qwen, Kimi, Grok, Yuanbao, MiMo, and Doubao behavior intentionally different | `ai-judge seats --list`, `ai-judge seats --show grok` |
+| Jury prompt injection | Adds seat-specific operating instructions before the question | `render_jury_prompt(seat, question)` |
+| Evidence trace | Classifies claim support as L1 explicit citation, L2 implied source, or L3 no citation | `ai-judge trace --claim "..."` |
+| Contamination scan | Finds citation sources shared by 3+ seats so consensus does not masquerade as independence | `ai-judge trace --demo`, `ai-judge trace --claims-file ...` |
+
+```bash
+# Inspect the 9 fixed persona seats
+ai-judge seats --list
+ai-judge seats --show grok
+
+# Trace evidence sources
+ai-judge trace --demo
+ai-judge trace --claim "According to the 2025 IMF report, global debt reached $300T"
+ai-judge trace --claims-file path/to/claim-ledger.json
 ```
 
 ## What v3.2 Adds
@@ -127,7 +152,14 @@ Reproducible local smoke tests:
 ```bash
 PYTHONPATH=. python3 tests/smoke_test_v3_2.py
 PYTHONPATH=. python3 tests/smoke_test_v3.py
+PYTHONPATH=. python3 tests/smoke_test_council_004.py
 ```
+
+Observed v3.3 demo behavior:
+
+| Fixture | Personas | Trace | Result |
+|---|---:|---|---|
+| COUNCIL-004 smoke | 9 seats | L1/L2/L3 + shared-source scan | Pseudo-consensus detectable |
 
 Observed v3.2 demo behavior:
 
@@ -176,6 +208,12 @@ python3 cli/main.py v3-pipeline --demo
 python3 cli/main.py v3.2-pipeline --demo
 PYTHONPATH=. python3 tests/smoke_test_v3_2.py
 
+# COUNCIL-004 persona seats + evidence trace
+python3 cli/main.py seats --list
+python3 cli/main.py seats --show grok
+python3 cli/main.py trace --demo
+python3 cli/main.py trace --claim "According to the 2025 IMF report, global debt reached $300T"
+
 # V2 scoring remains available
 python3 cli/main.py score-v2 --demo
 ```
@@ -207,24 +245,24 @@ ai-judge collect --run latest
 ai-judge verdict --run latest
 ```
 
-## v2 to v3.2
+## v2 to v3.3
 
-| Area | v2 | v3.1 | v3.2 |
-|---|---|---|---|
-| Claim quality | 10 scoring functions, bluff gates, diversity radar | Same, plus judgment-quality profiling | Same, plus evidence object tracing |
-| Model value | `graph_value_v2` and Two Peaches allocation | Same, now informed by cognitive risk flags | Same, now routed by risk depth and dissent |
-| Human role | Final verdict owner | Final verdict owner, with clearer blind-spot feedback | Final verdict owner, with visible reasoning path |
-| Failure mode caught | Unsupported confidence and echo-chamber consensus | Unsupported confidence, echo chambers, performative intelligence | Unsupported evidence, missing dissent, hidden risk surfaces |
-| Main new command | `score-v2 --demo` | `neuro-profile`, `hard-truth`, `v3-pipeline` | `v3.2-pipeline --demo` |
+| Area | v2 | v3.1 | v3.2 | v3.3 / COUNCIL-004 |
+|---|---|---|---|---|
+| Claim quality | 10 scoring functions, bluff gates, diversity radar | Same, plus judgment-quality profiling | Same, plus evidence object tracing | Same, plus L1/L2/L3 citation trace |
+| Model value | `graph_value_v2` and Two Peaches allocation | Same, now informed by cognitive risk flags | Same, now routed by risk depth and dissent | Same, with fixed persona roles for stable divergence |
+| Human role | Final verdict owner | Final verdict owner, with clearer blind-spot feedback | Final verdict owner, with visible reasoning path | Final verdict owner, with source-contamination warnings |
+| Failure mode caught | Unsupported confidence and echo-chamber consensus | Unsupported confidence, echo chambers, performative intelligence | Unsupported evidence, missing dissent, hidden risk surfaces | Pseudo-consensus from shared citations and bland seat behavior |
+| Main new command | `score-v2 --demo` | `neuro-profile`, `hard-truth`, `v3-pipeline` | `v3.2-pipeline --demo` | `seats`, `trace` |
 
 ## How It Differs
 
-| System | Primary job | Final owner | What AI Judge v3.2 adds |
+| System | Primary job | Final owner | What AI Judge v3.3 adds |
 |---|---|---|---|
 | Hermes-compatible skill | Package an agent workflow | User/host agent | Full jury workflow, scoring engine, judgment profiling, and auditable reasoning |
-| llm-council | Peer review and chairman synthesis | Chairman LLM | Human-final decision, claim ledger, dissent, and local-first CLI/Docker package |
-| Perplexity Model Council | Web model comparison and synthesis | Perplexity synthesizer | Inspectable formulas, reasoning-tree artifacts, and local workflow |
-| AI Judge v3.2 | Evidence workflow for consequential decisions | Human | Scoring, diversity, graph value, hard truth, evidence tracing, dissent, and risk routing |
+| llm-council | Peer review and chairman synthesis | Chairman LLM | Human-final decision, claim ledger, dissent, persona seats, and local-first CLI/Docker package |
+| Perplexity Model Council | Web model comparison and synthesis | Perplexity synthesizer | Inspectable formulas, reasoning-tree artifacts, evidence trace, and local workflow |
+| AI Judge v3.3 | Evidence workflow for consequential decisions | Human | Scoring, diversity, graph value, hard truth, evidence tracing, contamination detection, dissent, and risk routing |
 
 ## Repository Map
 
@@ -232,6 +270,7 @@ ai-judge verdict --run latest
 ai-judge/
 ├── README.md
 ├── RELEASE_V3.md
+├── RELEASE_V3_3.md
 ├── SKILL.md
 ├── Publish-AI-Judge-V3.command
 ├── core/
@@ -239,6 +278,8 @@ ai-judge/
 │   ├── hard_truth.py          # L0-L4 judgment-first feedback
 │   ├── determinism.py         # consistency + confidence lights + v3 pipeline
 │   ├── scoring_v2.py          # v2 scoring plus v3/v3.2 bridge
+│   ├── seat_personas.py       # v3.3 fixed persona cards and prompt injection
+│   ├── evidence_trace.py      # v3.3 L1/L2/L3 source tracing and contamination scan
 │   ├── evidence.py            # v3.2 structured evidence objects
 │   ├── dissent.py             # v3.2 Devil's Advocate challenge
 │   ├── reasoning_trace.py     # v3.2 reasoning tree builder
@@ -260,8 +301,8 @@ ai-judge/
 
 | Public in this repo | Paid/private runtime |
 |---|---|
-| CLI surface and v2/v3/v3.2 demos | Production browser/CDP collector |
-| Scoring formulas, cognitive proxy functions, evidence/dissent demo | Managed multi-model runtime |
+| CLI surface and v2/v3/v3.2/v3.3 demos | Production browser/CDP collector |
+| Scoring formulas, cognitive proxy functions, evidence/dissent demo, persona/trace tools | Managed multi-model runtime |
 | Codex/Hermes-compatible `SKILL.md` | SaaS license server |
 | Docker, schemas, docs, examples | Team deployment and support layer |
 | Swift bridge source | Hosted integrations |
@@ -270,6 +311,7 @@ ai-judge/
 
 | Document | Purpose |
 |---|---|
+| [RELEASE_V3_3.md](RELEASE_V3_3.md) | v3.3 COUNCIL-004 release notes and persona/trace commands |
 | [RELEASE_V3_2.md](RELEASE_V3_2.md) | v3.2 release notes and Tianfu migration notes |
 | [RELEASE_V3.md](RELEASE_V3.md) | v3.1 release notes and migration notes |
 | [docs/QUICKSTART.md](docs/QUICKSTART.md) | Setup and first demos |

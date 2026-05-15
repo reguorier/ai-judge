@@ -2,19 +2,23 @@
 
 ## Public Demo: No License Required
 
-The public repo includes the v3.2 evidence/dissent demo, v3.1 neuro-cognitive demo, hard truth mode, and the v2 scoring engine:
+The public repo includes the v3.3 COUNCIL-004 persona/trace tools, v3.2 evidence/dissent demo, v3.1 neuro-cognitive demo, hard truth mode, and the v2 scoring engine:
 
 ```bash
 git clone https://github.com/reguorier/ai-judge.git
 cd ai-judge
 python3 cli/main.py v3-pipeline --demo
 python3 cli/main.py v3.2-pipeline --demo
+python3 cli/main.py seats --list
+python3 cli/main.py trace --demo
+PYTHONPATH=. python3 tests/smoke_test_council_004.py
 PYTHONPATH=. python3 tests/smoke_test_v3.py
 PYTHONPATH=. python3 tests/smoke_test_v3_2.py
 ```
 
 Expected signal:
 
+- v3.3 exposes 9 fixed MBTI-style seat personas and L1/L2/L3 citation tracing
 - v3.2 routes security/payment work to `full_jury`, attaches evidence, triggers dissent, and emits a reasoning tree
 - v3.1 dual scores separate `smart_sounding_score` from `judgment_quality_score`
 - hard truth mode escalates shallow strategic jargon to L2
@@ -94,6 +98,10 @@ docker compose run --rm ai-judge jury --question "..."
 | `hard-truth --demo` | Preview L0-L4 judgment-first feedback | < 1s |
 | `v3-pipeline --demo` | Run determinism + neuro + hard truth pipeline | < 1s |
 | `v3.2-pipeline --demo` | Run evidence + dissent + reasoning-tree demo | < 1s |
+| `seats --list` | List the 9 fixed COUNCIL-004 persona seats | < 1s |
+| `seats --show grok` | Show one seat's MBTI, bias, and prompt injection | < 1s |
+| `trace --demo` | Detect shared citation contamination across seats | < 1s |
+| `trace --claim "..."` | Classify one claim as L1/L2/L3 evidence trace | < 1s |
 | `score-v2 --demo` | Run the public v2 scoring-engine fixture | < 1s |
 | `verdict` | Score claims, detect consensus, generate audit trail | 5-15s |
 | `reflect` | Generate daily performance summary | < 1s |

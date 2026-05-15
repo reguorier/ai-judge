@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI Judge — Unified CLI entry point v3.2.0.
+"""AI Judge — Unified CLI entry point v3.3.0.
 
 Usage:
     ai-judge license status
@@ -28,7 +28,11 @@ Usage:
     # V3.2 commands:
     ai-judge v3.2-pipeline --demo     # Evidence + dissent + reasoning tree + risk router
 
-    # Council commands:
+    # COUNCIL-004 commands:
+    ai-judge seats --list             # List 9 fixed persona seat cards
+    ai-judge seats --show grok        # Show one seat's MBTI, bias, prompt injection
+    ai-judge trace --demo             # Cross-model citation contamination demo
+    ai-judge trace --claim "..."      # L1/L2/L3 citation trace for one claim
     ai-judge council --model mimo --demo  # Fixed jury seat demo (MiMo, Gemini, etc.)
 """
 
@@ -251,6 +255,18 @@ def build_parser() -> argparse.ArgumentParser:
     v32.add_argument("--demo", action="store_true", help="Run V3.2 Tianfu migration demo")
     v32.set_defaults(func=cmd_v3_2_pipeline)
 
+    # ── COUNCIL-004 Commands: Seat Personas + Evidence Trace ──
+    sp = sub.add_parser("seats", help="COUNCIL-004: List 9 AI Judge seat personas (MBTI + biases)")
+    sp.add_argument("--list", action="store_true", default=True, help="List all seat personas")
+    sp.add_argument("--show", help="Show detailed persona for a seat (e.g. gemini, grok)")
+    sp.set_defaults(func=cmd_seats)
+
+    et = sub.add_parser("trace", help="COUNCIL-004: Cross-model evidence trace + contamination check")
+    et.add_argument("--claim", help="Trace a single claim text for citation levels")
+    et.add_argument("--claims-file", help="claim-ledger.json for cross-model contamination scan")
+    et.add_argument("--demo", action="store_true", help="Run evidence trace demo")
+    et.set_defaults(func=cmd_trace)
+
     # ── Personal Cognitive Commands (FUSE / DECIDE / DARE) ──
     pc = sub.add_parser("self", help="Personal cognitive protocols (FUSE/DECIDE/DARE)")
     pc_sub = pc.add_subparsers(dest="self_action")
@@ -407,6 +423,57 @@ def cmd_self_nudge(args: argparse.Namespace) -> int:
     result = engine.periodic_nudge()
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
+
+
+# ── COUNCIL-004 Command Handlers ──
+
+def cmd_seats(args: argparse.Namespace) -> int:
+    import json as _json
+    from core.seat_personas import list_seats, get_persona
+    if args.show:
+        persona = get_persona(args.show)
+        if persona:
+            print(_json.dumps(persona, ensure_ascii=False, indent=2))
+        else:
+            print(f"Seat '{args.show}' not found. Use --list to see all.")
+            return 1
+    else:
+        print(_json.dumps(list_seats(), ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_trace(args: argparse.Namespace) -> int:
+    import json as _json
+    from core.evidence_trace import trace_claim, detect_shared_sources
+    if args.demo:
+        sample = {
+            "Gemini": ["According to the 2025 IMF report, global debt reached $300T.", "https://nature.com/abc confirms superconductivity."],
+            "ChatGPT": ["According to the 2025 IMF report, consolidation is urgent.", "https://nature.com/abc cited as breakthrough."],
+            "DeepSeek": ["According to the 2025 IMF report, debt-to-GDP context is missing.", "I abstain from the superconductivity claim."],
+        }
+        result = detect_shared_sources(sample)
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+    if args.claim:
+        print(_json.dumps(trace_claim(args.claim, "cli_input"), ensure_ascii=False, indent=2))
+        return 0
+    if args.claims_file:
+        from pathlib import Path
+        path = Path(args.claims_file)
+        if not path.exists():
+            print(f"Error: {args.claims_file} not found", file=sys.stderr)
+            return 1
+        data = _json.loads(path.read_text(encoding="utf-8"))
+        claims_list = data if isinstance(data, list) else data.get("claims", data.get("claim_ledger", []))
+        seat_claims: dict[str, list[str]] = {}
+        for c in claims_list:
+            seat = c.get("seat", c.get("source_id", "unknown"))
+            text = c.get("claim", c.get("content", str(c)))
+            seat_claims.setdefault(seat, []).append(text)
+        print(_json.dumps(detect_shared_sources(seat_claims), ensure_ascii=False, indent=2))
+        return 0
+    print("Usage: ai-judge trace --demo | --claim '...' | --claims-file path", file=sys.stderr)
+    return 2
 
 
 def cmd_score_v2(args: argparse.Namespace) -> int:

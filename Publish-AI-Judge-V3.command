@@ -6,12 +6,12 @@ OWNER="reguorier"
 REPO="ai-judge"
 REPO_FULL="${OWNER}/${REPO}"
 REPO_URL="https://github.com/${REPO_FULL}.git"
-TAG="v3.1.0"
-ARCHIVE="ai-judge-v3.1.0-release.tar.gz"
-DESCRIPTION="AI Judge v3.1: local-first AI jury with hard truth mode and cognitive proxy signals."
+TAG="v3.3.0"
+ARCHIVE="ai-judge-v3.3.0-release.tar.gz"
+DESCRIPTION="AI Judge v3.3: local-first AI jury with COUNCIL-004 persona seats and evidence trace."
 
 clear
-echo "AI Judge V3.1 Publisher"
+echo "AI Judge V3.3 Publisher"
 echo "Target: https://github.com/${REPO_FULL}"
 echo ""
 echo "Paste a GitHub token with repo write access."
@@ -65,7 +65,7 @@ if ! curl -fsS -H @"$HEADER_FILE" "https://api.github.com/repos/${REPO_FULL}" >/
 import json
 print(json.dumps({
     "name": "ai-judge",
-    "description": "AI Judge v3.1: local-first AI jury with hard truth mode and cognitive proxy signals.",
+    "description": "AI Judge v3.3: local-first AI jury with COUNCIL-004 persona seats and evidence trace.",
     "private": False,
     "auto_init": False,
     "has_issues": True,
@@ -96,6 +96,8 @@ git add -- \
   LICENSE \
   README.md \
   RELEASE_V3.md \
+  RELEASE_V3_2.md \
+  RELEASE_V3_3.md \
   RELEASE_v2.md \
   SECURITY.md \
   SKILL.md \
@@ -114,17 +116,17 @@ git add -- \
   schemas \
   tests
 
-git commit -m "Publish AI Judge v3.1.0" 2>/dev/null || echo "No new commit needed."
+git commit -m "Publish AI Judge v3.3.0" 2>/dev/null || echo "No new commit needed."
 
 if git rev-parse "$TAG" >/dev/null 2>&1; then
   git tag -f "$TAG"
 else
-  git tag -a "$TAG" -m "AI Judge v3.1.0"
+  git tag -a "$TAG" -m "AI Judge v3.3.0"
 fi
 
 echo ""
 echo "Building ${ARCHIVE}..."
-git archive --format=tar.gz --prefix="ai-judge-v3.1.0/" -o "$ARCHIVE" HEAD
+git archive --format=tar.gz --prefix="ai-judge-v3.3.0/" -o "$ARCHIVE" HEAD
 
 echo ""
 echo "Pushing main and ${TAG}..."
@@ -136,20 +138,20 @@ echo "Creating GitHub Release..."
 RELEASE_JSON="$(mktemp /tmp/ai-judge-release.XXXXXX.json)"
 python3 - <<'PY' > "$RELEASE_JSON"
 import json
-body = """AI Judge v3.1.0 release.
+body = """AI Judge v3.3.0 release.
 
 Highlights:
-- v3.1 hard truth mode
-- 4 cognitive proxy signals
-- dual scores: smart_sounding vs judgment_quality
-- visual GitHub README
+- COUNCIL-004 fixed persona seats
+- L1/L2/L3 evidence trace and source contamination scan
+- v3.2 evidence, dissent, reasoning tree, and risk router remain available
+- v3.1 hard truth mode and cognitive proxy demos remain available
 - local-first CLI, Docker, and Codex skill package
 
-See RELEASE_V3.md for full notes.
+See RELEASE_V3_3.md for full notes.
 """
 print(json.dumps({
-    "tag_name": "v3.1.0",
-    "name": "AI Judge v3.1.0",
+    "tag_name": "v3.3.0",
+    "name": "AI Judge v3.3.0",
     "body": body,
     "draft": False,
     "prerelease": False,

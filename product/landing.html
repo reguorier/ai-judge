@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Judge v3.2 — Evidence Tracing · Dissent · Reasoning Tree · Human Final</title>
+<title>AI Judge v3.3 — Persona Seats · Evidence Trace · Dissent · Human Final</title>
 <style>
   :root {
     --bg: #080810;
@@ -203,9 +203,9 @@
     </svg>
   </div>
 
-  <h1>AI Judge v3.2</h1>
-  <p class="tagline">9 AI models deliberate. Evidence is traced. Dissent challenges weak claims. <strong style="color:var(--gold);">You hold the gavel.</strong></p>
-  <p class="sub">Don't trust one confident answer. Inspect the claims, the evidence, the dissent, and the reasoning tree.</p>
+  <h1>AI Judge v3.3</h1>
+  <p class="tagline">9 fixed persona seats deliberate. Evidence is traced across L1/L2/L3. <strong style="color:var(--gold);">You hold the gavel.</strong></p>
+  <p class="sub">Don't trust one confident answer. Inspect the seat bias, the citations, the dissent, and the reasoning tree.</p>
   <a href="#install" class="btn btn-primary">Try It Free →</a>
   <a href="https://github.com/reguorier/ai-judge" class="btn btn-ghost">GitHub</a>
   <a href="mailto:reguorider@gmail.com" class="btn btn-gold">Get License</a>
@@ -213,12 +213,20 @@
 
 <div class="wrap">
 
-  <!-- ═══════════════ V3.2 UPGRADE ═══════════════ -->
+  <!-- ═══════════════ V3.3 UPGRADE ═══════════════ -->
   <section>
-    <h2>v3.2 makes every verdict traceable.</h2>
-    <p class="desc">The Tianfu-inspired migration adds source-backed evidence objects, a Devil's Advocate dissent pass, risk-based review routing, and a reasoning tree that can render in the desktop UI.</p>
+    <h2>v3.3 makes the jury itself inspectable.</h2>
+    <p class="desc">COUNCIL-004 adds stable persona seats and L1/L2/L3 source tracing on top of v3.2 evidence, dissent, risk routing, and reasoning trees.</p>
 
     <div class="g2">
+      <div class="card" style="border-color:var(--gold);">
+        <h3>Fixed Persona Seats</h3>
+        <p>Each of the 9 seats now has MBTI-style posture, risk preference, bias, ideology, strengths, weaknesses, and prompt injection.</p>
+      </div>
+      <div class="card" style="border-color:var(--blue);">
+        <h3>L1/L2/L3 Evidence Trace</h3>
+        <p>Claims are classified as explicit citation, implied source, or no citation, so unsupported confidence is visible immediately.</p>
+      </div>
       <div class="card" style="border-color:var(--green);">
         <h3>Evidence Objects</h3>
         <p>Tool results, rule matches, harness results, and precedents become first-class support for every claim.</p>
@@ -358,30 +366,30 @@
 
   <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
   <section>
-    <h2>Four stages. Zero black boxes.</h2>
-    <p class="desc">Each stage is a discrete command. You can inspect, re-run, or question anything.</p>
+    <h2>Core commands. Zero black boxes.</h2>
+    <p class="desc">Every command exposes a different part of the verdict path: seat posture, jury setup, source trace, and final human review.</p>
     <div class="flow">
       <div class="flow-step">
         <div class="icon">⚖️</div>
-        <strong>1. jury</strong>
-        <small>Create session<br>9 seats assigned</small>
+        <strong>1. seats</strong>
+        <small>Inspect bias<br>9 personas fixed</small>
       </div>
       <span class="flow-arrow">→</span>
       <div class="flow-step">
         <div class="icon">🔍</div>
-        <strong>2. collect</strong>
-        <small>9 models answer<br>independently</small>
+        <strong>2. jury</strong>
+        <small>Create session<br>9 seats assigned</small>
       </div>
       <span class="flow-arrow">→</span>
       <div class="flow-step">
         <div class="icon">📊</div>
-        <strong>3. verdict</strong>
-        <small>10 functions<br>score each claim</small>
+        <strong>3. trace</strong>
+        <small>L1/L2/L3<br>source scan</small>
       </div>
       <span class="flow-arrow">→</span>
       <div class="flow-step final">
         <div class="icon">👤</div>
-        <strong>4. you decide</strong>
+        <strong>4. verdict</strong>
         <small>Human holds<br>final gavel</small>
       </div>
     </div>
@@ -417,7 +425,7 @@
     <div class="stat-row" style="margin-top:20px;">
       <div class="stat"><div class="num">9</div><div class="label">AI Model Seats</div></div>
       <div class="stat"><div class="num">10</div><div class="label">Scoring Functions</div></div>
-      <div class="stat"><div class="num">4</div><div class="label">Pipeline Stages</div></div>
+      <div class="stat"><div class="num">3</div><div class="label">Evidence Trace Levels</div></div>
       <div class="stat"><div class="num">100%</div><div class="label">Human Authority</div></div>
     </div>
   </section>
@@ -492,8 +500,10 @@
     <h2>Install in 30 seconds.</h2>
     <pre><code>pip install ai-judge
 ai-judge license activate --key AJ-XXXX-XXXX-XXXX
+ai-judge seats --list
 ai-judge jury --question "Should we enter this market?"
 ai-judge collect --run latest
+ai-judge trace --claims-file ~/.ai-judge/runs/latest/claim-ledger.json
 ai-judge verdict --run latest
 # You decide.</code></pre>
     <div class="alert">
