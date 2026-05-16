@@ -369,8 +369,9 @@ def run_chrome_fixed_tabs(
         )
         elapsed = max(0.0, longest_timeout - longest_remaining)
         if progress:
+            active_labels = "、".join(_seat_label(seat) for seat in sorted(active_pending))
             progress(
-                f"Chrome 固定标签回答轮询：剩余 {len(active_pending)} 席，最长等待 {int(longest_remaining)}s",
+                f"Chrome 固定标签回答轮询：等待 {active_labels}，剩余 {len(active_pending)} 席，最长等待 {int(longest_remaining)}s",
                 0.40 + 0.32 * min(1.0, elapsed / longest_timeout),
             )
         for seat in list(active_pending):
@@ -387,8 +388,6 @@ def run_chrome_fixed_tabs(
                 continue
             text = str(capture.get("text") or "").strip()
             response_text = _response_text_from_capture(capture, item)
-            before_length = int(item.get("before_length") or 0)
-            before_text = str(item.get("before_text") or "")
             marker_found = bool(capture.get("marker_found"))
             marker_in_input = bool(capture.get("marker_in_input"))
             known_error = capture.get("known_error") or {}
@@ -480,8 +479,6 @@ def run_chrome_fixed_tabs(
             capture["text"] = ""
         text = str(capture.get("text") or "").strip()
         response_text = _response_text_from_capture(capture, item)
-        before_length = int(item.get("before_length") or 0)
-        before_text = str(item.get("before_text") or "")
         marker_found = bool(capture.get("marker_found"))
         marker_in_input = bool(capture.get("marker_in_input"))
         known_error = capture.get("known_error") or {}
@@ -779,6 +776,10 @@ def _domain(url: str) -> str:
 
 def _seat_config(config: dict[str, Any], seat: str) -> dict[str, Any]:
     return dict((config.get("seats") or {}).get(seat) or {})
+
+
+def _seat_label(seat: str) -> str:
+    return str(SEAT_PERSONAS.get(seat, {}).get("name") or seat)
 
 
 def _seat_timeout_seconds(config: dict[str, Any], seat_config: dict[str, Any]) -> float:

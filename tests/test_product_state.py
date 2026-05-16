@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -117,6 +119,56 @@ def test_supplement_merge_replaces_slow_seat_and_marks_recovery():
     assert merged[0]["supplemented_from_run_id"] == "supp-1"
     assert merged[0]["supplement_history"][0]["previous_error"]["code"] == "slow_response_pending"
     assert merged[1]["seat"] == "deepseek"
+
+
+def test_progress_diagnostics_names_waiting_and_stale_seats():
+    api_server = _load_api_server()
+    old_runs_dir = api_server.RUNS_DIR
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        run_dir = tmp_path / "run-watch"
+        run_dir.mkdir(parents=True)
+        (run_dir / "trace.json").write_text(json.dumps({
+            "run_id": "run-watch",
+            "events": [
+                {
+                    "phase": "seat",
+                    "action": "chrome_submit_complete",
+                    "detail": "chatgpt 提示词已发送",
+                    "at": "2026-05-16T15:44:24+00:00",
+                    "data": {"seat": "chatgpt"},
+                },
+                {
+                    "phase": "seat",
+                    "action": "chrome_submit_unconfirmed",
+                    "detail": "minimax 未确认提交",
+                    "at": "2026-05-16T15:44:40+00:00",
+                    "data": {"seat": "minimax", "submit": {"error": "send_button_not_found"}},
+                },
+            ],
+        }), encoding="utf-8")
+        try:
+            status = {
+                "run_id": "run-watch",
+                "status": "running",
+                "progress": 0.85,
+                "current_step": "补跑 1/1：Chrome 固定标签回答轮询：等待 ChatGPT、Qwen，剩余 2 席，最长等待 427s",
+                "updated_at": (datetime.now(timezone.utc) - timedelta(seconds=120)).isoformat(),
+            }
+
+            diagnostics = api_server._progress_diagnostics(status)
+        finally:
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert diagnostics["stale"] is True
+    assert diagnostics["retry"] == {"attempt": 1, "total": 1}
+    assert diagnostics["waiting"]["labels"] == ["ChatGPT", "Qwen"]
+    assert diagnostics["waiting"]["longest_wait_seconds"] == 427
+    assert diagnostics["seats"][0]["seat"] == "chatgpt"
+    assert diagnostics["seats"][0]["state"] == "waiting"
+    assert diagnostics["seats"][1]["seat"] == "minimax"
+    assert diagnostics["seats"][1]["status"] == "发送未确认"
 
 
 def test_attach_citation_mvp_adds_replay_ledger_and_gap_suggestions():

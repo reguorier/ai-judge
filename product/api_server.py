@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import sys
 import threading
 import time
@@ -59,6 +60,9 @@ TASKS = TaskManager()
 RUNS_DIR = _PROJECT_ROOT / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
 PRODUCT_DIR = _PROJECT_ROOT / "product"
+STALE_TASK_SECONDS = 90
+WAITING_STEP_RE = re.compile(r"(?:等待\s*(?P<labels>[^，]+)，)?剩余\s*(?P<count>\d+)\s*席，最长等待\s*(?P<seconds>\d+)s")
+RETRY_STEP_RE = re.compile(r"补跑\s*(?P<attempt>\d+)\s*/\s*(?P<total>\d+)")
 
 
 def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
@@ -80,6 +84,166 @@ def _load_run(run_id: str) -> dict[str, Any] | None:
     if run_file.exists():
         return json.loads(run_file.read_text(encoding="utf-8"))
     return None
+
+
+def _task_payload(run_id: str) -> dict[str, Any] | None:
+    status = TASKS.get_status(run_id)
+    if status is None:
+        return None
+    payload = dict(status)
+    result = TASKS.get_result(run_id)
+    if result:
+        payload["result"] = result
+    payload["progress_diagnostics"] = _progress_diagnostics(payload)
+    return payload
+
+
+def _progress_diagnostics(status: dict[str, Any]) -> dict[str, Any]:
+    run_id = str(status.get("run_id") or "")
+    step = str(status.get("current_step") or "")
+    seconds_since_update = _seconds_since_iso(status.get("updated_at"))
+    trace = load_trace(_trace_path(run_id)) or {}
+    seats = _seat_progress_from_trace(trace)
+    waiting_match = WAITING_STEP_RE.search(step)
+    retry_match = RETRY_STEP_RE.search(step)
+    waiting = {
+        "count": int(waiting_match.group("count")) if waiting_match else 0,
+        "longest_wait_seconds": int(waiting_match.group("seconds")) if waiting_match else None,
+        "labels": _split_progress_labels(waiting_match.group("labels") if waiting_match else ""),
+    }
+    if waiting["labels"]:
+        label_order = {label.lower(): index for index, label in enumerate(waiting["labels"])}
+        seats.sort(key=lambda item: (label_order.get(str(item.get("name", "")).lower(), 99), item.get("state") != "waiting"))
+    else:
+        seats.sort(key=lambda item: {"waiting": 0, "submitting": 1, "nudge": 2, "blocked": 3, "done": 4}.get(str(item.get("state")), 9))
+    return {
+        "schema": "ai_judge.progress_diagnostics.v1",
+        "run_id": run_id,
+        "step": step,
+        "status": status.get("status"),
+        "stage": _progress_stage(step, float(status.get("progress") or 0)),
+        "retry": {
+            "attempt": int(retry_match.group("attempt")) if retry_match else None,
+            "total": int(retry_match.group("total")) if retry_match else None,
+        },
+        "waiting": waiting,
+        "seats": seats[:8],
+        "seconds_since_update": seconds_since_update,
+        "stale": bool(status.get("status") == "running" and seconds_since_update is not None and seconds_since_update > STALE_TASK_SECONDS),
+        "stale_after_seconds": STALE_TASK_SECONDS,
+    }
+
+
+def _seconds_since_iso(value: Any) -> int | None:
+    if not value:
+        return None
+    try:
+        timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
+        return max(0, int((datetime.now(timezone.utc) - timestamp).total_seconds()))
+    except Exception:
+        return None
+
+
+def _split_progress_labels(value: str) -> list[str]:
+    return [item.strip() for item in re.split(r"[、,，/]", str(value or "")) if item.strip()]
+
+
+def _progress_stage(step: str, progress: float) -> str:
+    if "补跑" in step:
+        return "retry_collect"
+    if "回答轮询" in step or "席位" in step:
+        return "collect"
+    if "评分" in step or progress >= 0.70:
+        return "score"
+    if "桥接" in step or "Operator" in step:
+        return "driver"
+    if "共振" in step:
+        return "align"
+    return "accept"
+
+
+def _seat_progress_from_trace(trace: dict[str, Any]) -> list[dict[str, Any]]:
+    states: dict[str, dict[str, Any]] = {}
+    for event in trace.get("events") or []:
+        if event.get("phase") != "seat":
+            continue
+        data = event.get("data") or {}
+        seat = str(data.get("seat") or "").lower()
+        if seat not in SEAT_PERSONAS:
+            continue
+        states[seat] = _next_seat_progress_state(seat, states.get(seat), event)
+    return [item for item in states.values() if item.get("state") in {"waiting", "submitting", "nudge", "blocked"}]
+
+
+def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event: dict[str, Any]) -> dict[str, Any]:
+    action = str(event.get("action") or "")
+    detail = str(event.get("detail") or "")
+    data = event.get("data") or {}
+    base = {
+        "seat": seat,
+        "name": SEAT_PERSONAS.get(seat, {}).get("name", seat),
+        "state": (previous or {}).get("state", "waiting"),
+        "status": (previous or {}).get("status", "等待"),
+        "reason": (previous or {}).get("reason", "等待模型输出可采集回答"),
+        "detail": detail,
+        "updated_at": event.get("at"),
+    }
+    if action in {"chrome_submit_start", "start"}:
+        base.update({"state": "submitting", "status": "提交中", "reason": "正在写入提示词或准备模型页面"})
+    elif action == "chrome_submit_complete":
+        base.update({"state": "waiting", "status": "等待回答", "reason": "提示词已发送，正在等待可验证回答"})
+    elif action == "chrome_final_answer_nudge":
+        base.update({"state": "nudge", "status": "已追问", "reason": "检测到空思考或未输出正文，已追加最终答案追问"})
+    elif action in {"chrome_response_captured", "chrome_partial_response_captured", "complete"}:
+        base.update({"state": "done", "status": "已采集", "reason": f"已读取 {data.get('response_chars', 0)} 字"})
+    elif action in {"chrome_response_timeout", "chrome_response_rejected"}:
+        code = str(data.get("code") or "slow_response_pending")
+        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
+    elif action in {
+        "chrome_submit_unconfirmed",
+        "chrome_submit_failed",
+        "chrome_submit_blocked",
+        "chrome_composer_blocked",
+        "chrome_composer_busy",
+        "chrome_composer_not_ready",
+        "fixed_tab_not_found",
+        "chrome_response_page_error",
+    }:
+        code = str(((data.get("submit") or {}).get("error")) or ((data.get("known_error") or {}).get("code")) or action)
+        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
+    return base
+
+
+def _seat_error_label(code: str) -> str:
+    return {
+        "slow_response_pending": "慢生成",
+        "response_timeout": "超时",
+        "response_not_relevant": "疑似旧回答",
+        "send_button_not_found": "发送未确认",
+        "submit_unconfirmed": "提交未确认",
+        "chrome_composer_blocked": "页面阻断",
+        "page_blocked": "页面阻断",
+        "composer_busy": "页面忙碌",
+        "fixed_tab_not_found": "标签缺失",
+        "transcript_pollution": "历史串流",
+    }.get(code, "需处理")
+
+
+def _seat_error_reason(code: str) -> str:
+    return {
+        "slow_response_pending": "页面可能仍在生成，或回答未包含本轮可验证标记",
+        "response_timeout": "等待窗口内没有读到可用回答",
+        "response_not_relevant": "捕获内容没有匹配本轮问题，已避免把旧页面内容当作答案",
+        "send_button_not_found": "提示词写入了页面，但没有找到明确可用的发送按钮",
+        "submit_unconfirmed": "提示词写入后，桥接层无法确认模型已接收为新一轮提问",
+        "chrome_composer_blocked": "模型页面出现阻断态，系统没有提交新问题",
+        "page_blocked": "模型页面出现阻断态，系统没有提交新问题",
+        "composer_busy": "页面仍在生成，系统没有把新任务塞进忙碌会话",
+        "fixed_tab_not_found": "没有找到该模型对应的 Chrome 固定标签",
+        "transcript_pollution": "捕获内容混入旧 AI Judge 标记，已拒绝评分",
+    }.get(code, "该席位需要查看页面或重新补采")
 
 
 def _notification_config(data: dict[str, Any]) -> dict[str, Any]:
@@ -972,13 +1136,9 @@ def supplement_judge(run_id: str):
 
 @app.route("/api/task/<run_id>")
 def task_status(run_id: str):
-    status = TASKS.get_status(run_id)
-    if status is None:
+    payload = _task_payload(run_id)
+    if payload is None:
         return jsonify({"error": "task not found"}), 404
-    result = TASKS.get_result(run_id)
-    payload = dict(status)
-    if result:
-        payload["result"] = result
     return jsonify(payload)
 
 
@@ -1096,11 +1256,9 @@ def progress_sse(run_id: str):
     def generate():
         last_payload = None
         for _ in range(360):
-            status = TASKS.get_status(run_id)
-            if not status:
+            payload = _task_payload(run_id)
+            if not payload:
                 payload = {"run_id": run_id, "status": "missing", "progress": 0, "current_step": "任务不存在"}
-            else:
-                payload = status
             encoded = json.dumps(payload, ensure_ascii=False)
             if encoded != last_payload:
                 yield f"data: {encoded}\n\n"
@@ -1142,7 +1300,7 @@ def history_detail(run_id: str):
     result = _load_run(run_id)
     if result:
         return jsonify(result)
-    status = TASKS.get_status(run_id)
+    status = _task_payload(run_id)
     if status:
         return jsonify(status)
     return jsonify({"error": "Run not found"}), 404

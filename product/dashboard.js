@@ -29,6 +29,7 @@ const state = {
   selectedSeats: new Set(),
   lastHistoryRunId: localStorage.getItem("ai_judge_last_run_id") || null,
   currentRunId: null,
+  currentTask: null,
   currentVerdict: null,
   currentTrace: null,
   eventSource: null,
@@ -270,7 +271,10 @@ function updateTopStatus() {
     : `网页 ${counts.webReady}/${counts.webTotal}`;
   if ($("#task-ready-count")) $("#task-ready-count").textContent = `${counts.webReady}/${counts.webTotal}`;
   if ($("#task-bridge-row")) $("#task-bridge-row").textContent = `${counts.webReady}/${counts.webTotal}`;
-  if ($("#task-running-count")) $("#task-running-count").textContent = state.currentRunId ? "1" : "0";
+  if ($("#task-running-count")) {
+    const activeRun = state.currentRunId && !state.currentTask?.progress_diagnostics?.stale;
+    $("#task-running-count").textContent = activeRun ? "1" : "0";
+  }
 }
 
 function bridgeChannelCounts() {
@@ -854,15 +858,19 @@ function startPolling(runId) {
 function handleTask(task) {
   if (task.error && !task.status) {
     setProgress(0, task.error);
+    renderRunDiagnostics(null);
     setBusy(false);
     return;
   }
+  state.currentTask = task;
   const pct = Math.round((Number(task.progress) || 0) * 100);
   setProgress(pct, task.current_step || task.status || "运行中");
+  renderRunDiagnostics(task);
 
   if (task.status === "complete") {
     cleanupProgress();
     setBusy(false);
+    renderRunDiagnostics(null);
     if (task.result) renderVerdict(task.result);
     else loadVerdict(task.run_id);
     loadHistory();
@@ -1224,7 +1232,20 @@ async function openHistoryRun(runId, options = {}) {
     if (options.switchToConversation) switchTab("draft");
   } else {
     renderHistoryDetail(data);
+    renderTaskSnapshot(data);
   }
+}
+
+function renderTaskSnapshot(task) {
+  if (!task || !task.run_id || task.progress === undefined) return;
+  state.currentRunId = task.run_id;
+  state.currentTask = task;
+  $("#run-id").textContent = task.run_id;
+  const pct = Math.round((Number(task.progress) || 0) * 100);
+  setProgress(pct, task.current_step || task.status || "运行中");
+  renderRunDiagnostics(task);
+  setBusy(task.status === "running" && !task.progress_diagnostics?.stale);
+  if (task.status === "running" && !task.progress_diagnostics?.stale) startProgress(task.run_id);
 }
 
 function renderHistoryDetail(item) {
@@ -1373,6 +1394,72 @@ function setProgress(percent, label) {
   $("#progress-label").textContent = label;
   $("#progress-percent").textContent = `${safe}%`;
   renderTimeline(safe);
+}
+
+function renderRunDiagnostics(task) {
+  const box = $("#run-diagnostics");
+  if (!box) return;
+  const diag = task?.progress_diagnostics;
+  if (!task || !diag || task.status === "complete") {
+    box.hidden = true;
+    return;
+  }
+  const seats = Array.isArray(diag.seats) ? diag.seats : [];
+  const waiting = diag.waiting || {};
+  const title = diagnosticTitle(task, diag, seats);
+  const meta = diagnosticMeta(diag, waiting);
+  $("#diagnostic-title").textContent = title;
+  $("#diagnostic-meta").textContent = meta;
+  box.classList.toggle("stale", Boolean(diag.stale));
+  const watch = $("#seat-watch");
+  if (!seats.length) {
+    watch.innerHTML = `<div class="watch-reason">${escapeHtml(task.current_step || "正在等待下一次进度事件")}</div>`;
+  } else {
+    watch.innerHTML = seats.map(seat => `
+      <div class="seat-watch-row ${escapeHtml(seat.state || "waiting")}">
+        <span class="watch-dot"></span>
+        <span class="watch-name">${escapeHtml(seat.name || seat.seat || "-")}</span>
+        <span class="watch-detail">
+          <span class="watch-status">${escapeHtml(seat.status || "等待")}</span>
+          <span class="watch-reason">${escapeHtml(seat.reason || seat.detail || "")}</span>
+        </span>
+      </div>
+    `).join("");
+  }
+  box.hidden = false;
+}
+
+function diagnosticTitle(task, diag, seats) {
+  if (diag.stale) {
+    return `后台心跳中断 · 停在 ${Math.round((Number(task.progress) || 0) * 100)}%`;
+  }
+  const waitingNames = seats
+    .filter(seat => ["waiting", "submitting", "nudge"].includes(seat.state))
+    .map(seat => seat.name || seat.seat)
+    .slice(0, 3);
+  if (waitingNames.length) return `正在观察 ${waitingNames.join("、")}`;
+  if ((diag.waiting || {}).count) return `等待 ${diag.waiting.count} 个网页席位`;
+  return task.current_step || "运行中";
+}
+
+function diagnosticMeta(diag, waiting) {
+  const parts = [];
+  if (diag.retry?.attempt) parts.push(`补跑 ${diag.retry.attempt}/${diag.retry.total || diag.retry.attempt}`);
+  if (waiting?.longest_wait_seconds !== null && waiting?.longest_wait_seconds !== undefined) {
+    parts.push(`最长 ${formatDuration(waiting.longest_wait_seconds)}`);
+  }
+  if (diag.stale && diag.seconds_since_update !== null && diag.seconds_since_update !== undefined) {
+    parts.push(`停更 ${formatDuration(diag.seconds_since_update)}`);
+  }
+  return parts.join(" · ");
+}
+
+function formatDuration(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  if (value < 60) return `${Math.round(value)}s`;
+  const minutes = Math.floor(value / 60);
+  const rest = Math.round(value % 60);
+  return rest ? `${minutes}m${rest}s` : `${minutes}m`;
 }
 
 function renderTimeline(progress) {
