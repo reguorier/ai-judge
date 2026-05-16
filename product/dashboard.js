@@ -1,4 +1,13 @@
 const API_BASE = "http://127.0.0.1:8501";
+const RECOVERABLE_WEB_CODES = new Set([
+  "slow_response_pending",
+  "response_timeout",
+  "send_button_not_found",
+  "submit_unconfirmed",
+  "composer_busy",
+  "response_not_relevant",
+  "long_prompt_still_in_input",
+]);
 
 const timelineSteps = [
   { key: "accept", label: "受理问题" },
@@ -34,6 +43,9 @@ const state = {
   currentTrace: null,
   eventSource: null,
   pollTimer: null,
+  autoRecheckTimer: null,
+  autoRecheckRunId: null,
+  recheckInFlight: false,
   mentorEnabled: localStorage.getItem("ai_judge_mentor_enabled") === "1",
   mentorConfirmed: false,
   mentorSignature: "",
@@ -60,6 +72,7 @@ function bindUI() {
   $("#btn-history-refresh").addEventListener("click", loadHistory);
   $("#btn-submit").addEventListener("click", submitJudge);
   $("#btn-supplement-slow")?.addEventListener("click", supplementSlowSeats);
+  $("#btn-recheck-stalled")?.addEventListener("click", () => recheckStalledSeats({ auto: false }));
   $("#view-link").addEventListener("click", event => {
     const href = event.currentTarget.getAttribute("href");
     if (!href || href === "#") return;
@@ -764,7 +777,7 @@ async function submitJudge() {
 
 function isSupplementableResult(item) {
   const code = item?.error?.code || "";
-  return Boolean(item && !item.ok && (item.supplementable || code === "slow_response_pending" || code === "response_timeout"));
+  return Boolean(item && !item.ok && (item.supplementable || RECOVERABLE_WEB_CODES.has(code)));
 }
 
 function supplementableRawResults() {
@@ -778,8 +791,8 @@ function renderSupplementButton() {
   btn.hidden = !state.currentVerdict?.run_id || seats.length === 0;
   btn.disabled = false;
   btn.textContent = seats.length
-    ? `补充慢席位 (${seats.map(item => item.seat_name || item.seat).join(", ")})`
-    : "补充慢席位";
+    ? `补采待回收席位 (${seats.map(item => item.seat_name || item.seat).join(", ")})`
+    : "补采待回收席位";
 }
 
 async function supplementSlowSeats() {
@@ -827,6 +840,67 @@ async function supplementSlowSeats() {
   }
 }
 
+function recheckableDiagnosticSeats(diag) {
+  if (!diag || (!diag.stale && diag.status !== "failed")) return [];
+  return (diag?.seats || [])
+    .filter(seat => {
+      const stateName = seat.state || "";
+      const statusName = seat.status || "";
+      return ["waiting", "nudge"].includes(stateName)
+        || ["慢生成", "超时", "发送未确认", "提交未确认", "疑似旧回答"].includes(statusName);
+    })
+    .map(seat => seat.seat)
+    .filter(Boolean);
+}
+
+async function recheckStalledSeats({ auto = false } = {}) {
+  const task = state.currentTask;
+  const sourceRunId = task?.run_id || state.currentRunId;
+  const seats = recheckableDiagnosticSeats(task?.progress_diagnostics);
+  if (!sourceRunId || !seats.length || state.recheckInFlight) return;
+  state.recheckInFlight = true;
+  clearAutoRecheck();
+  const btn = $("#btn-recheck-stalled");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = auto ? "自动回收中..." : "回收中...";
+  }
+  setProgress(4, `${auto ? "自动" : "手动"}二次回收：${seats.join(", ")}`);
+  const notify = {
+    email: $("#notify-email").value.trim(),
+    webhook_url: $("#notify-webhook").value.trim(),
+    feishu_webhook: $("#notify-feishu").value.trim(),
+    wecom_webhook: $("#notify-wecom").value.trim(),
+    desktop: $("#notify-browser").checked,
+  };
+  notify.channels = Object.entries({
+    email: notify.email,
+    webhook: notify.webhook_url,
+    feishu: notify.feishu_webhook,
+    wecom: notify.wecom_webhook,
+    desktop: notify.desktop,
+  }).filter(([, value]) => Boolean(value)).map(([key]) => key);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/judge/${sourceRunId}/recheck`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seats, notify }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    state.currentRunId = data.run_id;
+    $("#run-id").textContent = data.run_id;
+    $("#run-meta").textContent = `二次回收 ${data.seat_count} 席 · 写回 ${sourceRunId}`;
+    startProgress(data.run_id);
+    await loadHistory();
+  } catch (err) {
+    state.recheckInFlight = false;
+    setProgress(0, `二次回收失败：${err.message}`);
+    renderRunDiagnostics(task);
+  }
+}
+
 function startProgress(runId) {
   if (state.eventSource) state.eventSource.close();
   if (state.pollTimer) clearInterval(state.pollTimer);
@@ -870,6 +944,7 @@ function handleTask(task) {
   if (task.status === "complete") {
     cleanupProgress();
     setBusy(false);
+    state.recheckInFlight = false;
     renderRunDiagnostics(null);
     if (task.result) renderVerdict(task.result);
     else loadVerdict(task.run_id);
@@ -879,6 +954,7 @@ function handleTask(task) {
   if (task.status === "failed" || task.status === "cancelled") {
     cleanupProgress();
     setBusy(false);
+    state.recheckInFlight = false;
     setProgress(pct, task.error || task.status);
     renderSupplementButton();
   }
@@ -1402,15 +1478,25 @@ function renderRunDiagnostics(task) {
   const diag = task?.progress_diagnostics;
   if (!task || !diag || task.status === "complete") {
     box.hidden = true;
+    clearAutoRecheck();
     return;
   }
   const seats = Array.isArray(diag.seats) ? diag.seats : [];
+  const recheckSeats = recheckableDiagnosticSeats(diag);
   const waiting = diag.waiting || {};
   const title = diagnosticTitle(task, diag, seats);
   const meta = diagnosticMeta(diag, waiting);
   $("#diagnostic-title").textContent = title;
   $("#diagnostic-meta").textContent = meta;
   box.classList.toggle("stale", Boolean(diag.stale));
+  const recheckBtn = $("#btn-recheck-stalled");
+  if (recheckBtn) {
+    recheckBtn.hidden = !recheckSeats.length;
+    recheckBtn.disabled = state.recheckInFlight;
+    recheckBtn.textContent = recheckSeats.length
+      ? `立即二次回收 (${recheckSeats.map(seatName).join("、")})`
+      : "立即二次回收";
+  }
   const watch = $("#seat-watch");
   if (!seats.length) {
     watch.innerHTML = `<div class="watch-reason">${escapeHtml(task.current_step || "正在等待下一次进度事件")}</div>`;
@@ -1427,6 +1513,28 @@ function renderRunDiagnostics(task) {
     `).join("");
   }
   box.hidden = false;
+  scheduleAutoRecheck(task, diag);
+}
+
+function scheduleAutoRecheck(task, diag) {
+  const seats = recheckableDiagnosticSeats(diag);
+  if (!diag?.stale || !seats.length || state.recheckInFlight) {
+    if (!diag?.stale) clearAutoRecheck();
+    return;
+  }
+  if (state.autoRecheckTimer && state.autoRecheckRunId === task.run_id) return;
+  clearAutoRecheck();
+  state.autoRecheckRunId = task.run_id;
+  state.autoRecheckTimer = setTimeout(() => {
+    state.autoRecheckTimer = null;
+    recheckStalledSeats({ auto: true });
+  }, 60000);
+}
+
+function clearAutoRecheck() {
+  if (state.autoRecheckTimer) clearTimeout(state.autoRecheckTimer);
+  state.autoRecheckTimer = null;
+  state.autoRecheckRunId = null;
 }
 
 function diagnosticTitle(task, diag, seats) {
@@ -1516,6 +1624,7 @@ function cleanupProgress() {
   if (state.pollTimer) clearInterval(state.pollTimer);
   state.eventSource = null;
   state.pollTimer = null;
+  clearAutoRecheck();
 }
 
 function maybeBrowserNotify(title, body) {
@@ -1552,6 +1661,11 @@ function statusLabel(reason, ready) {
   if (reason === "input_not_found") return "找不到输入框";
   if (reason === "response_timeout") return "回答超时";
   if (reason === "slow_response_pending") return "慢生成待补采";
+  if (reason === "send_button_not_found") return "发送未确认";
+  if (reason === "submit_unconfirmed") return "提交未确认";
+  if (reason === "long_prompt_still_in_input") return "提交未确认";
+  if (reason === "composer_busy") return "页面忙碌";
+  if (reason === "response_not_relevant") return "疑似旧回答";
   if (reason === "desktop_bridge_ready") return "客户端就绪";
   if (reason === "not_configured") return "未配置";
   return reason || "待配置";

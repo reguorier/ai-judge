@@ -1302,7 +1302,18 @@ def _build_fresh_navigation_js(fresh_url: str) -> str:
 (() => {{
   const target = {url_json};
   const previous = location.href;
-  const sameTarget = location.href.replace(/[#?].*$/, "") === target.replace(/[#?].*$/, "");
+  const normalizeForNavigation = value => {{
+    try {{
+      const url = new URL(value, location.href);
+      url.hash = "";
+      return url.href.replace(/\\/$/, "");
+    }} catch (_) {{
+      return String(value || "").replace(/#.*$/, "").replace(/\\/$/, "");
+    }}
+  }};
+  const currentUrl = new URL(location.href);
+  const targetUrl = new URL(target, location.href);
+  const sameTarget = normalizeForNavigation(currentUrl.href) === normalizeForNavigation(targetUrl.href);
   const bodyText = document.body?.innerText || document.body?.textContent || "";
   const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again/i.test(bodyText);
   if (sameTarget && pageError) {{
@@ -1310,8 +1321,8 @@ def _build_fresh_navigation_js(fresh_url: str) -> str:
     return JSON.stringify({{ ok: true, navigated: false, reloaded: true, reason: "page_error", url: target, previous_url: previous }});
   }}
   if (!sameTarget && location.href !== target) {{
-    location.href = target;
-    return JSON.stringify({{ ok: true, navigated: true, url: target, previous_url: previous }});
+    location.href = targetUrl.href;
+    return JSON.stringify({{ ok: true, navigated: true, url: targetUrl.href, previous_url: previous }});
   }}
   return JSON.stringify({{ ok: true, navigated: false, url: location.href }});
 }})();
@@ -1531,6 +1542,24 @@ def _build_click_send_js(prompt_id: str) -> str:
           && rect.height <= 60;
       }});
     sendButton = mimoButtons[mimoButtons.length - 1] || null;
+  }}
+  if (!sendButton && /agent\\.minimaxi\\.com/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const miniMaxButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],svg,i,span,div")).map(clickTarget))
+      .filter(el => visible(el) && !hasDisabledAncestor(el))
+      .filter(el => {{
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height || rect.width > 84 || rect.height > 84) return false;
+        const label = buttonLabel(el);
+        const forceSend = /(send|发送|submit|arrow|icon-send|input-send|up-arrow)/i.test(label);
+        if (blockedLabel.test(label) && !forceSend) return false;
+        if (!forceSend && /(ppt|视频|图像|回答问题|提出共振|品牌|博客|素材|模板|示例|起手式|suggestion|prompt)/i.test(label)) return false;
+        const closeToComposerRight = rect.left >= inputRect.right - 140 && rect.left <= inputRect.right + 220;
+        return (forceSend || closeToComposerRight)
+          && rect.top >= inputRect.top - 70
+          && rect.bottom <= inputRect.bottom + 140;
+      }});
+    sendButton = miniMaxButtons[miniMaxButtons.length - 1] || null;
   }}
   const pageTextAfterWrite = document.body?.innerText || document.body?.textContent || "";
   const pageBusyAfterWrite = /停止回答|stop generating|stop response|停止生成/i.test(pageTextAfterWrite);
@@ -1911,7 +1940,7 @@ def _build_retry_submit_js(prompt_id: str) -> str:
     const label = buttonLabel(el);
     if (!forceSendLabel.test(label)) return false;
     if (blockedLabel.test(label) && !/(submit-btn|input-send-icon|chat-prompt-send-button|message-input-right-button-send|icon-send|icon-send1|send-button)/i.test(label)) return false;
-    return nearActiveInput(el) || /bigmodel\\.cn|chat\\.qwen\\.ai|aistudio\\.xiaomimimo\\.com|agent\\.minimaxi\\.com/i.test(location.hostname);
+    return nearActiveInput(el) || /bigmodel\\.cn|chat\\.qwen\\.ai|aistudio\\.xiaomimimo\\.com/i.test(location.hostname);
   }});
   let button = sendCandidates[sendCandidates.length - 1] || null;
   if (!button && /aistudio\\.xiaomimimo\\.com/i.test(location.hostname)) {{
@@ -1927,6 +1956,24 @@ def _build_retry_submit_js(prompt_id: str) -> str:
           && rect.height <= 60;
       }});
     button = mimoButtons[mimoButtons.length - 1] || null;
+  }}
+  if (!button && /agent\\.minimaxi\\.com/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const miniMaxButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],svg,i,span,div")).map(clickTarget))
+      .filter(el => visible(el) && !hasDisabledAncestor(el))
+      .filter(el => {{
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height || rect.width > 84 || rect.height > 84) return false;
+        const label = buttonLabel(el);
+        const forceSend = /(send|发送|submit|arrow|icon-send|input-send|up-arrow)/i.test(label);
+        if (blockedLabel.test(label) && !forceSend) return false;
+        if (!forceSend && /(ppt|视频|图像|回答问题|提出共振|品牌|博客|素材|模板|示例|起手式|suggestion|prompt)/i.test(label)) return false;
+        const closeToComposerRight = rect.left >= inputRect.right - 140 && rect.left <= inputRect.right + 220;
+        return (forceSend || closeToComposerRight)
+          && rect.top >= inputRect.top - 70
+          && rect.bottom <= inputRect.bottom + 140;
+      }});
+    button = miniMaxButtons[miniMaxButtons.length - 1] || null;
   }}
   if (button) {{
     fireClick(button);

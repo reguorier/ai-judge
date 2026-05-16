@@ -27,7 +27,6 @@ import json
 import sqlite3
 import sys
 import threading
-import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -179,6 +178,30 @@ class TaskManager:
             "completed_at": row["completed_at"],
         }
 
+    def get_task(self, run_id: str) -> dict[str, Any] | None:
+        """Get the full persisted task row, including full question and seats."""
+        with self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM tasks WHERE run_id=?", (run_id,)
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return {
+            "run_id": row["run_id"],
+            "question": row["question"],
+            "mode": row["mode"],
+            "seats": json.loads(row["seats"] or "[]"),
+            "status": row["status"],
+            "progress": row["progress"],
+            "current_step": row["current_step"],
+            "error": row["error"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "completed_at": row["completed_at"],
+        }
+
     def get_result(self, run_id: str) -> dict[str, Any] | None:
         """Get the verdict result of a completed task. None if not complete."""
         with self._get_conn() as conn:
@@ -250,7 +273,7 @@ class TaskManager:
             # Phase 1: Render prompts
             self.update_progress(run_id, "rendering_prompts", 0.05)
             from core.mcp_server import ai_judge_ask
-            prompt_data = ai_judge_ask(question, seats)
+            ai_judge_ask(question, seats)
             self.update_progress(run_id, "prompts_ready", 0.15)
 
             # Phase 2: Collect (delegated to score_fn)

@@ -63,6 +63,15 @@ PRODUCT_DIR = _PROJECT_ROOT / "product"
 STALE_TASK_SECONDS = 90
 WAITING_STEP_RE = re.compile(r"(?:等待\s*(?P<labels>[^，]+)，)?剩余\s*(?P<count>\d+)\s*席，最长等待\s*(?P<seconds>\d+)s")
 RETRY_STEP_RE = re.compile(r"补跑\s*(?P<attempt>\d+)\s*/\s*(?P<total>\d+)")
+RECOVERABLE_WEB_CODES = {
+    "slow_response_pending",
+    "response_timeout",
+    "send_button_not_found",
+    "submit_unconfirmed",
+    "composer_busy",
+    "response_not_relevant",
+    "long_prompt_still_in_input",
+}
 
 
 def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
@@ -223,6 +232,8 @@ def _seat_error_label(code: str) -> str:
         "response_not_relevant": "疑似旧回答",
         "send_button_not_found": "发送未确认",
         "submit_unconfirmed": "提交未确认",
+        "chrome_submit_unconfirmed": "提交未确认",
+        "long_prompt_still_in_input": "提交未确认",
         "chrome_composer_blocked": "页面阻断",
         "page_blocked": "页面阻断",
         "composer_busy": "页面忙碌",
@@ -238,6 +249,8 @@ def _seat_error_reason(code: str) -> str:
         "response_not_relevant": "捕获内容没有匹配本轮问题，已避免把旧页面内容当作答案",
         "send_button_not_found": "提示词写入了页面，但没有找到明确可用的发送按钮",
         "submit_unconfirmed": "提示词写入后，桥接层无法确认模型已接收为新一轮提问",
+        "chrome_submit_unconfirmed": "提示词写入后，桥接层无法确认模型已接收为新一轮提问",
+        "long_prompt_still_in_input": "长提示仍停留在输入框里，模型页面没有确认接收本轮任务",
         "chrome_composer_blocked": "模型页面出现阻断态，系统没有提交新问题",
         "page_blocked": "模型页面出现阻断态，系统没有提交新问题",
         "composer_busy": "页面仍在生成，系统没有把新任务塞进忙碌会话",
@@ -320,7 +333,7 @@ def _is_supplementable_result(item: dict[str, Any]) -> bool:
         return False
     error = item.get("error") or {}
     code = str(error.get("code") or "")
-    return bool(item.get("supplementable")) or code in {"slow_response_pending", "response_timeout"}
+    return bool(item.get("supplementable")) or code in RECOVERABLE_WEB_CODES
 
 
 def _supplementable_run_seats(verdict: dict[str, Any], requested: list[str] | None = None) -> list[str]:
@@ -334,6 +347,23 @@ def _supplementable_run_seats(verdict: dict[str, Any], requested: list[str] | No
         if requested_set and seat not in requested_set:
             continue
         if _is_supplementable_result(item):
+            seats.append(seat)
+    return list(dict.fromkeys(seats))
+
+
+def _diagnostic_recheck_seats(status: dict[str, Any], requested: list[str] | None = None) -> list[str]:
+    requested_set = set(requested or [])
+    diagnostics = status.get("progress_diagnostics") or {}
+    seats: list[str] = []
+    for item in diagnostics.get("seats") or []:
+        seat = str(item.get("seat") or "").lower()
+        if seat not in SEAT_PERSONAS:
+            continue
+        if requested_set and seat not in requested_set:
+            continue
+        state = str(item.get("state") or "")
+        status_label = str(item.get("status") or "")
+        if state in {"waiting", "nudge"} or status_label in {"慢生成", "超时", "发送未确认", "提交未确认", "疑似旧回答"}:
             seats.append(seat)
     return list(dict.fromkeys(seats))
 
@@ -789,6 +819,124 @@ def _start_supplement_worker(
     thread.start()
 
 
+def _start_recheck_worker(
+    recheck_run_id: str,
+    source_run_id: str,
+    task: dict[str, Any],
+    seats: list[str],
+    notify_config: dict[str, Any],
+) -> None:
+    thread = threading.Thread(
+        target=_run_recheck_worker,
+        args=(recheck_run_id, source_run_id, task, seats, notify_config),
+        daemon=True,
+    )
+    thread.start()
+
+
+def _run_recheck_worker(
+    recheck_run_id: str,
+    source_run_id: str,
+    task: dict[str, Any],
+    seats: list[str],
+    notify_config: dict[str, Any],
+) -> None:
+    trace = RunTrace(recheck_run_id)
+
+    def trace_event(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
+        trace.add(phase=phase, action=action, detail=detail, data=data)
+        trace.write(_trace_path(recheck_run_id))
+
+    try:
+        mode = str(task.get("mode") or "standard")
+        question = str(task.get("question") or "")
+        all_seats = [
+            str(seat)
+            for seat in (task.get("seats") or [])
+            if str(seat) in SEAT_PERSONAS
+        ] or seats
+        prompt_flow = build_prompt_flow(question, mode=mode, engine="web", seats=all_seats)
+        deep_question = str(prompt_flow.get("professional_prompt") or question)
+        trace_event("recheck", "accepted", "陈旧任务二次回收已启动", {
+            "source_run_id": source_run_id,
+            "recheck_run_id": recheck_run_id,
+            "seats": seats,
+            "mode": mode,
+        })
+        TASKS.update_progress(recheck_run_id, f"二次回收席位：{', '.join(seats)}", 0.08)
+
+        def web_progress(step: str, progress: float) -> None:
+            TASKS.update_progress(recheck_run_id, f"二次回收：{step}", min(0.88, 0.08 + progress * 0.80))
+            trace_event("progress", "recheck_web_progress", step, {"progress": progress})
+
+        verdict = run_web_jury(
+            question=deep_question,
+            mode=mode,
+            seats=seats,
+            run_id=recheck_run_id,
+            display_question=question,
+            progress=web_progress,
+            trace=trace_event,
+        )
+        verdict["run_id"] = source_run_id
+        verdict["recheck"] = {
+            "source_run_id": source_run_id,
+            "recheck_run_id": recheck_run_id,
+            "seats": seats,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "reason": "stale_running_task_recovery",
+        }
+        verdict["question"] = question
+        verdict["deep_prompt"] = deep_question
+        verdict["prompt_flow"] = prompt_flow
+        _attach_product_run_metadata(verdict, chief_judge="auto", abstained_seats=[seat for seat in all_seats if seat not in seats])
+        citation_report = _attach_citation_mvp(verdict, run_id=source_run_id)
+        if citation_report:
+            trace_event("grand_judge", "citation_mvp_resealed", "二次回收后已生成引用验证 MVP", {
+                "certification_id": citation_report.get("certification_id"),
+                "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
+            })
+        view_url = generate_secure_view_url(source_run_id)
+        verdict["view_url"] = view_url
+
+        combined_trace = _merge_trace_dicts(
+            load_trace(_trace_path(source_run_id)),
+            trace.to_dict(),
+            source_run_id,
+        )
+        verdict["execution_trace"] = combined_trace
+        (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
+        _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
+        _save_run(source_run_id, verdict)
+        TASKS.complete(source_run_id, verdict)
+        TASKS.complete(recheck_run_id, verdict)
+        trace_event("recheck", "complete", "陈旧任务二次回收已完成并写回原 run", {
+            "source_run_id": source_run_id,
+            "view_url": view_url,
+            "ok_count": (verdict.get("web_bridge") or {}).get("ok_count"),
+            "failed_count": (verdict.get("web_bridge") or {}).get("failed_count"),
+        })
+
+        channels = notify_config.get("channels") or []
+        if channels:
+            notify_verdict_ready(
+                run_id=source_run_id,
+                mode=mode,
+                verdict=verdict.get("verdict", "conditional"),
+                score=float(verdict.get("average_score", 0.0) or 0.0),
+                channels=channels,
+                summary=verdict.get("one_liner", ""),
+                view_url=view_url,
+                to=notify_config.get("email"),
+                webhook_url=notify_config.get("webhook_url"),
+                feishu_webhook=notify_config.get("feishu_webhook"),
+                wecom_webhook=notify_config.get("wecom_webhook"),
+            )
+    except Exception as exc:
+        trace_event("recheck", "failed", "陈旧任务二次回收失败", {"error": str(exc)})
+        TASKS.fail(recheck_run_id, str(exc))
+
+
 def _run_supplement_worker(
     supplement_run_id: str,
     source_run_id: str,
@@ -1130,6 +1278,68 @@ def supplement_judge(run_id: str):
         "seats": seats,
         "seat_count": len(seats),
         "progress_url": f"/api/judge/{supplement_run_id}/progress",
+        "source_verdict_url": f"/api/judge/{run_id}/verdict",
+    }), 202
+
+
+@app.route("/api/judge/<run_id>/recheck", methods=["POST"])
+def recheck_judge(run_id: str):
+    data = request.get_json(silent=True) or {}
+    requested = _normalize_seat_list(data.get("seats"))
+    notify_config = _notification_config(data)
+
+    source = _load_run(run_id)
+    if source:
+        seats = _supplementable_run_seats(source, requested=requested or None)
+        if not seats:
+            return jsonify({
+                "error": "no recoverable seats",
+                "source_run_id": run_id,
+                "requested": requested,
+                "recoverable": _supplementable_run_seats(source),
+            }), 400
+        mode = str(source.get("mode") or "standard")
+        question = str(source.get("question") or "二次回收慢席位")
+        recheck_run_id = TASKS.submit(question=f"二次回收：{question}", mode=mode, seats=seats)
+        _start_supplement_worker(recheck_run_id, run_id, seats, notify_config)
+        return jsonify({
+            "run_id": recheck_run_id,
+            "source_run_id": run_id,
+            "status": "queued",
+            "mode": mode,
+            "seats": seats,
+            "seat_count": len(seats),
+            "progress_url": f"/api/judge/{recheck_run_id}/progress",
+            "source_verdict_url": f"/api/judge/{run_id}/verdict",
+        }), 202
+
+    status = _task_payload(run_id)
+    task = TASKS.get_task(run_id)
+    if not status or not task:
+        return jsonify({"error": "run not found"}), 404
+    if status.get("status") not in {"running", "pending", "failed"}:
+        return jsonify({"error": "run is not recoverable", "status": status}), 409
+
+    seats = _diagnostic_recheck_seats(status, requested=requested or None)
+    if not seats and requested:
+        seats = requested
+    if not seats:
+        seats = [str(seat) for seat in (task.get("seats") or []) if str(seat) in SEAT_PERSONAS]
+    if not seats:
+        return jsonify({"error": "no recoverable seats", "status": status}), 400
+
+    mode = str(task.get("mode") or "standard")
+    question = str(task.get("question") or "二次回收慢席位")
+    recheck_run_id = TASKS.submit(question=f"二次回收：{question}", mode=mode, seats=seats)
+    _start_recheck_worker(recheck_run_id, run_id, task, seats, notify_config)
+    return jsonify({
+        "run_id": recheck_run_id,
+        "source_run_id": run_id,
+        "status": "queued",
+        "mode": mode,
+        "seats": seats,
+        "seat_count": len(seats),
+        "progress_url": f"/api/judge/{recheck_run_id}/progress",
         "source_verdict_url": f"/api/judge/{run_id}/verdict",
     }), 202
 
@@ -1492,7 +1702,7 @@ def _render_collection_summary(result: dict[str, Any]) -> str:
         complete = not bridge or (requested > 0 and ok_count == requested and failed_count == 0)
     else:
         complete = bool(collection_complete)
-    status = "完整收集" if complete else ("部分收集，待补充" if pending_count and ok_count else "未拿全")
+    status = "完整收集" if complete else ("未拿全，待补充" if pending_count and ok_count else "未拿全")
     status_class = "good" if complete else "warn"
     pending_label = "待补充/失败" if pending_count else "失败席位"
     pending_text = f"{pending_count}/{hard_failed}" if pending_count else str(failed_count)
@@ -1540,7 +1750,7 @@ def _render_seat_answers(result: dict[str, Any]) -> str:
         else:
             pending = _is_supplementable_result(item)
             status = "待补充" if pending else "未完成"
-            status_class = "is-pending" if pending else "is-failed"
+            status_class = "is-failed"
             state_class = "warn" if pending else "bad"
             code = str(error.get("code") or "unknown")
             message = str(error.get("message") or "No response captured.")

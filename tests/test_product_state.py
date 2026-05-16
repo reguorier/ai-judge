@@ -121,6 +121,21 @@ def test_supplement_merge_replaces_slow_seat_and_marks_recovery():
     assert merged[1]["seat"] == "deepseek"
 
 
+def test_send_button_failures_are_recoverable():
+    api_server = _load_api_server()
+
+    assert api_server._is_supplementable_result({
+        "seat": "minimax",
+        "ok": False,
+        "error": {"code": "send_button_not_found"},
+    })
+    assert api_server._is_supplementable_result({
+        "seat": "minimax",
+        "ok": False,
+        "error": {"code": "long_prompt_still_in_input"},
+    })
+
+
 def test_progress_diagnostics_names_waiting_and_stale_seats():
     api_server = _load_api_server()
     old_runs_dir = api_server.RUNS_DIR
@@ -169,6 +184,106 @@ def test_progress_diagnostics_names_waiting_and_stale_seats():
     assert diagnostics["seats"][0]["state"] == "waiting"
     assert diagnostics["seats"][1]["seat"] == "minimax"
     assert diagnostics["seats"][1]["status"] == "发送未确认"
+
+
+def test_progress_diagnostics_label_unconfirmed_submit_without_nested_error():
+    api_server = _load_api_server()
+    old_runs_dir = api_server.RUNS_DIR
+    with tempfile.TemporaryDirectory() as tmp:
+        api_server.RUNS_DIR = Path(tmp)
+        run_dir = api_server.RUNS_DIR / "run-unconfirmed"
+        run_dir.mkdir(parents=True)
+        (run_dir / "trace.json").write_text(json.dumps({
+            "run_id": "run-unconfirmed",
+            "events": [
+                {
+                    "phase": "seat",
+                    "action": "chrome_submit_unconfirmed",
+                    "detail": "minimax 未确认提交",
+                    "at": "2026-05-16T15:44:40+00:00",
+                    "data": {
+                        "seat": "minimax",
+                        "submit": {"verification": {"reason": "long_prompt_still_in_input"}},
+                    },
+                },
+            ],
+        }), encoding="utf-8")
+        try:
+            diagnostics = api_server._progress_diagnostics({
+                "run_id": "run-unconfirmed",
+                "status": "running",
+                "progress": 0.45,
+                "current_step": "Chrome 固定标签回答轮询：剩余 1 席，最长等待 90s",
+                "updated_at": (datetime.now(timezone.utc) - timedelta(seconds=120)).isoformat(),
+            })
+        finally:
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert diagnostics["seats"][0]["seat"] == "minimax"
+    assert diagnostics["seats"][0]["status"] == "提交未确认"
+
+
+def test_recheck_endpoint_accepts_stale_running_task():
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    old_start = api_server._start_recheck_worker
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+
+        def fake_start(recheck_run_id, source_run_id, task, seats, notify_config):
+            captured.update({
+                "recheck_run_id": recheck_run_id,
+                "source_run_id": source_run_id,
+                "task": task,
+                "seats": seats,
+                "notify_config": notify_config,
+            })
+
+        api_server._start_recheck_worker = fake_start
+        try:
+            run_id = api_server.TASKS.submit("需要二次回收的网页任务", mode="strategic", seats=["chatgpt", "minimax"])
+            api_server.TASKS.update_progress(
+                run_id,
+                "补跑 1/1：Chrome 固定标签回答轮询：等待 ChatGPT，剩余 1 席，最长等待 427s",
+                0.85,
+            )
+            run_dir = tmp_path / run_id
+            run_dir.mkdir(parents=True)
+            (run_dir / "trace.json").write_text(json.dumps({
+                "run_id": run_id,
+                "events": [
+                    {
+                        "phase": "seat",
+                        "action": "chrome_submit_complete",
+                        "detail": "chatgpt 提示词已发送",
+                        "at": "2026-05-16T15:44:24+00:00",
+                        "data": {"seat": "chatgpt"},
+                    },
+                    {
+                        "phase": "seat",
+                        "action": "chrome_submit_unconfirmed",
+                        "detail": "minimax 未确认提交",
+                        "at": "2026-05-16T15:44:40+00:00",
+                        "data": {"seat": "minimax", "submit": {"error": "send_button_not_found"}},
+                    },
+                ],
+            }), encoding="utf-8")
+
+            response = api_server.app.test_client().post(f"/api/judge/{run_id}/recheck", json={"seats": ["minimax"]})
+        finally:
+            api_server._start_recheck_worker = old_start
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert response.status_code == 202
+    assert response.get_json()["source_run_id"] == run_id
+    assert captured["source_run_id"] == run_id
+    assert captured["seats"] == ["minimax"]
+    assert captured["task"]["question"] == "需要二次回收的网页任务"
 
 
 def test_attach_citation_mvp_adds_replay_ledger_and_gap_suggestions():

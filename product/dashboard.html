@@ -436,6 +436,17 @@
     .diagnostic-head { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
     .diagnostic-title { font-size: 13px; font-weight: 760; line-height: 1.35; }
     .diagnostic-meta { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .diagnostic-action {
+      border: 1px solid #ffd38a;
+      border-radius: 8px;
+      background: #fff8ea;
+      color: #8a4f00;
+      font-weight: 760;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    .diagnostic-action[hidden] { display: none; }
+    .diagnostic-action:disabled { opacity: .58; cursor: not-allowed; }
     .seat-watch { display: grid; gap: 7px; }
     .seat-watch-row {
       display: grid;
@@ -979,6 +990,7 @@
                 <div class="diagnostic-title" id="diagnostic-title"></div>
                 <div class="diagnostic-meta" id="diagnostic-meta"></div>
               </div>
+              <button class="diagnostic-action" id="btn-recheck-stalled" hidden>立即二次回收</button>
               <div class="seat-watch" id="seat-watch"></div>
             </div>
             <ul class="timeline" id="timeline-list"></ul>

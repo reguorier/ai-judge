@@ -1,5 +1,6 @@
 from bridges.chrome_fixed_tab_bridge import (
     _build_capture_js,
+    _build_click_send_js,
     _build_fresh_navigation_js,
     _build_prepare_submission_ui_js,
     _build_submission_check_js,
@@ -87,6 +88,17 @@ def test_fresh_navigation_reloads_same_url_page_errors():
     assert "pageError" in js
     assert "location.reload()" in js
     assert 'reason: "page_error"' in js
+    assert "normalizeForNavigation" in js
+    assert "currentUrl" in js
+
+
+def test_minimax_fixed_tab_has_dedicated_send_fallback():
+    js = _build_click_send_js("AIJUDGE-minimax-test")
+
+    assert "agent\\.minimaxi\\.com" in js
+    assert "miniMaxButtons" in js
+    assert "closeToComposerRight" in js
+    assert "提出共振" in js
 
 
 def test_forecast_market_product_term_does_not_force_prediction_intent():
