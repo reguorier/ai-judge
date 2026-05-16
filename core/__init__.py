@@ -51,6 +51,6 @@ Production modules (paid core, not in this repository):
   - reflect: Performance trend analysis
 """
 
-__version__ = "3.5.0"
+__version__ = "3.5.1"
 __author__ = "AI Judge Contributors"
 __license__ = "BSL-1.1"

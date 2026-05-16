@@ -770,7 +770,7 @@ def _run_supplement_worker(
 def health():
     return jsonify({
         "status": "ok",
-        "version": "3.5.0",
+        "version": "3.5.1",
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["local", "web"],
         "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
@@ -2014,7 +2014,7 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
-    print("\n  AI Judge API Server v3.5.0")
+    print("\n  AI Judge API Server v3.5.1")
     print(f"  http://{args.host}:{args.port}")
     print(f"  {len(SEAT_PERSONAS)} seats available")
     print("  POST /api/judge now runs automatically\n")

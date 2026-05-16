@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-judge"
-version = "3.5.0"
+version = "3.5.1"
 description = "Local-first AI jury skill with fixed persona seats, evidence tracing, dissent challenge, reasoning trees, and risk routing"
 readme = "README.md"
 license = {text = "BSL-1.1"}
