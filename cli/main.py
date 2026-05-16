@@ -34,6 +34,9 @@ Usage:
     ai-judge trace --demo             # Cross-model citation contamination demo
     ai-judge trace --claim "..."      # L1/L2/L3 citation trace for one claim
     ai-judge council --model mimo --demo  # Fixed jury seat demo (MiMo, Gemini, etc.)
+
+    # V3.6 Citation Audit:
+    ai-judge audit examples/fake-citation.md --html reports/fake-citation-audit.html
 """
 
 from __future__ import annotations
@@ -331,6 +334,17 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--hard-truth-file", help="Path to hard truth JSON file")
     exp.set_defaults(func=cmd_export_html)
 
+    # citation audit — self-serve launch funnel
+    audit = sub.add_parser("audit", help="Run citation-level audit on one AI-generated answer")
+    audit.add_argument("input", help="Markdown or JSON audit input file")
+    audit.add_argument("--html", help="Write standalone HTML audit report")
+    audit.add_argument("--json", dest="json_output", help="Write machine-readable JSON audit report")
+    audit.add_argument("--md", help="Write Markdown audit report")
+    audit.add_argument("--allow-network", action="store_true", help="Allow Evidence Broker to fetch cited URLs")
+    audit.add_argument("--reviewers", default="gemini,chatgpt,deepseek,qwen", help="Comma-separated blind-reviewer labels")
+    audit.add_argument("--run-id", help="Stable audit ID for reproducible demos")
+    audit.set_defaults(func=cmd_audit)
+
     # council — fixed jury seat demo
     coun = sub.add_parser("council", help="Run a full jury council demo for a specific model seat")
     coun.add_argument("--model", default="mimo", help="Jury seat model (e.g. mimo, gemini, chatgpt)")
@@ -338,6 +352,34 @@ def build_parser() -> argparse.ArgumentParser:
     coun.set_defaults(func=cmd_council)
 
     return parser
+
+
+def cmd_audit(args: argparse.Namespace) -> int:
+    """Run the self-serve citation audit command."""
+    from core.citation_audit import render_audit_markdown, run_audit_file, write_audit_outputs
+
+    reviewers = [item.strip() for item in str(args.reviewers or "").split(",") if item.strip()]
+    verdict = run_audit_file(
+        args.input,
+        allow_network=bool(args.allow_network),
+        run_id=args.run_id,
+        reviewers=reviewers,
+    )
+    written: list[str] = []
+    if args.html:
+        written.append(str(write_audit_outputs(verdict, args.html, fmt="html")))
+    if args.json_output:
+        written.append(str(write_audit_outputs(verdict, args.json_output, fmt="json")))
+    if args.md:
+        written.append(str(write_audit_outputs(verdict, args.md, fmt="md")))
+
+    summary = verdict["summary"]
+    print(render_audit_markdown(verdict))
+    if written:
+        print("Wrote:")
+        for path in written:
+            print(f"  {path}")
+    return 0 if summary.get("overall_status") not in {"contradicted"} else 1
 
 
 # ── Personal Cognitive Command Handlers ──

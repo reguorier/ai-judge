@@ -1,0 +1,45 @@
+name: AI Judge Citation Audit
+description: Audit AI-generated Markdown for fabricated, weak, irrelevant, unverifiable, and contradicted citations.
+
+inputs:
+  input:
+    description: Markdown or JSON audit input file
+    required: true
+  output-html:
+    description: HTML report output path
+    required: false
+    default: ai-judge-citation-audit.html
+  output-json:
+    description: JSON report output path
+    required: false
+    default: ai-judge-citation-audit.json
+  allow-network:
+    description: Allow Evidence Broker URL fetching
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Run citation audit
+      shell: bash
+      run: |
+        extra=""
+        if [ "${{ inputs.allow-network }}" = "true" ]; then
+          extra="--allow-network"
+        fi
+        PYTHONPATH=. python cli/main.py audit "${{ inputs.input }}" \
+          --html "${{ inputs.output-html }}" \
+          --json "${{ inputs.output-json }}" \
+          $extra
+    - name: Upload citation audit artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-judge-citation-audit
+        path: |
+          ${{ inputs.output-html }}
+          ${{ inputs.output-json }}

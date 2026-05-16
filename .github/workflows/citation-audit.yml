@@ -1,0 +1,47 @@
+name: Citation Audit
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "citation-bench/**"
+      - "core/citation_audit.py"
+      - "core/citation_validator.py"
+      - "core/evidence_broker.py"
+      - "tools/run_citation_bench.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  citation-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run 100-case citation benchmark
+        run: PYTHONPATH=. python tools/run_citation_bench.py --output reports/citation-bench-result.json --fail-under 0.95
+      - name: Upload benchmark result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: citation-bench-result
+          path: reports/citation-bench-result.json
+
+  demo-audits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/citation-audit
+        with:
+          input: examples/fake-citation.md
+          output-html: reports/fake-citation-audit.html
+          output-json: reports/fake-citation-audit.json
+      - uses: ./.github/actions/citation-audit
+        with:
+          input: examples/product-no-evidence.md
+          output-html: reports/product-no-evidence-audit.html
+          output-json: reports/product-no-evidence-audit.json

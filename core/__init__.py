@@ -1,4 +1,4 @@
-"""AI Judge Core — Multi-model AI jury package v3.3.0 (COUNCIL-004 persona and trace release).
+"""AI Judge Core — Citation Audit and multi-model AI jury package v3.6.0.
 
 Public modules (this repository):
   - license_validator: Community license shim
@@ -30,6 +30,7 @@ COUNCIL-006 Grand Judge MVP:
   - grand_judge: citation verification orchestration + Replay Ledger, without rewriting raw answers
   - evidence_gap_filler: evidence gap suggestions only, no body rewrite
   - evidence_broker / blind_cross_validation / human_review / eval_dataset: Evidence OS layer
+  - citation_audit: self-serve Markdown/JSON citation audit with HTML/JSON launch reports
 
 V3.2 NEW Modules (Tianfu Agent Migration):
   - evidence: Structured evidence objects with source tracing (Tianfu: knowledge-tracing)
@@ -51,6 +52,6 @@ Production modules (paid core, not in this repository):
   - reflect: Performance trend analysis
 """
 
-__version__ = "3.5.1"
+__version__ = "3.6.0"
 __author__ = "AI Judge Contributors"
 __license__ = "BSL-1.1"

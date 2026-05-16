@@ -770,7 +770,7 @@ def _run_supplement_worker(
 def health():
     return jsonify({
         "status": "ok",
-        "version": "3.5.1",
+        "version": "3.6.0",
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["local", "web"],
         "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
@@ -784,6 +784,12 @@ def health():
 @app.route("/")
 def dashboard():
     return send_from_directory(PRODUCT_DIR, "dashboard.html")
+
+
+@app.route("/landing")
+@app.route("/landing.html")
+def landing():
+    return send_from_directory(PRODUCT_DIR, "landing.html")
 
 
 @app.route("/dashboard.js")
@@ -2008,13 +2014,13 @@ document.addEventListener("click", (event) => {{
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="AI Judge v3.5 API Server")
+    parser = argparse.ArgumentParser(description="AI Judge v3.6 API Server")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host")
     parser.add_argument("--port", type=int, default=8501, help="Bind port")
     parser.add_argument("--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
-    print("\n  AI Judge API Server v3.5.1")
+    print("\n  AI Judge API Server v3.6.0")
     print(f"  http://{args.host}:{args.port}")
     print(f"  {len(SEAT_PERSONAS)} seats available")
     print("  POST /api/judge now runs automatically\n")

@@ -1,0 +1,25 @@
+{
+  "provider": "lemon_squeezy",
+  "currency": "USD",
+  "products": {
+    "pro_early_bird": {
+      "name": "AI Judge Citation Audit Pro Early Bird",
+      "price": 49,
+      "billing": "lifetime",
+      "checkout_url": "https://your-store.lemonsqueezy.com/buy/early-bird"
+    },
+    "pro_monthly": {
+      "name": "AI Judge Citation Audit Pro Monthly",
+      "price": 19,
+      "billing": "monthly",
+      "checkout_url": "https://your-store.lemonsqueezy.com/buy/monthly"
+    },
+    "pro_lifetime": {
+      "name": "AI Judge Citation Audit Pro Lifetime",
+      "price": 199,
+      "billing": "lifetime",
+      "checkout_url": "https://your-store.lemonsqueezy.com/buy/lifetime"
+    }
+  },
+  "license_activation_command": "ai-judge license activate --key AJPRO-..."
+}

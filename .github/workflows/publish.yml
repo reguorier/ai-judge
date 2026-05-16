@@ -23,6 +23,7 @@ jobs:
         run: |
           PYTHONPATH=. python3 tests/run_harness.py
           PYTHONPATH=. python3 tests/smoke_test_v3_2.py
+          PYTHONPATH=. python3 tools/run_citation_bench.py --fail-under 0.95
       - name: Upload Harness Report
         if: always()
         uses: actions/upload-artifact@v4

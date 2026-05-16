@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.3.0-purple" alt="v3.3.0">
+  <img src="https://img.shields.io/badge/release-3.6.0-purple" alt="v3.6.0">
+  <img src="https://img.shields.io/badge/Citation%20Audit-launch%20edition-0f766e" alt="Citation Audit launch edition">
   <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
   <img src="https://img.shields.io/badge/evidence-traced-2ea44f" alt="evidence traced">
   <img src="https://img.shields.io/badge/dissent-before%20confidence-orange" alt="dissent before confidence">
@@ -12,13 +13,15 @@
   <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.3 product overview" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.3</h1>
-<p align="center"><strong>9 fixed persona seats deliberate. Evidence is traced across L1/L2/L3. Dissent challenges weak claims. You hold the gavel.</strong></p>
-<p align="center">A local-first Codex skill and CLI for multi-model evaluation, claim scoring, auditable reasoning, judgment-quality profiling, and human-final verdicts.</p>
+<h1 align="center">AI Judge v3.6</h1>
+<p align="center"><strong>Open-source citation audit for AI-generated answers.</strong></p>
+<p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
 
 <p align="center">
+  <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
+  <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
   <a href="#what-v33-adds">What v3.3 Adds</a> ·
   <a href="#what-v32-adds">What v3.2 Adds</a> ·
@@ -35,6 +38,37 @@ Most AI comparison tools answer: **which model sounded best?**
 AI Judge v3.3 asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment without nine models quietly copying the same source?**
 
 It separates polished language from actual thinking quality, then gives the human a compact evidence package instead of another black-box synthesis.
+
+## Citation Audit in 60 Seconds
+
+Most LLM eval tools ask whether an answer is good. AI Judge v3.6 starts with a narrower publish-risk question: **which citations can actually be trusted?**
+
+```bash
+PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
+  --html reports/fake-citation-audit.html \
+  --json reports/fake-citation-audit.json
+```
+
+The audit returns:
+
+| Output | Why it matters |
+|---|---|
+| `verified` / `weakly_verified` / `irrelevant` / `unverifiable` / `contradicted` | Citation-level status instead of vague prose confidence |
+| Certification ID | Stable audit handle for reports and CI artifacts |
+| Replay Ledger | Raw answer is preserved; the judge does not rewrite model text |
+| Evidence Broker | Model-mentioned candidate sources are separated from supplied/fetched external evidence |
+| HTML + JSON report | Human-readable proof plus automation-friendly output |
+
+Launch demos:
+
+```bash
+PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html
+PYTHONPATH=. python cli/main.py audit examples/product-no-evidence.md --html reports/product-no-evidence-audit.html
+PYTHONPATH=. python cli/main.py audit examples/sounds-smart-low-judgment.md --html reports/sounds-smart-low-judgment-audit.html
+PYTHONPATH=. python tools/run_citation_bench.py
+```
+
+The first public benchmark is [`citation-bench/citation-bench-100.jsonl`](citation-bench/citation-bench-100.jsonl): 100 deterministic cases covering verified, weak, irrelevant, unverifiable, and contradicted citation behavior.
 
 ## 30-Second Product Tour
 

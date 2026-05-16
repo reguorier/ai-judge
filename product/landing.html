@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Judge v3.3 — Persona Seats · Evidence Trace · Dissent · Human Final</title>
+<title>AI Judge v3.6 — Citation Audit for AI-generated answers</title>
 <style>
   :root {
     --bg: #080810;
@@ -203,15 +203,29 @@
     </svg>
   </div>
 
-  <h1>AI Judge v3.3</h1>
-  <p class="tagline">9 fixed persona seats deliberate. Evidence is traced across L1/L2/L3. <strong style="color:var(--gold);">You hold the gavel.</strong></p>
-  <p class="sub">Don't trust one confident answer. Inspect the seat bias, the citations, the dissent, and the reasoning tree.</p>
+  <h1>AI Judge v3.6</h1>
+  <p class="tagline">Citation audit for AI-generated answers. <strong style="color:var(--gold);">Catch fake evidence before publishing.</strong></p>
+  <p class="sub">Paste an AI answer, isolate external evidence, and label each citation as verified, weak, irrelevant, unverifiable, or contradicted.</p>
   <a href="#install" class="btn btn-primary">Try It Free →</a>
   <a href="https://github.com/reguorier/ai-judge" class="btn btn-ghost">GitHub</a>
-  <a href="mailto:reguorider@gmail.com" class="btn btn-gold">Get License</a>
+  <a href="#pricing" class="btn btn-gold">Pro Early Access</a>
 </div>
 
 <div class="wrap">
+
+  <!-- ═══════════════ CITATION AUDIT LAUNCH ═══════════════ -->
+  <section>
+    <h2>Run a citation audit in 60 seconds.</h2>
+    <p class="desc">The launch edition is deliberately narrow: it checks whether AI-generated citations survive isolated external evidence. Model-mentioned URLs are candidate sources, not proof.</p>
+    <pre>PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
+  --html reports/fake-citation-audit.html \
+  --json reports/fake-citation-audit.json</pre>
+    <div class="g3">
+      <div class="card"><h3>1. Preserve the original</h3><p>The submitted answer is sealed into the Replay Ledger. The judge does not rewrite it.</p></div>
+      <div class="card"><h3>2. Separate evidence</h3><p>Evidence Broker keeps model-cited candidates apart from supplied or fetched external evidence.</p></div>
+      <div class="card"><h3>3. Export proof</h3><p>Each run produces a Certification ID, HTML report, JSON report, and open evidence-gap queue.</p></div>
+    </div>
+  </section>
 
   <!-- ═══════════════ V3.3 UPGRADE ═══════════════ -->
   <section>
@@ -452,7 +466,7 @@
   </section>
 
   <!-- ═══════════════ PRICING ═══════════════ -->
-  <section>
+  <section id="pricing">
     <h2>Pricing</h2>
     <div class="pricing">
       <div class="plan">
@@ -460,34 +474,34 @@
         <div class="price">Free</div>
         <ul>
           <li>Full CLI & docs</li>
-          <li>Swift bridge source</li>
-          <li>Docker packaging</li>
-          <li>GitHub Issues support</li>
+          <li>Single-file citation audit</li>
+          <li>100-case benchmark</li>
+          <li>HTML + JSON report export</li>
         </ul>
         <a href="https://github.com/reguorier/ai-judge" class="btn btn-ghost">GitHub</a>
       </div>
       <div class="plan featured">
-        <h3>Personal</h3>
-        <div class="price">$49 <small>one-time</small></div>
+        <h3>Pro Early Bird</h3>
+        <div class="price">$49 <small>lifetime</small></div>
         <ul>
           <li>Everything in Community</li>
-          <li>9-seat jury runs</li>
-          <li>Full audit artifacts</li>
-          <li>2 machines</li>
-          <li>Email support</li>
+          <li>Batch citation audit</li>
+          <li>Evidence Broker network mode</li>
+          <li>Historical Replay Ledger</li>
+          <li>GitHub Action advanced mode</li>
         </ul>
-        <a href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Personal%20License" class="btn btn-primary">Get License</a>
+        <a href="product/checkout_config.example.json" class="btn btn-primary">Checkout Setup</a>
       </div>
       <div class="plan">
-        <h3>Team / Enterprise</h3>
-        <div class="price">$199+</div>
+        <h3>Pro</h3>
+        <div class="price">$19 <small>/mo</small></div>
         <ul>
-          <li>Execution Council</li>
-          <li>5+ machines</li>
-          <li>Custom seats</li>
-          <li>SSO · SLA · Audit</li>
+          <li>Monthly license</li>
+          <li>PDF/Docx parser roadmap</li>
+          <li>Certification report export</li>
+          <li>Priority benchmark cases</li>
         </ul>
-        <a href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Team%20License" class="btn btn-gold">Contact Us</a>
+        <a href="docs/PRO_AUTOMATION.md" class="btn btn-gold">Pro Automation</a>
       </div>
     </div>
     <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin-top:12px;">
