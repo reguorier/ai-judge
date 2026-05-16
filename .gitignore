@@ -14,6 +14,7 @@ rust-engine/target/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
 node_modules/
 .omx/
 .ai-judge/
@@ -29,3 +30,6 @@ deploy_key.pub
 product/video-exports/
 *.mov
 *.mp4
+data/
+runs/
+assets/*.iconset/

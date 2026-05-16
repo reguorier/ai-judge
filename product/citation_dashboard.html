@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Judge Citation Dashboard</title>
+  <style>
+    :root { color-scheme: dark; --bg:#080b14; --panel:#111827; --soft:#151d2c; --line:#263149; --text:#f4f6fb; --muted:#9aa4b5; --accent:#ffc53d; --green:#36d06f; --red:#ff6868; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; background:var(--bg); color:var(--text); letter-spacing:0; }
+    header { position:sticky; top:0; z-index:2; display:flex; gap:12px; align-items:center; justify-content:space-between; padding:14px 22px; background:#0d1425; border-bottom:1px solid var(--line); }
+    main { max-width:1180px; margin:0 auto; padding:24px 18px 48px; }
+    h1 { margin:0; font-size:20px; }
+    h2 { margin:0 0 12px; font-size:17px; }
+    p { line-height:1.65; }
+    a, button { color:var(--text); border:1px solid var(--line); border-radius:8px; background:#101622; padding:8px 11px; text-decoration:none; font-weight:800; }
+    button { cursor:pointer; }
+    input { width:100%; border:1px solid var(--line); border-radius:8px; background:#070b14; color:var(--text); padding:10px 12px; }
+    .toolbar { display:grid; grid-template-columns:1fr auto; gap:10px; margin:14px 0; }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:12px 0; }
+    .card, section { border:1px solid var(--line); border-radius:8px; background:var(--soft); padding:16px; }
+    .card span { display:block; color:var(--muted); font-size:12px; margin-bottom:6px; }
+    .card strong { font-size:18px; overflow-wrap:anywhere; }
+    .muted { color:var(--muted); }
+    .good { color:var(--green); }
+    .warn { color:var(--accent); }
+    .bad { color:var(--red); }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    td, th { border-bottom:1px solid var(--line); padding:10px; text-align:left; vertical-align:top; }
+    th { color:var(--muted); background:#111827; }
+    pre { white-space:pre-wrap; overflow:auto; max-height:360px; border:1px solid #1f2937; border-radius:8px; background:#070b14; padding:12px; line-height:1.55; }
+    details { margin:10px 0; border:1px solid var(--line); border-radius:8px; background:#101622; padding:12px; }
+    summary { cursor:pointer; font-weight:800; }
+    .status { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:4px 8px; font-weight:800; background:#0b1020; }
+    @media (max-width:760px) {
+      .toolbar { grid-template-columns:1fr; }
+      .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      header { align-items:flex-start; flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI Judge 引用健康度面板</h1>
+  <a href="/">返回提问</a>
+</header>
+<main>
+  <div class="toolbar">
+    <input id="runIdInput" placeholder="输入 run_id，或使用 ?run_id=..." autocomplete="off">
+    <button id="loadBtn" type="button">加载</button>
+  </div>
+  <section id="emptyState">
+    <h2>等待加载</h2>
+    <p class="muted">面板会展示原始答案、引用验证表、Certification ID 和 Replay Ledger。unverifiable 表示证据不足，不等于 false。</p>
+  </section>
+  <div id="dashboard" hidden>
+    <div class="grid" id="summaryGrid"></div>
+    <section>
+      <h2>引用验证表</h2>
+      <table>
+        <thead><tr><th>席位</th><th>层</th><th>Citation</th><th>状态</th><th>原因</th><th>证据</th></tr></thead>
+        <tbody id="citationRows"></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Replay Ledger</h2>
+      <div id="ledgerList"></div>
+    </section>
+  </div>
+</main>
+<script>
+const params = new URLSearchParams(location.search);
+const input = document.getElementById("runIdInput");
+const loadBtn = document.getElementById("loadBtn");
+const emptyState = document.getElementById("emptyState");
+const dashboard = document.getElementById("dashboard");
+const summaryGrid = document.getElementById("summaryGrid");
+const citationRows = document.getElementById("citationRows");
+const ledgerList = document.getElementById("ledgerList");
+input.value = params.get("run_id") || params.get("tid") || "";
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
+function compact(value, limit = 220) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  return text.length > limit ? text.slice(0, limit - 1).trim() + "..." : text;
+}
+
+function statusClass(status) {
+  return { verified:"good", weakly_verified:"warn", irrelevant:"warn", unverifiable:"warn", contradicted:"bad" }[status] || "warn";
+}
+
+function rowsFor(entry, layer, key) {
+  const report = entry[key] || {};
+  return (report.items || []).map((item) => {
+    const evidence = item.matched_evidence || {};
+    const evidenceText = evidence.title || evidence.url || evidence.evidence_id || "-";
+    return `<tr>
+      <td>${escapeHtml(entry.seat_name || entry.seat || "-")}</td>
+      <td>${escapeHtml(layer)}</td>
+      <td>${escapeHtml(compact(item.raw, 130))}</td>
+      <td><span class="status ${statusClass(item.status)}">${escapeHtml(item.status || "unverifiable")}</span></td>
+      <td>${escapeHtml(compact(item.reason, 180))}</td>
+      <td>${escapeHtml(compact(evidenceText, 160))}</td>
+    </tr>`;
+  });
+}
+
+function render(verdict) {
+  const report = verdict.grand_judge || {};
+  const bridge = verdict.web_bridge || {};
+  const citation = report.citation_verification || bridge.citation_verification || {};
+  const ledger = report.replay_ledger || bridge.replay_ledger || [];
+  const counts = citation.counts || {};
+  summaryGrid.innerHTML = [
+    ["Certification ID", citation.certification_id || bridge.certification_id || report.certification_id || "-"],
+    ["整体状态", citation.overall_status || "unverifiable", statusClass(citation.overall_status)],
+    ["Replay Hash", citation.replay_ledger_hash || bridge.replay_ledger_hash || report.replay_ledger_hash || "-"],
+    ["引用/证据", `${citation.item_count || 0} / ${citation.external_evidence_count || 0}`],
+  ].map(([label, value, cls]) => `<div class="card"><span>${escapeHtml(label)}</span><strong class="${cls || ""}">${escapeHtml(value)}</strong></div>`).join("");
+  citationRows.innerHTML = ledger.flatMap((entry) => [
+    ...rowsFor(entry, "原始回答", "citation_verification"),
+    ...rowsFor(entry, "导师补充", "mentor_citation_verification"),
+  ]).join("") || `<tr><td colspan="6">暂无引用验证行。</td></tr>`;
+  ledgerList.innerHTML = ledger.map((entry) => `
+    <details>
+      <summary>${escapeHtml(entry.seat_name || entry.seat)} · ${escapeHtml(entry.verification_timestamp || "")}</summary>
+      <p class="muted">raw hash: ${escapeHtml(entry.raw_answer_hash || "-")} · mentor hash: ${escapeHtml(entry.mentor_supplement_hash || "-")}</p>
+      <h3>原始回答</h3>
+      <pre>${escapeHtml(entry.raw_answer || "")}</pre>
+      <h3>导师补充</h3>
+      <pre>${escapeHtml(entry.mentor_supplement || "")}</pre>
+      <h3>无法验证原因</h3>
+      <pre>${escapeHtml(JSON.stringify(entry.unverifiable_reasons || [], null, 2))}</pre>
+    </details>
+  `).join("") || `<p class="muted">暂无 Replay Ledger。</p>`;
+  emptyState.hidden = true;
+  dashboard.hidden = false;
+  document.title = `Citation Dashboard · ${citation.certification_id || input.value}`;
+}
+
+async function loadRun() {
+  const runId = input.value.trim();
+  if (!runId) return;
+  emptyState.hidden = false;
+  emptyState.innerHTML = `<h2>加载中</h2><p class="muted">正在读取 ${escapeHtml(runId)}...</p>`;
+  dashboard.hidden = true;
+  const res = await fetch(`/api/judge/${encodeURIComponent(runId)}/verdict`);
+  if (!res.ok) {
+    emptyState.innerHTML = `<h2>加载失败</h2><p class="muted">${escapeHtml(await res.text())}</p>`;
+    return;
+  }
+  render(await res.json());
+}
+
+loadBtn.addEventListener("click", loadRun);
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") loadRun();
+});
+if (input.value) loadRun();
+</script>
+</body>
+</html>

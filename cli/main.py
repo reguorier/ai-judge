@@ -173,6 +173,10 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--date", help="Date in YYYY-MM-DD (default: today)")
     r.set_defaults(func=cmd_reflect)
 
+    # ask — one-command jury pipeline
+    from cli.ask import register_ask_parser
+    register_ask_parser(sub)
+
     # list
     lc = sub.add_parser("list", help="List recent jury runs")
     lc.set_defaults(func=cmd_list)

@@ -25,6 +25,12 @@ V3.3 / COUNCIL-004 Modules (MiroFish Augmentation Phase 1):
   - seat_personas: 9 fixed seat persona cards with MBTI, risk, cognitive bias, ideology
   - evidence_trace: Cross-model L1/L2/L3 citation tracing + contamination detection
 
+COUNCIL-006 Grand Judge MVP:
+  - citation_validator: citation-level verified / weakly_verified / irrelevant / unverifiable / contradicted
+  - grand_judge: citation verification orchestration + Replay Ledger, without rewriting raw answers
+  - evidence_gap_filler: evidence gap suggestions only, no body rewrite
+  - evidence_broker / blind_cross_validation / human_review / eval_dataset: Evidence OS layer
+
 V3.2 NEW Modules (Tianfu Agent Migration):
   - evidence: Structured evidence objects with source tracing (Tianfu: knowledge-tracing)
   - dissent: Devil's Advocate counterargument generation (Tianfu: Verify phase + Gemini anti-collusion)
@@ -45,6 +51,6 @@ Production modules (paid core, not in this repository):
   - reflect: Performance trend analysis
 """
 
-__version__ = "3.3.0"
+__version__ = "3.5.0"
 __author__ = "AI Judge Contributors"
 __license__ = "BSL-1.1"

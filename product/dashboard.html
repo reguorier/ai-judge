@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Judge v3.5 Command Center</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --app: #f7f9fd;
+      --panel: #ffffff;
+      --panel-soft: #f9fbfe;
+      --panel-strong: #eef5ff;
+      --line: #dce5f0;
+      --line-soft: #e8eef6;
+      --text: #182131;
+      --text-soft: #36465d;
+      --muted: #6b7890;
+      --faint: #9aa6b8;
+      --accent: #ffae34;
+      --accent-strong: #de8200;
+      --blue: #2f6fe4;
+      --green: #17925a;
+      --red: #c64150;
+      --warn: #b76e00;
+      --shadow: 0 12px 34px rgba(39, 55, 80, .07);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html {
+      min-height: 100%;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    body { min-height: 100%; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #fbfcfe 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: var(--font);
+      letter-spacing: 0;
+    }
+    button, textarea, input, select { font: inherit; }
+    button { border: 0; }
+    a { color: inherit; }
+    ::selection { background: rgba(255,174,52,.28); }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 196px minmax(0, 1fr);
+      grid-template-rows: 76px minmax(0, 1fr);
+      background: var(--app);
+    }
+    .topbar {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 196px minmax(360px, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 0 26px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: #111827;
+      color: #fff;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 1px 2px rgba(17,24,39,.16);
+    }
+    .mark svg { width: 24px; height: 24px; display: block; }
+    .brand strong { display: block; font-size: 18px; line-height: 1.05; font-weight: 760; }
+    .brand span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; font-weight: 520; }
+    .workflow {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(74px, 1fr));
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      max-width: 680px;
+    }
+    .workflow li {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .workflow li::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      box-shadow: 0 0 0 4px rgba(203,213,225,.3);
+      flex: 0 0 auto;
+    }
+    .workflow li.done::before { background: var(--green); box-shadow: 0 0 0 4px rgba(19,150,90,.12); }
+    .workflow li.active { color: var(--text); font-weight: 720; }
+    .workflow li.active::before { background: var(--accent); box-shadow: 0 0 0 4px rgba(255,173,47,.18); }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      min-width: 0;
+    }
+    .product-switch, .segmented {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px;
+      background: #fff;
+      white-space: nowrap;
+    }
+    .product-mode, .segment {
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 680;
+      transition: background-color .16s ease, color .16s ease, transform .16s ease;
+    }
+    .product-mode:active, .segment:active, .tab:active, .prompt-chip:active, .ghost:active, .primary-action:active, .ask:active { transform: translateY(1px); }
+    .product-mode.active, .segment.active { background: #111827; color: #fff; }
+    .status-pill, .pill, .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      font-weight: 560;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+    .refresh {
+      border-radius: 999px;
+      padding: 9px 15px;
+      background: var(--accent);
+      color: #231400;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .tabs {
+      grid-row: 2;
+      position: sticky;
+      top: 76px;
+      align-self: start;
+      height: calc(100vh - 76px);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 22px 12px;
+      border-right: 1px solid var(--line);
+      background: #f8fbff;
+    }
+    .tab {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      border-radius: 8px;
+      padding: 0 12px;
+      background: transparent;
+      color: #56647a;
+      font-weight: 650;
+      cursor: pointer;
+      text-align: left;
+      transition: background-color .16s ease, color .16s ease, transform .16s ease;
+    }
+    .tab.active {
+      position: relative;
+      background: #eaf2ff;
+      color: #175cd3;
+      font-weight: 720;
+    }
+    .tab.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      border-radius: 999px;
+      background: #3a7bf3;
+    }
+    .tab.secondary { margin-top: 12px; color: #7a8597; }
+
+    .workspace {
+      grid-column: 2;
+      grid-row: 2;
+      width: min(100%, 1500px);
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .view[hidden] { display: none; }
+    .view { animation: page-in .18s ease-out; }
+    @keyframes page-in {
+      from { opacity: .45; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+    .page-head h1, .page-head h2 {
+      margin: 0;
+      color: #172033;
+      font-size: 25px;
+      line-height: 1.22;
+      font-weight: 760;
+    }
+    .page-head p { margin: 6px 0 0; color: var(--text-soft); line-height: 1.5; font-weight: 480; }
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--blue);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 720;
+    }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .layout-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      align-items: start;
+    }
+    .panel, .plain-panel, .status-card, .result-card {
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel);
+      box-shadow: 0 1px 0 rgba(255,255,255,.7), var(--shadow);
+      padding: 16px;
+      min-width: 0;
+    }
+    .panel.flush { padding: 0; overflow: hidden; }
+    .panel h2, .panel h3, .plain-panel h2, .status-card h2, .result-card h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 730;
+    }
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--accent-strong); }
+    .metric-card {
+      min-height: 92px;
+      display: grid;
+      align-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+    }
+    .metric-card span { color: var(--muted); font-size: 12px; font-weight: 650; }
+    .metric-card strong { font-size: 30px; line-height: 1; font-weight: 720; }
+    .danger-text { color: var(--red); }
+    .ok-text { color: var(--green); }
+    .warn-text { color: var(--warn); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 780px; }
+    th, td { border-bottom: 1px solid var(--line-soft); padding: 12px 14px; text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; background: #f3f6fb; font-weight: 700; }
+    td strong { display: block; }
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .history-item, .task-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 13px 14px;
+      cursor: pointer;
+      align-items: start;
+      transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+    }
+    .history-item:hover, .task-row:hover { border-color: #c8d8ec; box-shadow: 0 10px 24px rgba(39,55,80,.06); transform: translateY(-1px); }
+    .history-item strong, .task-row strong { overflow-wrap: anywhere; }
+    .history-item span, .task-row span { color: var(--muted); font-size: 12px; }
+    .history-list, .timeline, .check-list, .trace-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+    .history-list { max-height: calc(100vh - 205px); overflow: auto; padding-right: 4px; }
+    .history-main { min-width: 0; display: grid; gap: 7px; }
+    .history-main strong {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+      line-height: 1.35;
+    }
+    .history-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .history-id { color: var(--faint); font-size: 11px; text-align: right; }
+
+    .composer-card {
+      display: grid;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    textarea, input, select {
+      width: 100%;
+      border: 1px solid #d7e0eb;
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      padding: 12px 13px;
+      outline: none;
+      line-height: 1.5;
+      font-weight: 480;
+    }
+    textarea { min-height: 132px; resize: vertical; }
+    textarea:focus, input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .composer-grid { display: grid; grid-template-columns: minmax(0, 1fr) 116px; gap: 12px; }
+    .ask, .primary-action, .ghost {
+      border-radius: 9px;
+      padding: 10px 13px;
+      font-weight: 760;
+      cursor: pointer;
+      transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .16s ease, opacity .16s ease;
+    }
+    .ask, .primary-action { background: #111827; color: #fff; }
+    .ask:disabled, .primary-action:disabled { opacity: .45; cursor: not-allowed; }
+    .ghost { border: 1px solid var(--line); background: #fff; color: var(--text); text-decoration: none; }
+    .prompt-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .prompt-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 560;
+      transition: border-color .16s ease, color .16s ease, transform .16s ease;
+    }
+    .prompt-chip:hover { border-color: var(--blue); }
+
+    .mentor-toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-soft);
+      padding: 11px 12px;
+    }
+    .mentor-toggle { display: flex; align-items: center; gap: 8px; font-weight: 720; }
+    .mentor-toggle input, .check-row input { width: auto; }
+    .mentor-panel {
+      display: grid;
+      gap: 12px;
+      border: 1px solid #cbdcf6;
+      border-radius: 10px;
+      background: #f7fbff;
+      padding: 14px;
+    }
+    .mentor-panel[hidden] { display: none; }
+    .mentor-head, .status-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+    .mentor-head h3, .mentor-head h4 { margin: 0; font-size: 15px; }
+    .mentor-scores { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+    .mentor-scores div {
+      border: 1px solid #dbe7f8;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+    .mentor-scores span { display: block; color: var(--muted); font-size: 11px; }
+    .mentor-scores b { font-size: 22px; font-weight: 720; }
+    .mentor-question { margin: 0; line-height: 1.6; }
+    .mentor-assumptions { margin: 0; padding-left: 18px; color: #30415d; line-height: 1.55; }
+    .mentor-routes { display: flex; flex-wrap: wrap; gap: 7px; }
+
+    .run-strip { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; }
+    .bar { height: 8px; border-radius: 999px; background: #e8eef6; overflow: hidden; margin: 14px 0 8px; }
+    #progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width .28s; }
+    .progress-line { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+    .timeline li { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
+    .timeline li.active .step-dot { background: var(--accent); }
+    .timeline li.done .step-dot { background: var(--green); }
+    .empty {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: #fff;
+      line-height: 1.6;
+    }
+    .result-card[hidden], .empty[hidden] { display: none; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: rgba(255,173,47,.16);
+      color: #9b5c00;
+      font-weight: 720;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .result-title { font-size: 24px; line-height: 1.35; margin: 0 0 10px; }
+    .question { color: var(--muted); margin-bottom: 14px; line-height: 1.55; }
+    .process-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+    .process-panel {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel-soft);
+      padding: 13px;
+      min-width: 0;
+    }
+    .process-panel[hidden] { display: none; }
+    .process-panel h3 { margin: 0 0 8px; font-size: 13px; color: var(--accent-strong); }
+    .process-panel p { margin: 0 0 8px; color: #31415a; line-height: 1.55; }
+    .process-panel pre, .history-detail pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow: auto;
+      max-height: 240px;
+      color: #27354b;
+      font-size: 12px;
+      line-height: 1.5;
+      background: #fff;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .mini-title { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 14px 0 8px; }
+    ul { padding-left: 18px; margin: 0; }
+    li { margin: 6px 0; }
+    .trace-panel { border: 1px solid var(--line); border-radius: 9px; background: #fff; margin-top: 14px; }
+    .trace-panel[hidden] { display: none; }
+    .trace-panel summary { cursor: pointer; padding: 12px; color: var(--accent-strong); font-size: 13px; font-weight: 720; }
+    .trace-list { padding: 0 12px 12px; max-height: 260px; overflow: auto; }
+    .trace-list li { border: 1px solid var(--line-soft); border-radius: 8px; padding: 9px 10px; background: #f8fafd; }
+    .trace-line { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 12px; }
+    .trace-index { color: var(--accent-strong); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .trace-phase { color: var(--blue); font-weight: 720; }
+    .trace-data { margin-top: 6px; color: var(--muted); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .result-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .audit-document {
+      display: grid;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      line-height: 1.75;
+      overflow: hidden;
+    }
+    .audit-row {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .audit-row:last-child { border-bottom: 0; }
+    .audit-row p { margin: 0; color: var(--text); }
+    .audit-row small { display: block; margin-top: 4px; color: var(--muted); line-height: 1.45; }
+    .line-no { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-right: 10px; }
+    .claim {
+      border-radius: 5px;
+      padding: 2px 6px;
+      color: #111827;
+      cursor: pointer;
+      font-weight: 650;
+    }
+    .claim.is-ok { background: #dff7e9; }
+    .claim.is-warn { background: #fff0ce; }
+    .claim.is-block { background: #ffe1e5; }
+    .audit-status {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .audit-status.ok { color: #075c37; background: #def7e9; border-color: #bdebd1; }
+    .audit-status.warn { color: #7c4500; background: #fff0ce; border-color: #ffe0a3; }
+    .audit-status.block { color: #8d1e2a; background: #ffe1e5; border-color: #ffc7cf; }
+    .audit-focus h2, .gate-decision h2 { margin-bottom: 12px; }
+    .audit-next {
+      margin-top: 14px;
+      border-top: 1px solid var(--line-soft);
+      padding-top: 13px;
+      display: grid;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .state-label, .channel {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+    .state-label.ok, .channel.ready { background: #def7e9; color: #075c37; }
+    .state-label.warn, .channel.desktop { background: #fff0ce; color: #7c4500; }
+    .state-label.block, .channel.blocked { background: #ffe1e5; color: #8d1e2a; }
+    .channel.web { background: #e5efff; color: #164fb5; }
+    .channel.local { background: #edf1f7; color: #42526b; }
+    .metric-cell { display: grid; grid-template-columns: 38px minmax(50px,1fr); align-items: center; gap: 8px; }
+    .metric-cell small { color: var(--text); }
+    .metric-cell i { display: block; height: 6px; border-radius: 999px; background: #e8eef6; overflow: hidden; position: relative; }
+    .metric-cell i::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--color); border-radius: 999px; }
+    .meter { display: grid; grid-template-columns: 42px 74px; align-items: center; gap: 8px; }
+    .track { height: 6px; border-radius: 999px; background: #e8eef6; overflow: hidden; }
+    .fill { display: block; height: 100%; width: 0%; background: var(--green); border-radius: 999px; }
+    .fill.low { background: var(--red); }
+
+    .score-cards, .seat-grid, .roster-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .score-card, .seat-card, .roster-card, .insight-item, .action-tile {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      padding: 11px;
+    }
+    .score-card strong { display: block; font-size: 20px; margin-bottom: 4px; }
+    .score-card span, .seat-card small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .seat-card { cursor: pointer; color: var(--text); text-align: left; }
+    .seat-card.selected { border-color: var(--blue); background: #f2f7ff; }
+    .seat-card.bridge-muted:not(.selected) { opacity: .62; }
+    .seat-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .seat-top em { color: var(--accent-strong); font-style: normal; font-size: 11px; }
+
+    .arena-head { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .arena-head h2 { margin: 0 0 4px; font-size: 18px; }
+    .arena-grid { display: grid; grid-template-columns: minmax(320px, 1fr) 300px 300px; gap: 12px; }
+    .arena-panel { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 13px; min-width: 0; }
+    .arena-panel h3 { margin: 0 0 10px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+    .roster-card.selected { border-color: var(--green); background: #f2fbf6; }
+    .roster-card.abstained { opacity: .58; }
+    .roster-main { display: flex; align-items: center; gap: 9px; }
+    .seat-icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: #111827; color: #fff; font-weight: 760; font-size: 12px; flex: 0 0 auto; }
+    .roster-name { min-width: 0; }
+    .roster-name strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+    .roster-name span { color: var(--muted); font-size: 11px; }
+    .pulse { height: 5px; border-radius: 999px; background: linear-gradient(90deg, transparent, var(--blue), transparent); opacity: .55; }
+    .roster-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .roster-actions button { border-radius: 7px; border: 1px solid var(--line); background: #fff; color: var(--muted); padding: 7px 6px; cursor: pointer; font-size: 12px; font-weight: 680; }
+    .roster-actions button.is-join { color: #073c23; background: #def7e9; border-color: transparent; }
+    .roster-actions button.is-abstain { color: #8d1e2a; background: #ffe1e5; border-color: transparent; }
+    .chief-core { min-height: 220px; border: 1px solid var(--line); border-radius: 9px; background: #f8fafd; display: grid; place-items: center; position: relative; overflow: hidden; }
+    .chief-orb { width: 132px; height: 132px; border-radius: 50%; display: grid; place-items: center; text-align: center; border: 2px solid var(--accent); background: #fff; padding: 18px; box-shadow: 0 0 0 8px rgba(255,173,47,.08); }
+    .chief-orb strong { display: block; color: #9b5c00; font-size: 17px; }
+    .chief-selector, .delta-ribbon, .tag-list, .toolbar { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .chief-selector button { border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); padding: 8px 10px; cursor: pointer; font-weight: 680; font-size: 12px; }
+    .chief-selector button.active { background: #111827; border-color: transparent; color: #fff; }
+    .impact-bar { height: 5px; border-radius: 999px; background: #e8eef6; overflow: hidden; }
+    .impact-bar span { display: block; height: 100%; width: 40%; background: var(--blue); }
+    .terminal-grid { display: grid; grid-template-columns: 1.1fr .9fr .8fr; gap: 12px; margin-top: 12px; }
+    .mini-table { width: 100%; min-width: 0; font-size: 12px; }
+    .mini-table th, .mini-table td { padding: 8px; }
+    .action-tiles { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .action-tile { cursor: pointer; text-align: left; font-weight: 680; }
+
+    .check-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      padding: 11px;
+    }
+    .check-list li.ok { border-color: #bdebd1; }
+    .check-list li.warn { border-color: #ffe0a3; }
+    .check-list li.block { border-color: #ffc7cf; }
+    .gate-panel {
+      min-height: 260px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+    .gate-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 13px 0 15px;
+    }
+    .gate-metric {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: var(--panel-soft);
+      padding: 11px;
+    }
+    .gate-metric span { display: block; color: var(--muted); font-size: 12px; }
+    .gate-metric strong { display: block; margin-top: 5px; font-size: 20px; line-height: 1; font-weight: 720; }
+    .gate-checklist li { min-height: 48px; }
+    .gate-check-title { display: grid; gap: 2px; }
+    .gate-check-title small { color: var(--muted); font-size: 12px; font-weight: 480; }
+    .gate-decision {
+      align-content: start;
+      justify-items: stretch;
+      text-align: left;
+      gap: 14px;
+    }
+    .gate-state {
+      width: 100%;
+      min-height: 82px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 2px solid #ffc7cf;
+      background: #fff4f5;
+      color: var(--red);
+      font-weight: 760;
+      font-size: 22px;
+      padding: 18px;
+    }
+    .gate-state::after { content: "等待补证"; color: #8d1e2a; font-size: 12px; font-weight: 650; }
+    .gate-state.is-ready { border-color: #bdebd1; background: #f2fbf6; color: var(--green); }
+    .gate-state.is-ready::after { content: "可进入发布"; color: #075c37; }
+    .gate-meter { height: 8px; border-radius: 999px; background: #e8eef6; overflow: hidden; }
+    .gate-meter span { display: block; height: 100%; width: 35%; border-radius: inherit; background: var(--accent); transition: width .2s ease; }
+    .gate-meter.is-ready span { width: 100%; background: var(--green); }
+    .gate-note-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .gate-note-list li { margin: 0; }
+    .chip-block { background: #ffe1e5; color: #8d1e2a; border-color: #ffc7cf; }
+    .chip-ok { background: #def7e9; color: #075c37; border-color: #bdebd1; }
+    .chip-warn { background: #fff0ce; color: #7c4500; border-color: #ffe0a3; }
+    .chip-neutral { background: #edf1f7; color: #42526b; }
+
+    .settings-grid, .history-layout { display: grid; grid-template-columns: minmax(280px, .95fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+    .history-layout { grid-template-columns: minmax(360px, .85fr) minmax(0, 1.15fr); }
+    .history-detail { position: sticky; top: 100px; }
+    .history-detail h2 { line-height: 1.28; }
+    .ledger-detail-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+    .ledger-detail-head .muted {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      overflow: hidden;
+      line-height: 1.5;
+    }
+    .ledger-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .ledger-summary-grid div {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: var(--panel-soft);
+      padding: 11px;
+      min-width: 0;
+    }
+    .ledger-summary-grid span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    .ledger-summary-grid strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+    .ledger-note {
+      margin-top: 13px;
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px;
+      color: var(--text-soft);
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .ledger-actions button { border: 1px solid var(--line); background: #fff; color: var(--text); }
+    .ledger-actions button.active { background: #111827; color: #fff; border-color: transparent; }
+    .history-detail pre { margin-top: 13px; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .check-row { display: flex; align-items: center; gap: 8px; color: var(--muted); margin-top: 12px; }
+    footer { text-align: center; color: var(--faint); font-size: 11px; padding: 24px 0 0; }
+
+    .pro-only { display: none; }
+    .app.pro-mode .pro-only { display: block; }
+    .app.pro-mode .workspace { max-width: 1600px; }
+    .app.pro-mode .metric-card { min-height: 78px; }
+    .app.pro-mode .panel, .app.pro-mode .plain-panel, .app.pro-mode .status-card, .app.pro-mode .result-card { padding: 14px; }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0,1fr); }
+      .topbar { grid-column: 1; grid-template-columns: 1fr; align-items: start; height: auto; padding: 16px; position: static; }
+      .tabs { grid-row: 2; position: static; height: auto; flex-direction: row; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .tab { flex: 0 0 auto; }
+      .workspace { grid-column: 1; grid-row: 3; padding: 16px; }
+      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid { grid-template-columns: 1fr; }
+      .composer-grid { grid-template-columns: 1fr; }
+      .score-cards, .seat-grid, .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .workflow { grid-template-columns: repeat(5, minmax(62px, 1fr)); width: 100%; }
+      .history-list { max-height: none; }
+      .history-detail { position: static; }
+    }
+    @media (max-width: 620px) {
+      .top-actions, .control-row, .page-head { align-items: stretch; flex-direction: column; }
+      .workflow { grid-template-columns: 1fr 1fr; }
+      .score-cards, .seat-grid, .roster-grid, .field-grid, .mentor-scores { grid-template-columns: 1fr; }
+      .audit-row { grid-template-columns: 34px minmax(0, 1fr); }
+      .audit-status { grid-column: 2; justify-self: start; }
+      table { min-width: 680px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app simple-mode" id="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <path d="M11 47 22.6 17h8.2L42 47h-7.2l-2-5.9H20.1L18.1 47H11Zm11.2-12h8.5l-4.2-12.1L22.2 35Z" fill="#fff"/>
+            <path d="M46 18h7v20.8c0 6.9-4.3 10.7-11.2 10.7-4.3 0-7.4-1.5-9.8-4.2l4-5c1.7 1.8 3.5 2.7 5.7 2.7 2.9 0 4.3-1.6 4.3-4.8V18Z" fill="#fff"/>
+            <circle cx="49.5" cy="13.5" r="3.3" fill="#ffae34"/>
+          </svg>
+        </div>
+        <div>
+          <strong>AI Judge</strong>
+          <span>研究审计台</span>
+        </div>
+      </div>
+      <ol class="workflow" aria-label="AI Judge workflow">
+        <li class="active" data-workflow-step="intake">录入</li>
+        <li data-workflow-step="mentor">导师</li>
+        <li data-workflow-step="collect">席位</li>
+        <li data-workflow-step="audit">审查</li>
+        <li data-workflow-step="publish">发布</li>
+      </ol>
+      <div class="top-actions">
+        <span class="product-switch" id="product-switch">
+          <button class="product-mode active" data-product-mode="simple">简约版</button>
+          <button class="product-mode" data-product-mode="pro">专业版</button>
+        </span>
+        <span class="status-pill"><i class="status-dot"></i><span id="app-status">本地引擎就绪</span></span>
+        <span class="status-pill" id="seat-ready-count">网页席位 0/0</span>
+        <button class="refresh" id="btn-refresh">刷新</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="功能页">
+      <button class="tab active" data-tab="tasks">任务中心</button>
+      <button class="tab" data-tab="request">请求录入</button>
+      <button class="tab" data-tab="draft">草稿生成</button>
+      <button class="tab" data-tab="evidence">证据审查</button>
+      <button class="tab" data-tab="council">模型对比</button>
+      <button class="tab" data-tab="publish">发布门禁</button>
+      <button class="tab secondary" data-tab="history">最近议事</button>
+      <button class="tab" data-tab="settings">设置</button>
+    </nav>
+
+    <main class="workspace">
+      <section class="view" id="view-tasks">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Task Center</p>
+            <h1>今天的 AI Judge 工作台</h1>
+            <p>先看任务状态，再进入录入、生成、审查、模型对比或发布门禁。</p>
+          </div>
+          <button class="primary-action" data-tab-shortcut="request">新建议题</button>
+        </div>
+        <div class="grid-4">
+          <div class="metric-card"><span>待处理</span><strong>4</strong></div>
+          <div class="metric-card"><span>运行中</span><strong id="task-running-count">0</strong></div>
+          <div class="metric-card"><span>网页席位</span><strong id="task-ready-count">0/0</strong></div>
+          <div class="metric-card"><span>阻断风险</span><strong class="danger-text" id="task-blocker-count">2</strong></div>
+        </div>
+        <div class="layout-main" style="margin-top:16px;">
+          <section class="panel flush">
+            <table>
+              <thead><tr><th>任务</th><th>阶段</th><th>风险</th><th>席位</th><th>下一步</th></tr></thead>
+              <tbody>
+                <tr class="task-jump" data-tab-shortcut="request"><td><strong>新的议题评审</strong><span class="muted">从问题录入和导师预检开始</span></td><td>录入</td><td><span class="state-label warn">待判断</span></td><td>按模式</td><td>填写问题</td></tr>
+                <tr class="task-jump" data-tab-shortcut="draft"><td><strong>最近判词</strong><span class="muted">恢复最后一次 run 的生成结果</span></td><td>生成</td><td><span class="state-label ok">可查看</span></td><td>历史席位</td><td>查看草稿</td></tr>
+                <tr class="task-jump" data-tab-shortcut="council"><td><strong>网页桥接校准</strong><span class="muted">确认网页/桌面席位是否可后台收集</span></td><td>席位</td><td><span class="state-label warn">需校准</span></td><td id="task-bridge-row">0/0</td><td>模型对比</td></tr>
+                <tr class="task-jump" data-tab-shortcut="publish"><td><strong>发布门禁</strong><span class="muted">证据、分歧、风险披露与日志完整性</span></td><td>发布</td><td><span class="state-label block">有阻断</span></td><td>全席位</td><td>复核</td></tr>
+              </tbody>
+            </table>
+          </section>
+          <aside class="panel">
+            <h2>当前判断</h2>
+            <p class="muted">默认仍是快速模式直达；打开“先帮我想清楚”后，客户端会先生成导师预检、执行稿、模型路由，再让你确认后运行。</p>
+            <div class="tag-list">
+              <span class="tag">Fast default</span>
+              <span class="tag">Mentor gate</span>
+              <span class="tag">Web bridge</span>
+              <span class="tag">Publish gate</span>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-request" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Request Briefing</p>
+            <h1>定义问题、边界和执行方式</h1>
+            <p>每次只让一个页面承担一个任务：这里负责输入和确认，不展示完整判词。</p>
+          </div>
+          <span class="pill" id="run-meta">等待提交</span>
+        </div>
+        <div class="layout-main">
+          <section class="composer-card">
+            <div class="control-row">
+              <span>引擎</span>
+              <div class="segmented" id="engine-strip">
+                <button class="segment active" data-engine="local">本地</button>
+                <button class="segment" data-engine="web">网页</button>
+              </div>
+              <span>议事深度</span>
+              <div class="segmented" id="mode-strip"></div>
+              <span class="status-pill"><span class="status-dot"></span><span id="bridge-status">读取桥接状态...</span></span>
+            </div>
+            <div class="prompt-chips">
+              <button class="prompt-chip" data-text="深度学习模型规模 vs 蒸馏，哪条路线更值得投入？">模型规模 vs 蒸馏</button>
+              <button class="prompt-chip" data-text="Rust 还是 Go 适合做一个高并发的网关服务？">Rust 还是 Go</button>
+              <button class="prompt-chip" data-text="如何评估一个 AI 创业项目的技术护城河？">AI 项目护城河</button>
+              <button class="prompt-chip" data-text="小团队应不应该自建 LLM 推理服务？">自建推理服务</button>
+            </div>
+            <div class="composer-grid">
+              <textarea id="question-input" placeholder="输入你要评审的问题。Enter 提交，Shift+Enter 换行。"></textarea>
+              <button class="ask" id="btn-submit" disabled>开始评议</button>
+            </div>
+            <div class="mentor-toggle-row">
+              <label class="mentor-toggle">
+                <input id="mentorMode" type="checkbox" />
+                <span>先帮我想清楚</span>
+              </label>
+              <span class="muted" id="mentorInlineState">快速模式直达</span>
+            </div>
+            <section class="mentor-panel" id="mentorPanel" hidden>
+              <div class="mentor-head">
+                <div>
+                  <h3>导师预检</h3>
+                  <p class="muted" style="margin:4px 0 0;">先澄清目标、约束、风险和模型路由，再进入快速模式。</p>
+                </div>
+                <span class="pill" id="mentorRoute">Direct</span>
+              </div>
+              <div class="mentor-scores">
+                <div><span>清晰度</span><b id="mentorClarity">0</b></div>
+                <div><span>风险</span><b id="mentorRisk">0</b></div>
+                <div><span>复杂度</span><b id="mentorComplexity">0</b></div>
+              </div>
+              <p class="mentor-question" id="mentorQuestion">我会先问一个能暴露盲点的问题。</p>
+              <ul class="mentor-assumptions" id="mentorAssumptions"></ul>
+              <div class="mentor-routes" id="mentorRoutes"></div>
+            </section>
+          </section>
+          <aside class="status-card">
+            <div class="status-head">
+              <div>
+                <h2>运行状态</h2>
+                <div class="muted">任务只在确认后进入后台</div>
+              </div>
+              <div class="mono" id="run-id">-</div>
+            </div>
+            <div class="bar"><div id="progress-fill"></div></div>
+            <div class="progress-line">
+              <span id="progress-label">就绪</span>
+              <span id="progress-percent">0%</span>
+            </div>
+            <ul class="timeline" id="timeline-list"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-draft" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Synthesis</p>
+            <h1>草稿生成与执行轨迹</h1>
+            <p>这里只看本轮输出、提示词共振、执行驱动和底层日志。</p>
+          </div>
+          <button class="ghost" data-tab-shortcut="evidence">进入证据审查</button>
+        </div>
+        <div class="empty" id="result-empty">判词会在这里出现。快速模式提交后，后台进度仍在“请求录入”页可见。</div>
+        <article class="result-card" id="verdict-card" hidden>
+          <span class="badge" id="verdict-badge"></span>
+          <h2 class="result-title" id="verdict-title"></h2>
+          <div class="question" id="verdict-question"></div>
+          <div class="process-grid">
+            <section class="process-panel" id="mentor-result-panel" hidden>
+              <h3>导师预检</h3>
+              <p id="mentor-result-summary"></p>
+              <div class="tag-list" id="mentor-result-tags"></div>
+            </section>
+            <section class="process-panel" id="prompt-flow-panel" hidden>
+              <h3>本地共振</h3>
+              <p id="prompt-flow-summary"></p>
+              <pre id="prompt-flow-text"></pre>
+              <div class="tag-list" id="prompt-flow-tags"></div>
+            </section>
+            <section class="process-panel" id="execution-panel" hidden>
+              <h3>执行驱动</h3>
+              <p id="execution-summary"></p>
+              <div class="tag-list" id="execution-tags"></div>
+            </section>
+            <section class="process-panel" id="judge-answer-panel" hidden>
+              <h3>AI Judge 法官答案</h3>
+              <p id="judge-answer-summary"></p>
+              <div class="tag-list" id="judge-answer-tags"></div>
+            </section>
+            <section class="process-panel" id="score-round-panel" hidden>
+              <h3>评分轮次</h3>
+              <p id="score-round-summary"></p>
+              <div class="tag-list" id="score-round-tags"></div>
+            </section>
+          </div>
+          <div class="two-col">
+            <div>
+              <div class="mini-title">关键理由</div>
+              <ul id="reason-list"></ul>
+            </div>
+            <div>
+              <div class="mini-title">建议行动</div>
+              <ul id="step-list"></ul>
+            </div>
+          </div>
+          <details class="trace-panel" id="trace-panel" hidden>
+            <summary>底层执行轨迹 <span class="muted" id="trace-count"></span></summary>
+            <ul class="trace-list" id="trace-list"></ul>
+          </details>
+        </article>
+      </section>
+
+      <section class="view" id="view-evidence" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Audit & Proof</p>
+            <h1>证据审查</h1>
+            <p>把主张、引用、新鲜度、可验证性分开看，避免判词看起来完整但证据不足。</p>
+          </div>
+          <button class="ghost" data-tab-shortcut="publish">提交发布门禁</button>
+        </div>
+        <div class="layout-main">
+          <section class="audit-document">
+            <div class="audit-row">
+              <span class="line-no">01</span>
+              <p>保留本轮模型原始判断，再进入本地共振、评分和发布级审查。<small>这是审计基线，避免后续摘要覆盖原始立场。</small></p>
+              <span class="audit-status ok">已锁定</span>
+            </div>
+            <div class="audit-row">
+              <span class="line-no">02</span>
+              <p><mark class="claim is-ok">主张 A</mark> 当前输出包含立场、条件和下一步验证。<small>结构完整，可以进入报告草稿。</small></p>
+              <span class="audit-status ok">通过</span>
+            </div>
+            <div class="audit-row">
+              <span class="line-no">03</span>
+              <p><mark class="claim is-warn">主张 B</mark> 网页席位不完整时必须展示阻断原因，不把本地结果伪装成全模型共识。<small>需要和模型对比页的席位状态保持一致。</small></p>
+              <span class="audit-status warn">需校准</span>
+            </div>
+            <div class="audit-row">
+              <span class="line-no">04</span>
+              <p><mark class="claim is-block">主张 C</mark> 发布前需要确认引用验证、Replay Ledger 和慢席位补采状态。<small>未完成前只允许保存为内部判词。</small></p>
+              <span class="audit-status block">阻断发布</span>
+            </div>
+          </section>
+          <aside class="panel audit-focus">
+            <h2>审查焦点</h2>
+            <ul class="check-list">
+              <li class="ok"><strong>原始问题保留</strong><span>通过</span></li>
+              <li class="warn"><strong>网页席位校准</strong><span>看模型对比</span></li>
+              <li class="block"><strong>发布级引用验证</strong><span>看发布门禁</span></li>
+            </ul>
+            <div class="audit-next">
+              <strong>下一步</strong>
+              <span>先确认网页席位与引用状态，再提交发布门禁。证据页只负责判断“是否够证据”，不承载完整报告。</span>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-council" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Council Console</p>
+            <h1>模型对比与桥接状态</h1>
+            <p>专业信息集中在这里：席位、网页/桌面通道、评分、分歧和桥接校准。</p>
+          </div>
+          <span class="pill" id="score-summary">等待判词</span>
+        </div>
+        <section class="panel pro-only" id="ops-arena">
+          <div class="arena-head">
+            <div>
+              <h2>Draft Arena</h2>
+              <p class="muted">专业版显示阵容、主审、敏感度、桥接监控和评分轮次。</p>
+            </div>
+            <div class="delta-ribbon" id="delta-ribbon"></div>
+          </div>
+          <div class="arena-grid">
+            <section class="arena-panel">
+              <h3>议员选秀台 <span class="muted" id="arena-seat-count">0 席</span></h3>
+              <div class="roster-grid" id="arena-roster"></div>
+            </section>
+            <section class="arena-panel">
+              <h3>轮值主审台</h3>
+              <div class="chief-core">
+                <div class="chief-orb">
+                  <span class="muted">Chief Judge</span>
+                  <strong id="chief-name">自动轮值</strong>
+                  <small id="chief-subtitle">可切换</small>
+                </div>
+              </div>
+              <div class="chief-selector" id="chief-selector"></div>
+            </section>
+            <section class="arena-panel">
+              <h3>阵容敏感度 <span class="pill">What-if</span></h3>
+              <div class="insight-list" id="sensitivity-list"></div>
+            </section>
+          </div>
+          <div class="terminal-grid">
+            <section class="arena-panel">
+              <h3>桥接监控</h3>
+              <table class="mini-table"><thead><tr><th>席位</th><th>入口</th><th>状态</th><th>采集</th></tr></thead><tbody id="bridge-monitor-body"></tbody></table>
+            </section>
+            <section class="arena-panel">
+              <h3>评分轮次</h3>
+              <div id="arena-rounds"></div>
+            </section>
+            <section class="arena-panel">
+              <h3>全量信息入口</h3>
+              <div class="action-tiles">
+                <button class="action-tile" data-open-info="answers">模型原文</button>
+                <button class="action-tile" data-open-info="pros">优缺点</button>
+                <button class="action-tile" data-open-info="scores">评分明细</button>
+                <button class="action-tile" data-open-info="logs">日志回放</button>
+                <button class="action-tile" data-open-info="report">最终报告</button>
+              </div>
+            </section>
+          </div>
+        </section>
+        <div class="score-cards" id="seat-score-cards" style="margin-top:14px;"></div>
+        <div class="table-wrap" style="margin-top:14px;">
+          <table>
+            <thead>
+              <tr><th>席位</th><th>Provider</th><th>来源</th><th>Q 平均</th><th>K 平均</th><th>C 平均</th><th>R 风险</th><th>T 资历</th><th>最终分</th></tr>
+            </thead>
+            <tbody id="seat-score-body"></tbody>
+          </table>
+        </div>
+        <div class="page-head" style="margin-top:22px;">
+          <div>
+            <h2>席位 ↔ 浏览器/客户端</h2>
+            <p>网页席位使用独立浏览器 profile；桌面席位保留独立 Worker 边界。</p>
+          </div>
+          <div class="toolbar">
+            <button class="ghost" id="btn-init-bridge">生成网页席位配置</button>
+            <button class="ghost" id="btn-calibrate-bridge">校准当前席位</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>席位</th><th>Provider</th><th>通道</th><th>执行驱动</th><th>安全后台</th><th>校准</th><th>状态</th><th>目标</th></tr>
+            </thead>
+            <tbody id="mapping-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="view-publish" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Publish Gate</p>
+            <h1>发布门禁</h1>
+            <p>只有证据、分歧、风险披露、审计日志都清楚时，才让最终报告进入发布动作。</p>
+          </div>
+          <span class="pill">阻断 <strong id="blockerCount">2</strong></span>
+        </div>
+        <div class="layout-main">
+          <section class="panel">
+            <h2>门禁检查</h2>
+            <div class="gate-summary">
+              <div class="gate-metric"><span>发布状态</span><strong id="publishStatusText">阻断中</strong></div>
+              <div class="gate-metric"><span>可信度</span><strong id="publishConfidence">-</strong></div>
+              <div class="gate-metric"><span>待处理项</span><strong id="publishBlockerMetric">2</strong></div>
+            </div>
+            <ul class="check-list gate-checklist" id="publishChecklist">
+              <li class="block"><strong>证据链完整</strong><span>缺引用验证</span></li>
+              <li class="warn"><strong>模型分歧消解</strong><span>等待慢席位</span></li>
+              <li class="ok"><strong>风险披露写入</strong><span>通过</span></li>
+              <li class="ok"><strong>审计日志完整</strong><span>通过</span></li>
+            </ul>
+            <div class="result-actions">
+              <a class="ghost" id="view-link" href="#" rel="noreferrer">打开完整报告</a>
+              <button class="ghost" id="btn-supplement-slow" hidden>补充慢席位</button>
+              <button class="ghost" id="btn-download-md">下载 Markdown</button>
+              <button class="ghost" id="btn-download-json">下载 JSON</button>
+              <button class="primary-action" id="clearBlockersBtn">标记补证完成</button>
+              <button class="primary-action" id="publishBtn" disabled>批准发布</button>
+            </div>
+          </section>
+          <aside class="panel gate-panel gate-decision">
+            <span class="pill chip-block" id="gateBadge">LOCKED</span>
+            <div class="gate-state is-locked" id="gateState">不可发布</div>
+            <div class="gate-meter" id="gateMeter"><span></span></div>
+            <ul class="gate-note-list">
+              <li>发布按钮不会替你发送外部内容。</li>
+              <li>它只把本轮判词标记为发布级可用。</li>
+              <li id="gateReason">当前仍有门禁项需要人工确认。</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-history" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Run Ledger</p>
+            <h1>最近议事</h1>
+            <p>所有本地任务都会保留在这里，点击可回看判词、日志和评分摘要。</p>
+          </div>
+          <button class="ghost" id="btn-history-refresh">刷新历史</button>
+        </div>
+        <div class="history-layout">
+          <ul class="history-list" id="history-list"><li class="muted">加载中...</li></ul>
+          <aside class="plain-panel history-detail" id="history-detail">
+            <h2>议事详情</h2>
+            <p class="muted">点击左侧记录后，这里会保留完整入口、底层日志和评分摘要。</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-settings" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Settings</p>
+            <h1>设置</h1>
+            <p>通知、专家席位和桥接状态集中放在这里，不打扰主流程。</p>
+          </div>
+        </div>
+        <div class="settings-grid">
+          <section class="plain-panel">
+            <h2>完成通知</h2>
+            <div class="field-grid" style="margin-top:14px;">
+              <input id="notify-feishu" placeholder="飞书 Webhook（可选）" />
+              <input id="notify-wecom" placeholder="企微 Webhook（可选）" />
+              <input id="notify-email" placeholder="邮箱（可选）" />
+              <input id="notify-webhook" placeholder="通用 Webhook（可选）" />
+            </div>
+            <label class="check-row"><input type="checkbox" id="notify-browser" /> 浏览器桌面通知</label>
+          </section>
+          <section class="plain-panel">
+            <h2>专家席位</h2>
+            <div class="toolbar">
+              <button class="ghost" id="btn-select-all">全选</button>
+              <button class="ghost" id="btn-clear-all">清空</button>
+              <span class="pill" id="selected-count">当前 0 席</span>
+            </div>
+            <div class="seat-grid" id="seat-grid"></div>
+          </section>
+        </div>
+      </section>
+
+      <footer>AI Judge v3.5 · Command Center / Mentor Gate / Web Bridge / Publish Gate</footer>
+    </main>
+  </div>
+  <script src="dashboard.js"></script>
+</body>
+</html>
