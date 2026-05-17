@@ -29,7 +29,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Batch audit spec | Ready | `docs/BATCH_AUDIT_SPEC.md` |
 | GitHub Action guide | Ready | `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
-| Outreach queue | Batch 001 send packet ready, not sent | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md` |
+| Outreach queue | Batch 001 send packet ready, not sent | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md`, `growth/outreach_status.md` |
 | Free audit offer | Ready | `growth/free_audit_offer.md` |
 | Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
 | Pro early-access page | Ready | `product/pro_early_access.html` |

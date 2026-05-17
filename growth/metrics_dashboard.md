@@ -25,7 +25,7 @@ Status: active tracking template
 | Hacker News | https://news.ycombinator.com/showlim | blocked_platform_show_hn_restriction | 0 | 0 | 0 | 0 | HN returned the current Show HN restriction page for this account context. |
 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but no activation code is available for this launch cycle. |
 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
-| Outreach email | growth/outreach_mailto_links.md | batch_001_send_packet_ready_not_sent | 0 | 0 | 0 | 0 | 10 real targets researched; 4 P0 direct emails converted into mailto links and `.eml` drafts. |
+| Outreach email | growth/outreach_status.md | batch_001_send_packet_ready_not_sent | 0 | 0 | 0 | 0 | 10 real targets researched; 4 P0 direct emails converted into mailto links and `.eml` drafts; event logger added. |
 
 ## Manual update cadence
 

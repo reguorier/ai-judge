@@ -226,6 +226,16 @@ Reguorier
 
 ## Send Log
 
+Canonical event tracking now lives in `growth/outreach_events.jsonl` and the generated status page `growth/outreach_status.md`.
+
+Example:
+
+```bash
+python3 tools/record_outreach_event.py sent O001 --channel qq-mail --note "Sent via Safari QQ Mail"
+python3 tools/record_outreach_event.py reply O001 --channel email --note "Asked for PDF batch audit"
+python3 tools/record_outreach_event.py pro_signal O001 --channel email --note "Needs batch PDF audit"
+```
+
 | Date | Target ID | Channel | Status | Reply | Next action |
 |---|---|---|---|---|---|
 | TBD | TBD | TBD | not_sent | TBD | TBD |
