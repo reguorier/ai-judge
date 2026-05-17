@@ -80,6 +80,8 @@ PYTHONPATH=. python cli/main.py audit examples/sounds-smart-low-judgment.md --ht
 PYTHONPATH=. python tools/run_citation_bench.py
 ```
 
+Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html).
+
 The first public benchmark is [`citation-bench/citation-bench-100.jsonl`](citation-bench/citation-bench-100.jsonl): 100 deterministic cases covering verified, weak, irrelevant, unverifiable, and contradicted citation behavior.
 
 ## 30-Second Product Tour

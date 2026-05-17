@@ -2,7 +2,7 @@
   "schema": "citation_audit.v1",
   "product": "AI Judge Citation Audit",
   "version": "3.6.0",
-  "audit_id": "demo-sounds-smart-low-judgment",
+  "audit_id": "audit-89f23480da29",
   "title": "Sounds Smart Low Judgment Demo",
   "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
   "answer": "The company is an obvious buy because every major model agrees the moat is expanding, margin compression is temporary, and management has unlocked a new flywheel. The 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
@@ -10,9 +10,9 @@
   "grand_judge": {
     "schema": "grand_judge.citation_mvp.v1",
     "phase": "citation_verification_mvp",
-    "run_id": "demo-sounds-smart-low-judgment",
+    "run_id": "audit-89f23480da29",
     "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
-    "certification_id": "CITE-20260516-25DE3FA24B",
+    "certification_id": "CITE-20260517-90AA50CEFB",
     "citation_verification": {
       "schema": "citation_validator.summary.v1",
       "status_schema": [
@@ -34,8 +34,8 @@
       },
       "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
       "verification_hash": "362cab255843cd20e626a8f94b7b008b0b229b1329b82004bd36692db42e5710",
-      "certification_id": "CITE-20260516-25DE3FA24B",
-      "replay_ledger_hash": "050d396a2392b82613337653b9fca89fed4c4123edb5e6c6e17f654bb046c20d",
+      "certification_id": "CITE-20260517-90AA50CEFB",
+      "replay_ledger_hash": "31a5548a38a707b7260830134ba65971f0f9fbe2c43792dd571e4b4a81d2b242",
       "external_evidence_count": 2
     },
     "replay_ledger": [
@@ -86,13 +86,13 @@
                 "evidence_hash": "eab9e76dafd97cc067ec41d57cfd147b6234430f316a6f166b6baff2ae36ddcf"
               },
               "relevance_score": 0.0,
-              "verified_at": "2026-05-16T15:43:36.410543+00:00"
+              "verified_at": "2026-05-17T10:22:01.946221+00:00"
             }
           ],
           "external_evidence_used": 2,
           "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
-          "verified_at": "2026-05-16T15:43:36.410543+00:00",
-          "verification_hash": "0b6ea63e9dd262eed4b361c548d88cc97a87e538e72209a4b5d4d3dd717ee651"
+          "verified_at": "2026-05-17T10:22:01.946221+00:00",
+          "verification_hash": "9e2de142d9e7558aa4a8122dee342e474ceea124333e4cfbe35cdd14d2eb4a5e"
         },
         "mentor_citation_verification": null,
         "unverifiable_reasons": [
@@ -102,7 +102,7 @@
             "reason": "该来源只是模型答案中的候选来源，尚未进入隔离外部证据层；当前不可验证，不代表为假。"
           }
         ],
-        "verification_timestamp": "2026-05-16T15:43:36.410543+00:00",
+        "verification_timestamp": "2026-05-17T10:22:01.946221+00:00",
         "source_isolation": {
           "raw_answer": "replay_ledger[].raw_answer",
           "mentor_supplement": "replay_ledger[].mentor_supplement",
@@ -111,7 +111,7 @@
         }
       }
     ],
-    "replay_ledger_hash": "050d396a2392b82613337653b9fca89fed4c4123edb5e6c6e17f654bb046c20d",
+    "replay_ledger_hash": "31a5548a38a707b7260830134ba65971f0f9fbe2c43792dd571e4b4a81d2b242",
     "external_evidence_index": [
       {
         "evidence_id": "EVID-MARKET-001",
@@ -165,11 +165,11 @@
       "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
       "unverifiable 不是 false，UI 必须解释清楚。"
     ],
-    "created_at": "2026-05-16T15:43:36.410543+00:00",
-    "certification_hash": "c2bee3bed4c012541a4904ae059722214d1eaf8ffb9397958bb19663896f7c60",
+    "created_at": "2026-05-17T10:22:01.946221+00:00",
+    "certification_hash": "d614c78c79d18d92c86b27aed674784ae5c29b31cf7c77b3d7e56efd2d14e186",
     "evidence_broker": {
       "schema": "evidence_broker.v1",
-      "created_at": "2026-05-16T15:43:36.410543+00:00",
+      "created_at": "2026-05-17T10:22:01.946221+00:00",
       "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
       "allow_network": false,
       "source_policy": {
@@ -243,7 +243,7 @@
         "candidate_source": 1,
         "fetch_error": 0
       },
-      "broker_hash": "7aba41a4dcb0099c0965ea7e986225c9f64fc679267b51b252b5d3d05d7e3239"
+      "broker_hash": "21ee91033c15f196164247e1ecad0282267220660ea2528fac6a67c578948b0d"
     },
     "evidence_gap_suggestions": {
       "schema": "evidence_gap_filler.suggestion_only.v1",
@@ -282,7 +282,7 @@
     },
     "evidence_gap_queue": {
       "schema": "evidence_gap_queue.v1",
-      "created_at": "2026-05-16T15:43:36.410543+00:00",
+      "created_at": "2026-05-17T10:22:01.946221+00:00",
       "open_count": 1,
       "tasks": [
         {
@@ -295,16 +295,16 @@
           "gap": "缺少可匹配的外部证据。",
           "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
           "queue_status": "open",
-          "created_at": "2026-05-16T15:43:36.410543+00:00"
+          "created_at": "2026-05-17T10:22:01.946221+00:00"
         }
       ],
       "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
-      "queue_hash": "79f50949ccc9c6663db42f35c206e52c81432306e707ce2c0288ea71d59df1b1"
+      "queue_hash": "d74b95e1e3ffc4559768d08c3f0db675c66d3dfedadfff97efceabd86a8a566e"
     },
     "blind_cross_validation": {
       "schema": "blind_cross_validation.v1",
       "status": "pending_model_reviews",
-      "created_at": "2026-05-16T15:43:36.410543+00:00",
+      "created_at": "2026-05-17T10:22:01.946221+00:00",
       "reviewer_count": 4,
       "threshold": 0.67,
       "anonymization": {
@@ -343,12 +343,12 @@
         }
       ],
       "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
-      "packet_hash": "1acfbdbcad5fab260f38e2aa653e06b9326082c980ec899b0a1223ad7bd96a46"
+      "packet_hash": "30c0338dd0abb6c53b91d57cca7b90150a38069293160c75f82e08f191ea1ecc"
     },
     "eval_case": {
       "schema": "ai_judge_eval_case.v1",
-      "case_id": "EVAL-184D90A15CDC",
-      "run_id": "demo-sounds-smart-low-judgment",
+      "case_id": "EVAL-8C51B79B9261",
+      "run_id": "audit-89f23480da29",
       "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
       "mode": null,
       "engine": null,
@@ -374,24 +374,24 @@
         "hard_evidence_count": 2,
         "trust_gate": "needs_more_evidence"
       },
-      "certification_id": "CITE-20260516-25DE3FA24B",
-      "certification_hash": "c2bee3bed4c012541a4904ae059722214d1eaf8ffb9397958bb19663896f7c60",
-      "replay_ledger_hash": "050d396a2392b82613337653b9fca89fed4c4123edb5e6c6e17f654bb046c20d",
+      "certification_id": "CITE-20260517-90AA50CEFB",
+      "certification_hash": "d614c78c79d18d92c86b27aed674784ae5c29b31cf7c77b3d7e56efd2d14e186",
+      "replay_ledger_hash": "31a5548a38a707b7260830134ba65971f0f9fbe2c43792dd571e4b4a81d2b242",
       "human_label": null,
-      "created_at": "2026-05-16T15:43:36.411348+00:00",
-      "case_hash": "a7e0cf93e8d1b0ece517734a860e6e15f33a623ddb42578fb61eed16894e840a"
+      "created_at": "2026-05-17T10:22:01.947364+00:00",
+      "case_hash": "678f65923274ed5a1942c4f5823cbe76e0a092dd8804eeb0fca1063567275769"
     }
   },
   "human_review_status": {
     "status": "required",
     "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。"
   },
-  "created_at": "2026-05-16T15:43:36.410543+00:00",
+  "created_at": "2026-05-17T10:22:01.946221+00:00",
   "summary": {
     "overall_status": "unverifiable",
-    "certification_id": "CITE-20260516-25DE3FA24B",
-    "certification_hash": "c2bee3bed4c012541a4904ae059722214d1eaf8ffb9397958bb19663896f7c60",
-    "replay_ledger_hash": "050d396a2392b82613337653b9fca89fed4c4123edb5e6c6e17f654bb046c20d",
+    "certification_id": "CITE-20260517-90AA50CEFB",
+    "certification_hash": "d614c78c79d18d92c86b27aed674784ae5c29b31cf7c77b3d7e56efd2d14e186",
+    "replay_ledger_hash": "31a5548a38a707b7260830134ba65971f0f9fbe2c43792dd571e4b4a81d2b242",
     "item_count": 1,
     "counts": {
       "verified": 0,

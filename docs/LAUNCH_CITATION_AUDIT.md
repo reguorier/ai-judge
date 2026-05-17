@@ -34,11 +34,11 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 
 ## Three launch demos
 
-| Demo | Command | Story |
-|---|---|---|
-| Fake citation | `examples/fake-citation.md` | The model cites a plausible institution but the isolated evidence does not verify the named report. |
-| Product plan without evidence | `examples/product-no-evidence.md` | The model recommends a three-month rewrite without evidence for the promised defect reduction. |
-| Sounds smart, low judgment | `examples/sounds-smart-low-judgment.md` | The answer sounds like investor prose but fails to ground the key memo and moat claims. |
+| Demo | Input | Report | Story |
+|---|---|---|---|
+| Fake citation | [`examples/fake-citation.md`](../examples/fake-citation.md) | [`reports/fake-citation-audit.html`](../reports/fake-citation-audit.html) / [`json`](../reports/fake-citation-audit.json) | The model cites a plausible institution but the isolated evidence does not verify the named report. |
+| Product plan without evidence | [`examples/product-no-evidence.md`](../examples/product-no-evidence.md) | [`reports/product-no-evidence-audit.html`](../reports/product-no-evidence-audit.html) / [`json`](../reports/product-no-evidence-audit.json) | The model recommends a three-month rewrite without evidence for the promised defect reduction. |
+| Sounds smart, low judgment | [`examples/sounds-smart-low-judgment.md`](../examples/sounds-smart-low-judgment.md) | [`reports/sounds-smart-low-judgment-audit.html`](../reports/sounds-smart-low-judgment-audit.html) / [`json`](../reports/sounds-smart-low-judgment-audit.json) | The answer sounds like investor prose but fails to ground the key memo and moat claims. |
 
 ## Growth targets
 

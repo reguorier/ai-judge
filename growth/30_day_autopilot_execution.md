@@ -17,6 +17,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Feedback log | Started | `growth/feedback_log.md` |
 | Reply bank | Drafted | `growth/reply_bank.md` |
 | Email sequence | Drafted | `growth/email_sequence.md` |
+| Demo report gallery | Live | `docs/CITATION_AUDIT_QUICKSTART.md`, `docs/LAUNCH_CITATION_AUDIT.md` |
 
 ## Rules
 
