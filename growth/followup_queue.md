@@ -6,10 +6,10 @@ Status: ready for use after first replies
 
 | Channel | Current state | Next automatic action |
 |---|---|---|
-| Hugging Face Community | Password login required in Chrome. | After login, open `https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new` and submit `growth/huggingface_community_post.md`. |
+| Hugging Face Community | Login/email confirmation complete, but hCaptcha blocks public discussion creation. | Do not retry repeatedly; use Space/GitHub/X/Zhihu as active links and retry HF only after a cooldown or manual CAPTCHA completion. |
 | Hacker News | `showlim` blocks Show HN for this account context. | Do not retry immediately; return only after the account has normal community activity or the restriction lifts. |
 | Reddit r/LocalLLaMA | Launch post was removed by moderation. | Do not repost the same text; use replies to directly relevant citation-hallucination threads or ask moderators before a second post. |
-| V2EX | Logged in, but account activation required. | After invite-code or `$V2EX` activation, submit `growth/v2ex_launch_post.md`. |
+| V2EX | Logged in, but activation code is unavailable. | Abandon V2EX for this launch cycle; resume only if an invite code or `$V2EX` activation appears. |
 | Zhihu | Article published. | Track comments and route useful examples into benchmark issues #2-#5. |
 
 ## Follow-up 1: benchmark contributor

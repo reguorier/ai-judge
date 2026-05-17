@@ -13,7 +13,8 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ | posted_then_removed_by_moderation | Logged in as `u/ExpensiveHunt2055`, posted with `Resources` flair, then r/LocalLLaMA moderation removed it from the subreddit feed. |
 | 2026-05-17 | Hacker News | https://news.ycombinator.com/showlim | blocked_platform_show_hn_restriction | Logged-in submit flow reached the current HN Show HN restriction page for newer/unfamiliar users. |
 | 2026-05-17 | V2EX | https://www.v2ex.com/invite/activate | blocked_account_activation_required | Logged in as `reguorider`, but the account cannot post until an invite code or `$V2EX` activation is completed. |
-| 2026-05-17 | Hugging Face Community | https://huggingface.co/login?next=%2Fspaces%2Freguorier%2Fai-judge-citation-audit%2Fdiscussions%2Fnew | blocked_login_required | Chrome session still shows the Hugging Face password login page; no password was inspected or guessed. |
+| 2026-05-18 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | HF login and email confirmation are complete, but the public discussion submit flow is blocked by repeated hCaptcha challenges. Draft remains in `growth/huggingface_community_post.md`. |
+| 2026-05-18 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | User confirmed no activation code is available; stop spending automation time on V2EX until activation exists. |
 | 2026-05-17 | Hacker News | https://news.ycombinator.com/submit | blocked_by_login | Chrome reaches submit page, but HN account is not logged in. |
 | 2026-05-17 | Reddit | https://www.reddit.com/r/LocalLLaMA/submit | blocked_by_login | Chrome is not logged into Reddit. |
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_login | Chrome is not logged into Hugging Face. |
@@ -35,7 +36,8 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Reddit launch | r/LocalLLaMA accepted the post initially, then removed it by moderation. | Do not repost the same text; next Reddit action should be a lower-promotion, benchmark-case discussion or a reply where directly relevant. |
 | 2026-05-17 | Hacker News | HN blocks Show HN for the current account context with `showlim`. | Do not retry repeatedly; build HN account context or wait until the platform restriction lifts. |
 | 2026-05-17 | V2EX | Account is logged in but unactivated. | Post only after invite-code or `$V2EX` activation. |
-| 2026-05-17 | Hugging Face Community | The browser is still at the HF password login step. | Retry discussion posting after the user completes password login in this Chrome profile. |
+| 2026-05-18 | Hugging Face Community | HF account is logged in and email-confirmed, but repeated hCaptcha challenges block discussion creation. | Treat as platform friction, not product failure; avoid repeated CAPTCHA retries and use Space/GitHub/X/Zhihu links as active launch surfaces. |
+| 2026-05-18 | V2EX | Activation code is unavailable. | Mark V2EX abandoned for this launch cycle. |
 | 2026-05-17 | GitHub metadata | Attempted to update repo description, homepage, and topics. | Blocked by GitHub API 404 from current `gh repo edit` permission path; push/issue/release permissions still work. |
 | 2026-05-17 | GitHub issue #1 | https://github.com/reguorier/ai-judge/issues/1#issuecomment-4470493105 | Added comment linking issue #1 to the new launch contribution funnel. |
 | 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |

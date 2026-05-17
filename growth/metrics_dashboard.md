@@ -23,8 +23,8 @@ Status: active tracking template
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |
 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ | posted_then_removed_by_moderation | TBD | 1 | TBD | TBD | Post exists for the author but was removed from r/LocalLLaMA by moderation. |
 | Hacker News | https://news.ycombinator.com/showlim | blocked_platform_show_hn_restriction | 0 | 0 | 0 | 0 | HN returned the current Show HN restriction page for this account context. |
-| V2EX | https://www.v2ex.com/invite/activate | blocked_account_activation_required | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but posting requires account activation. |
-| Hugging Face Community | pending | blocked_login_required | 0 | 0 | 0 | 0 | Chrome is still at the Hugging Face password login step. |
+| V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but no activation code is available for this launch cycle. |
+| Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
 | Outreach email | pending | queued | 0 | 0 | 0 | 0 | 20-target queue ready. |
 
 ## Manual update cadence

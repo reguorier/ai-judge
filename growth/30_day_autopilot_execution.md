@@ -124,7 +124,7 @@ External launch follow-up status:
 - Zhihu is live: https://zhuanlan.zhihu.com/p/2039446444000665819
 - Reddit r/LocalLLaMA was posted, then removed by moderation: https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/
 - Hacker News is blocked by the current Show HN account restriction page: https://news.ycombinator.com/showlim
-- V2EX is logged in but blocked until account activation: https://www.v2ex.com/invite/activate
-- Hugging Face Community is blocked until password login is completed in Chrome.
+- V2EX is logged in but abandoned for this launch cycle because no activation code is available: https://www.v2ex.com/invite/activate
+- Hugging Face Community is logged in and email-confirmed, but discussion creation is blocked by repeated hCaptcha challenges: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new
 
-GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next automated public action should favor replies to relevant conversations, not repeated reposting of the same launch copy.
+GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.
