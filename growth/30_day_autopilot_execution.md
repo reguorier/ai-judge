@@ -29,7 +29,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Batch audit spec | Ready | `docs/BATCH_AUDIT_SPEC.md` |
 | GitHub Action guide | Ready | `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
-| Outreach queue | Ready for confirmation | `growth/outreach_targets.md` |
+| Outreach queue | Batch 001 ready, not sent | `growth/outreach_batch_001.md` |
 | Free audit offer | Ready | `growth/free_audit_offer.md` |
 | Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
 | Pro early-access page | Ready | `product/pro_early_access.html` |
@@ -79,7 +79,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | 16 | Add batch audit design spec for Markdown/PDF/Docx. | Paid feature has exact scope. |
 | 17 | Add GitHub Action usage example with a failing fake citation fixture. | CI value is obvious. |
 | 18 | Build a sample "AI Decision Audit" report from `product-no-evidence`. | Service offer has a concrete deliverable. |
-| 19 | Draft outreach email to 20 likely users: AI newsletters, legal-tech, research ops, devtools. | Outreach queue ready. |
+| 19 | Convert outreach from generic segments into a real first-send batch for legal AI, eval tooling, hallucination tooling, and research targets. | `growth/outreach_batch_001.md` exists with target-specific drafts and status fields. |
 | 20 | Create landing section for Pro early access and manual payment instructions. | First paid signal can be captured. |
 | 21 | Update README with feedback-driven FAQ. | Common objections answered publicly. |
 
@@ -87,7 +87,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 
 | Day | Automated action | Success signal |
 |---:|---|---|
-| 22 | Send first warm outreach batch after confirmation. | 5 replies or 1 call target. |
+| 22 | Send first warm outreach batch from `growth/outreach_batch_001.md` through the available mailbox/channel. | 5 replies or 1 call target. |
 | 23 | Offer 3 free AI Decision Audits for testimonial use. | Testimonials pipeline starts. |
 | 24 | Add one real anonymized audit report if permission exists. | Trust proof increases. |
 | 25 | Launch Pro early-access page at $49 lifetime for first 100 users. | Payment intent is testable. |
@@ -126,5 +126,6 @@ External launch follow-up status:
 - Hacker News is blocked by the current Show HN account restriction page: https://news.ycombinator.com/showlim
 - V2EX is logged in but abandoned for this launch cycle because no activation code is available: https://www.v2ex.com/invite/activate
 - Hugging Face Community is logged in and email-confirmed, but discussion creation is blocked by repeated hCaptcha challenges: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new
+- Direct outreach Batch 001 is prepared with real targets and tailored drafts: `growth/outreach_batch_001.md`
 
 GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.

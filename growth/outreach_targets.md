@@ -1,8 +1,10 @@
 # Outreach Queue
 
-Status: ready for send queue, not sent
+Status: segmentation map plus Batch 001 send queue, not sent
 
 The first outreach batch asks for benchmark cases, not payment. Payment is introduced only after interest.
+
+Actual first-send targets and tailored drafts live in `growth/outreach_batch_001.md`.
 
 ## Target list
 
