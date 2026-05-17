@@ -65,8 +65,8 @@ def main() -> int:
         "CFBundleInfoDictionaryVersion": "6.0",
         "CFBundleName": APP_NAME,
         "CFBundlePackageType": "APPL",
-        "CFBundleShortVersionString": "3.5.1",
-        "CFBundleVersion": "3.5.1",
+        "CFBundleShortVersionString": "3.6.1",
+        "CFBundleVersion": "3.6.1",
         "LSMinimumSystemVersion": "13.0",
         "NSHighResolutionCapable": True,
     }
@@ -78,7 +78,7 @@ def main() -> int:
         shutil.copy2(icon_source, RESOURCES / "AIJudgeIcon.icns")
 
     config = {
-        "projectRoot": str(PROJECT_ROOT),
+        "projectRoot": os.environ.get("AI_JUDGE_DESKTOP_PROJECT_ROOT", str(PROJECT_ROOT)),
         "host": os.environ.get("AI_JUDGE_DESKTOP_HOST", "127.0.0.1"),
         "port": int(os.environ.get("AI_JUDGE_DESKTOP_PORT", "8501")),
     }

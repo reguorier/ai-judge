@@ -164,7 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let webConfig = WKWebViewConfiguration()
         webConfig.preferences = preferences
         webView = WKWebView(frame: frame, configuration: webConfig)
-        webView.customUserAgent = "AIJudgeDesktop/3.5 macOS DraftArena"
+        webView.customUserAgent = "AIJudgeDesktop/3.6.1 macOS DraftArena"
         webView.autoresizingMask = [.width, .height]
         window.contentView = webView
         window.makeKeyAndOrderFront(nil)
@@ -205,10 +205,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startServer() {
         let root = config.projectRoot
         let pythonCandidates = [
-            "/opt/homebrew/bin/python3.14",
-            "/opt/homebrew/bin/python3",
+            "\(root)/python/bin/python3.12",
+            "\(root)/python/bin/python3",
+            "\(root)/python/bin/python",
             "\(root)/.venv/bin/python",
             "\(root)/.venv/bin/python3",
+            "/opt/homebrew/bin/python3.14",
+            "/opt/homebrew/bin/python3",
             "/usr/bin/python3"
         ]
         guard let python = pythonCandidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
@@ -230,12 +233,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         logHandle?.seekToEndOfFile()
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: python)
-        process.arguments = [
-            serverScript,
-            "--host", config.host,
-            "--port", String(config.port)
-        ]
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        let launchCommand = [
+            "cd \(shellQuote(root))",
+            "exec \(shellQuote(python)) \(shellQuote(serverScript)) --host \(shellQuote(config.host)) --port \(shellQuote(String(config.port)))"
+        ].joined(separator: " && ")
+        process.arguments = ["-c", launchCommand]
         process.currentDirectoryURL = URL(fileURLWithPath: root)
         var environment = ProcessInfo.processInfo.environment
         environment["AI_JUDGE_APP_URL"] = baseURL()
@@ -297,6 +300,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func baseURL() -> String {
         return "http://\(config.host):\(config.port)"
+    }
+
+    private func shellQuote(_ value: String) -> String {
+        return "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private func showStartupError(_ message: String) {

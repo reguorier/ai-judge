@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.6.0-purple" alt="v3.6.0">
+  <img src="https://img.shields.io/badge/release-3.6.1-purple" alt="v3.6.1">
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><img src="https://img.shields.io/badge/HuggingFace-Space%20live-ffcc4d" alt="Hugging Face Space"></a>
   <img src="https://img.shields.io/badge/Citation%20Audit-launch%20edition-0f766e" alt="Citation Audit launch edition">
   <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
@@ -14,13 +14,14 @@
   <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.3 product overview" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.6</h1>
+<h1 align="center">AI Judge v3.6.1</h1>
 <p align="center"><strong>Open-source citation audit for AI-generated answers.</strong></p>
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
 
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
+  <a href="https://github.com/reguorier/ai-judge/releases/download/v3.6.1/AI-Judge-v3.6.1-macOS-arm64.dmg">macOS App</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
@@ -34,6 +35,16 @@
 </p>
 
 ---
+
+## macOS Desktop App
+
+Download the signed local wrapper and bundled runtime:
+
+<p>
+  <a href="https://github.com/reguorier/ai-judge/releases/download/v3.6.1/AI-Judge-v3.6.1-macOS-arm64.dmg"><strong>Download AI Judge v3.6.1 for macOS arm64</strong></a>
+</p>
+
+The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions.
 
 ## Why People Notice It
 

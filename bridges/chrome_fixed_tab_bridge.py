@@ -624,10 +624,13 @@ def recover_existing_fixed_tab_answers(
         prompt_echo = _capture_is_prompt_echo(response_text, prompt_id)
         polluted = _capture_is_polluted(response_text, prompt_id)
         matches_question = _response_matches_question(response_text, question)
+        marker_found = bool(capture.get("marker_found"))
+        fallback_found = bool(capture.get("fallback_found"))
+        min_answer_chars = MIN_MARKER_ANSWER_CHARS if marker_found else MIN_FALLBACK_ANSWER_CHARS
         accepted = (
             bool(capture.get("ok"))
-            and bool(capture.get("marker_found"))
-            and len(response_text) >= MIN_MARKER_ANSWER_CHARS
+            and (marker_found or fallback_found)
+            and len(response_text) >= min_answer_chars
             and not prompt_echo
             and not polluted
             and matches_question
@@ -643,7 +646,7 @@ def recover_existing_fixed_tab_answers(
                 "response": response_text,
                 "error": None,
                 "recovered_from_existing_page": True,
-                "capture_mode": "existing_answer_marker",
+                "capture_mode": str(capture.get("capture_mode") or ("existing_answer_marker" if marker_found else "existing_answer_fallback")),
                 "prompt_id": prompt_id,
             })
             if trace:
@@ -652,6 +655,9 @@ def recover_existing_fixed_tab_answers(
                     "response_chars": len(response_text),
                     "prompt_id": prompt_id,
                     "url": tab.url,
+                    "capture_mode": capture.get("capture_mode"),
+                    "marker_found": marker_found,
+                    "fallback_found": fallback_found,
                 })
             continue
 
@@ -673,7 +679,9 @@ def recover_existing_fixed_tab_answers(
             "profile_dir": "Chrome fixed tab existing page",
             "recovered_from_existing_page": False,
             "capture": {
-                "marker_found": bool(capture.get("marker_found")),
+                "marker_found": marker_found,
+                "fallback_found": fallback_found,
+                "capture_mode": capture.get("capture_mode"),
                 "placeholder_found": bool(capture.get("placeholder_found")),
                 "candidate_count": int(capture.get("candidate_count") or 0),
                 "page_busy": bool(capture.get("page_busy")),
@@ -1118,11 +1126,11 @@ def _capture_is_polluted(text: str, prompt_id: str) -> bool:
 def _seat_prompt(seat: str, question: str, mode: str) -> str:
     base = render_jury_prompt(seat, question) or question
     is_resonance_followup = "[AIJUDGE_RESONANCE_FOLLOWUP]" in question
-    chatgpt_guard = (
-        "\nChatGPT 专用要求：可以使用“深入/思考”模式追求准确性，但必须在思考结束后输出最终正文。"
-        if seat == "chatgpt"
-        else ""
-    )
+    seat_guard = ""
+    if seat == "chatgpt":
+        seat_guard = "\nChatGPT 专用要求：不要切换到深入/思考模式；直接输出最终正文，并完整保留 AIJUDGE 起止标记。"
+    elif seat == "qwen":
+        seat_guard = "\nQwen 专用要求：不要只停在思考完成提示；必须输出最终正文，并完整保留 AIJUDGE 起止标记。"
     if is_resonance_followup:
         return (
             f"{base}\n\n"
@@ -1132,7 +1140,7 @@ def _seat_prompt(seat: str, question: str, mode: str) -> str:
             "3. 给出详细技术方案：模块拆分、数据流、接口/状态字段、执行步骤、测试与回滚。\n"
             "4. 保留事实、假设、建议三层隔离，不要覆盖第一轮原文。\n"
             f"5. 当前模式：{mode}。这是第二轮方案执行，不需要继续提出新问题。"
-            f"{chatgpt_guard}"
+            f"{seat_guard}"
         )
     return (
         f"{base}\n\n"
@@ -1142,7 +1150,7 @@ def _seat_prompt(seat: str, question: str, mode: str) -> str:
         "3. 给出最大风险和最小下一步。\n"
         "4. 单独输出「共振提问」：站在用户目标和你的席位专长上，提出 3-5 个能显著补强方案的问题。\n"
         f"5. 当前模式：{mode}。请保持结论紧凑，避免套话。"
-        f"{chatgpt_guard}"
+        f"{seat_guard}"
     )
 
 
@@ -1349,32 +1357,41 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
       || document.querySelector(".qwen-select-thinking")?.innerText
       || "").trim();
     const optionLabel = el => (el.getAttribute("title") || el.getAttribute("aria-label") || textOf(el)).trim();
-    const thinkingOption = Array.from(document.querySelectorAll(".ant-select-item-option,[role='option'],.ant-select-dropdown *"))
-      .find(el => visible(el) && el.getBoundingClientRect().width > 20 && /^(思考|Thinking)$/i.test(optionLabel(el)));
-    if (!/^(思考|Thinking)$/i.test(qwenModeLabel())) {{
-      if (thinkingOption) {{
-        click("qwen_thinking_mode", thinkingOption);
-      }} else {{
-        const selector = document.querySelector(".qwen-thinking-selector")
-          || document.querySelector(".qwen-select-thinking")
-          || Array.from(document.querySelectorAll("[role='combobox']")).find(visible);
-        if (selector) {{
-          click("qwen_mode_menu_open", selector);
-          needsFollowup = true;
-        }}
+    const options = Array.from(document.querySelectorAll(".ant-select-item-option,[role='option'],.ant-select-dropdown *"))
+      .filter(el => visible(el) && el.getBoundingClientRect().width > 20);
+    const reliableOption = options.find(el => {{
+      const label = optionLabel(el);
+      return label && !/^(思考|Thinking)$/i.test(label) && /^(非思考|不思考|普通|快速|自动|Auto|Fast|Instant|None|No Thinking)$/i.test(label);
+    }}) || options.find(el => {{
+      const label = optionLabel(el);
+      return label && !/思考|Thinking/i.test(label);
+    }});
+    const selector = document.querySelector(".qwen-thinking-selector")
+      || document.querySelector(".qwen-select-thinking")
+      || Array.from(document.querySelectorAll("[role='combobox']")).find(visible);
+    if (/^(思考|Thinking)$/i.test(qwenModeLabel())) {{
+      if (reliableOption) {{
+        click("qwen_reliable_mode", reliableOption);
+      }} else if (selector) {{
+        click("qwen_mode_menu_open", selector);
+        needsFollowup = true;
       }}
+    }} else {{
+      clicked.push("qwen_reliable_mode_verified");
     }}
   }}
   if (/chatgpt\\.com/i.test(location.hostname)) {{
-    const thinkingOption = Array.from(document.querySelectorAll("[role='menuitemradio'],[role='menuitem'],button,[role='option'],div,span"))
-      .find(el => visible(el) && /^(Thinking|深入|Think|思考)$/i.test(textOf(el)));
-    const modeButton = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu']"))
-      .find(el => visible(el) && /^(Instant|快速|Fast|Pro|进阶|深度研究|Deep research|Reason)$/.test(textOf(el)));
-    if (thinkingOption) {{
-      click("chatgpt_thinking_mode", thinkingOption);
-    }} else if (modeButton) {{
-      click("chatgpt_mode_menu_open", modeButton);
+    const reliableOption = Array.from(document.querySelectorAll("[role='menuitemradio'],[role='menuitem'],button,[role='option'],div,span"))
+      .find(el => visible(el) && /^(Instant|快速|Fast|默认|Default)$/i.test(textOf(el)));
+    const thinkingModeButton = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu']"))
+      .find(el => visible(el) && /^(深入|Thinking|Think|思考|Reason|推理)$/.test(textOf(el)));
+    if (reliableOption) {{
+      click("chatgpt_reliable_mode", reliableOption);
+    }} else if (thinkingModeButton) {{
+      click("chatgpt_mode_menu_open", thinkingModeButton);
       needsFollowup = true;
+    }} else {{
+      clicked.push("chatgpt_reliable_mode_verified");
     }}
   }}
   if (/chat\\.deepseek\\.com/i.test(location.hostname)) {{
@@ -2178,7 +2195,7 @@ def _build_capture_js(prompt_id: str) -> str:
     .map(el => [el.getAttribute("aria-label") || "", el.innerText || "", el.textContent || "", String(el.className || "")].join(" "))
     .join(" ");
   const pageBusy = /停止回答|stop generating|stop response|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
-  const thinkingOnly = /已思考\\s*\\d+\\s*s|thinking\\s*\\d+\\s*s|思考中|thinking/i.test(bodyRaw) && assistantEmpty;
+  const thinkingOnly = /已思考\\s*\\d+\\s*s|thinking\\s*\\d+\\s*s|思考中|已经完成思考|已完成思考|完成思考|thinking/i.test(bodyRaw) && assistantEmpty;
   const editableAncestors = node => {{
     for (let el = node.parentElement; el; el = el.parentElement) {{
       const tag = (el.tagName || "").toLowerCase();
@@ -2333,9 +2350,11 @@ def _build_existing_answer_capture_js(seat: str) -> str:
   const safeSeat = seat.replace(/[^a-z0-9_-]/gi, "");
   const startRe = new RegExp("\\\\[AIJUDGE_ANSWER_START:(AIJUDGE-" + safeSeat + "-[^\\\\]]+)\\\\]", "gi");
   const candidates = [];
+  const fallbackChunks = [];
   let placeholderFound = false;
   const extractFrom = source => {{
     if (!source) return;
+    startRe.lastIndex = 0;
     let match;
     while ((match = startRe.exec(source)) !== null) {{
       const promptId = match[1];
@@ -2356,6 +2375,33 @@ def _build_existing_answer_capture_js(seat: str) -> str:
   extractFrom(bodyText);
   extractFrom(bodyRaw);
   extractFrom(pageRaw);
+  const selectors = [
+    "[data-message-author-role='assistant']",
+    "[data-testid*='conversation-turn']",
+    "article",
+    ".markdown",
+    ".response-message-content",
+    "[class*='response-message-content']",
+    ".custom-qwen-markdown",
+    ".qwen-markdown",
+    ".qwen-markdown-paragraph",
+    "[class*='phase-answer']",
+    "[class*='qwen-markdown']",
+    "[class*='markdown-main-panel']",
+    "[class*='font-claude-response']",
+    "main"
+  ];
+  for (const selector of selectors) {{
+    for (const el of Array.from(document.querySelectorAll(selector))) {{
+      if (!visible(el)) continue;
+      const text = clean(el.innerText || el.textContent || "");
+      if (!text) continue;
+      extractFrom(text);
+      if (text.length > 160 && !text.includes("[QUESTION]") && !text.includes("你的最终答案")) {{
+        fallbackChunks.push(text);
+      }}
+    }}
+  }}
   const unique = [];
   const seen = new Set();
   for (const item of candidates) {{
@@ -2376,6 +2422,36 @@ def _build_existing_answer_capture_js(seat: str) -> str:
       prompt_id: latest.prompt_id,
       marker_found: true,
       marker_closed: latest.closed,
+      fallback_found: false,
+      capture_mode: "existing_answer_marker",
+      placeholder_found: placeholderFound,
+      candidate_count: unique.length,
+      page_busy: pageBusy
+    }});
+  }}
+  const fallbackUnique = [];
+  for (const text of fallbackChunks) {{
+    if (!fallbackUnique.includes(text)) fallbackUnique.push(text);
+  }}
+  const fallback = fallbackUnique
+    .map((text, index) => {{
+      const keywordBoost = /AIJUDGE|立场|支持|条件支持|反对|信息不足|风险|下一步|方案|评分|结论|执行/i.test(text) ? 10000 : 0;
+      return {{ text, score: keywordBoost + Math.min(text.length, 5000) + index * 200 }};
+    }})
+    .sort((a, b) => a.score - b.score)
+    .pop();
+  if (fallback && fallback.text.length >= 180) {{
+    return JSON.stringify({{
+      ok: true,
+      title: document.title,
+      url: location.href,
+      text: fallback.text,
+      text_length: fallback.text.length,
+      prompt_id: "",
+      marker_found: false,
+      marker_closed: false,
+      fallback_found: true,
+      capture_mode: "existing_answer_fallback",
       placeholder_found: placeholderFound,
       candidate_count: unique.length,
       page_busy: pageBusy
@@ -2388,6 +2464,8 @@ def _build_existing_answer_capture_js(seat: str) -> str:
     text: "",
     text_length: 0,
     marker_found: false,
+    fallback_found: false,
+    capture_mode: "existing_answer_not_found",
     placeholder_found: placeholderFound,
     candidate_count: unique.length,
     page_busy: pageBusy,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Judge v3.5 Command Center</title>
+  <title>AI Judge v3.6.1 Command Center</title>
   <style>
     :root {
       color-scheme: light;
@@ -14,10 +14,10 @@
       --panel-strong: #eef5ff;
       --line: #dce5f0;
       --line-soft: #e8eef6;
-      --text: #182131;
-      --text-soft: #36465d;
-      --muted: #6b7890;
-      --faint: #9aa6b8;
+      --text: #111827;
+      --text-soft: #26364d;
+      --muted: #536179;
+      --faint: #7c8799;
       --accent: #ffae34;
       --accent-strong: #de8200;
       --blue: #2f6fe4;
@@ -31,7 +31,7 @@
     * { box-sizing: border-box; }
     html {
       min-height: 100%;
-      -webkit-font-smoothing: antialiased;
+      -webkit-font-smoothing: auto;
       text-rendering: optimizeLegibility;
       font-kerning: normal;
     }
@@ -41,6 +41,7 @@
       background: linear-gradient(180deg, #fbfcfe 0%, var(--bg) 100%);
       color: var(--text);
       font-family: var(--font);
+      font-weight: 500;
       letter-spacing: 0;
     }
     button, textarea, input, select { font: inherit; }
@@ -83,7 +84,7 @@
     }
     .mark svg { width: 24px; height: 24px; display: block; }
     .brand strong { display: block; font-size: 18px; line-height: 1.05; font-weight: 760; }
-    .brand span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; font-weight: 520; }
+    .brand span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; font-weight: 560; }
     .workflow {
       list-style: none;
       display: grid;
@@ -158,7 +159,7 @@
       color: var(--muted);
       font-size: 12px;
       white-space: nowrap;
-      font-weight: 560;
+      font-weight: 640;
     }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
     .refresh {
@@ -241,7 +242,7 @@
       line-height: 1.22;
       font-weight: 760;
     }
-    .page-head p { margin: 6px 0 0; color: var(--text-soft); line-height: 1.5; font-weight: 480; }
+    .page-head p { margin: 6px 0 0; color: var(--text-soft); line-height: 1.5; font-weight: 540; }
     .eyebrow {
       margin: 0 0 5px;
       color: var(--blue);
@@ -260,7 +261,7 @@
     }
     .panel, .plain-panel, .status-card, .result-card {
       border: 1px solid var(--line);
-      border-radius: 11px;
+      border-radius: 8px;
       background: var(--panel);
       box-shadow: 0 1px 0 rgba(255,255,255,.7), var(--shadow);
       padding: 16px;
@@ -327,7 +328,7 @@
       display: grid;
       gap: 14px;
       border: 1px solid var(--line);
-      border-radius: 11px;
+      border-radius: 8px;
       background: #fff;
       padding: 16px;
       box-shadow: var(--shadow);
@@ -349,7 +350,7 @@
       padding: 12px 13px;
       outline: none;
       line-height: 1.5;
-      font-weight: 480;
+      font-weight: 520;
     }
     textarea { min-height: 132px; resize: vertical; }
     textarea:focus, input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
@@ -373,7 +374,7 @@
       padding: 8px 12px;
       cursor: pointer;
       font-size: 12px;
-      font-weight: 560;
+      font-weight: 600;
       transition: border-color .16s ease, color .16s ease, transform .16s ease;
     }
     .prompt-chip:hover { border-color: var(--blue); }
@@ -541,7 +542,7 @@
     }
     .report-question-box, .final-report-box {
       border: 1px solid var(--line-soft);
-      border-radius: 10px;
+      border-radius: 8px;
       background: #fff;
       padding: 13px 14px;
       margin-bottom: 12px;
@@ -558,6 +559,7 @@
       margin: 0;
       color: var(--text-soft);
       line-height: 1.68;
+      font-weight: 520;
       overflow-wrap: anywhere;
     }
     .final-report-box {
@@ -569,6 +571,124 @@
       font-size: 15px;
       font-weight: 520;
     }
+    .decision-memo {
+      border: 1px solid #d8e3f3;
+      border-radius: 8px;
+      background: #fff;
+      margin: 14px 0;
+      overflow: hidden;
+    }
+    .memo-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 128px;
+      gap: 16px;
+      align-items: start;
+      padding: 18px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f8fc 100%);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .memo-label {
+      display: block;
+      color: var(--accent-strong);
+      font-size: 11px;
+      font-weight: 780;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .memo-top h3 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.35;
+      font-weight: 780;
+      color: var(--text);
+    }
+    .memo-top p {
+      margin: 8px 0 0;
+      color: var(--text-soft);
+      line-height: 1.6;
+      font-weight: 520;
+    }
+    .memo-score {
+      min-height: 94px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 12px;
+    }
+    .memo-score span { color: var(--muted); font-size: 12px; font-weight: 680; }
+    .memo-score strong { display: block; margin-top: 5px; font-size: 30px; line-height: 1; }
+    .memo-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .memo-metric {
+      padding: 13px 16px;
+      border-right: 1px solid var(--line-soft);
+      min-width: 0;
+    }
+    .memo-metric:last-child { border-right: 0; }
+    .memo-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    .memo-metric strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .memo-section {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .memo-section:last-child { border-bottom: 0; }
+    .memo-section h3 {
+      margin: 0 0 9px;
+      font-size: 13px;
+      line-height: 1.3;
+      color: #30415d;
+      font-weight: 780;
+    }
+    .memo-section p {
+      margin: 0;
+      color: var(--text);
+      line-height: 1.68;
+      white-space: pre-line;
+    }
+    .memo-section ul, .memo-section ol {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text);
+      line-height: 1.62;
+      font-weight: 520;
+    }
+    .memo-seat-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+      gap: 8px;
+    }
+    .memo-seat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      min-width: 0;
+    }
+    .memo-seat strong { display: block; font-size: 13px; }
+    .memo-seat span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; }
+    .memo-seat.ok { border-color: #bdebd1; background: #f7fdf9; }
+    .memo-seat.warn { border-color: #ffe0a3; background: #fffaf0; }
+    .memo-seat.block { border-color: #ffc7cf; background: #fff7f8; }
     .process-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
     .process-panel {
       border: 1px solid var(--line);
@@ -593,7 +713,7 @@
       border-radius: 8px;
       padding: 10px;
     }
-    .mini-title { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 14px 0 8px; }
+    .mini-title { color: var(--muted); font-size: 12px; font-weight: 760; text-transform: uppercase; margin: 14px 0 8px; }
     ul { padding-left: 18px; margin: 0; }
     li { margin: 6px 0; }
     .trace-panel { border: 1px solid var(--line); border-radius: 9px; background: #fff; margin-top: 14px; }
@@ -858,8 +978,15 @@
     .check-row { display: flex; align-items: center; gap: 8px; color: var(--muted); margin-top: 12px; }
     footer { text-align: center; color: var(--faint); font-size: 11px; padding: 24px 0 0; }
 
-    .pro-only { display: none; }
+    .simple-only { display: block; }
+    .pro-only, .pro-detail { display: none; }
+    .app.pro-mode .simple-only { display: none; }
     .app.pro-mode .pro-only { display: block; }
+    .app.pro-mode .pro-detail { display: block; }
+    .app.pro-mode .pro-detail[hidden] { display: none; }
+    .app.pro-mode .pro-detail.process-grid { display: grid; }
+    .app.pro-mode .pro-detail.two-col { display: grid; }
+    .app.pro-mode .pro-detail.page-head { display: flex; }
     .app.pro-mode .workspace { max-width: 1600px; }
     .app.pro-mode .metric-card { min-height: 78px; }
     .app.pro-mode .panel, .app.pro-mode .plain-panel, .app.pro-mode .status-card, .app.pro-mode .result-card { padding: 14px; }
@@ -1090,11 +1217,42 @@
             <span>原始问题</span>
             <p id="verdict-question"></p>
           </section>
-          <section class="final-report-box">
+          <section class="decision-memo" id="decision-memo">
+            <div class="memo-top">
+              <div>
+                <span class="memo-label">Decision Memo</span>
+                <h3 id="memo-subject">等待最终结论</h3>
+                <p id="memo-executive">本轮结论会在这里收口成一封可转发的专业报告。</p>
+              </div>
+              <div class="memo-score">
+                <span>可信度</span>
+                <strong id="memo-confidence">-</strong>
+              </div>
+            </div>
+            <div class="memo-grid">
+              <div class="memo-metric"><span>结论</span><strong id="memo-verdict">-</strong></div>
+              <div class="memo-metric"><span>席位</span><strong id="memo-seats">-</strong></div>
+              <div class="memo-metric"><span>风险</span><strong id="memo-risk">-</strong></div>
+              <div class="memo-metric"><span>下一步</span><strong id="memo-next">-</strong></div>
+            </div>
+            <div class="memo-section">
+              <h3>关键依据</h3>
+              <ul id="memo-reasons"></ul>
+            </div>
+            <div class="memo-section">
+              <h3>建议行动</h3>
+              <ol id="memo-steps"></ol>
+            </div>
+            <div class="memo-section pro-detail">
+              <h3>席位回收状态</h3>
+              <div class="memo-seat-strip" id="memo-seat-strip"></div>
+            </div>
+          </section>
+          <section class="final-report-box pro-detail">
             <div class="mini-title">最终结论报告</div>
             <p id="final-report-answer"></p>
           </section>
-          <div class="process-grid">
+          <div class="process-grid pro-detail">
             <section class="process-panel" id="mentor-result-panel" hidden>
               <h3>导师预检</h3>
               <p id="mentor-result-summary"></p>
@@ -1122,7 +1280,7 @@
               <div class="tag-list" id="score-round-tags"></div>
             </section>
           </div>
-          <div class="two-col">
+          <div class="two-col pro-detail">
             <div>
               <div class="mini-title">关键理由</div>
               <ul id="reason-list"></ul>
@@ -1132,7 +1290,7 @@
               <ul id="step-list"></ul>
             </div>
           </div>
-          <details class="trace-panel" id="trace-panel" hidden>
+          <details class="trace-panel pro-detail" id="trace-panel" hidden>
             <summary>底层执行轨迹 <span class="muted" id="trace-count"></span></summary>
             <ul class="trace-list" id="trace-list"></ul>
           </details>
@@ -1245,8 +1403,18 @@
             </section>
           </div>
         </section>
+        <section class="panel simple-only" id="simple-council-summary">
+          <div class="arena-head">
+            <div>
+              <h2>简约视图：模型状态摘要</h2>
+              <p class="muted">这里只看返回、待回收和阻断，不展示完整审计表。</p>
+            </div>
+            <span class="pill" id="simple-seat-summary">等待任务</span>
+          </div>
+          <div class="memo-seat-strip" id="simple-seat-strip"></div>
+        </section>
         <div class="score-cards" id="seat-score-cards" style="margin-top:14px;"></div>
-        <div class="table-wrap" style="margin-top:14px;">
+        <div class="table-wrap pro-detail" style="margin-top:14px;">
           <table>
             <thead>
               <tr><th>席位</th><th>Provider</th><th>来源</th><th>Q 平均</th><th>K 平均</th><th>C 平均</th><th>R 风险</th><th>T 资历</th><th>最终分</th></tr>
@@ -1254,7 +1422,7 @@
             <tbody id="seat-score-body"></tbody>
           </table>
         </div>
-        <div class="page-head" style="margin-top:22px;">
+        <div class="page-head pro-detail" style="margin-top:22px;">
           <div>
             <h2>席位 ↔ 浏览器/客户端</h2>
             <p>网页席位使用独立浏览器 profile；桌面席位保留独立 Worker 边界。</p>
@@ -1264,7 +1432,7 @@
             <button class="ghost" id="btn-calibrate-bridge">校准当前席位</button>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap pro-detail">
           <table>
             <thead>
               <tr><th>席位</th><th>Provider</th><th>通道</th><th>执行驱动</th><th>安全后台</th><th>校准</th><th>状态</th><th>目标</th></tr>
@@ -1367,7 +1535,7 @@
         </div>
       </section>
 
-      <footer>AI Judge v3.5 · Command Center / Mentor Gate / Web Bridge / Publish Gate</footer>
+      <footer>AI Judge v3.6.1 · Command Center / Mentor Gate / Web Bridge / Publish Gate</footer>
     </main>
   </div>
   <script src="dashboard.js"></script>

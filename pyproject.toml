@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-judge"
-version = "3.6.0"
+version = "3.6.1"
 description = "Local-first citation audit and AI jury skill for evidence-bounded LLM output verification"
 readme = "README.md"
 license = {text = "BSL-1.1"}

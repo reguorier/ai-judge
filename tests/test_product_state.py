@@ -121,6 +121,29 @@ def test_supplement_merge_replaces_slow_seat_and_marks_recovery():
     assert merged[1]["seat"] == "deepseek"
 
 
+def test_supplement_merge_preserves_original_success_when_recheck_fails():
+    api_server = _load_api_server()
+    original = [
+        {"seat": "gemini", "ok": True, "response": "original useful answer", "error": None},
+    ]
+    supplement = [
+        {
+            "seat": "gemini",
+            "ok": False,
+            "response": "",
+            "error": {"code": "existing_answer_placeholder", "message": "placeholder only"},
+        },
+    ]
+
+    merged = api_server._merge_supplement_raw_results(original, supplement, "supp-failed")
+
+    assert merged[0]["ok"] is True
+    assert merged[0]["response"] == "original useful answer"
+    assert merged[0]["failed_supplement_preserved"] is True
+    assert merged[0]["latest_supplement_error"]["code"] == "existing_answer_placeholder"
+    assert merged[0]["supplement_history"][0]["new_ok"] is False
+
+
 def test_send_button_failures_are_recoverable():
     api_server = _load_api_server()
 
@@ -294,6 +317,65 @@ def test_recheck_endpoint_accepts_stale_running_task():
     assert captured["source_run_id"] == run_id
     assert captured["seats"] == ["minimax"]
     assert captured["task"]["question"] == "需要二次回收的网页任务"
+
+
+def test_recheck_worker_reads_only_requested_recovery_seats(monkeypatch):
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+        source_run_id = api_server.TASKS.submit(
+            "需要二次回收的网页任务",
+            mode="strategic",
+            seats=["chatgpt", "qwen", "deepseek"],
+        )
+        recheck_run_id = api_server.TASKS.submit("回收旧页面答案", mode="strategic", seats=["qwen"])
+        task = api_server.TASKS.get_task(source_run_id)
+
+        def fake_recover_existing_fixed_tab_answers(**kwargs):
+            captured["recovery_seats"] = kwargs["seats"]
+            return [{"seat": "qwen", "ok": False, "response": "", "error": {"code": "existing_answer_not_found"}}]
+
+        def fake_assemble_web_verdict_from_raw_results(**kwargs):
+            captured["assembled_seats"] = kwargs["seats"]
+            captured["raw_results"] = kwargs["raw_results"]
+            return {
+                "run_id": kwargs["run_id"],
+                "question": kwargs["display_question"],
+                "mode": kwargs["mode"],
+                "seats": kwargs["seats"],
+                "web_bridge": {"raw_results": kwargs["raw_results"], "ok_count": 0, "failed_count": 1},
+                "average_score": 0.0,
+                "verdict": "insufficient",
+                "verdict_label": "信息不足",
+                "one_liner": "未回收。",
+            }
+
+        monkeypatch.setattr(api_server, "recover_existing_fixed_tab_answers", fake_recover_existing_fixed_tab_answers)
+        monkeypatch.setattr(api_server, "assemble_web_verdict_from_raw_results", fake_assemble_web_verdict_from_raw_results)
+        monkeypatch.setattr(api_server, "load_bridge_config", lambda: {})
+        monkeypatch.setattr(api_server, "_attach_product_run_metadata", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "_attach_citation_mvp", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "generate_secure_view_url", lambda run_id: f"/view/{run_id}")
+        try:
+            api_server._run_recheck_worker(
+                recheck_run_id,
+                source_run_id,
+                task,
+                ["qwen"],
+                {},
+            )
+        finally:
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert captured["recovery_seats"] == ["qwen"]
+    assert captured["assembled_seats"] == ["chatgpt", "qwen", "deepseek"]
+    assert [item["seat"] for item in captured["raw_results"]] == ["qwen"]
 
 
 def test_attach_citation_mvp_adds_replay_ledger_and_gap_suggestions():

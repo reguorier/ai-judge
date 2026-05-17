@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """Web-seat backed AI Judge execution."""
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ def run_web_jury(
     display_question: str | None = None,
     external_evidence: list[dict[str, Any]] | None = None,
     evidence_options: dict[str, Any] | None = None,
+    collect_followups: bool = False,
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> dict[str, Any]:
@@ -42,13 +44,20 @@ def run_web_jury(
     if trace:
         trace("jury", "web_jury_start", "进入网页陪审收集", {"mode": mode, "seats": resolved_seats})
     raw_results = run_web_seats(question=question, seats=resolved_seats, mode=mode, progress=progress, trace=trace)
-    mentor_supplements = collect_resonance_followups(
-        question=question,
-        mode=mode,
-        raw_results=raw_results,
-        progress=progress,
-        trace=trace,
-    )
+    mentor_supplements: list[dict[str, Any]] = []
+    if collect_followups:
+        mentor_supplements = collect_resonance_followups(
+            question=question,
+            mode=mode,
+            raw_results=raw_results,
+            progress=progress,
+            trace=trace,
+        )
+    elif trace:
+        trace("resonance", "followups_deferred", "二轮共振不自动重新发题，保留给显式采补动作", {
+            "successful_seats": sum(1 for item in raw_results if item.get("ok")),
+            "method": "manual_or_existing_page_recovery_only",
+        })
     verdict = assemble_web_verdict_from_raw_results(
         question=question,
         mode=mode,

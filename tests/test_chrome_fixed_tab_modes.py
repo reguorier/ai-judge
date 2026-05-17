@@ -37,20 +37,20 @@ def test_deepseek_prepare_requires_expert_and_tools_verified():
     })
 
 
-def test_qwen_prepare_prefers_thinking_mode_for_precision():
+def test_qwen_prepare_prefers_reliable_non_thinking_mode_for_bridge_output():
     js = _build_prepare_submission_ui_js("AIJUDGE-qwen-test")
 
-    assert "qwen_thinking_mode" in js
+    assert "qwen_reliable_mode" in js
     assert "qwen_mode_menu_open" in js
-    assert "qwen_fast_mode" not in js
+    assert "qwen_thinking_mode" not in js
 
 
-def test_chatgpt_prepare_prefers_thinking_mode_for_precision():
+def test_chatgpt_prepare_prefers_reliable_mode_for_bridge_output():
     js = _build_prepare_submission_ui_js("AIJUDGE-chatgpt-test")
 
-    assert "chatgpt_thinking_mode" in js
+    assert "chatgpt_reliable_mode" in js
     assert "chatgpt_mode_menu_open" in js
-    assert "chatgpt_instant_mode" not in js
+    assert "chatgpt_thinking_mode" not in js
 
 
 def test_first_round_prompt_requests_resonance_questions():
@@ -75,6 +75,7 @@ def test_capture_scans_all_answer_markers_and_qwen_blocks():
     assert "最终答案正文" in js
     assert ".response-message-content" in js
     assert ".qwen-markdown" in js
+    assert "已经完成思考" in js
 
 
 def test_existing_answer_capture_reads_prior_markers_without_prompt_write():
@@ -84,9 +85,22 @@ def test_existing_answer_capture_reads_prior_markers_without_prompt_write():
     assert "safeSeat" in js
     assert "existing_answer_not_found" in js
     assert "existing_answer_placeholder" in js
+    assert "startRe.lastIndex = 0" in js
+    assert "fallback_found" in js
+    assert "existing_answer_fallback" in js
     assert "execCommand" not in js
     assert "click()" not in js
     assert "你的最终答案" in js
+
+
+def test_slow_seat_prompts_require_direct_final_body_not_thinking_only():
+    chatgpt_prompt = _seat_prompt("chatgpt", "升级 AI Judge", "strategic")
+    qwen_prompt = _seat_prompt("qwen", "升级 AI Judge", "strategic")
+
+    assert "不要切换到深入/思考模式" in chatgpt_prompt
+    assert "不要只停在思考完成提示" in qwen_prompt
+    assert "完整保留 AIJUDGE 起止标记" in chatgpt_prompt
+    assert "完整保留 AIJUDGE 起止标记" in qwen_prompt
 
 
 def test_submission_check_prioritizes_prompt_still_in_input():

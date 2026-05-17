@@ -140,7 +140,9 @@ function applyProductMode(mode) {
   $("#app-shell").classList.toggle("pro-mode", state.productMode === "pro");
   $("#app-shell").classList.toggle("simple-mode", state.productMode !== "pro");
   $$("#product-switch .product-mode").forEach(btn => btn.classList.toggle("active", btn.dataset.productMode === state.productMode));
+  if (state.currentVerdict) renderDecisionMemo(state.currentVerdict);
   renderArena();
+  renderSimpleSeatSummary();
 }
 
 async function refreshAll() {
@@ -397,6 +399,44 @@ function renderArena() {
   renderArenaBridgeMonitor();
   renderArenaRounds();
   renderDeltaRibbon();
+  renderSimpleSeatSummary();
+}
+
+function renderSimpleSeatSummary() {
+  if (!$("#simple-seat-strip")) return;
+  const raw = state.currentVerdict?.web_bridge?.raw_results || [];
+  renderSeatStatusStrip("#simple-seat-strip", raw, { includeEmpty: true });
+  const ok = raw.filter(item => item.ok).length;
+  const recoverable = raw.filter(isSupplementableResult).length;
+  const blocked = raw.filter(item => item && !item.ok && !isSupplementableResult(item)).length;
+  $("#simple-seat-summary").textContent = raw.length
+    ? `${ok}/${raw.length} 有效 · ${recoverable} 待回收 · ${blocked} 阻断`
+    : `${state.selectedSeats.size || state.seats.length || 0} 席待运行`;
+}
+
+function renderSeatStatusStrip(selector, rawResults, options = {}) {
+  const target = $(selector);
+  if (!target) return;
+  const raw = Array.isArray(rawResults) ? rawResults : [];
+  if (!raw.length) {
+    target.innerHTML = options.includeEmpty
+      ? `<div class="memo-seat warn"><strong>等待任务</strong><span>提交后显示各模型返回、回收和阻断原因。</span></div>`
+      : "";
+    return;
+  }
+  target.innerHTML = raw.map(item => {
+    const status = item.ok ? "ok" : isSupplementableResult(item) ? "warn" : "block";
+    const code = item.ok ? "已回收" : ((item.error || {}).code || "未返回");
+    const detail = item.ok
+      ? `${String(item.response || "").length} 字 · ${item.capture_mode || item.profile_dir || "网页席位"}`
+      : ((item.error || {}).message || "没有可评分答案");
+    return `
+      <div class="memo-seat ${status}">
+        <strong>${escapeHtml(seatName(item.seat) || item.seat || "-")}</strong>
+        <span>${escapeHtml(code)} · ${escapeHtml(excerpt(detail, 78))}</span>
+      </div>
+    `;
+  }).join("");
 }
 
 function renderChiefSelector() {
@@ -1001,6 +1041,7 @@ function renderVerdict(v) {
   $("#final-report-answer").textContent = finalReportText(v);
   $("#reason-list").innerHTML = (v.reasons || []).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
   $("#step-list").innerHTML = (v.next_steps || []).map(step => `<li>${escapeHtml(step)}</li>`).join("");
+  renderDecisionMemo(v);
   $("#view-link").href = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
   $("#btn-download-json").onclick = () => downloadJSON(v, `verdict-${v.run_id || "ai-judge"}.json`);
   $("#btn-download-md").onclick = () => downloadMarkdown(v);
@@ -1018,6 +1059,7 @@ function renderVerdict(v) {
   });
   renderSeatScores();
   renderArena();
+  renderSimpleSeatSummary();
   renderPublishGate();
 }
 
@@ -1028,6 +1070,35 @@ function finalReportText(v) {
   const reasons = (v?.reasons || []).slice(0, 2).join("；");
   const steps = (v?.next_steps || []).slice(0, 2).join("；");
   return [line, reasons ? `关键依据：${reasons}` : "", steps ? `建议动作：${steps}` : ""].filter(Boolean).join("\n");
+}
+
+function renderDecisionMemo(v) {
+  if (!$("#decision-memo")) return;
+  const bridge = v?.web_bridge || {};
+  const raw = bridge.raw_results || [];
+  const okCount = bridge.ok_count ?? raw.filter(item => item.ok).length;
+  const failedCount = bridge.failed_count ?? raw.filter(item => !item.ok).length;
+  const totalCount = (bridge.requested_count ?? raw.length) || (v?.seat_count || v?.seats?.length || 0);
+  const confidence = v?.confidence !== undefined ? `${v.confidence}%` : "-";
+  const reasons = (v?.reasons || []).filter(Boolean);
+  const steps = (v?.next_steps || []).filter(Boolean);
+  const risk = reasons.find(item => /风险|阻断|不足|失败|不完整/.test(item)) || (failedCount ? `${failedCount} 个席位未形成可评分答案` : "未发现硬阻断");
+  $("#memo-subject").textContent = v?.one_liner || "AI Judge 最终结论";
+  $("#memo-executive").textContent = excerpt(finalReportText(v), state.productMode === "pro" ? 520 : 260);
+  $("#memo-confidence").textContent = confidence;
+  $("#memo-verdict").textContent = v?.verdict_label || v?.verdict || "-";
+  $("#memo-seats").textContent = totalCount ? `${okCount}/${totalCount} 有效` : "-";
+  $("#memo-risk").textContent = excerpt(risk, 90);
+  $("#memo-next").textContent = excerpt(steps[0] || "先复核报告结论，再处理阻断席位。", 90);
+  $("#memo-reasons").innerHTML = (reasons.length ? reasons : ["保留原问题、模型原文、评分与下一步，避免摘要覆盖底层证据。"])
+    .slice(0, state.productMode === "pro" ? 5 : 3)
+    .map(item => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  $("#memo-steps").innerHTML = (steps.length ? steps : ["处理待回收席位", "复核证据链与发布门禁"])
+    .slice(0, state.productMode === "pro" ? 5 : 3)
+    .map(item => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  renderSeatStatusStrip("#memo-seat-strip", raw, { includeEmpty: false });
 }
 
 function renderPublishGate(message = "") {
@@ -1526,7 +1597,7 @@ function renderRunDiagnostics(task) {
     recheckBtn.hidden = !recheckSeats.length;
     recheckBtn.disabled = state.recheckInFlight;
     recheckBtn.textContent = recheckSeats.length
-      ? `回收旧页面答案 (${recheckSeats.map(seatName).join("、")})`
+      ? `只读回收 (${recheckSeats.map(seatName).join("、")})`
       : "回收旧页面答案";
   }
   const watch = $("#seat-watch");
@@ -1584,7 +1655,7 @@ function diagnosticTitle(task, diag, seats) {
 
 function diagnosticMeta(diag, waiting) {
   const parts = [];
-  if (diag.retry?.attempt) parts.push(`补跑 ${diag.retry.attempt}/${diag.retry.total || diag.retry.attempt}`);
+  if (diag.retry?.attempt) parts.push(`只读回收 ${diag.retry.attempt}/${diag.retry.total || diag.retry.attempt}`);
   if (waiting?.longest_wait_seconds !== null && waiting?.longest_wait_seconds !== undefined) {
     parts.push(`最长 ${formatDuration(waiting.longest_wait_seconds)}`);
   }

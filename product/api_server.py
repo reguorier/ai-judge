@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """AI Judge v3.4 API Server.
 
 Runs the product end-to-end:
@@ -398,7 +399,6 @@ def _merge_supplement_raw_results(
             merged.append(item)
             continue
         seen.add(seat)
-        next_item = dict(replacement)
         history = list(item.get("supplement_history") or [])
         history.append({
             "supplement_run_id": supplement_run_id,
@@ -407,6 +407,15 @@ def _merge_supplement_raw_results(
             "new_ok": bool(replacement.get("ok")),
             "new_error": replacement.get("error"),
         })
+        if item.get("ok") and not replacement.get("ok"):
+            next_item = dict(item)
+            next_item["supplement_history"] = history
+            next_item["supplemented_from_run_id"] = supplement_run_id
+            next_item["failed_supplement_preserved"] = True
+            next_item["latest_supplement_error"] = replacement.get("error")
+            merged.append(next_item)
+            continue
+        next_item = dict(replacement)
         next_item["supplement_history"] = history
         next_item["supplemented_from_run_id"] = supplement_run_id
         if not item.get("ok") and replacement.get("ok"):
@@ -872,7 +881,7 @@ def _run_recheck_worker(
         ] or seats
         prompt_flow = build_prompt_flow(question, mode=mode, engine="web", seats=all_seats)
         deep_question = str(prompt_flow.get("professional_prompt") or question)
-        recovery_seats = all_seats or seats
+        recovery_seats = [str(seat) for seat in (seats or []) if str(seat) in SEAT_PERSONAS] or all_seats
         trace_event("recheck", "accepted", "旧页面答案回收已启动", {
             "source_run_id": source_run_id,
             "recheck_run_id": recheck_run_id,
@@ -1113,7 +1122,7 @@ def _run_supplement_worker(
 def health():
     return jsonify({
         "status": "ok",
-        "version": "3.6.0",
+        "version": "3.6.1",
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["local", "web"],
         "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
@@ -2419,7 +2428,7 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
-    print("\n  AI Judge API Server v3.6.0")
+    print("\n  AI Judge API Server v3.6.1")
     print(f"  http://{args.host}:{args.port}")
     print(f"  {len(SEAT_PERSONAS)} seats available")
     print("  POST /api/judge now runs automatically\n")
