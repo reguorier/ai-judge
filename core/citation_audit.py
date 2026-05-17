@@ -255,7 +255,7 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     h2 {{ margin:28px 0 12px; font-size:22px; }}
     .sub {{ color:#c9d6df; max-width:820px; }}
     .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:18px; }}
-    .card {{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; }}
+    .card {{ color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; }}
     .label {{ color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }}
     .value {{ font-size:20px; font-weight:700; margin-top:3px; word-break:break-word; }}
     table {{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }}

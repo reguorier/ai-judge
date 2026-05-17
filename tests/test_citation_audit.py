@@ -78,6 +78,7 @@ The feature shipped according to https://example.com/launch.
     assert json.loads(json.dumps(verdict, ensure_ascii=False))
     assert "Certification ID" in markdown
     assert "Citation Verification" in html
+    assert ".card { color:var(--ink);" in html
     assert "https://example.com/launch" in html
 
 

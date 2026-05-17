@@ -51,6 +51,10 @@ Try it in the browser first:
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><strong>Open the Hugging Face Space</strong></a>
 </p>
 
+<p align="center">
+  <img src="assets/citation-audit-space-output.png" alt="AI Judge Citation Audit live Space output" width="960">
+</p>
+
 ```bash
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
   --html reports/fake-citation-audit.html \
