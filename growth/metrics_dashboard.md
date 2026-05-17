@@ -6,8 +6,8 @@ Status: active tracking template
 
 | Metric | Day 30 continue threshold | Current |
 |---|---:|---:|
-| GitHub stars | 100 | TBD |
-| Distinct users / replies / issues | 20 | TBD |
+| GitHub stars | 100 | 2 |
+| Distinct users / replies / issues | 20 | 5 open issues |
 | Pro feature requests | 3 | TBD |
 | Paid users or invoice requests | 1 | TBD |
 
@@ -16,12 +16,13 @@ Status: active tracking template
 | Channel | URL | Status | Visits | Replies | Stars attributed | Pro asks | Notes |
 |---|---|---|---:|---:|---:|---:|---|
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live | TBD | TBD | TBD | TBD | Default demo verified. |
-| Hugging Face Community | pending | blocked_by_rate_limit | 0 | 0 | 0 | 0 | Retry when account limit lifts. |
-| Hacker News | pending | blocked_by_browser | 0 | 0 | 0 | 0 | Use regular browser. |
-| Reddit r/LocalLLaMA | pending | ready | 0 | 0 | 0 | 0 | Post package ready. |
-| V2EX | pending | ready | 0 | 0 | 0 | 0 | Chinese post package ready. |
-| Zhihu | pending | ready | 0 | 0 | 0 | 0 | Long-form Chinese post package ready. |
-| X / short-form | pending | ready | 0 | 0 | 0 | 0 | Thread and quote-card layouts ready. |
+| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live | TBD | 0 | TBD | TBD | Issues #2-#5 created for benchmark, labels, batch audit, and demos. |
+| X / short-form | https://x.com/liuweidi2/status/2055973517779521750 | live | TBD | TBD | TBD | TBD | First short-form post published. |
+| Hugging Face Community | pending | blocked_by_login | 0 | 0 | 0 | 0 | Chrome is not logged into Hugging Face. |
+| Hacker News | pending | blocked_by_login | 0 | 0 | 0 | 0 | Chrome is not logged into HN. |
+| Reddit r/LocalLLaMA | pending | blocked_by_login | 0 | 0 | 0 | 0 | Chrome is not logged into Reddit. |
+| V2EX | pending | blocked_by_login | 0 | 0 | 0 | 0 | Chrome is not logged into V2EX. |
+| Zhihu | pending | blocked_by_login | 0 | 0 | 0 | 0 | Chrome is not logged into Zhihu. |
 | Outreach email | pending | queued | 0 | 0 | 0 | 0 | 20-target queue ready. |
 
 ## Manual update cadence

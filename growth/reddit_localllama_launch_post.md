@@ -32,6 +32,9 @@ The basic demo does not need model APIs. The first benchmark has 100 determinist
 Repo:
 https://github.com/reguorier/ai-judge
 
+Hard benchmark case thread:
+https://github.com/reguorier/ai-judge/issues/2
+
 Live demo:
 https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 

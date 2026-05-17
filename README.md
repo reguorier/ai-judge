@@ -93,6 +93,15 @@ PYTHONPATH=. python tools/run_citation_bench.py \
   --fail-under 0.95
 ```
 
+Want to help without reading the whole codebase? Start here:
+
+| Public issue | What to add |
+|---|---|
+| [Hard citation hallucination cases](https://github.com/reguorier/ai-judge/issues/2) | Plausible fake reports, real-but-irrelevant sources, contradicted claims |
+| [`unverifiable` vs `contradicted`](https://github.com/reguorier/ai-judge/issues/3) | Edge cases where missing evidence and refuting evidence are easy to confuse |
+| [Batch/PDF/Docx audit demand](https://github.com/reguorier/ai-judge/issues/4) | Real workflow needs before Pro batch audit is built |
+| [Demo gallery examples](https://github.com/reguorier/ai-judge/issues/5) | Public-safe AI answers that deserve a citation audit report |
+
 ## 30-Second Product Tour
 
 <p align="center">

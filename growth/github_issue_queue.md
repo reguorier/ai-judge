@@ -1,6 +1,6 @@
 # GitHub Issue Queue: Citation Audit Launch
 
-Status: ready for issue creation confirmation
+Status: created on 2026-05-17
 
 Target repository:
 
@@ -17,9 +17,11 @@ help wanted
 launch feedback
 ```
 
-Do not create labels or issues until click-time confirmation.
+Labels created on 2026-05-17.
 
 ## Issue 1
+
+URL: https://github.com/reguorier/ai-judge/issues/2
 
 Title:
 
@@ -64,6 +66,8 @@ At least 10 usable new benchmark cases are collected or converted into JSONL.
 
 ## Issue 2
 
+URL: https://github.com/reguorier/ai-judge/issues/3
+
 Title:
 
 ```text
@@ -103,6 +107,8 @@ Document at least 5 edge cases and update docs or benchmark labels if needed.
 ```
 
 ## Issue 3
+
+URL: https://github.com/reguorier/ai-judge/issues/4
 
 Title:
 
@@ -147,6 +153,8 @@ Collect at least 3 concrete user workflows before building batch audit.
 ```
 
 ## Issue 4
+
+URL: https://github.com/reguorier/ai-judge/issues/5
 
 Title:
 

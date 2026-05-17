@@ -8,6 +8,12 @@ This file records public launch links, replies, objections, and product signals 
 |---|---|---|---|---|
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_rate_limit | Draft prepared in `growth/huggingface_community_post.md`; page says the account is rate-limited and can retry later. |
 | 2026-05-17 | Hacker News | https://news.ycombinator.com/submit | blocked_by_browser | Draft prepared in `growth/show_hn_launch_post.md`; in-app browser reports `net::ERR_BLOCKED_BY_CLIENT`. |
+| 2026-05-17 | X | https://x.com/liuweidi2/status/2055973517779521750 | live | First short-form launch post published from logged-in Chrome. |
+| 2026-05-17 | Hacker News | https://news.ycombinator.com/submit | blocked_by_login | Chrome reaches submit page, but HN account is not logged in. |
+| 2026-05-17 | Reddit | https://www.reddit.com/r/LocalLLaMA/submit | blocked_by_login | Chrome is not logged into Reddit. |
+| 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_login | Chrome is not logged into Hugging Face. |
+| 2026-05-17 | V2EX | https://www.v2ex.com/new | blocked_by_login | Chrome is not logged into V2EX. |
+| 2026-05-17 | Zhihu | https://www.zhihu.com/question/waiting | blocked_by_login | Chrome is not logged into Zhihu. |
 
 ## Signals
 
@@ -17,6 +23,19 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Hugging Face Community | New discussion form is disabled by platform rate limit. | Retry after account limit lifts; do not spend more time on HF posting today. |
 | 2026-05-17 | Hacker News | Submit page blocked by current in-app browser. | Use regular browser manually or retry from a different browser session before launch confirmation. |
 | 2026-05-17 | GitHub issues | Issue queue prepared. | Create labels and issues after final confirmation; source file is `growth/github_issue_queue.md`. |
+| 2026-05-17 | GitHub issues | Created labels and issues #2-#5 for benchmark cases, label boundary feedback, batch audit demand, and demo gallery examples. | Use these links as the primary low-friction contribution funnel in public posts. |
+| 2026-05-17 | GitHub release | Updated v3.6.0 release notes with hard benchmark and public contribution funnel. | Release page now sends visitors to issues #2-#5. |
+| 2026-05-17 | X launch | Published short-form post. A first malformed attempt was deleted immediately; clean intent/post version is live. | Watch for replies and profile visits. |
+
+## Public Contribution Links
+
+| Topic | URL |
+|---|---|
+| Hard citation hallucination cases | https://github.com/reguorier/ai-judge/issues/2 |
+| `unverifiable` vs `contradicted` edge cases | https://github.com/reguorier/ai-judge/issues/3 |
+| Batch Markdown/PDF/Docx demand | https://github.com/reguorier/ai-judge/issues/4 |
+| Demo gallery examples | https://github.com/reguorier/ai-judge/issues/5 |
+| X launch post | https://x.com/liuweidi2/status/2055973517779521750 |
 
 ## Objections To Track
 

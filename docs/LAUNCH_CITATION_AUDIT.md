@@ -78,6 +78,15 @@ PYTHONPATH=. python tools/run_citation_bench.py \
   --fail-under 0.95
 ```
 
+## Public contribution funnel
+
+| Issue | Purpose |
+|---|---|
+| https://github.com/reguorier/ai-judge/issues/2 | Collect hard citation hallucination benchmark cases. |
+| https://github.com/reguorier/ai-judge/issues/3 | Improve the boundary between `unverifiable` and `contradicted`. |
+| https://github.com/reguorier/ai-judge/issues/4 | Validate batch Markdown/PDF/Docx Pro demand before implementation. |
+| https://github.com/reguorier/ai-judge/issues/5 | Add more public-safe examples to the demo gallery. |
+
 ## Growth targets
 
 These are operating targets, not promises:

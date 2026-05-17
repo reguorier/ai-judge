@@ -32,6 +32,9 @@ The important design choice is source isolation: a URL mentioned by the model is
 Repo:
 https://github.com/reguorier/ai-judge
 
+Hard benchmark cases:
+https://github.com/reguorier/ai-judge/issues/2
+
 Live Space:
 https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 

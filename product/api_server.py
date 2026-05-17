@@ -1733,9 +1733,9 @@ def _render_collection_summary(result: dict[str, Any]) -> str:
         complete = not bridge or (requested > 0 and ok_count == requested and failed_count == 0)
     else:
         complete = bool(collection_complete)
-    status = "完整收集" if complete else ("未拿全，待补充" if pending_count and ok_count else "未拿全")
+    status = "完整收集" if complete else ("未拿全，待回收" if pending_count and ok_count else "未拿全")
     status_class = "good" if complete else "warn"
-    pending_label = "待补充/失败" if pending_count else "失败席位"
+    pending_label = "待回收/失败" if pending_count else "失败席位"
     pending_text = f"{pending_count}/{hard_failed}" if pending_count else str(failed_count)
     return (
         '<section class="summary-grid" aria-label="收集状态">'
@@ -1780,7 +1780,7 @@ def _render_seat_answers(result: dict[str, Any]) -> str:
             preview = _compact_report_text(response, 180)
         else:
             pending = _is_supplementable_result(item)
-            status = "待补充" if pending else "未完成"
+            status = "待回收" if pending else "未完成"
             status_class = "is-failed"
             state_class = "warn" if pending else "bad"
             code = str(error.get("code") or "unknown")

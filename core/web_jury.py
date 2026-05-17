@@ -342,7 +342,7 @@ def build_web_claims(question: str, mode: str, results: list[dict[str, Any]]) ->
             claim_text = f"{persona['name']} 网页席位：{_compact(response)}"
         else:
             error = item.get("error") or {}
-            status = "慢生成待补充" if _is_slow_supplementable(item) else "未完成"
+            status = "慢生成待回收" if _is_slow_supplementable(item) else "未完成"
             claim_text = (
                 f"{persona['name']} 网页席位{status}：{error.get('code', 'unknown')} - "
                 f"{error.get('message', 'No response captured.')}"
@@ -514,10 +514,10 @@ def build_seat_answer_digest(
             "seat": seat,
             "seat_name": item.get("seat_name") or persona.get("name", seat),
             "ok": ok,
-            "status": "已返回" if ok else ("待补充" if _is_slow_supplementable(item) else "未完成"),
+            "status": "已返回" if ok else ("待回收" if _is_slow_supplementable(item) else "未完成"),
             "score": score.get("average_score"),
             "claims_count": score.get("claims_count", 0),
-            "stance": summary.get("stance") or ("慢生成" if _is_slow_supplementable(item) else ("未返回" if not ok else "待归类")),
+            "stance": summary.get("stance") or ("慢生成待回收" if _is_slow_supplementable(item) else ("未返回" if not ok else "待归类")),
             "quality": summary.get("quality"),
             "avg_peer_score": summary.get("avg_peer_score"),
             "answer_preview": _compact(response, 260) if ok else _error_summary(item),
@@ -562,7 +562,7 @@ def build_judge_answer(
         if failed_count == 0:
             completeness = "完整收集"
         elif pending_count == failed_count:
-            completeness = f"已先完成 {ok_count}/{total} 席，另有 {pending_count} 席慢生成待补充"
+            completeness = f"已先完成 {ok_count}/{total} 席，另有 {pending_count} 席慢生成待回收"
         else:
             completeness = f"只完成 {ok_count}/{total} 席"
         final_answer = (
@@ -679,7 +679,7 @@ def _round_top_claims(claims: list[dict[str, Any]], limit: int = 8) -> list[dict
 def _error_summary(item: dict[str, Any]) -> str:
     error = item.get("error") or {}
     if _is_slow_supplementable(item):
-        return f"慢席待补充: {error.get('message', '仍在生成或等待补采。')}"
+        return f"慢席待回收: {error.get('message', '仍在生成或等待旧页面答案回收。')}"
     return f"{error.get('code', 'unknown')}: {error.get('message', 'No response captured.')}"
 
 
@@ -691,7 +691,7 @@ def _seat_pros(
 ) -> list[str]:
     if not item.get("ok"):
         if _is_slow_supplementable(item):
-            return ["该席位被标记为慢生成，可通过补充按钮回收，不会污染当前结论。"]
+            return ["该席位被标记为慢生成，可通过旧页面答案回收按钮读取，不会污染当前结论。"]
         return ["失败原因被保留，未混入最终结论。"]
     pros = [str(persona.get("strength") or "该席位提供了独立回答。")]
     quality = float(summary.get("quality", 0.0) or 0.0)
@@ -717,7 +717,7 @@ def _seat_cons(
 ) -> list[str]:
     if not item.get("ok"):
         if _is_slow_supplementable(item):
-            return [_error_summary(item), "该席位尚未进入实质互评，补采成功后会回填评分与共识。"]
+            return [_error_summary(item), "该席位尚未进入实质互评，旧页面答案回收成功后会回填评分与共识。"]
         return [_error_summary(item), "该席位没有进入实质互评，只作为基础设施失败记录。"]
     cons = [str(persona.get("weakness") or "仍需人工复核关键假设。")]
     evidence_count = int(summary.get("evidence_count", 0) or 0)
@@ -750,7 +750,7 @@ def _judge_limits(
     limits: list[str] = []
     hard_failed = max(0, failed_count - pending_count)
     if pending_count:
-        limits.append(f"{pending_count}/{total} 个席位仍在慢生成待补充，当前结论先按已返回席位给出。")
+        limits.append(f"{pending_count}/{total} 个席位仍在慢生成待回收，当前结论先按已返回席位给出。")
     if hard_failed:
         limits.append(f"{hard_failed}/{total} 个席位未返回完整答案，最终结论必须标记为阶段性。")
     if len(ranked_digest) <= 1:
@@ -887,7 +887,7 @@ def _bridge_incomplete_fields(results: list[dict[str, Any]], ok_count: int, fail
         seat_name = item.get("seat_name") or item.get("seat")
         code = error.get("code", "unknown")
         message = error.get("message", "No response captured.")
-        prefix = "慢席待补充" if _is_slow_supplementable(item) else "未完成"
+        prefix = "慢席待回收" if _is_slow_supplementable(item) else "未完成"
         reasons.append(f"{seat_name}: {prefix} / {code} - {message}")
         if len(reasons) >= 5:
             break
@@ -900,7 +900,7 @@ def _bridge_incomplete_fields(results: list[dict[str, Any]], ok_count: int, fail
         "confidence": 0,
         "reasons": reasons,
         "next_steps": [
-            "对慢生成席位使用补充按钮重新检查页面答案，成功后回填原始回答、互评和评分。",
+            "对慢生成席位使用旧页面答案回收按钮，只读取已打开页面的答案，成功后回填原始回答、互评和评分。",
             "逐席修复失败 adapter，直到本轮要求的所有网页席位都返回完整回答。",
             "对 send_button_not_found 的站点补充站点专用发送按钮选择器。",
             "对 transcript_pollution 的站点新建干净会话或强制使用答案包裹标记读取。",

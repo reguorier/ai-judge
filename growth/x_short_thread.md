@@ -14,6 +14,9 @@ https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 
 GitHub:
 https://github.com/reguorier/ai-judge
+
+Hard benchmark cases:
+https://github.com/reguorier/ai-judge/issues/2
 ```
 
 ## Thread

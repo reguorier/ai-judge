@@ -40,6 +40,9 @@ https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 GitHub:
 https://github.com/reguorier/ai-judge
 
+Hard benchmark case thread:
+https://github.com/reguorier/ai-judge/issues/2
+
 Benchmark command:
 PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95
 

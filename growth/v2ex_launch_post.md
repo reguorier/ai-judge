@@ -31,6 +31,9 @@ https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 Repo：
 https://github.com/reguorier/ai-judge
 
+困难样例征集：
+https://github.com/reguorier/ai-judge/issues/2
+
 本地 demo：
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html
 

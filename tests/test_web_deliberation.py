@@ -62,7 +62,7 @@ def test_web_claims_plus_deliberation_preserve_failed_seat_visibility():
     claims = build_web_claims("预测2026世界杯", "flash", results)
     deliberation = build_web_deliberation("预测2026世界杯", "flash", results)
 
-    assert any("慢生成待补充" in claim["claim"] for claim in claims)
+    assert any("慢生成待回收" in claim["claim"] for claim in claims)
     assert deliberation["peer_review_count"] == 0
     assert deliberation["summary_claim_count"] == 1
 

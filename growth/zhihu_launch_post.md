@@ -18,6 +18,9 @@ AI 生成的回答里，每一个引用到底能不能被外部证据验证？
 项目叫 AI Judge Citation Audit：
 https://github.com/reguorier/ai-judge
 
+困难样例征集：
+https://github.com/reguorier/ai-judge/issues/2
+
 在线 demo：
 https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 
