@@ -13,6 +13,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Launch copy | Drafted | `growth/launch_posts.md` |
 | Hugging Face post | Ready for confirmation | `growth/huggingface_community_post.md` |
 | Show HN post | Ready for confirmation | `growth/show_hn_launch_post.md` |
+| Reddit r/LocalLLaMA post | Ready for confirmation | `growth/reddit_localllama_launch_post.md` |
 | Feedback log | Started | `growth/feedback_log.md` |
 | Reply bank | Drafted | `growth/reply_bank.md` |
 | Email sequence | Drafted | `growth/email_sequence.md` |

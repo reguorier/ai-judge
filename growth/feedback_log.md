@@ -7,6 +7,7 @@ This file records public launch links, replies, objections, and product signals 
 | Date | Channel | URL | Status | Notes |
 |---|---|---|---|---|
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_rate_limit | Draft prepared in `growth/huggingface_community_post.md`; page says the account is rate-limited and can retry later. |
+| 2026-05-17 | Hacker News | https://news.ycombinator.com/submit | blocked_by_browser | Draft prepared in `growth/show_hn_launch_post.md`; in-app browser reports `net::ERR_BLOCKED_BY_CLIENT`. |
 
 ## Signals
 
@@ -14,6 +15,7 @@ This file records public launch links, replies, objections, and product signals 
 |---|---|---|---|
 | 2026-05-17 | Space verification | Default citation audit runs online and returns Certification ID + Replay Ledger. | Use Space as the primary demo link. |
 | 2026-05-17 | Hugging Face Community | New discussion form is disabled by platform rate limit. | Retry after account limit lifts; do not spend more time on HF posting today. |
+| 2026-05-17 | Hacker News | Submit page blocked by current in-app browser. | Use regular browser manually or retry from a different browser session before launch confirmation. |
 
 ## Objections To Track
 
