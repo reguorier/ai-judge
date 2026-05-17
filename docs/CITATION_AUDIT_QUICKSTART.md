@@ -17,6 +17,8 @@ Open `reports/fake-citation-audit.html` in a browser.
 | Fake citation | [`examples/fake-citation.md`](../examples/fake-citation.md) | [`reports/fake-citation-audit.html`](../reports/fake-citation-audit.html) / [`json`](../reports/fake-citation-audit.json) |
 | Product plan without evidence | [`examples/product-no-evidence.md`](../examples/product-no-evidence.md) | [`reports/product-no-evidence-audit.html`](../reports/product-no-evidence-audit.html) / [`json`](../reports/product-no-evidence-audit.json) |
 | Sounds smart, low judgment | [`examples/sounds-smart-low-judgment.md`](../examples/sounds-smart-low-judgment.md) | [`reports/sounds-smart-low-judgment-audit.html`](../reports/sounds-smart-low-judgment-audit.html) / [`json`](../reports/sounds-smart-low-judgment-audit.json) |
+| Legal memo contradicted | [`examples/legal-memo-contradicted.md`](../examples/legal-memo-contradicted.md) | [`reports/legal-memo-contradicted-audit.html`](../reports/legal-memo-contradicted-audit.html) / [`json`](../reports/legal-memo-contradicted-audit.json) |
+| Open-source README irrelevant | [`examples/opensource-readme-irrelevant.md`](../examples/opensource-readme-irrelevant.md) | [`reports/opensource-readme-irrelevant-audit.html`](../reports/opensource-readme-irrelevant-audit.html) / [`json`](../reports/opensource-readme-irrelevant-audit.json) |
 
 ## Input format
 

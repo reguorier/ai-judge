@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Legal Memo Contradicted Citation Demo</title>
+  <style>
+    :root { color-scheme: light; --ink:#17212b; --muted:#5c6875; --line:#dbe3ea; --bg:#f7f9fb; --panel:#ffffff; --accent:#0f766e; --bad:#b42318; --warn:#a15c07; --good:#067647; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); }
+    header { padding:32px clamp(20px,5vw,64px); background:#10212c; color:white; }
+    main { max-width:1120px; margin:0 auto; padding:24px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,4vw,48px); line-height:1.05; }
+    h2 { margin:28px 0 12px; font-size:22px; }
+    .sub { color:#c9d6df; max-width:820px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:18px; }
+    .card { color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; }
+    .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .value { font-size:20px; font-weight:700; margin-top:3px; word-break:break-word; }
+    table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    th,td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { background:#eef3f6; font-size:12px; color:#45515f; text-transform:uppercase; }
+    tr:last-child td { border-bottom:0; }
+    pre { white-space:pre-wrap; background:#0f1b24; color:#e9f1f6; border-radius:8px; padding:16px; overflow:auto; }
+    .pill { display:inline-flex; align-items:center; min-height:24px; padding:2px 8px; border-radius:999px; font-weight:700; font-size:12px; background:#e8eef3; }
+    .status-verified { color:var(--good); background:#dcfae6; }
+    .status-weakly-verified { color:var(--warn); background:#fff3d6; }
+    .status-unverifiable { color:#344054; background:#edf2f7; }
+    .status-irrelevant,.status-contradicted { color:var(--bad); background:#fee4e2; }
+    .note { color:var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Legal Memo Contradicted Citation Demo</h1>
+    <div class="sub">AI Judge Citation Audit checks AI-generated claims against isolated external evidence. Model-mentioned candidate sources do not verify themselves.</div>
+    <div class="grid">
+      <div class="card"><div class="label">Overall</div><div class="value">contradicted</div></div>
+      <div class="card"><div class="label">Trust Gate</div><div class="value">blocked_contradiction</div></div>
+      <div class="card"><div class="label">Certification</div><div class="value">CITE-20260517-B19731C764</div></div>
+      <div class="card"><div class="label">Open Gaps</div><div class="value">1</div></div>
+    </div>
+  </header>
+  <main>
+    <h2>Question</h2>
+    <div class="card">Does the cited legal-tech benchmark support the claim that AI contract review is safer than human review without supervision?</div>
+    <h2>Submitted Answer</h2>
+    <pre>AI contract review can safely replace human legal review for standard commercial agreements. The 2026 LexBench Contract Review Report found that AI systems made fewer material clause errors than supervised attorneys, so manual review is no longer necessary. Source: https://example.com/legal/lexbench-contract-review-2026.</pre>
+    <h2>Citation Verification</h2>
+    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Relevance</th></tr></thead><tbody><tr><td>CITE-001</td><td>https://example.com/legal/lexbench-contract-review-2026</td><td><span class="pill status-contradicted">contradicted</span></td><td>外部证据层明确标记该引用或相关断言被反驳。</td><td>0.3611</td></tr></tbody></table>
+    <p class="note">unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。</p>
+    <h2>Evidence Broker</h2>
+    <table><thead><tr><th>ID</th><th>Layer</th><th>Retrieval</th><th>Source</th></tr></thead><tbody><tr><td>EVID-LEGAL-001</td><td>user_supplied</td><td>provided</td><td>LexBench Contract Review 2026</td></tr><tr><td>CAND-23038CDFAC</td><td>candidate_source</td><td>not_fetched</td><td>https://example.com/legal/lexbench-contract-review-2026.</td></tr></tbody></table>
+    <h2>Evidence Gap Queue</h2>
+    <table><thead><tr><th>ID</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>GAP-001-9569E6</td><td>critical</td><td>open</td><td>保留冲突记录，重新核查断言是否应降级或撤回。</td></tr></tbody></table>
+    <h2>Replay Ledger</h2>
+    <div class="card">
+      <div><strong>Replay Ledger Hash:</strong> 9d43aa0e7b6613007baf3222f5fa759b481f790f08d41e806e67f941e1fcba04</div>
+      <div><strong>Certification Hash:</strong> ee1c9ab9f331fbb3ba24ae79703e251f6000164df55e112e5eb9e3666a4c3fc1</div>
+      <div><strong>Audit ID:</strong> demo-legal-memo-contradicted</div>
+    </div>
+  </main>
+</body>
+</html>

@@ -28,6 +28,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | X launch | Published short-form post. A first malformed attempt was deleted immediately; clean intent/post version is live. | Watch for replies and profile visits. |
 | 2026-05-17 | GitHub metadata | Attempted to update repo description, homepage, and topics. | Blocked by GitHub API 404 from current `gh repo edit` permission path; push/issue/release permissions still work. |
 | 2026-05-17 | GitHub issue #1 | https://github.com/reguorier/ai-judge/issues/1#issuecomment-4470493105 | Added comment linking issue #1 to the new launch contribution funnel. |
+| 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |
 
 ## Public Contribution Links
 
