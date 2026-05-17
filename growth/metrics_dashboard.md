@@ -26,6 +26,7 @@ Status: active tracking template
 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but no activation code is available for this launch cycle. |
 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
 | Outreach email | growth/outreach_status.md | batch_001_send_packet_ready_not_sent | 0 | 0 | 0 | 0 | 10 real targets researched; 4 P0 direct emails converted into mailto links and `.eml` drafts; event logger added. |
+| Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
 
 ## Manual update cadence
 

@@ -2,6 +2,16 @@
 
 Status: ready for outreach queue
 
+Slot tracker:
+
+- `growth/free_audit_slots.json`
+- `growth/free_audit_status.md`
+- `tools/record_free_audit_slot.py`
+
+Intake script:
+
+- `growth/free_audit_intake.md`
+
 ## Offer
 
 ```text
@@ -38,4 +48,11 @@ Output:
 
 ```text
 Reply with one AI-generated answer or memo and tell me whether it can be anonymized for a public example.
+```
+
+## Tracking Commands
+
+```bash
+python3 tools/record_free_audit_slot.py --refresh-only
+python3 tools/record_free_audit_slot.py F001 --status reserved --contact O001 --case-type memo --permission pending --note "Interested in legal memo citation audit"
 ```

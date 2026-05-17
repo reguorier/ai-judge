@@ -31,6 +31,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
 | Outreach queue | Batch 001 send packet ready, not sent | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md`, `growth/outreach_status.md` |
 | Free audit offer | Ready | `growth/free_audit_offer.md` |
+| Free audit slots | Ready | `growth/free_audit_slots.json`, `growth/free_audit_status.md` |
 | Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
 | Pro early-access page | Ready | `product/pro_early_access.html` |
 | GitHub Sponsors copy | Ready | `docs/GITHUB_SPONSORS.md`, `.github/FUNDING.yml` |
@@ -88,7 +89,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Day | Automated action | Success signal |
 |---:|---|---|
 | 22 | Send first warm outreach batch from `growth/outreach_batch_001.md` through the available mailbox/channel. | 5 replies or 1 call target. |
-| 23 | Offer 3 free AI Decision Audits for testimonial use. | Testimonials pipeline starts. |
+| 23 | Offer 3 free AI Decision Audits for testimonial use, tracked by slot state. | `growth/free_audit_status.md` shows open/reserved/completed/testimonial slots. |
 | 24 | Add one real anonymized audit report if permission exists. | Trust proof increases. |
 | 25 | Launch Pro early-access page at $49 lifetime for first 100 users. | Payment intent is testable. |
 | 26 | Add GitHub Sponsors copy and README sponsor section. | Donation path exists. |
