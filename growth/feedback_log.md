@@ -16,6 +16,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Space verification | Default citation audit runs online and returns Certification ID + Replay Ledger. | Use Space as the primary demo link. |
 | 2026-05-17 | Hugging Face Community | New discussion form is disabled by platform rate limit. | Retry after account limit lifts; do not spend more time on HF posting today. |
 | 2026-05-17 | Hacker News | Submit page blocked by current in-app browser. | Use regular browser manually or retry from a different browser session before launch confirmation. |
+| 2026-05-17 | GitHub issues | Issue queue prepared. | Create labels and issues after final confirmation; source file is `growth/github_issue_queue.md`. |
 
 ## Objections To Track
 
