@@ -11,6 +11,8 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Local demo | Live | `PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html --json reports/fake-citation-audit.json` |
 | Benchmark | Live | `PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95` |
 | Launch copy | Drafted | `growth/launch_posts.md` |
+| Hugging Face post | Ready for confirmation | `growth/huggingface_community_post.md` |
+| Feedback log | Started | `growth/feedback_log.md` |
 | Reply bank | Drafted | `growth/reply_bank.md` |
 | Email sequence | Drafted | `growth/email_sequence.md` |
 
