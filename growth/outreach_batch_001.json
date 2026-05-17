@@ -1,0 +1,44 @@
+{
+  "batch_id": "outreach-batch-001",
+  "created": "2026-05-18",
+  "status": "ready_to_send_not_sent",
+  "send_limit_per_day": 5,
+  "targets": [
+    {
+      "id": "O001",
+      "priority": "P0",
+      "target": "Inside Legal AI",
+      "to": "contact@insidelegalai.com",
+      "source": "https://www.insidelegalai.com/contact",
+      "subject": "Citation audit benchmark cases for legal AI?",
+      "body": "Hi Inside Legal AI team,\\n\\nI am launching AI Judge Citation Audit, an open-source tool for checking AI-generated answers for fabricated, weak, irrelevant, unverifiable, and contradicted citations.\\n\\nYour work sits exactly at the point where legal AI has to become defensible infrastructure instead of a magic demo. That is the narrow problem this tool is trying to make measurable: before publishing an AI-assisted memo or briefing, keep the original model text separate from external evidence and audit each citation.\\n\\nLive demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit\\nGitHub: https://github.com/reguorier/ai-judge\\n\\nI am collecting hard benchmark cases. If you have seen an AI answer cite a real-looking source that did not exist, did not support the claim, or was impossible to verify, I would love to add an anonymized version to the benchmark.\\n\\nOne design detail I would especially value feedback on: AI Judge treats `unverifiable` as \"not enough isolated evidence\", not \"false\".\\n\\nBest,\\nReguorier"
+    },
+    {
+      "id": "O002",
+      "priority": "P0",
+      "target": "Article 11 AI",
+      "to": "steve@article11.ai",
+      "source": "https://www.article11.ai/services.html",
+      "subject": "Source-isolated citation audit for governed AI logs",
+      "body": "Hi Steve,\\n\\nI am building AI Judge Citation Audit, an open-source citation-level audit tool for AI-generated answers.\\n\\nI noticed Article 11 AI's emphasis on governed AI, tamper-evident logging, and legal AI workflows. AI Judge is narrower: it does not try to be a full legal AI system. It preserves the model's original answer, mentor additions, and external evidence as separate layers, then labels each citation as verified, weakly_verified, irrelevant, unverifiable, or contradicted.\\n\\nDemo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit\\nRepo: https://github.com/reguorier/ai-judge\\n\\nWould this kind of source-isolated citation audit be useful as a small governance layer before an answer enters an audit log? I am mainly looking for one hard edge case or a short critique of the label taxonomy.\\n\\nBest,\\nReguorier"
+    },
+    {
+      "id": "O003",
+      "priority": "P0",
+      "target": "DeepEval / Confident AI",
+      "to": "dev@confident-ai.com",
+      "source": "https://github.com/confident-ai/deepeval",
+      "subject": "Narrow citation-level eval for LLM outputs",
+      "body": "Hi Confident AI team,\\n\\nI am launching AI Judge Citation Audit, a small open-source project focused on one narrow metric: whether citations in an AI-generated answer are fabricated, weak, irrelevant, unverifiable, or contradicted.\\n\\nDeepEval is much broader, so I am not treating this as a competitor. The intended fit is a small pre-publish or CI check for source-heavy outputs where users need the original model text, evidence, and audit result kept separate.\\n\\nDemo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit\\nRepo: https://github.com/reguorier/ai-judge\\n\\nIf you have two minutes, I would value feedback on whether this should stay as an independent CLI/report format, or whether a narrow metric/integration shape would make more sense for eval-framework users.\\n\\nBest,\\nReguorier"
+    },
+    {
+      "id": "O004",
+      "priority": "P0",
+      "target": "factlens / Javier Marin",
+      "to": "javier@jmarin.info",
+      "source": "https://factlens.dev/",
+      "subject": "Citation hallucination edge cases?",
+      "body": "Hi Javier,\\n\\nI am building AI Judge Citation Audit, an open-source tool that checks AI-generated answers at the citation level and preserves a Replay Ledger of the original answer, supplied evidence, and verification outcome.\\n\\nI saw your work on hallucination detection and thought you might have useful instincts on failure cases. AI Judge deliberately keeps the scope narrow: citation labels are verified, weakly_verified, irrelevant, unverifiable, and contradicted.\\n\\nDemo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit\\nRepo: https://github.com/reguorier/ai-judge\\n\\nI am collecting adversarial benchmark cases. If you have one case where an answer sounds grounded but the source trail breaks, I would love to add an anonymized version or just get your critique of the taxonomy.\\n\\nBest,\\nReguorier"
+    }
+  ]
+}

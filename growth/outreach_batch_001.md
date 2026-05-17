@@ -19,7 +19,7 @@ This batch is designed to get the first real external signal without over-sellin
 |---|---:|---|---|---|---|---|---|---|
 | O001 | P0 | Legal AI newsletter | Inside Legal AI | `contact@insidelegalai.com` | https://www.insidelegalai.com/contact | Covers AI governance, legal knowledge infrastructure, and defensible AI use in law. | Ask for one anonymized bad-citation case or label-boundary feedback. | ready_to_send |
 | O002 | P0 | Legal AI builder | Article 11 AI | `steve@article11.ai` | https://www.article11.ai/services.html | Builds governed AI systems and already publishes legal AI/citation risk material. | Ask whether source-isolated citation audit should be part of governance logs. | ready_to_send |
-| O003 | P0 | LLM eval tooling | DeepEval / Confident AI | `jeffreyip@confident-ai.com` | https://github.com/confident-ai/deepeval | DeepEval is a large LLM evaluation framework; AI Judge is complementary as a narrow citation-level audit. | Ask for integration/metric-boundary feedback, not promotion. | ready_to_send |
+| O003 | P0 | LLM eval tooling | DeepEval / Confident AI | `dev@confident-ai.com` | https://github.com/confident-ai/deepeval | DeepEval is a large LLM evaluation framework; AI Judge is complementary as a narrow citation-level audit. | Ask for integration/metric-boundary feedback, not promotion. | ready_to_send |
 | O004 | P0 | Hallucination tooling | factlens / Javier Marin | `javier@jmarin.info` | https://factlens.dev/ | Works on LLM hallucination detection; likely to understand narrow verification labels. | Ask for one adversarial citation example and comparison feedback. | ready_to_send |
 | O005 | P1 | Legal-tech newsletter | LegalTech Digest | Site/newsletter channel | https://www.legaltechdigest.org/ | Tracks legal AI, startups, regulatory updates, and practical adoption. | Ask whether a short citation-hallucination demo would be useful for their readers. | channel_needed |
 | O006 | P1 | LLM newsletter | LLM Watch / Pascal Biese | Substack channel | https://www.llmwatch.com/ | Covers LLM research for a large technical audience; hallucination/citation failures are recurring topics. | Ask for benchmark-case contribution or a reply with a memorable failure case. | channel_needed |
@@ -95,7 +95,7 @@ Narrow citation-level eval for LLM outputs
 Body:
 
 ```text
-Hi Jeffrey,
+Hi Confident AI team,
 
 I am launching AI Judge Citation Audit, a small open-source project focused on one narrow metric: whether citations in an AI-generated answer are fabricated, weak, irrelevant, unverifiable, or contradicted.
 

@@ -11,6 +11,7 @@ Status: ready for use after first replies
 | Reddit r/LocalLLaMA | Launch post was removed by moderation. | Do not repost the same text; use replies to directly relevant citation-hallucination threads or ask moderators before a second post. |
 | V2EX | Logged in, but activation code is unavailable. | Abandon V2EX for this launch cycle; resume only if an invite code or `$V2EX` activation appears. |
 | Zhihu | Article published. | Track comments and route useful examples into benchmark issues #2-#5. |
+| Direct email | QQ Mail is logged in through Safari; Apple Mail accounts fail IMAP/SMTP login; Chrome automation is blocked because the Codex Chrome extension is disabled. | Use `growth/outreach_mailto_links.md` or `growth/outreach_drafts/*.eml` for the first P0 send batch; record sent status immediately after sending. |
 
 ## Follow-up 1: benchmark contributor
 

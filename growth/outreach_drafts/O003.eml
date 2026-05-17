@@ -1,0 +1,25 @@
+To: dev@confident-ai.com
+Subject: Narrow citation-level eval for LLM outputs
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi Confident AI team,
+
+I am launching AI Judge Citation Audit, a small open-source project focused o=
+n one narrow metric: whether citations in an AI-generated answer are fabricat=
+ed, weak, irrelevant, unverifiable, or contradicted.
+
+DeepEval is much broader, so I am not treating this as a competitor. The inte=
+nded fit is a small pre-publish or CI check for source-heavy outputs where us=
+ers need the original model text, evidence, and audit result kept separate.
+
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+Repo: https://github.com/reguorier/ai-judge
+
+If you have two minutes, I would value feedback on whether this should stay a=
+s an independent CLI/report format, or whether a narrow metric/integration sh=
+ape would make more sense for eval-framework users.
+
+Best,
+Reguorier

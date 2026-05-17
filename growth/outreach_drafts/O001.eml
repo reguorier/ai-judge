@@ -1,0 +1,30 @@
+To: contact@insidelegalai.com
+Subject: Citation audit benchmark cases for legal AI?
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi Inside Legal AI team,
+
+I am launching AI Judge Citation Audit, an open-source tool for checking AI-g=
+enerated answers for fabricated, weak, irrelevant, unverifiable, and contradi=
+cted citations.
+
+Your work sits exactly at the point where legal AI has to become defensible i=
+nfrastructure instead of a magic demo. That is the narrow problem this tool i=
+s trying to make measurable: before publishing an AI-assisted memo or briefin=
+g, keep the original model text separate from external evidence and audit eac=
+h citation.
+
+Live demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+GitHub: https://github.com/reguorier/ai-judge
+
+I am collecting hard benchmark cases. If you have seen an AI answer cite a re=
+al-looking source that did not exist, did not support the claim, or was impos=
+sible to verify, I would love to add an anonymized version to the benchmark.
+
+One design detail I would especially value feedback on: AI Judge treats `unve=
+rifiable` as "not enough isolated evidence", not "false".
+
+Best,
+Reguorier

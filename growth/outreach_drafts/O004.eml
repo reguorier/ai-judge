@@ -1,0 +1,26 @@
+To: javier@jmarin.info
+Subject: Citation hallucination edge cases?
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi Javier,
+
+I am building AI Judge Citation Audit, an open-source tool that checks AI-gen=
+erated answers at the citation level and preserves a Replay Ledger of the ori=
+ginal answer, supplied evidence, and verification outcome.
+
+I saw your work on hallucination detection and thought you might have useful =
+instincts on failure cases. AI Judge deliberately keeps the scope narrow: cit=
+ation labels are verified, weakly_verified, irrelevant, unverifiable, and con=
+tradicted.
+
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+Repo: https://github.com/reguorier/ai-judge
+
+I am collecting adversarial benchmark cases. If you have one case where an an=
+swer sounds grounded but the source trail breaks, I would love to add an anon=
+ymized version or just get your critique of the taxonomy.
+
+Best,
+Reguorier

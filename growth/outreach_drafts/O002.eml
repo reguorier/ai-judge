@@ -1,0 +1,26 @@
+To: steve@article11.ai
+Subject: Source-isolated citation audit for governed AI logs
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi Steve,
+
+I am building AI Judge Citation Audit, an open-source citation-level audit to=
+ol for AI-generated answers.
+
+I noticed Article 11 AI's emphasis on governed AI, tamper-evident logging, an=
+d legal AI workflows. AI Judge is narrower: it does not try to be a full lega=
+l AI system. It preserves the model's original answer, mentor additions, and =
+external evidence as separate layers, then labels each citation as verified, =
+weakly_verified, irrelevant, unverifiable, or contradicted.
+
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+Repo: https://github.com/reguorier/ai-judge
+
+Would this kind of source-isolated citation audit be useful as a small govern=
+ance layer before an answer enters an audit log? I am mainly looking for one =
+hard edge case or a short critique of the label taxonomy.
+
+Best,
+Reguorier
