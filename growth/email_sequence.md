@@ -22,6 +22,7 @@ I am launching AI Judge Citation Audit, a local-first tool that checks AI-genera
 The narrow use case is simple: before you publish an AI-generated report, README, paper draft, or client memo, run the citations through an audit that keeps model text and external evidence separate.
 
 Repo: https://github.com/reguorier/ai-judge
+Live demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 Demo:
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html
 
@@ -52,6 +53,9 @@ That distinction is useful when reviewing AI-generated work because it separates
 
 If you want to test it, send me one AI answer with citations or run the local demo:
 PYTHONPATH=. python cli/main.py audit examples/product-no-evidence.md --html reports/product-no-evidence-audit.html
+
+Browser demo:
+https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 ```
 
 ## Email 3: Pro early access

@@ -6,9 +6,11 @@ from pathlib import Path
 
 import gradio as gr
 
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+APP_PATH = Path(__file__).resolve()
+if len(APP_PATH.parents) > 2:
+    ROOT = APP_PATH.parents[2]
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
 
 from core.citation_audit import render_audit_html, render_audit_markdown, run_citation_audit
 
@@ -64,8 +66,13 @@ with gr.Blocks(title="AI Judge Citation Audit") as demo:
             markdown = gr.Markdown(label="Audit summary")
             html_report = gr.HTML(label="HTML report")
             summary_json = gr.Code(label="Machine-readable summary", language="json")
-    run.click(audit, inputs=[question, answer, evidence, allow_network], outputs=[markdown, html_report, summary_json])
+    run.click(
+        audit,
+        inputs=[question, answer, evidence, allow_network],
+        outputs=[markdown, html_report, summary_json],
+        queue=False,
+    )
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(show_error=True)

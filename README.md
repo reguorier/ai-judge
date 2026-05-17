@@ -1,5 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/release-3.6.0-purple" alt="v3.6.0">
+  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><img src="https://img.shields.io/badge/HuggingFace-Space%20live-ffcc4d" alt="Hugging Face Space"></a>
   <img src="https://img.shields.io/badge/Citation%20Audit-launch%20edition-0f766e" alt="Citation Audit launch edition">
   <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
   <img src="https://img.shields.io/badge/evidence-traced-2ea44f" alt="evidence traced">
@@ -19,6 +20,7 @@
 
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
+  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
@@ -42,6 +44,12 @@ It separates polished language from actual thinking quality, then gives the huma
 ## Citation Audit in 60 Seconds
 
 Most LLM eval tools ask whether an answer is good. AI Judge v3.6 starts with a narrower publish-risk question: **which citations can actually be trusted?**
+
+Try it in the browser first:
+
+<p>
+  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><strong>Open the Hugging Face Space</strong></a>
+</p>
 
 ```bash
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \

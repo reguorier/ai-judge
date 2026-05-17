@@ -14,6 +14,16 @@ Paste one AI-generated answer, optionally add external evidence, and get:
 - Evidence Broker source separation
 - HTML and JSON report artifacts
 
+## Live self-serve demo
+
+Hugging Face Space:
+
+```text
+https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+```
+
+The Space runs the citation audit path without requiring model APIs or browser bridges. The default sample is intentionally suspicious and should return `unverifiable`, not `verified`.
+
 ## 60-second local demo
 
 ```bash
@@ -34,7 +44,8 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 
 These are operating targets, not promises:
 
-- Day 7: public README, demo reports, benchmark, GitHub Action, Space folder ready.
+- Day 0: public Space live and verified with the default `unverifiable` sample.
+- Day 7: public README, demo reports, benchmark, GitHub Action, Space link, and launch copy ready.
 - Day 14: Show HN, Reddit, HuggingFace Community, V2EX, Zhihu, X thread published.
 - Day 30: first self-serve Pro sale or a clear stop/go signal from activation data.
 

@@ -18,6 +18,7 @@ The tool is intentionally narrow: paste an AI-generated answer, optionally provi
 The important design choice is source isolation: a URL mentioned by the model is treated as a candidate source, not proof. It only upgrades when supplied or fetched as external evidence.
 
 Repo: https://github.com/reguorier/ai-judge
+Live Space: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 Demo command:
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html --json reports/fake-citation-audit.json
 
@@ -42,6 +43,7 @@ AI Judge Citation Audit takes an AI-generated answer and external evidence, then
 It does not need model APIs for the basic demo. The first benchmark has 100 synthetic cases across verified, weak, irrelevant, unverifiable, and contradicted citations.
 
 Repo: https://github.com/reguorier/ai-judge
+Live demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 
 What I want from this community: nasty citation hallucination examples and suggestions for better benchmark cases.
 ```
@@ -64,6 +66,7 @@ The Space lets you paste an answer and external evidence. The audit separates mo
 The benchmark starts small on purpose: 100 deterministic cases, no model API required. I am looking for community cases that expose fake citations, irrelevant references, and claims that sound sourced but are not actually supported.
 
 GitHub: https://github.com/reguorier/ai-judge
+Space: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 ```
 
 ## V2EX
@@ -86,6 +89,7 @@ verified / weakly_verified / irrelevant / unverifiable / contradicted
 重点是 unverifiable 不是 false，只是当前没有外部证据能验证。模型自己提到的 URL 也不能直接给自己作证。
 
 Repo: https://github.com/reguorier/ai-judge
+在线 demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 本地 demo:
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html
 
@@ -102,4 +106,5 @@ The key rule: model-mentioned sources do not verify themselves.
 Paste answer -> add evidence -> get citation-level audit + Certification ID + Replay Ledger.
 
 GitHub: https://github.com/reguorier/ai-judge
+Live demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 ```
