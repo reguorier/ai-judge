@@ -20,7 +20,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Demo report gallery | Live | `docs/CITATION_AUDIT_QUICKSTART.md`, `docs/LAUNCH_CITATION_AUDIT.md` |
 | GitHub issue queue | Live | https://github.com/reguorier/ai-judge/issues/2 |
 | V2EX post | Ready for confirmation | `growth/v2ex_launch_post.md` |
-| Zhihu long-form post | Ready for confirmation | `growth/zhihu_launch_post.md` |
+| Zhihu long-form post | Live | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | X / short thread | Live | https://x.com/liuweidi2/status/2055973517779521750 |
 | Quote-card layouts | Ready | `product/social_quote_cards.html` |
 | Blog draft | Ready | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` |
@@ -118,4 +118,13 @@ Automated and reversible work is complete through Day 30:
 - Paid-feature scope is constrained to batch audit, GitHub Action advanced mode, history ledger, and network-backed Evidence Broker.
 - Stop/go evaluation is centralized in `growth/metrics_dashboard.md` and `growth/day30_decision.md`.
 
-Remaining external actions are blocked where platform auth is missing: HN, Reddit, Hugging Face Community, V2EX, and Zhihu. X is live, GitHub issues #2-#5 are live, and the v3.6.0 release page is updated.
+External launch follow-up status:
+
+- X is live: https://x.com/liuweidi2/status/2055973517779521750
+- Zhihu is live: https://zhuanlan.zhihu.com/p/2039446444000665819
+- Reddit r/LocalLLaMA was posted, then removed by moderation: https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/
+- Hacker News is blocked by the current Show HN account restriction page: https://news.ycombinator.com/showlim
+- V2EX is logged in but blocked until account activation: https://www.v2ex.com/invite/activate
+- Hugging Face Community is blocked until password login is completed in Chrome.
+
+GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next automated public action should favor replies to relevant conversations, not repeated reposting of the same launch copy.
