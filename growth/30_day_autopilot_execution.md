@@ -35,7 +35,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
 | Pro early-access page | Ready | `product/pro_early_access.html` |
 | Pro interest tracker | Ready | `growth/pro_interest_status.md`, `tools/record_pro_interest.py` |
-| GitHub Sponsors copy | Ready | `docs/GITHUB_SPONSORS.md`, `.github/FUNDING.yml` |
+| GitHub Sponsors copy | Manual sponsor path ready | `docs/GITHUB_SPONSORS.md`, `.github/FUNDING.yml`, `growth/sponsor_status.md` |
 | Unverifiable explainer | Ready | `docs/UNVERIFIABLE_IS_NOT_FALSE.md` |
 | Metrics dashboard | Ready | `growth/metrics_dashboard.md` |
 | Day 30 decision memo | Ready | `growth/day30_decision.md` |
@@ -93,7 +93,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | 23 | Offer 3 free AI Decision Audits for testimonial use, tracked by slot state. | `growth/free_audit_status.md` shows open/reserved/completed/testimonial slots. |
 | 24 | Add one real anonymized audit report if permission exists. | Trust proof increases. |
 | 25 | Launch Pro early-access page at $49 lifetime for first 100 users, with structured workflow-intent tracking. | `growth/pro_interest_status.md` can count requests, payment intent, invoices, paid events, and license sends. |
-| 26 | Add GitHub Sponsors copy and README sponsor section. | Donation path exists. |
+| 26 | Add GitHub Sponsors copy, README sponsor section, and manual sponsor-intent tracking until GitHub Sponsors is enabled. | `growth/sponsor_status.md` can count sponsor requests, tier selection, payment intent, and paid events. |
 | 27 | Follow up with interested users after confirmation. | Paid/feedback signal gathered. |
 | 28 | Publish "unverifiable is not false" explainer. | Core concept becomes memorable. |
 | 29 | Compile metrics: stars, Space visits, replies, issues, emails, paid signals. | Stop/go data exists. |

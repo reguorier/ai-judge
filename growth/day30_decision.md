@@ -10,13 +10,14 @@ Primary source files:
 - `growth/outreach_status.md`
 - `growth/free_audit_status.md`
 - `growth/pro_interest_status.md`
+- `growth/sponsor_status.md`
 
 | Signal | Threshold | Actual | Pass |
 |---|---:|---:|---|
 | GitHub stars | 100 | TBD | TBD |
 | Distinct users / replies / issues | 20 | TBD | TBD |
 | Pro requests | 3 | `growth/pro_interest_status.md` request count | TBD |
-| Paid users or invoice requests | 1 | `paid + invoice_requested` in `growth/pro_interest_status.md` | TBD |
+| Paid users, invoice requests, or manual sponsor support | 1 | `paid + invoice_requested` in `growth/pro_interest_status.md`; `paid + payment_intent` in `growth/sponsor_status.md` | TBD |
 
 ## Pro signal interpretation
 

@@ -225,6 +225,19 @@ The current monetization path is intentionally narrow: prove citation audit valu
 | [`product/social_quote_cards.html`](product/social_quote_cards.html) | Three quote-card layouts for short-form launch visuals |
 | [`docs/GITHUB_SPONSORS.md`](docs/GITHUB_SPONSORS.md) | GitHub Sponsors copy and tier positioning |
 
+## Support
+
+AI Judge Citation Audit is source-available and free for single-file local evaluation. Support helps maintain citation hallucination benchmarks, demo reports, CI examples, Evidence Broker work, and anonymized AI Decision Audit examples.
+
+Current support paths:
+
+- Pro Early Access: [`docs/PRO_EARLY_ACCESS.md`](docs/PRO_EARLY_ACCESS.md)
+- Free audit/testimonial pipeline: [`growth/free_audit_status.md`](growth/free_audit_status.md)
+- Sponsor tiers and setup notes: [`docs/GITHUB_SPONSORS.md`](docs/GITHUB_SPONSORS.md)
+- Contact: [reguorider@gmail.com](mailto:reguorider@gmail.com)
+
+GitHub Sponsors is prepared but not enabled yet; `.github/FUNDING.yml` stays commented until the account is approved.
+
 ## Citation Audit FAQ
 
 **Is `unverifiable` the same as false?**
