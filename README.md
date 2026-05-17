@@ -24,6 +24,7 @@
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
+  <a href="docs/PRO_EARLY_ACCESS.md">Pro Early Access</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
   <a href="#what-v33-adds">What v3.3 Adds</a> ·
   <a href="#what-v32-adds">What v3.2 Adds</a> ·
@@ -83,6 +84,14 @@ PYTHONPATH=. python tools/run_citation_bench.py
 Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html).
 
 The first public benchmark is [`citation-bench/citation-bench-100.jsonl`](citation-bench/citation-bench-100.jsonl): 100 deterministic cases covering verified, weak, irrelevant, unverifiable, and contradicted citation behavior.
+
+Hard-mode launch cases live in [`citation-bench/citation-bench-hard-10.jsonl`](citation-bench/citation-bench-hard-10.jsonl):
+
+```bash
+PYTHONPATH=. python tools/run_citation_bench.py \
+  --bench citation-bench/citation-bench-hard-10.jsonl \
+  --fail-under 0.95
+```
 
 ## 30-Second Product Tour
 
@@ -169,6 +178,46 @@ AI Judge now includes a ready-to-record launch and hackathon demo pack:
 | [`docs/MICROSOFT_AGENT_ACADEMY.md`](docs/MICROSOFT_AGENT_ACADEMY.md) | Microsoft Agent Academy submission positioning and answers |
 | [`assets/microsoft-agent-academy-architecture.svg`](assets/microsoft-agent-academy-architecture.svg) | Architecture diagram for hackathon submissions |
 | [`examples/microsoft_agent_academy/copilot_cowork_packet.md`](examples/microsoft_agent_academy/copilot_cowork_packet.md) | Copilot/Cowork demo prompt, sample output, and AI Judge evaluation packet |
+
+## Citation Audit Growth Kit
+
+The current monetization path is intentionally narrow: prove citation audit value first, then ask for Pro access only from users who need batch, CI, or document workflows.
+
+| Asset | Purpose |
+|---|---|
+| [`docs/CITATION_AUDIT_QUICKSTART.md`](docs/CITATION_AUDIT_QUICKSTART.md) | Reproducible local demo, report gallery, and benchmark command |
+| [`docs/LAUNCH_CITATION_AUDIT.md`](docs/LAUNCH_CITATION_AUDIT.md) | 30-day launch plan, public demos, and stop/go thresholds |
+| [`docs/UNVERIFIABLE_IS_NOT_FALSE.md`](docs/UNVERIFIABLE_IS_NOT_FALSE.md) | Public explainer for the most important trust-boundary concept |
+| [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Pro batch-audit scope without building billing too early |
+| [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration example for Markdown/document PRs |
+| [`docs/AI_DECISION_AUDIT_SAMPLE.md`](docs/AI_DECISION_AUDIT_SAMPLE.md) | Concrete sample deliverable for audit-service conversations |
+| [`docs/PRO_EARLY_ACCESS.md`](docs/PRO_EARLY_ACCESS.md) | First paid-signal offer and manual purchase flow |
+| [`product/pro_early_access.html`](product/pro_early_access.html) | Static early-access page for the $49 lifetime test |
+| [`growth/30_day_autopilot_execution.md`](growth/30_day_autopilot_execution.md) | Day-by-day automation table and current asset map |
+| [`growth/metrics_dashboard.md`](growth/metrics_dashboard.md) | Stop/go tracking for stars, replies, feature asks, and paid signals |
+| [`growth/outreach_targets.md`](growth/outreach_targets.md) | 20-target outreach queue for AI newsletters, legal-tech, research ops, and devtools |
+| [`growth/free_audit_offer.md`](growth/free_audit_offer.md) | Three free audit offer used to collect testimonials |
+| [`growth/anonymized_audit_permission_request.md`](growth/anonymized_audit_permission_request.md) | Permission template for a real anonymized Day-24 audit |
+| [`growth/zhihu_launch_post.md`](growth/zhihu_launch_post.md) | Chinese long-form launch post |
+| [`product/social_quote_cards.html`](product/social_quote_cards.html) | Three quote-card layouts for short-form launch visuals |
+| [`docs/GITHUB_SPONSORS.md`](docs/GITHUB_SPONSORS.md) | GitHub Sponsors copy and tier positioning |
+
+## Citation Audit FAQ
+
+**Is `unverifiable` the same as false?**
+No. It means the current isolated evidence layer is insufficient. `contradicted` is reserved for evidence that explicitly refutes the claim.
+
+**Does AI Judge rewrite the model answer?**
+No. The Replay Ledger preserves the raw answer. The judge adds verification, hashes, and status labels around it.
+
+**Does a model-mentioned source count as evidence?**
+No. A model can hallucinate a source and then cite it confidently. Candidate sources must be checked against supplied or fetched external evidence.
+
+**Why start with citation audit instead of full Grand Judge?**
+Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
+
+**What becomes Pro?**
+Batch audit, GitHub Action advanced mode, history ledger, network-backed Evidence Broker, and document parsing. Single-file local audit stays free.
 
 ## v3.1 Foundation
 
@@ -367,6 +416,8 @@ ai-judge/
 | [docs/COMPARISON.md](docs/COMPARISON.md) | Comparison with other council-style tools |
 | [docs/v3.2-source/](docs/v3.2-source/) | Full-package source discussion, technical spec, and roadmap |
 | [product/landing.html](product/landing.html) | Product landing page |
+| [product/pro_early_access.html](product/pro_early_access.html) | Pro early-access page |
+| [docs/PRO_EARLY_ACCESS.md](docs/PRO_EARLY_ACCESS.md) | Manual early-access purchase flow |
 
 ## License
 

@@ -7,6 +7,9 @@ const RECOVERABLE_WEB_CODES = new Set([
   "composer_busy",
   "response_not_relevant",
   "long_prompt_still_in_input",
+  "existing_answer_not_found",
+  "existing_answer_placeholder",
+  "existing_answer_prompt_echo",
 ]);
 
 const timelineSteps = [
@@ -449,7 +452,7 @@ function renderArenaRoster() {
 
 function arenaSeatStatus(seatId) {
   const raw = ((state.currentVerdict?.web_bridge || {}).raw_results || []).find(item => item.seat === seatId);
-  if (raw) return raw.ok ? "已采集" : isSupplementableResult(raw) ? "待补采" : "需处理";
+  if (raw) return raw.ok ? "已采集" : isSupplementableResult(raw) ? "待回收" : "需处理";
   if (state.engine === "web") return seatBridgeReady(seatId) ? "已选" : "待校准";
   if (state.currentVerdict?.seat_scores?.some(item => item.seat === seatId)) {
     return state.currentVerdict?.engine === "local-auto-jury-v3.4" ? "本地评分" : "完成";
@@ -786,13 +789,19 @@ function supplementableRawResults() {
 
 function renderSupplementButton() {
   const btn = $("#btn-supplement-slow");
-  if (!btn) return;
+  const panel = $("#recovery-panel");
+  if (!btn) {
+    if (panel) panel.hidden = true;
+    return;
+  }
   const seats = supplementableRawResults();
-  btn.hidden = !state.currentVerdict?.run_id || seats.length === 0;
+  const visible = Boolean(state.currentVerdict?.run_id && seats.length);
+  btn.hidden = !visible;
+  if (panel) panel.hidden = !visible;
   btn.disabled = false;
   btn.textContent = seats.length
-    ? `补采待回收席位 (${seats.map(item => item.seat_name || item.seat).join(", ")})`
-    : "补采待回收席位";
+    ? `回收旧页面答案 (${seats.map(item => item.seat_name || item.seat).join("、")})`
+    : "回收旧页面答案";
 }
 
 async function supplementSlowSeats() {
@@ -803,9 +812,9 @@ async function supplementSlowSeats() {
   const btn = $("#btn-supplement-slow");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "补采中...";
+    btn.textContent = "读取旧页面...";
   }
-  setProgress(4, `提交补采：${seats.join(", ")}`);
+  setProgress(4, `读取旧页面答案：${seats.join(", ")}`);
   const notify = {
     email: $("#notify-email").value.trim(),
     webhook_url: $("#notify-webhook").value.trim(),
@@ -831,11 +840,11 @@ async function supplementSlowSeats() {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     state.currentRunId = data.run_id;
     $("#run-id").textContent = data.run_id;
-    $("#run-meta").textContent = `补采 ${data.seat_count} 席 · 合并回 ${sourceRunId}`;
+    $("#run-meta").textContent = `旧页面回收 ${data.seat_count} 席 · 合并回 ${sourceRunId}`;
     startProgress(data.run_id);
     await loadHistory();
   } catch (err) {
-    setProgress(0, `补采失败：${err.message}`);
+    setProgress(0, `旧页面回收失败：${err.message}`);
     renderSupplementButton();
   }
 }
@@ -863,9 +872,9 @@ async function recheckStalledSeats({ auto = false } = {}) {
   const btn = $("#btn-recheck-stalled");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = auto ? "自动回收中..." : "回收中...";
+    btn.textContent = auto ? "自动读取旧页面..." : "读取旧页面...";
   }
-  setProgress(4, `${auto ? "自动" : "手动"}二次回收：${seats.join(", ")}`);
+  setProgress(4, `${auto ? "自动" : "手动"}读取旧页面答案：${seats.join(", ")}`);
   const notify = {
     email: $("#notify-email").value.trim(),
     webhook_url: $("#notify-webhook").value.trim(),
@@ -891,12 +900,12 @@ async function recheckStalledSeats({ auto = false } = {}) {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     state.currentRunId = data.run_id;
     $("#run-id").textContent = data.run_id;
-    $("#run-meta").textContent = `二次回收 ${data.seat_count} 席 · 写回 ${sourceRunId}`;
+    $("#run-meta").textContent = `旧页面回收 ${data.seat_count} 席 · 写回 ${sourceRunId}`;
     startProgress(data.run_id);
     await loadHistory();
   } catch (err) {
     state.recheckInFlight = false;
-    setProgress(0, `二次回收失败：${err.message}`);
+    setProgress(0, `旧页面回收失败：${err.message}`);
     renderRunDiagnostics(task);
   }
 }
@@ -978,6 +987,18 @@ function renderVerdict(v) {
   $("#verdict-badge").textContent = `${v.mode_emoji || ""} ${v.verdict_label || v.verdict} · ${v.confidence}% · ${engineName(v.engine)}`;
   $("#verdict-title").textContent = v.one_liner || "AI Judge 判词已完成";
   $("#verdict-question").textContent = v.question || "";
+  const judge = v.judge_answer || {};
+  const bridge = v.web_bridge || {};
+  const okCount = bridge.ok_count ?? judge.ok_count;
+  const totalCount = bridge.requested_count ?? ((judge.ok_count || 0) + (judge.failed_count || 0));
+  const reportMeta = [
+    v.run_id ? `Run ${compactRunId(v.run_id)}` : "",
+    v.verdict_label || v.verdict ? `结论 ${v.verdict_label || v.verdict}` : "",
+    v.confidence !== undefined ? `可信度 ${v.confidence}%` : "",
+    okCount !== undefined && totalCount !== undefined ? `席位 ${okCount}/${totalCount}` : "",
+  ].filter(Boolean);
+  $("#report-meta").innerHTML = reportMeta.map(item => `<span>${escapeHtml(item)}</span>`).join("");
+  $("#final-report-answer").textContent = finalReportText(v);
   $("#reason-list").innerHTML = (v.reasons || []).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
   $("#step-list").innerHTML = (v.next_steps || []).map(step => `<li>${escapeHtml(step)}</li>`).join("");
   $("#view-link").href = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
@@ -1000,6 +1021,15 @@ function renderVerdict(v) {
   renderPublishGate();
 }
 
+function finalReportText(v) {
+  const judgeAnswer = v?.judge_answer?.answer || v?.single_judge_baseline?.answer || "";
+  if (judgeAnswer) return judgeAnswer;
+  const line = v?.one_liner || "本轮判断已完成。";
+  const reasons = (v?.reasons || []).slice(0, 2).join("；");
+  const steps = (v?.next_steps || []).slice(0, 2).join("；");
+  return [line, reasons ? `关键依据：${reasons}` : "", steps ? `建议动作：${steps}` : ""].filter(Boolean).join("\n");
+}
+
 function renderPublishGate(message = "") {
   if (!$("#publishChecklist")) return;
   const hasVerdict = Boolean(state.currentVerdict);
@@ -1008,7 +1038,7 @@ function renderPublishGate(message = "") {
   const ready = state.publishCleared || (hasVerdict && confidence >= 80 && supplementable === 0);
   const items = [
     { text: "判词已生成", hint: "完整保留问题、立场与下一步", meta: hasVerdict ? "通过" : "等待结果", state: hasVerdict ? "ok" : "block" },
-    { text: "慢席位补采", hint: "失败或超时席位不伪装为共识", meta: supplementable ? `${supplementable} 席待补采` : "无待补采", state: supplementable ? "warn" : "ok" },
+    { text: "旧页面答案回收", hint: "失败或超时席位不伪装为共识", meta: supplementable ? `${supplementable} 席待回收` : "无待回收", state: supplementable ? "warn" : "ok" },
     { text: "可信度阈值", hint: "低于阈值时只允许内部保存", meta: hasVerdict ? `${confidence}%` : "等待评分", state: confidence >= 80 ? "ok" : hasVerdict ? "warn" : "block" },
     { text: "人工发布确认", hint: "最终发布仍需人工确认", meta: ready ? (message || "通过") : "需要确认", state: ready ? "ok" : "block" },
   ];
@@ -1018,7 +1048,7 @@ function renderPublishGate(message = "") {
       <span>${escapeHtml(item.meta)}</span>
     </li>
   `).join("");
-  const blockers = items.filter(item => item.state === "block").length;
+  const blockers = items.filter(item => item.state !== "ok").length;
   $("#blockerCount").textContent = blockers;
   $("#publishBlockerMetric").textContent = blockers;
   $("#publishConfidence").textContent = hasVerdict ? `${confidence}%` : "-";
@@ -1031,9 +1061,11 @@ function renderPublishGate(message = "") {
   $("#gateMeter")?.classList.toggle("is-ready", ready);
   const gateReason = ready
     ? "全部门禁通过，报告可标记为发布级可用。"
-    : blockers
-      ? `仍有 ${blockers} 个阻断项需要处理。`
-      : "没有硬阻断，但仍建议人工复核后发布。";
+    : supplementable
+      ? `仍有 ${supplementable} 个旧页面答案需要回收，请回到请求录入页右侧处理。`
+      : blockers
+        ? `仍有 ${blockers} 个门禁项需要处理。`
+        : "没有硬阻断，但仍建议人工复核后发布。";
   if ($("#gateReason")) $("#gateReason").textContent = gateReason;
   $("#publishBtn").disabled = !ready;
 }
@@ -1494,8 +1526,8 @@ function renderRunDiagnostics(task) {
     recheckBtn.hidden = !recheckSeats.length;
     recheckBtn.disabled = state.recheckInFlight;
     recheckBtn.textContent = recheckSeats.length
-      ? `立即二次回收 (${recheckSeats.map(seatName).join("、")})`
-      : "立即二次回收";
+      ? `回收旧页面答案 (${recheckSeats.map(seatName).join("、")})`
+      : "回收旧页面答案";
   }
   const watch = $("#seat-watch");
   if (!seats.length) {
@@ -1660,12 +1692,15 @@ function statusLabel(reason, ready) {
   if (reason === "cdp_unavailable") return "CDP 未连接";
   if (reason === "input_not_found") return "找不到输入框";
   if (reason === "response_timeout") return "回答超时";
-  if (reason === "slow_response_pending") return "慢生成待补采";
+  if (reason === "slow_response_pending") return "慢生成待回收";
   if (reason === "send_button_not_found") return "发送未确认";
   if (reason === "submit_unconfirmed") return "提交未确认";
   if (reason === "long_prompt_still_in_input") return "提交未确认";
   if (reason === "composer_busy") return "页面忙碌";
   if (reason === "response_not_relevant") return "疑似旧回答";
+  if (reason === "existing_answer_not_found") return "旧页未返回";
+  if (reason === "existing_answer_placeholder") return "仍是占位";
+  if (reason === "existing_answer_prompt_echo") return "旧页未完成";
   if (reason === "desktop_bridge_ready") return "客户端就绪";
   if (reason === "not_configured") return "未配置";
   return reason || "待配置";

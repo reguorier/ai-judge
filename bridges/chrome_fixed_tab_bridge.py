@@ -565,6 +565,134 @@ def run_chrome_fixed_tabs(
     return list(submissions.values())
 
 
+def recover_existing_fixed_tab_answers(
+    question: str,
+    seats: list[str],
+    config: dict[str, Any],
+    mode: str = "flash",
+    progress: Callable[[str, float], None] | None = None,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> list[dict[str, Any]]:
+    """Read late answers from already-open fixed Chrome tabs without sending a new prompt."""
+    status = chrome_apple_events_status()
+    if trace:
+        trace("chrome", "existing_answer_probe", "检测 Chrome 旧页面答案读取通道", {
+            **status,
+            "method": "read_existing_tabs_only",
+            "sends_prompt": False,
+        })
+    if not status.get("available"):
+        return [
+            _failed_result(
+                seat,
+                str(status.get("reason") or "apple_events_unavailable"),
+                str(status.get("message") or "Chrome Apple Events JavaScript is not available."),
+            )
+            for seat in seats
+        ]
+
+    all_tabs = list_chrome_tabs()
+    if trace:
+        trace(
+            "chrome",
+            "existing_tabs_listed",
+            "读取当前 Chrome 固定标签页用于旧答案回收",
+            {"count": len(all_tabs), "tabs": [{"title": tab.title, "url": tab.url} for tab in all_tabs]},
+        )
+
+    requested = [seat.lower() for seat in seats if seat.lower() in SEAT_PERSONAS]
+    total = max(1, len(requested))
+    results: list[dict[str, Any]] = []
+    for index, seat in enumerate(requested, 1):
+        if progress:
+            progress(f"读取旧页面答案：{_seat_label(seat)} ({index}/{total})", 0.12 + 0.70 * index / total)
+        seat_config = _seat_config(config, seat)
+        if not seat_config.get("enabled"):
+            results.append(_failed_result(seat, "disabled", "Seat is disabled in web_seats.json."))
+            continue
+        tab = _match_tab(seat_config, all_tabs)
+        if tab is None:
+            failed = _failed_result(seat, "fixed_tab_not_found", "No open Chrome tab matched this seat URL/title.")
+            failed["supplementable"] = True
+            results.append(failed)
+            if trace:
+                trace("seat", "existing_answer_tab_not_found", f"{seat} 未找到固定 Chrome 标签", {"seat": seat})
+            continue
+        capture = _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=12)
+        prompt_id = str(capture.get("prompt_id") or "")
+        response_text = _clean_response_text(str(capture.get("text") or ""), prompt_id)
+        prompt_echo = _capture_is_prompt_echo(response_text, prompt_id)
+        polluted = _capture_is_polluted(response_text, prompt_id)
+        matches_question = _response_matches_question(response_text, question)
+        accepted = (
+            bool(capture.get("ok"))
+            and bool(capture.get("marker_found"))
+            and len(response_text) >= MIN_MARKER_ANSWER_CHARS
+            and not prompt_echo
+            and not polluted
+            and matches_question
+        )
+        if accepted:
+            results.append({
+                "seat": seat,
+                "seat_name": SEAT_PERSONAS[seat]["name"],
+                "ok": True,
+                "url": tab.url,
+                "profile_dir": "Chrome fixed tab existing page",
+                "elapsed_seconds": 0,
+                "response": response_text,
+                "error": None,
+                "recovered_from_existing_page": True,
+                "capture_mode": "existing_answer_marker",
+                "prompt_id": prompt_id,
+            })
+            if trace:
+                trace("seat", "existing_answer_captured", f"{seat} 已从旧页面读取答案", {
+                    "seat": seat,
+                    "response_chars": len(response_text),
+                    "prompt_id": prompt_id,
+                    "url": tab.url,
+                })
+            continue
+
+        code = str(capture.get("reason") or capture.get("error") or "existing_answer_not_found")
+        message = str(capture.get("message") or "The existing model page did not expose a usable AI Judge answer marker.")
+        if prompt_echo:
+            code = "existing_answer_prompt_echo"
+            message = "The existing page still contains the prompt or placeholder instead of a final answer."
+        elif polluted:
+            code = "transcript_pollution"
+            message = "The existing page contains older AI Judge transcript markers, so it was rejected."
+        elif response_text and not matches_question:
+            code = "response_not_relevant"
+            message = "The existing page answer marker did not match the current question."
+        failed = _failed_result(seat, code, message)
+        failed.update({
+            "supplementable": True,
+            "url": tab.url,
+            "profile_dir": "Chrome fixed tab existing page",
+            "recovered_from_existing_page": False,
+            "capture": {
+                "marker_found": bool(capture.get("marker_found")),
+                "placeholder_found": bool(capture.get("placeholder_found")),
+                "candidate_count": int(capture.get("candidate_count") or 0),
+                "page_busy": bool(capture.get("page_busy")),
+            },
+        })
+        results.append(failed)
+        if trace:
+            trace("seat", "existing_answer_rejected", f"{seat} 旧页面没有可用答案", {
+                "seat": seat,
+                "code": code,
+                "message": message,
+                "response_chars": len(response_text),
+                "capture": failed["capture"],
+            })
+    if progress:
+        progress("旧页面答案读取完成，进入合并评分", 0.84)
+    return results
+
+
 def _safe_execute_json(tab: ChromeTab, javascript: str, timeout: float = 10) -> dict[str, Any]:
     try:
         raw = _execute_tab_js(tab, javascript, timeout=timeout)
@@ -2161,5 +2289,112 @@ def _build_capture_js(prompt_id: str) -> str:
   const text = markerText && markerText.length >= 80 ? markerText : fallbackText;
   const finalText = markerClosed ? markerText : (markerText && markerText.length >= 80 ? markerText : fallbackText);
   return JSON.stringify({{ ok: true, title: document.title, url: location.href, text: finalText, text_length: finalText.length, marker_found: markerFound, marker_closed: markerClosed, marker_in_input: markerInInput, known_error: knownError, blocking_ui_active: blockingUiActive, assistant_empty: assistantEmpty, thinking_only: thinkingOnly, page_busy: pageBusy }});
+}})();
+"""
+
+
+def _build_existing_answer_capture_js(seat: str) -> str:
+    seat_json = json.dumps(seat, ensure_ascii=False)
+    return f"""
+(() => {{
+  const seat = {seat_json}.toLowerCase();
+  const pageRaw = document.body?.innerText || document.body?.textContent || "";
+  const conversationRoot = document.querySelector("main")
+    || document.querySelector("[role='main']")
+    || document.body;
+  const bodyRaw = conversationRoot?.innerText || conversationRoot?.textContent || pageRaw;
+  const visible = el => !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  const clean = text => (text || "")
+    .replace(/\\r/g, "")
+    .replace(/[ \\t]+\\n/g, "\\n")
+    .replace(/\\n{{3,}}/g, "\\n\\n")
+    .trim();
+  const busyLabel = Array.from(document.querySelectorAll("button,[role='button'],[aria-label]"))
+    .filter(visible)
+    .map(el => [el.getAttribute("aria-label") || "", el.innerText || "", el.textContent || "", String(el.className || "")].join(" "))
+    .join(" ");
+  const pageBusy = /停止回答|stop generating|stop response|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
+  const editableAncestors = node => {{
+    for (let el = node.parentElement; el; el = el.parentElement) {{
+      const tag = (el.tagName || "").toLowerCase();
+      if (tag === "textarea" || tag === "input" || el.isContentEditable || el.getAttribute("role") === "textbox") return true;
+    }}
+    return false;
+  }};
+  const nonInputParts = [];
+  const walker = document.createTreeWalker(conversationRoot || document.body, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {{
+    const node = walker.currentNode;
+    const value = (node.nodeValue || "").trim();
+    if (!value || editableAncestors(node) || !visible(node.parentElement)) continue;
+    nonInputParts.push(value);
+  }}
+  const bodyText = nonInputParts.join("\\n").trim();
+  const safeSeat = seat.replace(/[^a-z0-9_-]/gi, "");
+  const startRe = new RegExp("\\\\[AIJUDGE_ANSWER_START:(AIJUDGE-" + safeSeat + "-[^\\\\]]+)\\\\]", "gi");
+  const candidates = [];
+  let placeholderFound = false;
+  const extractFrom = source => {{
+    if (!source) return;
+    let match;
+    while ((match = startRe.exec(source)) !== null) {{
+      const promptId = match[1];
+      const contentStart = match.index + match[0].length;
+      const endToken = `[AIJUDGE_ANSWER_END:${{promptId}}]`;
+      const endIndex = source.indexOf(endToken, contentStart);
+      const nextStart = source.indexOf("[AIJUDGE_ANSWER_START:", contentStart);
+      const contentEnd = endIndex >= 0 ? endIndex : (nextStart >= 0 ? nextStart : source.length);
+      const text = clean(source.slice(contentStart, contentEnd));
+      const isPlaceholder = /^(你的最终答案|最终答案正文)\\s*$/i.test(text);
+      if (isPlaceholder) placeholderFound = true;
+      if (text && !isPlaceholder && text.length >= 8) {{
+        candidates.push({{ prompt_id: promptId, text, closed: endIndex >= 0, index: match.index }});
+      }}
+      startRe.lastIndex = contentStart;
+    }}
+  }};
+  extractFrom(bodyText);
+  extractFrom(bodyRaw);
+  extractFrom(pageRaw);
+  const unique = [];
+  const seen = new Set();
+  for (const item of candidates) {{
+    const key = `${{item.prompt_id}}::${{item.text}}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }}
+  unique.sort((a, b) => a.index - b.index);
+  const latest = unique[unique.length - 1] || null;
+  if (latest) {{
+    return JSON.stringify({{
+      ok: true,
+      title: document.title,
+      url: location.href,
+      text: latest.text,
+      text_length: latest.text.length,
+      prompt_id: latest.prompt_id,
+      marker_found: true,
+      marker_closed: latest.closed,
+      placeholder_found: placeholderFound,
+      candidate_count: unique.length,
+      page_busy: pageBusy
+    }});
+  }}
+  return JSON.stringify({{
+    ok: false,
+    title: document.title,
+    url: location.href,
+    text: "",
+    text_length: 0,
+    marker_found: false,
+    placeholder_found: placeholderFound,
+    candidate_count: unique.length,
+    page_busy: pageBusy,
+    reason: placeholderFound ? "existing_answer_placeholder" : "existing_answer_not_found",
+    message: placeholderFound
+      ? "The existing page still shows the AI Judge placeholder instead of the model answer."
+      : "No matching AI Judge answer marker was found on the existing page."
+  }});
 }})();
 """

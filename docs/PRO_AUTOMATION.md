@@ -11,6 +11,18 @@ This is the automation path for the first self-serve revenue loop. It avoids man
 | Pro Monthly | $19/month | Same as Pro, subscription license |
 | Pro Lifetime | $199 lifetime | Same as Pro, lifetime license |
 
+Current public page:
+
+```text
+product/pro_early_access.html
+```
+
+Current manual offer:
+
+```text
+docs/PRO_EARLY_ACCESS.md
+```
+
 ## Checkout setup
 
 Preferred first provider: Lemon Squeezy.
@@ -58,3 +70,5 @@ Do not build custom billing infrastructure until one of these happens:
 - at least one purchase
 - three users request Pro access
 - one community post drives more than 20 trial runs
+
+Until then, keep checkout provider setup as a queued action and collect demand through email, GitHub Sponsors, and public replies.

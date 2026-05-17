@@ -60,3 +60,21 @@ PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95
 ```
 
 The default benchmark has 100 deterministic cases and does not use browser bridges or model APIs.
+
+Run the hard launch set when changing citation extraction, evidence matching, or status classification:
+
+```bash
+PYTHONPATH=. python tools/run_citation_bench.py \
+  --bench citation-bench/citation-bench-hard-10.jsonl \
+  --fail-under 0.95
+```
+
+The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, and sources that exist but do not support the claim.
+
+## Pro path
+
+The free path stays local and single-file. Pro early access is reserved for workflows that need batch audit, CI gating, history, or network-backed evidence fetching:
+
+- [`docs/BATCH_AUDIT_SPEC.md`](BATCH_AUDIT_SPEC.md)
+- [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](GITHUB_ACTION_CITATION_AUDIT.md)
+- [`docs/PRO_EARLY_ACCESS.md`](PRO_EARLY_ACCESS.md)

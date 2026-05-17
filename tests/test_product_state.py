@@ -134,6 +134,16 @@ def test_send_button_failures_are_recoverable():
         "ok": False,
         "error": {"code": "long_prompt_still_in_input"},
     })
+    assert api_server._is_supplementable_result({
+        "seat": "qwen",
+        "ok": False,
+        "error": {"code": "existing_answer_not_found"},
+    })
+    assert api_server._is_supplementable_result({
+        "seat": "chatgpt",
+        "ok": False,
+        "error": {"code": "existing_answer_placeholder"},
+    })
 
 
 def test_progress_diagnostics_names_waiting_and_stale_seats():

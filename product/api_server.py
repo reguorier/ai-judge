@@ -33,7 +33,8 @@ except Exception:  # pragma: no cover - optional dependency
     CORS = None
 
 from bridges.notification_gateway import generate_secure_view_url, notify_verdict_ready, verify_secure_view
-from bridges.web_seat_bridge import bridge_status, calibrate_bridge, write_default_config
+from bridges.chrome_fixed_tab_bridge import recover_existing_fixed_tab_answers
+from bridges.web_seat_bridge import bridge_status, calibrate_bridge, load_bridge_config, write_default_config
 from core.async_task_manager import TaskManager
 from core.auto_jury import format_verdict_markdown, run_auto_jury
 from core.blind_cross_validation import aggregate_blind_reviews, build_blind_cross_validation_packet
@@ -71,6 +72,9 @@ RECOVERABLE_WEB_CODES = {
     "composer_busy",
     "response_not_relevant",
     "long_prompt_still_in_input",
+    "existing_answer_not_found",
+    "existing_answer_placeholder",
+    "existing_answer_prompt_echo",
 }
 
 
@@ -207,6 +211,11 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
         base.update({"state": "nudge", "status": "已追问", "reason": "检测到空思考或未输出正文，已追加最终答案追问"})
     elif action in {"chrome_response_captured", "chrome_partial_response_captured", "complete"}:
         base.update({"state": "done", "status": "已采集", "reason": f"已读取 {data.get('response_chars', 0)} 字"})
+    elif action == "existing_answer_captured":
+        base.update({"state": "done", "status": "旧页已回收", "reason": f"已从旧页面读取 {data.get('response_chars', 0)} 字"})
+    elif action == "existing_answer_rejected":
+        code = str(data.get("code") or "existing_answer_not_found")
+        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
     elif action in {"chrome_response_timeout", "chrome_response_rejected"}:
         code = str(data.get("code") or "slow_response_pending")
         base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
@@ -239,6 +248,9 @@ def _seat_error_label(code: str) -> str:
         "composer_busy": "页面忙碌",
         "fixed_tab_not_found": "标签缺失",
         "transcript_pollution": "历史串流",
+        "existing_answer_not_found": "旧页未返回",
+        "existing_answer_placeholder": "仍是占位",
+        "existing_answer_prompt_echo": "旧页未完成",
     }.get(code, "需处理")
 
 
@@ -256,7 +268,10 @@ def _seat_error_reason(code: str) -> str:
         "composer_busy": "页面仍在生成，系统没有把新任务塞进忙碌会话",
         "fixed_tab_not_found": "没有找到该模型对应的 Chrome 固定标签",
         "transcript_pollution": "捕获内容混入旧 AI Judge 标记，已拒绝评分",
-    }.get(code, "该席位需要查看页面或重新补采")
+        "existing_answer_not_found": "已打开页面中没有找到该席位的 AI Judge 答案标记",
+        "existing_answer_placeholder": "页面仍只显示 AI Judge 占位文本，模型尚未产出最终正文",
+        "existing_answer_prompt_echo": "页面仍是提示词或占位内容，不是可评分答案",
+    }.get(code, "该席位需要查看页面或回收旧页面答案")
 
 
 def _notification_config(data: dict[str, Any]) -> dict[str, Any]:
@@ -415,7 +430,7 @@ def _merge_trace_dicts(source: dict[str, Any] | None, supplement: dict[str, Any]
         events.append({
             "phase": "supplement",
             "action": "begin",
-            "detail": "慢席位补采开始",
+            "detail": "旧页面答案回收开始",
             "data": {"supplement_run_id": supplement.get("run_id")},
             "trace_scope": "supplement",
         })
@@ -857,34 +872,54 @@ def _run_recheck_worker(
         ] or seats
         prompt_flow = build_prompt_flow(question, mode=mode, engine="web", seats=all_seats)
         deep_question = str(prompt_flow.get("professional_prompt") or question)
-        trace_event("recheck", "accepted", "陈旧任务二次回收已启动", {
+        recovery_seats = all_seats or seats
+        trace_event("recheck", "accepted", "旧页面答案回收已启动", {
             "source_run_id": source_run_id,
             "recheck_run_id": recheck_run_id,
-            "seats": seats,
+            "requested_seats": seats,
+            "recovery_seats": recovery_seats,
             "mode": mode,
+            "method": "existing_page_recovery",
+            "sends_prompt": False,
         })
-        TASKS.update_progress(recheck_run_id, f"二次回收席位：{', '.join(seats)}", 0.08)
+        TASKS.update_progress(recheck_run_id, f"读取旧页面答案：{', '.join(recovery_seats)}", 0.08)
 
-        def web_progress(step: str, progress: float) -> None:
-            TASKS.update_progress(recheck_run_id, f"二次回收：{step}", min(0.88, 0.08 + progress * 0.80))
-            trace_event("progress", "recheck_web_progress", step, {"progress": progress})
+        def recovery_progress(step: str, progress: float) -> None:
+            TASKS.update_progress(recheck_run_id, f"旧页面回收：{step}", min(0.84, 0.08 + progress * 0.76))
+            trace_event("progress", "existing_answer_recovery_progress", step, {"progress": progress})
 
-        verdict = run_web_jury(
+        raw_results = recover_existing_fixed_tab_answers(
             question=deep_question,
             mode=mode,
-            seats=seats,
-            run_id=recheck_run_id,
+            seats=recovery_seats,
+            config=load_bridge_config(),
+            progress=recovery_progress,
+            trace=trace_event,
+        )
+        TASKS.update_progress(recheck_run_id, "合并旧页面答案并生成报告", 0.88)
+        verdict = assemble_web_verdict_from_raw_results(
+            question=deep_question,
+            mode=mode,
+            seats=all_seats or recovery_seats,
+            raw_results=raw_results,
+            mentor_supplements=[],
+            external_evidence=[],
+            run_id=source_run_id,
             display_question=question,
-            progress=web_progress,
             trace=trace_event,
         )
         verdict["run_id"] = source_run_id
         verdict["recheck"] = {
             "source_run_id": source_run_id,
             "recheck_run_id": recheck_run_id,
-            "seats": seats,
+            "requested_seats": seats,
+            "recovery_seats": recovery_seats,
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "reason": "stale_running_task_recovery",
+            "method": "existing_page_recovery",
+            "sends_prompt": False,
+            "recovered_count": sum(1 for item in raw_results if item.get("ok")),
+            "pending_count": sum(1 for item in raw_results if not item.get("ok")),
         }
         verdict["question"] = question
         verdict["deep_prompt"] = deep_question
@@ -892,7 +927,7 @@ def _run_recheck_worker(
         _attach_product_run_metadata(verdict, chief_judge="auto", abstained_seats=[seat for seat in all_seats if seat not in seats])
         citation_report = _attach_citation_mvp(verdict, run_id=source_run_id)
         if citation_report:
-            trace_event("grand_judge", "citation_mvp_resealed", "二次回收后已生成引用验证 MVP", {
+            trace_event("grand_judge", "citation_mvp_resealed", "旧页面答案回收后已生成引用验证 MVP", {
                 "certification_id": citation_report.get("certification_id"),
                 "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
             })
@@ -910,7 +945,7 @@ def _run_recheck_worker(
         _save_run(source_run_id, verdict)
         TASKS.complete(source_run_id, verdict)
         TASKS.complete(recheck_run_id, verdict)
-        trace_event("recheck", "complete", "陈旧任务二次回收已完成并写回原 run", {
+        trace_event("recheck", "complete", "旧页面答案回收已完成并写回原 run", {
             "source_run_id": source_run_id,
             "view_url": view_url,
             "ok_count": (verdict.get("web_bridge") or {}).get("ok_count"),
@@ -933,7 +968,7 @@ def _run_recheck_worker(
                 wecom_webhook=notify_config.get("wecom_webhook"),
             )
     except Exception as exc:
-        trace_event("recheck", "failed", "陈旧任务二次回收失败", {"error": str(exc)})
+        trace_event("recheck", "failed", "旧页面答案回收失败", {"error": str(exc)})
         TASKS.fail(recheck_run_id, str(exc))
 
 
@@ -967,39 +1002,33 @@ def _run_supplement_worker(
                 for item in ((source.get("web_bridge") or {}).get("raw_results") or [])
                 if str(item.get("seat")) in SEAT_PERSONAS
             ]
-        trace_event("supplement", "accepted", "慢席位补采任务已启动", {
+        trace_event("supplement", "accepted", "旧页面答案回收任务已启动", {
             "source_run_id": source_run_id,
             "seats": seats,
             "mode": mode,
+            "method": "existing_page_recovery",
+            "sends_prompt": False,
         })
-        TASKS.update_progress(supplement_run_id, f"补充慢席位：{', '.join(seats)}", 0.08)
+        TASKS.update_progress(supplement_run_id, f"读取旧页面答案：{', '.join(seats)}", 0.08)
 
-        def web_progress(step: str, progress: float) -> None:
-            TASKS.update_progress(supplement_run_id, f"补采：{step}", min(0.84, 0.08 + progress * 0.76))
-            trace_event("progress", "supplement_web_progress", step, {"progress": progress})
+        def recovery_progress(step: str, progress: float) -> None:
+            TASKS.update_progress(supplement_run_id, f"旧页面回收：{step}", min(0.84, 0.08 + progress * 0.76))
+            trace_event("progress", "existing_answer_recovery_progress", step, {"progress": progress})
 
-        supplement = run_web_jury(
+        supplement_raw = recover_existing_fixed_tab_answers(
             question=deep_question,
             mode=mode,
             seats=seats,
-            run_id=supplement_run_id,
-            display_question=display_question,
-            external_evidence=(source.get("web_bridge") or {}).get("external_evidence") or [],
-            evidence_options=(source.get("web_bridge") or {}).get("evidence_options") or {},
-            progress=web_progress,
+            config=load_bridge_config(),
+            progress=recovery_progress,
             trace=trace_event,
         )
-        supplement["question"] = display_question
-        supplement["deep_prompt"] = deep_question
-        _save_run(supplement_run_id, supplement)
 
-        TASKS.update_progress(supplement_run_id, "合并补充答案并重新评分", 0.88)
+        TASKS.update_progress(supplement_run_id, "合并旧页面答案并重新评分", 0.88)
         source_raw = (source.get("web_bridge") or {}).get("raw_results") or []
-        supplement_raw = (supplement.get("web_bridge") or {}).get("raw_results") or []
         source_mentors = (source.get("web_bridge") or {}).get("mentor_supplements") or []
-        supplement_mentors = (supplement.get("web_bridge") or {}).get("mentor_supplements") or []
         merged_raw = _merge_supplement_raw_results(source_raw, supplement_raw, supplement_run_id)
-        merged_mentors = _merge_supplement_raw_results(source_mentors, supplement_mentors, supplement_run_id)
+        merged_mentors = source_mentors
         merged = assemble_web_verdict_from_raw_results(
             question=deep_question,
             mode=mode,
@@ -1026,13 +1055,15 @@ def _run_supplement_worker(
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "recovered_count": sum(1 for item in supplement_raw if item.get("ok")),
             "pending_count": sum(1 for item in supplement_raw if not item.get("ok")),
+            "method": "existing_page_recovery",
+            "sends_prompt": False,
         }
         chief_id = str((source.get("chief_judge") or {}).get("id") or "auto")
         abstained = list((source.get("seat_roster") or {}).get("abstained") or [])
         _attach_product_run_metadata(merged, chief_judge=chief_id, abstained_seats=abstained)
         citation_report = _attach_citation_mvp(merged, run_id=source_run_id)
         if citation_report:
-            trace_event("grand_judge", "citation_mvp_resealed", "补采合并后已重新生成引用验证 MVP", {
+            trace_event("grand_judge", "citation_mvp_resealed", "旧页面答案合并后已重新生成引用验证 MVP", {
                 "certification_id": citation_report.get("certification_id"),
                 "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
                 "replay_ledger_hash": citation_report.get("replay_ledger_hash"),
@@ -1051,7 +1082,7 @@ def _run_supplement_worker(
         _save_run(source_run_id, merged)
         TASKS.complete(source_run_id, merged)
         TASKS.complete(supplement_run_id, merged)
-        trace_event("supplement", "complete", "慢席位补采已合并回原报告", {
+        trace_event("supplement", "complete", "旧页面答案已合并回原报告", {
             "source_run_id": source_run_id,
             "view_url": view_url,
             "ok_count": (merged.get("web_bridge") or {}).get("ok_count"),
@@ -1074,7 +1105,7 @@ def _run_supplement_worker(
                 wecom_webhook=notify_config.get("wecom_webhook"),
             )
     except Exception as exc:
-        trace_event("supplement", "failed", "慢席位补采失败", {"error": str(exc)})
+        trace_event("supplement", "failed", "旧页面答案回收失败", {"error": str(exc)})
         TASKS.fail(supplement_run_id, str(exc))
 
 
@@ -1266,8 +1297,8 @@ def supplement_judge(run_id: str):
         }), 400
 
     mode = str(source.get("mode") or "standard")
-    question = str(source.get("question") or "补充慢席位")
-    supplement_run_id = TASKS.submit(question=f"补充慢席位：{question}", mode=mode, seats=seats)
+    question = str(source.get("question") or "回收旧页面答案")
+    supplement_run_id = TASKS.submit(question=f"回收旧页面答案：{question}", mode=mode, seats=seats)
     notify_config = _notification_config(data)
     _start_supplement_worker(supplement_run_id, run_id, seats, notify_config)
     return jsonify({
@@ -1299,8 +1330,8 @@ def recheck_judge(run_id: str):
                 "recoverable": _supplementable_run_seats(source),
             }), 400
         mode = str(source.get("mode") or "standard")
-        question = str(source.get("question") or "二次回收慢席位")
-        recheck_run_id = TASKS.submit(question=f"二次回收：{question}", mode=mode, seats=seats)
+        question = str(source.get("question") or "回收旧页面答案")
+        recheck_run_id = TASKS.submit(question=f"回收旧页面答案：{question}", mode=mode, seats=seats)
         _start_supplement_worker(recheck_run_id, run_id, seats, notify_config)
         return jsonify({
             "run_id": recheck_run_id,
@@ -1329,8 +1360,8 @@ def recheck_judge(run_id: str):
         return jsonify({"error": "no recoverable seats", "status": status}), 400
 
     mode = str(task.get("mode") or "standard")
-    question = str(task.get("question") or "二次回收慢席位")
-    recheck_run_id = TASKS.submit(question=f"二次回收：{question}", mode=mode, seats=seats)
+    question = str(task.get("question") or "回收旧页面答案")
+    recheck_run_id = TASKS.submit(question=f"回收旧页面答案：{question}", mode=mode, seats=seats)
     _start_recheck_worker(recheck_run_id, run_id, task, seats, notify_config)
     return jsonify({
         "run_id": recheck_run_id,

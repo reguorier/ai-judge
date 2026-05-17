@@ -477,6 +477,18 @@
     .watch-reason { display: block; color: var(--muted); font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
     .run-diagnostics.stale { border-color: #fecdd3; background: #fff7f8; }
     .run-diagnostics.stale .diagnostic-title { color: #9f1239; }
+    .recovery-panel {
+      margin: 12px 0;
+      border: 1px solid #ffd38a;
+      border-radius: 10px;
+      background: #fffaf0;
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+    }
+    .recovery-panel[hidden] { display: none; }
+    .recovery-panel strong { display: block; font-size: 13px; line-height: 1.35; }
+    .recovery-panel span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.45; }
     @keyframes watchPulse {
       0% { box-shadow: 0 0 0 0 currentColor; opacity: .95; }
       70% { box-shadow: 0 0 0 7px transparent; opacity: .65; }
@@ -498,6 +510,13 @@
       line-height: 1.6;
     }
     .result-card[hidden], .empty[hidden] { display: none; }
+    .report-headline {
+      display: grid;
+      gap: 8px;
+      border-bottom: 1px solid var(--line-soft);
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -510,7 +529,46 @@
       margin-bottom: 12px;
     }
     .result-title { font-size: 24px; line-height: 1.35; margin: 0 0 10px; }
-    .question { color: var(--muted); margin-bottom: 14px; line-height: 1.55; }
+    .report-meta { display: flex; flex-wrap: wrap; gap: 7px; }
+    .report-meta span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text-soft);
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .report-question-box, .final-report-box {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: #fff;
+      padding: 13px 14px;
+      margin-bottom: 12px;
+    }
+    .report-question-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .report-question-box p, .final-report-box p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.68;
+      overflow-wrap: anywhere;
+    }
+    .final-report-box {
+      background: #fbfdff;
+      border-color: #d9e5f5;
+    }
+    .final-report-box p {
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 520;
+    }
     .process-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
     .process-panel {
       border: 1px solid var(--line);
@@ -642,12 +700,14 @@
 
     .arena-head { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
     .arena-head h2 { margin: 0 0 4px; font-size: 18px; }
-    .arena-grid { display: grid; grid-template-columns: minmax(320px, 1fr) 300px 300px; gap: 12px; }
+    .arena-grid { display: grid; grid-template-columns: minmax(460px, 1.2fr) minmax(280px, .75fr) minmax(300px, .85fr); gap: 12px; align-items: stretch; }
     .arena-panel { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 13px; min-width: 0; }
-    .arena-panel h3 { margin: 0 0 10px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+    .arena-panel h3 { margin: 0 0 10px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .arena-panel .roster-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
     .roster-card.selected { border-color: var(--green); background: #f2fbf6; }
     .roster-card.abstained { opacity: .58; }
-    .roster-main { display: flex; align-items: center; gap: 9px; }
+    .roster-card { display: grid; gap: 8px; align-content: space-between; min-height: 112px; }
+    .roster-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
     .seat-icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: #111827; color: #fff; font-weight: 760; font-size: 12px; flex: 0 0 auto; }
     .roster-name { min-width: 0; }
     .roster-name strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
@@ -706,7 +766,12 @@
     }
     .gate-metric span { display: block; color: var(--muted); font-size: 12px; }
     .gate-metric strong { display: block; margin-top: 5px; font-size: 20px; line-height: 1; font-weight: 720; }
-    .gate-checklist li { min-height: 48px; }
+    .gate-checklist li {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
     .gate-check-title { display: grid; gap: 2px; }
     .gate-check-title small { color: var(--muted); font-size: 12px; font-weight: 480; }
     .gate-decision {
@@ -990,8 +1055,15 @@
                 <div class="diagnostic-title" id="diagnostic-title"></div>
                 <div class="diagnostic-meta" id="diagnostic-meta"></div>
               </div>
-              <button class="diagnostic-action" id="btn-recheck-stalled" hidden>立即二次回收</button>
+              <button class="diagnostic-action" id="btn-recheck-stalled" hidden>回收旧页面答案</button>
               <div class="seat-watch" id="seat-watch"></div>
+            </div>
+            <div class="recovery-panel" id="recovery-panel" hidden>
+              <div>
+                <strong>旧页面答案回收</strong>
+                <span>只读取已打开模型页，不重发问题。</span>
+              </div>
+              <button class="diagnostic-action" id="btn-supplement-slow" hidden>回收旧页面答案</button>
             </div>
             <ul class="timeline" id="timeline-list"></ul>
           </aside>
@@ -1002,16 +1074,26 @@
         <div class="page-head">
           <div>
             <p class="eyebrow">Synthesis</p>
-            <h1>草稿生成与执行轨迹</h1>
-            <p>这里只看本轮输出、提示词共振、执行驱动和底层日志。</p>
+            <h1>最终结论与执行轨迹</h1>
+            <p>先给出和原问题对应的收口报告，再展开提示词共振、执行驱动和底层日志。</p>
           </div>
           <button class="ghost" data-tab-shortcut="evidence">进入证据审查</button>
         </div>
         <div class="empty" id="result-empty">判词会在这里出现。快速模式提交后，后台进度仍在“请求录入”页可见。</div>
         <article class="result-card" id="verdict-card" hidden>
-          <span class="badge" id="verdict-badge"></span>
-          <h2 class="result-title" id="verdict-title"></h2>
-          <div class="question" id="verdict-question"></div>
+          <div class="report-headline">
+            <span class="badge" id="verdict-badge"></span>
+            <h2 class="result-title" id="verdict-title"></h2>
+            <div class="report-meta" id="report-meta"></div>
+          </div>
+          <section class="report-question-box">
+            <span>原始问题</span>
+            <p id="verdict-question"></p>
+          </section>
+          <section class="final-report-box">
+            <div class="mini-title">最终结论报告</div>
+            <p id="final-report-answer"></p>
+          </section>
           <div class="process-grid">
             <section class="process-panel" id="mentor-result-panel" hidden>
               <h3>导师预检</h3>
@@ -1085,7 +1167,7 @@
             </div>
             <div class="audit-row">
               <span class="line-no">04</span>
-              <p><mark class="claim is-block">主张 C</mark> 发布前需要确认引用验证、Replay Ledger 和慢席位补采状态。<small>未完成前只允许保存为内部判词。</small></p>
+              <p><mark class="claim is-block">主张 C</mark> 发布前需要确认引用验证、Replay Ledger 和旧页面答案回收状态。<small>未完成前只允许保存为内部判词。</small></p>
               <span class="audit-status block">阻断发布</span>
             </div>
           </section>
@@ -1116,18 +1198,18 @@
         <section class="panel pro-only" id="ops-arena">
           <div class="arena-head">
             <div>
-              <h2>Draft Arena</h2>
-              <p class="muted">专业版显示阵容、主审、敏感度、桥接监控和评分轮次。</p>
+              <h2>席位对比台</h2>
+              <p class="muted">集中查看模型返回状态、主审选择、阵容影响、桥接监控和评分轮次。</p>
             </div>
             <div class="delta-ribbon" id="delta-ribbon"></div>
           </div>
           <div class="arena-grid">
             <section class="arena-panel">
-              <h3>议员选秀台 <span class="muted" id="arena-seat-count">0 席</span></h3>
+              <h3>席位状态 <span class="muted" id="arena-seat-count">0 席</span></h3>
               <div class="roster-grid" id="arena-roster"></div>
             </section>
             <section class="arena-panel">
-              <h3>轮值主审台</h3>
+              <h3>主审与汇总</h3>
               <div class="chief-core">
                 <div class="chief-orb">
                   <span class="muted">Chief Judge</span>
@@ -1138,7 +1220,7 @@
               <div class="chief-selector" id="chief-selector"></div>
             </section>
             <section class="arena-panel">
-              <h3>阵容敏感度 <span class="pill">What-if</span></h3>
+              <h3>阵容影响 <span class="pill">What-if</span></h3>
               <div class="insight-list" id="sensitivity-list"></div>
             </section>
           </div>
@@ -1197,7 +1279,7 @@
           <div>
             <p class="eyebrow">Publish Gate</p>
             <h1>发布门禁</h1>
-            <p>只有证据、分歧、风险披露、审计日志都清楚时，才让最终报告进入发布动作。</p>
+            <p>只检查报告是否可发布；旧页面答案回收请在请求录入页右侧完成。</p>
           </div>
           <span class="pill">阻断 <strong id="blockerCount">2</strong></span>
         </div>
@@ -1211,13 +1293,12 @@
             </div>
             <ul class="check-list gate-checklist" id="publishChecklist">
               <li class="block"><strong>证据链完整</strong><span>缺引用验证</span></li>
-              <li class="warn"><strong>模型分歧消解</strong><span>等待慢席位</span></li>
+              <li class="warn"><strong>旧页面答案回收</strong><span>回到请求页处理</span></li>
               <li class="ok"><strong>风险披露写入</strong><span>通过</span></li>
               <li class="ok"><strong>审计日志完整</strong><span>通过</span></li>
             </ul>
             <div class="result-actions">
               <a class="ghost" id="view-link" href="#" rel="noreferrer">打开完整报告</a>
-              <button class="ghost" id="btn-supplement-slow" hidden>补充慢席位</button>
               <button class="ghost" id="btn-download-md">下载 Markdown</button>
               <button class="ghost" id="btn-download-json">下载 JSON</button>
               <button class="primary-action" id="clearBlockersBtn">标记补证完成</button>

@@ -19,6 +19,24 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Email sequence | Drafted | `growth/email_sequence.md` |
 | Demo report gallery | Live | `docs/CITATION_AUDIT_QUICKSTART.md`, `docs/LAUNCH_CITATION_AUDIT.md` |
 | GitHub issue queue | Ready for confirmation | `growth/github_issue_queue.md` |
+| V2EX post | Ready for confirmation | `growth/v2ex_launch_post.md` |
+| Zhihu long-form post | Ready for confirmation | `growth/zhihu_launch_post.md` |
+| X / short thread | Ready for confirmation | `growth/x_short_thread.md` |
+| Quote-card layouts | Ready | `product/social_quote_cards.html` |
+| Blog outline | Ready to draft | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md` |
+| Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-10.jsonl --fail-under 0.95` |
+| Batch audit spec | Ready | `docs/BATCH_AUDIT_SPEC.md` |
+| GitHub Action guide | Ready | `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
+| AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
+| Outreach queue | Ready for confirmation | `growth/outreach_targets.md` |
+| Free audit offer | Ready | `growth/free_audit_offer.md` |
+| Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
+| Pro early-access page | Ready | `product/pro_early_access.html` |
+| GitHub Sponsors copy | Ready | `docs/GITHUB_SPONSORS.md`, `.github/FUNDING.yml` |
+| Unverifiable explainer | Ready | `docs/UNVERIFIABLE_IS_NOT_FALSE.md` |
+| Metrics dashboard | Ready | `growth/metrics_dashboard.md` |
+| Day 30 decision memo | Ready | `growth/day30_decision.md` |
+| Follow-up queue | Ready for confirmation | `growth/followup_queue.md` |
 
 ## Rules
 
@@ -88,3 +106,15 @@ Continue building Pro only if at least one is true by Day 30:
 - 1 user pays or asks for an invoice.
 
 If none are true, pause monetization and improve the demo story before adding more features.
+
+## Completion Snapshot
+
+Automated and reversible work is complete through Day 30:
+
+- Public copy is drafted for Hugging Face, Show HN, Reddit, V2EX, Zhihu, short-form posts, replies, and follow-ups.
+- The demo package includes three reproducible reports, the default 100-case benchmark, and a hard 10-case launch benchmark.
+- Pro demand capture is ready through `product/pro_early_access.html`, `docs/PRO_EARLY_ACCESS.md`, `docs/GITHUB_SPONSORS.md`, and `.github/FUNDING.yml`.
+- Paid-feature scope is constrained to batch audit, GitHub Action advanced mode, history ledger, and network-backed Evidence Broker.
+- Stop/go evaluation is centralized in `growth/metrics_dashboard.md` and `growth/day30_decision.md`.
+
+Remaining irreversible actions are intentionally queued: publishing public posts, sending outreach email, creating public GitHub issues, or configuring payment-provider products.

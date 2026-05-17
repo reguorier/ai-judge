@@ -40,6 +40,44 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 | Product plan without evidence | [`examples/product-no-evidence.md`](../examples/product-no-evidence.md) | [`reports/product-no-evidence-audit.html`](../reports/product-no-evidence-audit.html) / [`json`](../reports/product-no-evidence-audit.json) | The model recommends a three-month rewrite without evidence for the promised defect reduction. |
 | Sounds smart, low judgment | [`examples/sounds-smart-low-judgment.md`](../examples/sounds-smart-low-judgment.md) | [`reports/sounds-smart-low-judgment-audit.html`](../reports/sounds-smart-low-judgment-audit.html) / [`json`](../reports/sounds-smart-low-judgment-audit.json) | The answer sounds like investor prose but fails to ground the key memo and moat claims. |
 
+## Public launch queue
+
+| Channel | Copy |
+|---|---|
+| Hugging Face Community | [`growth/huggingface_community_post.md`](../growth/huggingface_community_post.md) |
+| Show HN | [`growth/show_hn_launch_post.md`](../growth/show_hn_launch_post.md) |
+| Reddit r/LocalLLaMA | [`growth/reddit_localllama_launch_post.md`](../growth/reddit_localllama_launch_post.md) |
+| V2EX | [`growth/v2ex_launch_post.md`](../growth/v2ex_launch_post.md) |
+| Zhihu / Chinese long-form | [`growth/zhihu_launch_post.md`](../growth/zhihu_launch_post.md) |
+| X / short thread | [`growth/x_short_thread.md`](../growth/x_short_thread.md) |
+| Quote cards | [`product/social_quote_cards.html`](../product/social_quote_cards.html) |
+| Blog outline | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md) |
+| Follow-up queue | [`growth/followup_queue.md`](../growth/followup_queue.md) |
+
+## Conversion assets
+
+| Asset | Role |
+|---|---|
+| [`docs/PRO_EARLY_ACCESS.md`](PRO_EARLY_ACCESS.md) | $49 lifetime early-access offer and manual purchase path |
+| [`product/pro_early_access.html`](../product/pro_early_access.html) | Static Pro page for self-serve interest |
+| [`docs/BATCH_AUDIT_SPEC.md`](BATCH_AUDIT_SPEC.md) | Paid feature scope: batch Markdown first, PDF/Docx later |
+| [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](GITHUB_ACTION_CITATION_AUDIT.md) | CI integration story for docs and PRs |
+| [`docs/AI_DECISION_AUDIT_SAMPLE.md`](AI_DECISION_AUDIT_SAMPLE.md) | Sample report for the audit-service offer |
+| [`growth/free_audit_offer.md`](../growth/free_audit_offer.md) | Free audit offer for testimonial collection |
+| [`growth/anonymized_audit_permission_request.md`](../growth/anonymized_audit_permission_request.md) | Day-24 template for turning a real shared case into a public-safe report |
+| [`growth/outreach_targets.md`](../growth/outreach_targets.md) | 20-target outreach list |
+| [`docs/GITHUB_SPONSORS.md`](GITHUB_SPONSORS.md) | Sponsor tiers and README copy |
+| [`growth/metrics_dashboard.md`](../growth/metrics_dashboard.md) | Day-30 stop/go tracking |
+
+## Benchmark expansion
+
+```bash
+PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95
+PYTHONPATH=. python tools/run_citation_bench.py \
+  --bench citation-bench/citation-bench-hard-10.jsonl \
+  --fail-under 0.95
+```
+
 ## Growth targets
 
 These are operating targets, not promises:

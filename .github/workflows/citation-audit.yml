@@ -45,3 +45,8 @@ jobs:
           input: examples/product-no-evidence.md
           output-html: reports/product-no-evidence-audit.html
           output-json: reports/product-no-evidence-audit.json
+      - uses: ./.github/actions/citation-audit
+        with:
+          input: examples/sounds-smart-low-judgment.md
+          output-html: reports/sounds-smart-low-judgment-audit.html
+          output-json: reports/sounds-smart-low-judgment-audit.json

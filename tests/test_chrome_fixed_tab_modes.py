@@ -1,6 +1,7 @@
 from bridges.chrome_fixed_tab_bridge import (
     _build_capture_js,
     _build_click_send_js,
+    _build_existing_answer_capture_js,
     _build_fresh_navigation_js,
     _build_prepare_submission_ui_js,
     _build_submission_check_js,
@@ -74,6 +75,18 @@ def test_capture_scans_all_answer_markers_and_qwen_blocks():
     assert "最终答案正文" in js
     assert ".response-message-content" in js
     assert ".qwen-markdown" in js
+
+
+def test_existing_answer_capture_reads_prior_markers_without_prompt_write():
+    js = _build_existing_answer_capture_js("qwen")
+
+    assert "AIJUDGE_ANSWER_START:(AIJUDGE-" in js
+    assert "safeSeat" in js
+    assert "existing_answer_not_found" in js
+    assert "existing_answer_placeholder" in js
+    assert "execCommand" not in js
+    assert "click()" not in js
+    assert "你的最终答案" in js
 
 
 def test_submission_check_prioritizes_prompt_still_in_input():
