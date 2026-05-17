@@ -1,7 +1,7 @@
 # Outreach Status
 
 Batch: `outreach-batch-001`
-Generated: `2026-05-17T19:51:45Z`
+Source: `growth/outreach_events.jsonl`
 
 ## Funnel
 

@@ -57,7 +57,7 @@ def render_status(slots: dict[str, Any]) -> str:
         "# Free AI Decision Audit Slot Status",
         "",
         f"Offer: `{slots['offer_id']}`",
-        f"Generated: `{utc_now()}`",
+        "Source: `growth/free_audit_slots.json`",
         "",
         "## Summary",
         "",

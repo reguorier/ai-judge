@@ -1,7 +1,7 @@
 # Free AI Decision Audit Slot Status
 
 Offer: `free-ai-decision-audit-001`
-Generated: `2026-05-17T19:54:03Z`
+Source: `growth/free_audit_slots.json`
 
 ## Summary
 

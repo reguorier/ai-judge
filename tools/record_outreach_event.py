@@ -78,7 +78,7 @@ def render_status(queue: dict[str, Any], events: list[dict[str, Any]]) -> str:
         "# Outreach Status",
         "",
         f"Batch: `{queue['batch_id']}`",
-        f"Generated: `{utc_now()}`",
+        "Source: `growth/outreach_events.jsonl`",
         "",
         "## Funnel",
         "",
