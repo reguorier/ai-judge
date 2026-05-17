@@ -29,6 +29,8 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | GitHub metadata | Attempted to update repo description, homepage, and topics. | Blocked by GitHub API 404 from current `gh repo edit` permission path; push/issue/release permissions still work. |
 | 2026-05-17 | GitHub issue #1 | https://github.com/reguorier/ai-judge/issues/1#issuecomment-4470493105 | Added comment linking issue #1 to the new launch contribution funnel. |
 | 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |
+| 2026-05-17 | GitHub issue #5 | https://github.com/reguorier/ai-judge/issues/5#issuecomment-4470644643 | Posted progress update linking the two new demo reports back to the public issue. |
+| 2026-05-17 | Blog draft | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` | Expanded the "9 AI collective blind spots" outline into a publish-ready long-form essay. |
 
 ## Public Contribution Links
 

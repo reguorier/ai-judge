@@ -53,6 +53,7 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 | Zhihu / Chinese long-form | [`growth/zhihu_launch_post.md`](../growth/zhihu_launch_post.md) |
 | X / short thread | [`growth/x_short_thread.md`](../growth/x_short_thread.md) |
 | Quote cards | [`product/social_quote_cards.html`](../product/social_quote_cards.html) |
+| Blog draft | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) |
 | Blog outline | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md) |
 | Follow-up queue | [`growth/followup_queue.md`](../growth/followup_queue.md) |
 

@@ -202,6 +202,7 @@ The current monetization path is intentionally narrow: prove citation audit valu
 | [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Pro batch-audit scope without building billing too early |
 | [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration example for Markdown/document PRs |
 | [`docs/AI_DECISION_AUDIT_SAMPLE.md`](docs/AI_DECISION_AUDIT_SAMPLE.md) | Concrete sample deliverable for audit-service conversations |
+| [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) | Publish-ready long-form launch essay |
 | [`docs/PRO_EARLY_ACCESS.md`](docs/PRO_EARLY_ACCESS.md) | First paid-signal offer and manual purchase flow |
 | [`product/pro_early_access.html`](product/pro_early_access.html) | Static early-access page for the $49 lifetime test |
 | [`growth/30_day_autopilot_execution.md`](growth/30_day_autopilot_execution.md) | Day-by-day automation table and current asset map |
