@@ -13,6 +13,7 @@
       --panel: #ffffff;
       --bg: #f6f8fb;
       --accent: #0f766e;
+      --accent-dark: #0b5f5a;
     }
     * { box-sizing: border-box; }
     body { margin: 0; font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
@@ -26,6 +27,10 @@
     .price { font-size: 34px; font-weight: 800; margin: 6px 0; }
     ul { padding-left: 20px; }
     .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border-radius: 6px; background: var(--accent); color: white; text-decoration: none; font-weight: 800; }
+    .btn:hover { background: var(--accent-dark); }
+    .btn.secondary { background: #233746; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .note { border-left: 4px solid var(--accent); padding: 12px 16px; background: #eaf6f4; border-radius: 6px; }
     .muted { color: var(--muted); }
     code { background: #eaf0f5; padding: 2px 5px; border-radius: 4px; }
   </style>
@@ -46,7 +51,10 @@
           <li>HTML + JSON reports</li>
           <li>Hugging Face Space demo</li>
         </ul>
-        <a class="btn" href="https://github.com/reguorier/ai-judge">Use Free</a>
+        <div class="actions">
+          <a class="btn" href="https://github.com/reguorier/ai-judge">Use Free</a>
+          <a class="btn secondary" href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Try Demo</a>
+        </div>
       </div>
       <div class="card">
         <h2>Pro Early Bird</h2>
@@ -58,7 +66,7 @@
           <li>GitHub Action advanced mode</li>
           <li>First 100 users</li>
         </ul>
-        <a class="btn" href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Pro%20Early%20Access&body=I%20want%20AI%20Judge%20Citation%20Audit%20Pro.%0A%0AMy%20primary%20file%20type%20is%3A%20Markdown%20%2F%20PDF%20%2F%20Docx%20%2F%20GitHub%20PRs.%0A%0AMy%20use%20case%3A%20">Request Early Access</a>
+        <a class="btn" href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Pro%20Early%20Access%20Request&body=I%20want%20AI%20Judge%20Citation%20Audit%20Pro%20early%20access.%0A%0AWorkflow%20needed%20first%3A%20Markdown%20batch%20%2F%20PDF%20%2F%20Docx%20%2F%20GitHub%20PR%20CI%20%2F%20Evidence%20Broker%20%2F%20Other%0A%0AWhat%20I%20need%20to%20audit%3A%20%0A%0AExpected%20volume%3A%20%0A%0AI%20understand%20this%20is%20citation%20audit%20software%2C%20not%20legal%2C%20medical%2C%20or%20financial%20advice.">Request Early Access</a>
       </div>
       <div class="card">
         <h2>Team</h2>
@@ -69,13 +77,14 @@
           <li>CI artifact review</li>
           <li>Priority benchmark cases</li>
         </ul>
-        <a class="btn" href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Team%20Access">Contact</a>
+        <a class="btn" href="mailto:reguorider@gmail.com?subject=AI%20Judge%20Team%20Access&body=Team%20workflow%3A%20%0A%0AFile%20types%3A%20%0A%0AApproximate%20monthly%20volume%3A%20%0A%0ACompliance%20or%20CI%20needs%3A%20">Contact</a>
       </div>
     </section>
     <section>
       <h2>What Pro is validating</h2>
       <p class="muted">The first paid signal is not a huge SaaS. It is whether people need batch audit, PDF/Docx parsing, GitHub Action enforcement, and historical Replay Ledger enough to pay.</p>
       <p>Current stop/go rule: build Pro only after one purchase, three Pro requests, or more than 20 trial runs from one launch channel.</p>
+      <p class="note">Pro preserves the raw answer, supplied evidence, and audit output as separate layers. It does not rewrite the user's document or mark missing evidence as false.</p>
     </section>
   </main>
 </body>

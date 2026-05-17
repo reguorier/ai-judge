@@ -34,6 +34,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Free audit slots | Ready | `growth/free_audit_slots.json`, `growth/free_audit_status.md` |
 | Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
 | Pro early-access page | Ready | `product/pro_early_access.html` |
+| Pro interest tracker | Ready | `growth/pro_interest_status.md`, `tools/record_pro_interest.py` |
 | GitHub Sponsors copy | Ready | `docs/GITHUB_SPONSORS.md`, `.github/FUNDING.yml` |
 | Unverifiable explainer | Ready | `docs/UNVERIFIABLE_IS_NOT_FALSE.md` |
 | Metrics dashboard | Ready | `growth/metrics_dashboard.md` |
@@ -91,7 +92,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | 22 | Send first warm outreach batch from `growth/outreach_batch_001.md` through the available mailbox/channel. | 5 replies or 1 call target. |
 | 23 | Offer 3 free AI Decision Audits for testimonial use, tracked by slot state. | `growth/free_audit_status.md` shows open/reserved/completed/testimonial slots. |
 | 24 | Add one real anonymized audit report if permission exists. | Trust proof increases. |
-| 25 | Launch Pro early-access page at $49 lifetime for first 100 users. | Payment intent is testable. |
+| 25 | Launch Pro early-access page at $49 lifetime for first 100 users, with structured workflow-intent tracking. | `growth/pro_interest_status.md` can count requests, payment intent, invoices, paid events, and license sends. |
 | 26 | Add GitHub Sponsors copy and README sponsor section. | Donation path exists. |
 | 27 | Follow up with interested users after confirmation. | Paid/feedback signal gathered. |
 | 28 | Publish "unverifiable is not false" explainer. | Core concept becomes memorable. |

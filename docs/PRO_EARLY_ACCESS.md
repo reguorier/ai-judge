@@ -30,6 +30,23 @@ Landing page:
 product/pro_early_access.html
 ```
 
+Demand tracking:
+
+```text
+growth/pro_interest_events.jsonl
+growth/pro_interest_status.md
+tools/record_pro_interest.py
+growth/pro_interest_intake.md
+```
+
+Record inbound interest:
+
+```bash
+python3 tools/record_pro_interest.py request --workflow markdown-batch --channel email --note "Asked about batch Markdown"
+python3 tools/record_pro_interest.py payment_intent --workflow pdf --channel email --note "Asked for payment instructions"
+python3 tools/record_pro_interest.py paid --workflow markdown-batch --channel manual --amount 49 --note "Manual payment received"
+```
+
 ## Stop condition
 
 Do not build custom billing infrastructure until at least one of these is true:

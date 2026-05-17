@@ -27,6 +27,7 @@ Status: active tracking template
 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
 | Outreach email | growth/outreach_status.md | batch_001_send_packet_ready_not_sent | 0 | 0 | 0 | 0 | 10 real targets researched; 4 P0 direct emails converted into mailto links and `.eml` drafts; event logger added. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
+| Pro early access | growth/pro_interest_status.md | intent_tracking_ready | 0 | 0 | 0 | 0 | Landing page CTA now collects workflow fields; Pro requests/payments can be logged from events. |
 
 ## Manual update cadence
 

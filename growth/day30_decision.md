@@ -4,12 +4,27 @@ Status: decision template
 
 ## Inputs
 
+Primary source files:
+
+- `growth/metrics_dashboard.md`
+- `growth/outreach_status.md`
+- `growth/free_audit_status.md`
+- `growth/pro_interest_status.md`
+
 | Signal | Threshold | Actual | Pass |
 |---|---:|---:|---|
 | GitHub stars | 100 | TBD | TBD |
 | Distinct users / replies / issues | 20 | TBD | TBD |
-| Pro requests | 3 | TBD | TBD |
-| Paid users or invoice requests | 1 | TBD | TBD |
+| Pro requests | 3 | `growth/pro_interest_status.md` request count | TBD |
+| Paid users or invoice requests | 1 | `paid + invoice_requested` in `growth/pro_interest_status.md` | TBD |
+
+## Pro signal interpretation
+
+- `request`: counts toward Pro requests.
+- `payment_intent`: counts as stronger than request, but not paid.
+- `invoice_requested`: counts toward the paid/invoice threshold.
+- `paid`: counts toward paid users and paid total.
+- `license_sent`: confirms fulfillment after payment.
 
 ## Decision options
 
