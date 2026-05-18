@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """Isolated browser bridge for live web-model seats.
 
 This bridge is deliberately different from desktop GUI control:
