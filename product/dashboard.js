@@ -1525,6 +1525,7 @@ function buildPublishGateChecks() {
   const hasVerdict = Boolean(v);
   const confidence = Number(v?.confidence || 0);
   const raw = v?.web_bridge?.raw_results || [];
+  const verdictUsesWeb = Boolean(raw.length || String(v?.engine || "").includes("web"));
   const supplementable = raw.filter(isSupplementableResult).length;
   const hardFailures = raw.filter(item => item && !item.ok && !isSupplementableResult(item)).length;
   const coverage = seatCoverageSummary();
@@ -1544,7 +1545,7 @@ function buildPublishGateChecks() {
     && hardFailures === 0
     && evidence.state !== "block"
     && coverage.total > 0
-    && (coverage.pct >= 60 || state.engine !== "web")
+    && (coverage.pct >= 60 || !verdictUsesWeb)
     && (traceEvents.length > 0 || hasVerdict);
   return [
     {
@@ -1566,7 +1567,7 @@ function buildPublishGateChecks() {
       text: "席位覆盖率",
       hint: "网页席位不能把部分返回伪装成全模型共识",
       meta: coverage.total ? `${coverage.ok}/${coverage.total} · ${coverage.pct}%` : "等待席位",
-      state: !hasVerdict ? "block" : coverage.total && (coverage.pct >= 60 || state.engine !== "web") ? "ok" : "block",
+      state: !hasVerdict ? "block" : coverage.total && (coverage.pct >= 60 || !verdictUsesWeb) ? "ok" : "block",
     },
     {
       key: "web_recovery",
