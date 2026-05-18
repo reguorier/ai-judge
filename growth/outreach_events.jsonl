@@ -6,3 +6,5 @@
 {"channel": "qq-mail", "event_type": "sent", "note": "Sent via Safari QQ Mail", "target_id": "O002", "timestamp": "2026-05-18T08:47:01Z"}
 {"channel": "qq-mail", "event_type": "sent", "note": "Sent via Safari QQ Mail", "target_id": "O003", "timestamp": "2026-05-18T08:47:20Z"}
 {"channel": "qq-mail", "event_type": "sent", "note": "Sent via Safari QQ Mail", "target_id": "O004", "timestamp": "2026-05-18T08:47:33Z"}
+{"channel": "qq-mail", "event_type": "reply", "note": "Replied with public-safe f22f2de update, claim-span roadmap, and invitation to run the fabricated Stanford demo through Truth Gate framing.", "target_id": "O002", "timestamp": "2026-05-18T09:36:21Z"}
+{"channel": "repo", "event_type": "benchmark_case", "note": "Private governance feedback converted into an anonymized hard benchmark case and claim-span roadmap; no private correspondence published.", "target_id": "O002", "timestamp": "2026-05-18T09:42:00Z"}

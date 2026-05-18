@@ -7,13 +7,13 @@ Source: `growth/outreach_events.jsonl`
 
 | Event | Count |
 |---|---:|
-| benchmark_case | 0 |
+| benchmark_case | 1 |
 | bounce | 0 |
 | closed | 0 |
 | paid_signal | 0 |
 | prepared | 4 |
 | pro_signal | 0 |
-| reply | 0 |
+| reply | 1 |
 | sent | 4 |
 
 ## Target Status
@@ -21,7 +21,7 @@ Source: `growth/outreach_events.jsonl`
 | ID | Target | To | Latest status | Last event | Next action |
 |---|---|---|---|---|---|
 | O001 | Inside Legal AI | `contact@insidelegalai.com` | sent | 2026-05-18T08:46:42Z | Wait 3-5 days, then follow up once. |
-| O002 | Article 11 AI | `steve@article11.ai` | sent | 2026-05-18T08:47:01Z | Wait 3-5 days, then follow up once. |
+| O002 | Article 11 AI | `steve@article11.ai` | benchmark_case | 2026-05-18T09:42:00Z | Request anonymization permission and add fixture. |
 | O003 | DeepEval / Confident AI | `dev@confident-ai.com` | sent | 2026-05-18T08:47:20Z | Wait 3-5 days, then follow up once. |
 | O004 | factlens / Javier Marin | `javier@jmarin.info` | sent | 2026-05-18T08:47:33Z | Wait 3-5 days, then follow up once. |
 
@@ -37,3 +37,5 @@ Source: `growth/outreach_events.jsonl`
 | 2026-05-18T08:47:01Z | O002 Article 11 AI | sent | qq-mail | Sent via Safari QQ Mail |
 | 2026-05-18T08:47:20Z | O003 DeepEval / Confident AI | sent | qq-mail | Sent via Safari QQ Mail |
 | 2026-05-18T08:47:33Z | O004 factlens / Javier Marin | sent | qq-mail | Sent via Safari QQ Mail |
+| 2026-05-18T09:36:21Z | O002 Article 11 AI | reply | qq-mail | Replied with public-safe f22f2de update, claim-span roadmap, and invitation to run the fabricated Stanford demo through Truth Gate framing. |
+| 2026-05-18T09:42:00Z | O002 Article 11 AI | benchmark_case | repo | Private governance feedback converted into an anonymized hard benchmark case and claim-span roadmap; no private correspondence published. |
