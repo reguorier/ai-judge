@@ -25,7 +25,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Quote-card layouts | Ready | `product/social_quote_cards.html` |
 | Blog draft | Ready | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` |
 | Blog outline | Archived planning aid | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md` |
-| Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-10.jsonl --fail-under 0.95` |
+| Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95` |
 | Batch audit spec | Ready | `docs/BATCH_AUDIT_SPEC.md` |
 | GitHub Action guide | Ready | `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |

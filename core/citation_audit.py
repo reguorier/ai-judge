@@ -148,6 +148,7 @@ def build_audit_summary(verdict: dict[str, Any]) -> dict[str, Any]:
         "item_count": citation.get("item_count", 0),
         "counts": counts,
         "unverifiable_reason_counts": citation.get("unverifiable_reason_counts") or {},
+        "evidence_provenance_counts": (grand.get("evidence_broker") or {}).get("counts", {}).get("provenance", {}),
         "trust_gate": metrics.get("trust_gate", "needs_external_evidence"),
         "groundedness_proxy": metrics.get("groundedness_proxy", 0.0),
         "gap_count": (grand.get("evidence_gap_queue") or {}).get("open_count", 0),

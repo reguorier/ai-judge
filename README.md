@@ -15,7 +15,7 @@
 </p>
 
 <h1 align="center">AI Judge v3.6.1</h1>
-<p align="center"><strong>Open-source citation audit for AI-generated answers.</strong></p>
+<p align="center"><strong>Source-available citation audit for AI-generated answers.</strong></p>
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
 
 <p align="center">
@@ -78,9 +78,11 @@ The audit returns:
 | Output | Why it matters |
 |---|---|
 | `verified` / `weakly_verified` / `irrelevant` / `unverifiable` / `contradicted` | Citation-level status instead of vague prose confidence |
+| `unverifiable` reason codes | Separates missing evidence, unfetched model candidates, fetch errors, blocked retrieval, weak matches, and no-citation cases |
 | Certification ID | Stable audit handle for reports and CI artifacts |
 | Replay Ledger | Raw answer is preserved; the judge does not rewrite model text |
 | Evidence Broker | Model-mentioned candidate sources are separated from supplied/fetched external evidence |
+| Evidence provenance | Tracks `model_candidate`, `user_supplied`, `fetched`, `independently_attested`, and `notarized` evidence |
 | HTML + JSON report | Human-readable proof plus automation-friendly output |
 
 Launch demos:
@@ -98,13 +100,17 @@ Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product pla
 
 The first public benchmark is [`citation-bench/citation-bench-100.jsonl`](citation-bench/citation-bench-100.jsonl): 100 deterministic cases covering verified, weak, irrelevant, unverifiable, and contradicted citation behavior.
 
-Hard-mode launch cases live in [`citation-bench/citation-bench-hard-10.jsonl`](citation-bench/citation-bench-hard-10.jsonl):
+Hard-mode launch cases live in [`citation-bench/citation-bench-hard-11.jsonl`](citation-bench/citation-bench-hard-11.jsonl):
 
 ```bash
 PYTHONPATH=. python tools/run_citation_bench.py \
-  --bench citation-bench/citation-bench-hard-10.jsonl \
+  --bench citation-bench/citation-bench-hard-11.jsonl \
   --fail-under 0.95
 ```
+
+The hard set includes a governance benchmark where a real, relevant source reports correlation while the generated answer overclaims causation. That is the boundary AI Judge should make visible: a source can be real without verifying the model's claim.
+
+For legal and audit workflows, the next atom is not just a citation. It is `claim-span + source`; see [`docs/CLAIM_SPAN_ROADMAP.md`](docs/CLAIM_SPAN_ROADMAP.md).
 
 Want to help without reading the whole codebase? Start here:
 

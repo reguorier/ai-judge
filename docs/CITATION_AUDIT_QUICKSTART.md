@@ -67,11 +67,11 @@ Run the hard launch set when changing citation extraction, evidence matching, or
 
 ```bash
 PYTHONPATH=. python tools/run_citation_bench.py \
-  --bench citation-bench/citation-bench-hard-10.jsonl \
+  --bench citation-bench/citation-bench-hard-11.jsonl \
   --fail-under 0.95
 ```
 
-The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, and sources that exist but do not support the claim.
+The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, sources that exist but do not support the claim, and real sources whose correlation findings are overclaimed as causation.
 
 ## Pro path
 

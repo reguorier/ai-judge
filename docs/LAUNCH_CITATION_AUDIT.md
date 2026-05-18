@@ -14,6 +14,8 @@ Paste one AI-generated answer, optionally add external evidence, and get:
 - Certification ID
 - Replay Ledger hash
 - Evidence Broker source separation
+
+The current MVP is citation-level. The legal/audit roadmap moves toward `claim-span + source`, so a real citation can be separated from an overclaimed model assertion.
 - HTML and JSON report artifacts
 
 ## Live self-serve demo
@@ -79,7 +81,7 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 ```bash
 PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95
 PYTHONPATH=. python tools/run_citation_bench.py \
-  --bench citation-bench/citation-bench-hard-10.jsonl \
+  --bench citation-bench/citation-bench-hard-11.jsonl \
   --fail-under 0.95
 ```
 

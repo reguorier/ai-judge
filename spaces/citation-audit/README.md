@@ -6,6 +6,8 @@ This HuggingFace Space is the public self-serve demo for AI Judge Citation Audit
 
 - Separates submitted AI text from external evidence.
 - Labels citations as `verified`, `weakly_verified`, `irrelevant`, `unverifiable`, or `contradicted`.
+- Shows why an item is `unverifiable`: missing evidence, unfetched model candidate, fetch error, blocked retrieval, weak match, or no citation.
+- Shows evidence provenance: model candidate, user-supplied, fetched, independently attested, or notarized.
 - Preserves Certification ID, Replay Ledger hash, and Evidence Broker summary.
 - Runs without model APIs or browser bridges.
 

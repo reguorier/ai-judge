@@ -41,6 +41,7 @@ DEFAULT_EVIDENCE = json.dumps(
                 "the named 2026 citation survey or below-1-percent claim."
             ),
             "status": "user_supplied",
+            "provenance": "user_supplied",
         }
     ],
     indent=2,
@@ -130,7 +131,7 @@ PAGE = """<!doctype html>
     button:disabled { opacity: .62; cursor: progress; }
     .summary {
       display: grid;
-      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
       gap: 10px;
       margin-bottom: 12px;
     }
@@ -196,7 +197,7 @@ PAGE = """<!doctype html>
 <body>
   <header>
     <h1>AI Judge Citation Audit</h1>
-    <p>Paste an AI-generated answer and optional external evidence. The audit keeps raw answer text, external evidence, and verification output separate.</p>
+    <p>Paste an AI-generated answer and optional external evidence. The audit keeps raw answer text, external evidence, and verification output separate, with reason codes for unverifiable sources and provenance grades for evidence.</p>
   </header>
   <main>
     <section>
@@ -216,6 +217,8 @@ PAGE = """<!doctype html>
       <div class="summary">
         <div class="metric"><span>Overall</span><strong id="overall">-</strong></div>
         <div class="metric"><span>Trust Gate</span><strong id="trustGate">-</strong></div>
+        <div class="metric"><span>Main Gap</span><strong id="reasonCode">-</strong></div>
+        <div class="metric"><span>Evidence</span><strong id="provenance">-</strong></div>
         <div class="metric"><span>Certification ID</span><strong id="certification">-</strong></div>
         <div class="metric"><span>Replay Ledger</span><strong id="ledger">-</strong></div>
       </div>
@@ -246,6 +249,16 @@ PAGE = """<!doctype html>
       tab.addEventListener("click", () => setPanel(tab.dataset.panel));
     });
 
+    function firstNonZero(counts) {
+      const entries = Object.entries(counts || {}).filter(([, value]) => Number(value) > 0);
+      return entries.length ? `${entries[0][0]}: ${entries[0][1]}` : "none";
+    }
+
+    function formatCounts(counts) {
+      const entries = Object.entries(counts || {}).filter(([, value]) => Number(value) > 0);
+      return entries.length ? entries.map(([key, value]) => `${key}: ${value}`).join(", ") : "-";
+    }
+
     async function runAudit() {
       runButton.disabled = true;
       statusEl.textContent = "Running citation audit...";
@@ -267,6 +280,8 @@ PAGE = """<!doctype html>
         document.getElementById("jsonReport").textContent = JSON.stringify(data.summary, null, 2);
         document.getElementById("overall").textContent = data.summary.overall_status || "-";
         document.getElementById("trustGate").textContent = data.summary.trust_gate || "-";
+        document.getElementById("reasonCode").textContent = firstNonZero(data.summary.unverifiable_reason_counts);
+        document.getElementById("provenance").textContent = formatCounts(data.summary.evidence_provenance_counts);
         document.getElementById("certification").textContent = data.summary.certification_id || "-";
         document.getElementById("ledger").textContent = data.summary.replay_ledger_hash || "-";
         statusEl.textContent = "Audit complete.";
@@ -327,6 +342,8 @@ def config() -> dict[str, Any]:
     return {
         "name": "AI Judge Citation Audit",
         "status_labels": ["verified", "weakly_verified", "irrelevant", "unverifiable", "contradicted"],
+        "unverifiable_reason_codes": ["no_citation", "missing_external_evidence", "candidate_not_fetched", "fetch_error", "retrieval_blocked", "weak_match"],
+        "evidence_provenance": ["model_candidate", "user_supplied", "fetched", "independently_attested", "notarized"],
         "source_isolation": ["raw_answer", "external_evidence", "verification_output"],
     }
 
