@@ -1,3 +1,16 @@
+---
+title: Ai Judge Citation Audit
+emoji: 🚀
+colorFrom: yellow
+colorTo: green
+sdk: gradio
+sdk_version: 4.44.1
+python_version: "3.11"
+app_file: app.py
+pinned: false
+short_description: source-isolated citation and claim-support audit for AI answers
+---
+
 # AI Judge Citation Audit Space
 
 This HuggingFace Space is the public self-serve demo for AI Judge Citation Audit.
