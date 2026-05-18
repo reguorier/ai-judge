@@ -58,6 +58,22 @@ The paper now uses the official ACL review style via:
 Suggested local flow:
 
 ```bash
+PYTHONPATH=. python3 tools/run_eval4sd_fastlane.py
+```
+
+The fastlane command validates the anonymous packet, runs the 100-case citation benchmark,
+runs the 13-case hard benchmark, and writes:
+
+```text
+papers/eval4sd2026/fastlane_status.json
+papers/eval4sd2026/fastlane_status.md
+```
+
+It does not submit the paper, send email, publish posts, or solve CAPTCHA.
+
+Suggested manual PDF flow:
+
+```bash
 cd papers/eval4sd2026
 tectonic main.tex
 ```

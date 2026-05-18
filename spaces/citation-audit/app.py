@@ -49,6 +49,49 @@ Source: https://stanford.example.edu/trustworthy-ai-citation-survey-2026""",
             }
         ],
     },
+    "irrelevant_source": {
+        "label": "Real source, irrelevant to the claim",
+        "expected": "irrelevant",
+        "status": "Expected: source exists but does not support the answer's topic.",
+        "question": "Does the cited page support a legal contract-review accuracy claim?",
+        "answer": (
+            "The legal review model achieved 98% clause-level accuracy. "
+            "Source: https://example.com/blog/legal-ai-office-redesign"
+        ),
+        "evidence": [
+            {
+                "url": "https://example.com/blog/legal-ai-office-redesign",
+                "title": "Office cafeteria and workspace redesign update",
+                "snippet": (
+                    "The page lists vegetarian meals, kitchen opening hours, seating changes, "
+                    "and weekend building access. It does not discuss legal AI accuracy."
+                ),
+                "provenance": "user_supplied",
+            }
+        ],
+    },
+    "contradicted_source": {
+        "label": "Real source, directly contradicted claim",
+        "expected": "contradicted",
+        "status": "Expected: external evidence explicitly refutes the answer.",
+        "question": "Does the cited release note prove hallucinated references dropped below 1%?",
+        "answer": (
+            "The model reduced hallucinated references below 1% in the release evaluation. "
+            "Source: https://example.com/release/model-citation-quality"
+        ),
+        "evidence": [
+            {
+                "url": "https://example.com/release/model-citation-quality",
+                "title": "Model citation quality release note",
+                "snippet": (
+                    "The release note reports hallucinated references remained at 7.8% "
+                    "in the evaluation set."
+                ),
+                "contradicts": True,
+                "provenance": "user_supplied",
+            }
+        ],
+    },
     "overclaimed_causation": {
         "label": "Real source, unsupported causal claim",
         "expected": "verified citation, contradicted claim support",
@@ -65,6 +108,48 @@ Source: https://stanford.example.edu/trustworthy-ai-citation-survey-2026""",
                 "snippet": (
                     "The study reports a 22% churn reduction associated with AI review usage. "
                     "The analysis is observational and does not establish causation."
+                ),
+                "provenance": "user_supplied",
+            }
+        ],
+    },
+    "overclaimed_absolute": {
+        "label": "Real source, unsupported absolute claim",
+        "expected": "verified citation, contradicted claim support",
+        "status": "Expected: real source is relevant, but the absolute claim overstates limited evidence.",
+        "question": "Does the cited pilot prove that the audit catches all hallucinated citations?",
+        "answer": (
+            "The citation audit catches all hallucinated citations with no false negatives. "
+            "Source: https://example.com/research/citation-audit-pilot"
+        ),
+        "evidence": [
+            {
+                "url": "https://example.com/research/citation-audit-pilot",
+                "title": "Citation audit pilot",
+                "snippet": (
+                    "The pilot detected 71% of seeded hallucinated citations in a small sample. "
+                    "The study was limited and reported false negatives."
+                ),
+                "provenance": "user_supplied",
+            }
+        ],
+    },
+    "overclaimed_quantified": {
+        "label": "Real source, inflated quantified effect",
+        "expected": "verified citation, contradicted claim support",
+        "status": "Expected: real source is relevant, but the percentage claim is inflated.",
+        "question": "Does the cited evaluation support a 95% hallucination reduction?",
+        "answer": (
+            "The release reduced hallucinated citations by 95%. "
+            "Source: https://example.com/research/citation-audit-release"
+        ),
+        "evidence": [
+            {
+                "url": "https://example.com/research/citation-audit-release",
+                "title": "Citation audit release evaluation",
+                "snippet": (
+                    "The evaluation observed a 12% reduction in hallucinated citations on the sampled documents. "
+                    "The authors recommend further testing before deployment."
                 ),
                 "provenance": "user_supplied",
             }

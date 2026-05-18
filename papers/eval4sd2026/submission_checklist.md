@@ -12,11 +12,18 @@
 
 ## Evidence Gate
 
-- [ ] Run `PYTHONPATH=. python tools/check_eval4sd_packet.py`.
-- [ ] Run `PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95`.
-- [ ] Run `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95`.
+- [ ] Run the compressed fastlane:
+  `PYTHONPATH=. python3 tools/run_eval4sd_fastlane.py`.
+- [ ] Run `PYTHONPATH=. python3 tools/check_eval4sd_packet.py`.
+- [ ] Run `PYTHONPATH=. python3 tools/run_citation_bench.py --fail-under 0.95`.
+- [ ] Run `PYTHONPATH=. python3 tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95`.
 - [ ] Regenerate the overclaimed-support JSON reports if the claim-support code changes.
 - [ ] Confirm the paper's benchmark numbers match the latest command output.
+
+Fastlane receipts:
+
+- `papers/eval4sd2026/fastlane_status.json`
+- `papers/eval4sd2026/fastlane_status.md`
 
 ## Submission Metadata
 

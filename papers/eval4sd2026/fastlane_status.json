@@ -1,0 +1,123 @@
+{
+  "schema": "eval4sd.fastlane.v1",
+  "generated_at": "2026-05-18T22:56:45.104386+00:00",
+  "ready_for_form_fill": true,
+  "does_not_submit": true,
+  "anonymous_packet": true,
+  "paper": "papers/eval4sd2026/main.tex",
+  "pdf": "papers/eval4sd2026/main.pdf",
+  "openreview_packet": "papers/eval4sd2026/openreview_submission.json",
+  "steps": [
+    {
+      "name": "packet",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 tools/check_eval4sd_packet.py",
+      "exit_code": 0,
+      "passed": true,
+      "parsed": {
+        "anonymous": true,
+        "benchmarks": {
+          "full": {
+            "accuracy": 1.0,
+            "failed": 0,
+            "passed": 100,
+            "total": 100
+          },
+          "hard": {
+            "accuracy": 1.0,
+            "failed": 0,
+            "passed": 13,
+            "total": 13
+          }
+        },
+        "citation_keys": [
+          "chen2026legalcitebench",
+          "eval4sd2026cfp",
+          "guan2026aex",
+          "sakai2026hallucitechecker"
+        ],
+        "openreview_packet": "papers/eval4sd2026/openreview_submission.json",
+        "paper": "papers/eval4sd2026/main.tex",
+        "pdf": "papers/eval4sd2026/main.pdf",
+        "schema": "eval4sd_packet_check.v1"
+      },
+      "output": "{\n  \"anonymous\": true,\n  \"benchmarks\": {\n    \"full\": {\n      \"accuracy\": 1.0,\n      \"failed\": 0,\n      \"passed\": 100,\n      \"total\": 100\n    },\n    \"hard\": {\n      \"accuracy\": 1.0,\n      \"failed\": 0,\n      \"passed\": 13,\n      \"total\": 13\n    }\n  },\n  \"citation_keys\": [\n    \"chen2026legalcitebench\",\n    \"eval4sd2026cfp\",\n    \"guan2026aex\",\n    \"sakai2026hallucitechecker\"\n  ],\n  \"openreview_packet\": \"papers/eval4sd2026/openreview_submission.json\",\n  \"paper\": \"papers/eval4sd2026/main.tex\",\n  \"pdf\": \"papers/eval4sd2026/main.pdf\",\n  \"schema\": \"eval4sd_packet_check.v1\"\n}"
+    },
+    {
+      "name": "bench-100",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 tools/run_citation_bench.py --fail-under 0.95",
+      "exit_code": 0,
+      "passed": true,
+      "parsed": {
+        "schema": "citation_bench.result.v1",
+        "benchmark": "citation-bench/citation-bench-100.jsonl",
+        "total": 100,
+        "passed": 100,
+        "failed": 0,
+        "accuracy": 1.0,
+        "by_category": {
+          "verified": {
+            "passed": 20,
+            "total": 20
+          },
+          "weakly_verified": {
+            "passed": 20,
+            "total": 20
+          },
+          "irrelevant": {
+            "passed": 20,
+            "total": 20
+          },
+          "unverifiable": {
+            "passed": 20,
+            "total": 20
+          },
+          "contradicted": {
+            "passed": 20,
+            "total": 20
+          }
+        },
+        "failures": []
+      },
+      "output": "{\n  \"schema\": \"citation_bench.result.v1\",\n  \"benchmark\": \"citation-bench/citation-bench-100.jsonl\",\n  \"total\": 100,\n  \"passed\": 100,\n  \"failed\": 0,\n  \"accuracy\": 1.0,\n  \"by_category\": {\n    \"verified\": {\n      \"passed\": 20,\n      \"total\": 20\n    },\n    \"weakly_verified\": {\n      \"passed\": 20,\n      \"total\": 20\n    },\n    \"irrelevant\": {\n      \"passed\": 20,\n      \"total\": 20\n    },\n    \"unverifiable\": {\n      \"passed\": 20,\n      \"total\": 20\n    },\n    \"contradicted\": {\n      \"passed\": 20,\n      \"total\": 20\n    }\n  },\n  \"failures\": []\n}"
+    },
+    {
+      "name": "hard-13",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95",
+      "exit_code": 0,
+      "passed": true,
+      "parsed": {
+        "schema": "citation_bench.result.v1",
+        "benchmark": "citation-bench/citation-bench-hard-11.jsonl",
+        "total": 13,
+        "passed": 13,
+        "failed": 0,
+        "accuracy": 1.0,
+        "by_category": {
+          "contradicted": {
+            "passed": 2,
+            "total": 2
+          },
+          "irrelevant": {
+            "passed": 2,
+            "total": 2
+          },
+          "unverifiable": {
+            "passed": 2,
+            "total": 2
+          },
+          "weakly_verified": {
+            "passed": 2,
+            "total": 2
+          },
+          "verified": {
+            "passed": 5,
+            "total": 5
+          }
+        },
+        "failures": []
+      },
+      "output": "{\n  \"schema\": \"citation_bench.result.v1\",\n  \"benchmark\": \"citation-bench/citation-bench-hard-11.jsonl\",\n  \"total\": 13,\n  \"passed\": 13,\n  \"failed\": 0,\n  \"accuracy\": 1.0,\n  \"by_category\": {\n    \"contradicted\": {\n      \"passed\": 2,\n      \"total\": 2\n    },\n    \"irrelevant\": {\n      \"passed\": 2,\n      \"total\": 2\n    },\n    \"unverifiable\": {\n      \"passed\": 2,\n      \"total\": 2\n    },\n    \"weakly_verified\": {\n      \"passed\": 2,\n      \"total\": 2\n    },\n    \"verified\": {\n      \"passed\": 5,\n      \"total\": 5\n    }\n  },\n  \"failures\": []\n}"
+    }
+  ],
+  "next_manual_gate": "OpenReview account access or organizer backup route; final submission still requires action-time confirmation."
+}

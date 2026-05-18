@@ -37,15 +37,19 @@ This HuggingFace Space is the public self-serve demo for AI Judge Citation Audit
 From the repository root:
 
 ```bash
-python tools/deploy_hf_space.py
-HF_TOKEN=... python tools/deploy_hf_space.py --push
+python3 tools/deploy_hf_space.py
+HF_TOKEN=... python3 tools/deploy_hf_space.py --push
 ```
 
 The helper copies `app.py`, `README.md`, and `requirements.txt` into a local Space worktree and validates that the Space uses the current `ai-judge@main` claim-support logic.
 
 ## Demo prompts
 
-The Space includes two built-in examples:
+The Space includes five built-in examples:
 
 - Fabricated Stanford-style citation: expected `unverifiable`, not false.
+- Real source, irrelevant to the legal accuracy claim: expected `irrelevant`.
+- Real source, directly contradicted claim: expected `contradicted`.
 - Real source, unsupported causal claim: expected citation `verified`, source `relevant`, claim support `contradicted`.
+- Real source, unsupported absolute claim: expected citation `verified`, source `relevant`, claim support `contradicted`.
+- Real source, inflated quantified effect: expected citation `verified`, source `relevant`, claim support `contradicted`.
