@@ -256,6 +256,9 @@ No. The Replay Ledger preserves the raw answer. The judge adds verification, has
 **Does a model-mentioned source count as evidence?**
 No. A model can hallucinate a source and then cite it confidently. Candidate sources must be checked against supplied or fetched external evidence.
 
+**Does a real source prove the model's conclusion?**
+No. AI Judge now separates citation matching from claim support. In the overclaimed-causation demo, the citation is `verified` and the source is `relevant`, but the exact claim is still `contradicted` because the source reports association while the answer states causation.
+
 **Why start with citation audit instead of full Grand Judge?**
 Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
 

@@ -17,7 +17,7 @@ Status: active tracking template
 |---|---|---|---:|---:|---:|---:|---|
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live | TBD | TBD | TBD | TBD | Default demo verified. |
 | GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live | TBD | 0 | TBD | TBD | Issues #2-#5 created for benchmark, labels, batch audit, and demos. |
-| Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Five demos now cover unverifiable, contradicted, irrelevant, and weak evidence stories. |
+| Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
 | X / short-form | https://x.com/liuweidi2/status/2055973517779521750 | live | TBD | TBD | TBD | TBD | First short-form post published. |
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |
