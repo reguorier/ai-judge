@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from core.blind_cross_validation import build_blind_cross_validation_packet
+from core.claim_support import audit_claim_support
 from core.evidence_broker import build_evidence_broker_report
 from core.evidence_gap_filler import suggest_evidence_gaps
 from core.evidence_gap_queue import build_evidence_gap_queue
@@ -83,6 +84,12 @@ def run_citation_audit(
         generated_at=created_at,
     )
     grand_report["evidence_broker"] = broker
+    grand_report["claim_support_audit"] = audit_claim_support(
+        answer_text=answer,
+        citation_items=_citation_items(grand_report),
+        external_evidence=broker["items_for_validation"],
+        generated_at=created_at,
+    )
     grand_report["evidence_gap_suggestions"] = suggest_evidence_gaps(grand_report)
     grand_report["evidence_quality_metrics"] = compute_evidence_quality_metrics(grand_report)
     grand_report["evidence_gap_queue"] = build_evidence_gap_queue(grand_report, generated_at=created_at)
@@ -140,13 +147,17 @@ def build_audit_summary(verdict: dict[str, Any]) -> dict[str, Any]:
     citation = grand.get("citation_verification") or {}
     counts = citation.get("counts") or {}
     metrics = grand.get("evidence_quality_metrics") or {}
+    claim_support = grand.get("claim_support_audit") or {}
     return {
         "overall_status": citation.get("overall_status", "unverifiable"),
+        "overall_claim_support": claim_support.get("overall_claim_support", "unknown"),
         "certification_id": grand.get("certification_id"),
         "certification_hash": grand.get("certification_hash"),
         "replay_ledger_hash": grand.get("replay_ledger_hash"),
         "item_count": citation.get("item_count", 0),
         "counts": counts,
+        "claim_support_counts": claim_support.get("claim_support_counts") or {},
+        "claim_support_failure_counts": claim_support.get("support_failure_counts") or {},
         "unverifiable_reason_counts": citation.get("unverifiable_reason_counts") or {},
         "evidence_provenance_counts": (grand.get("evidence_broker") or {}).get("counts", {}).get("provenance", {}),
         "trust_gate": metrics.get("trust_gate", "needs_external_evidence"),
@@ -194,6 +205,24 @@ def render_audit_markdown(verdict: dict[str, Any]) -> str:
                     reason=_md(_reason_with_code(item)),
                 )
             )
+    claim_support = grand.get("claim_support_audit") or {}
+    lines.extend([
+        "",
+        "## Claim Support",
+        "",
+        "| id | claim support | source relevance | failure | claim span |",
+        "|---|---|---|---|---|",
+    ])
+    for item in claim_support.get("items") or []:
+        lines.append(
+            "| {id} | `{support}` | `{relevance}` | `{failure}` | {claim} |".format(
+                id=_md(item.get("claim_id")),
+                support=_md(item.get("claim_support")),
+                relevance=_md(item.get("source_relevance")),
+                failure=_md(item.get("support_failure_code")),
+                claim=_md(item.get("claim_span")),
+            )
+        )
     lines.extend([
         "",
         "## Source Isolation",
@@ -208,6 +237,7 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     summary = verdict.get("summary") or build_audit_summary(verdict)
     grand = verdict.get("grand_judge") or {}
     broker = grand.get("evidence_broker") or {}
+    claim_support = grand.get("claim_support_audit") or {}
     citation_rows = []
     for entry in grand.get("replay_ledger") or []:
         report = entry.get("citation_verification") or {}
@@ -222,6 +252,18 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
                 f"<td>{_e(item.get('relevance_score'))}</td>"
                 "</tr>"
             )
+    claim_support_rows = []
+    for item in claim_support.get("items") or []:
+        claim_support_rows.append(
+            "<tr>"
+            f"<td>{_e(item.get('claim_id'))}</td>"
+            f"<td>{_e(item.get('claim_span'))}</td>"
+            f"<td><span class=\"pill status-{_slug(item.get('source_relevance'))}\">{_e(item.get('source_relevance'))}</span></td>"
+            f"<td><span class=\"pill status-{_slug(item.get('claim_support'))}\">{_e(item.get('claim_support'))}</span></td>"
+            f"<td>{_e(item.get('support_failure_code'))}</td>"
+            f"<td>{_e(item.get('support_reason'))}</td>"
+            "</tr>"
+        )
     evidence_rows = []
     for item in broker.get("items") or []:
         evidence_rows.append(
@@ -269,9 +311,12 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     pre {{ white-space:pre-wrap; background:#0f1b24; color:#e9f1f6; border-radius:8px; padding:16px; overflow:auto; }}
     .pill {{ display:inline-flex; align-items:center; min-height:24px; padding:2px 8px; border-radius:999px; font-weight:700; font-size:12px; background:#e8eef3; }}
     .status-verified {{ color:var(--good); background:#dcfae6; }}
+    .status-supported,.status-relevant {{ color:var(--good); background:#dcfae6; }}
     .status-weakly-verified {{ color:var(--warn); background:#fff3d6; }}
+    .status-partially-supported,.status-weakly-relevant {{ color:var(--warn); background:#fff3d6; }}
     .status-unverifiable {{ color:#344054; background:#edf2f7; }}
-    .status-irrelevant,.status-contradicted {{ color:var(--bad); background:#fee4e2; }}
+    .status-unknown {{ color:#344054; background:#edf2f7; }}
+    .status-irrelevant,.status-unsupported,.status-contradicted {{ color:var(--bad); background:#fee4e2; }}
     .note {{ color:var(--muted); }}
   </style>
 </head>
@@ -281,6 +326,7 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     <div class="sub">AI Judge Citation Audit checks AI-generated claims against isolated external evidence. Model-mentioned candidate sources do not verify themselves.</div>
     <div class="grid">
       <div class="card"><div class="label">Overall</div><div class="value">{_e(summary.get('overall_status'))}</div></div>
+      <div class="card"><div class="label">Claim Support</div><div class="value">{_e(summary.get('overall_claim_support'))}</div></div>
       <div class="card"><div class="label">Trust Gate</div><div class="value">{_e(summary.get('trust_gate'))}</div></div>
       <div class="card"><div class="label">Certification</div><div class="value">{_e(summary.get('certification_id'))}</div></div>
       <div class="card"><div class="label">Open Gaps</div><div class="value">{_e(summary.get('gap_count'))}</div></div>
@@ -294,6 +340,9 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     <h2>Citation Verification</h2>
     <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody>{''.join(citation_rows) or '<tr><td colspan="6">No citation items.</td></tr>'}</tbody></table>
     <p class="note">{_e(summary.get('unverifiable_explanation'))}</p>
+    <h2>Claim Support</h2>
+    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Failure</th><th>Reason</th></tr></thead><tbody>{''.join(claim_support_rows) or '<tr><td colspan="6">No claim-support items.</td></tr>'}</tbody></table>
+    <p class="note">A verified citation can still fail claim support when the source is relevant but does not prove the exact generated claim.</p>
     <h2>Evidence Broker</h2>
     <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody>{''.join(evidence_rows) or '<tr><td colspan="5">No evidence items.</td></tr>'}</tbody></table>
     <h2>Evidence Gap Queue</h2>
@@ -321,6 +370,16 @@ def write_audit_outputs(verdict: dict[str, Any], output: str | Path, *, fmt: str
     else:
         output_path.write_text(render_audit_html(verdict), encoding="utf-8")
     return output_path
+
+
+def _citation_items(grand_report: dict[str, Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for entry in grand_report.get("replay_ledger") or []:
+        report = entry.get("citation_verification") or {}
+        items.extend(report.get("items") or [])
+        mentor_report = entry.get("mentor_citation_verification") or {}
+        items.extend(mentor_report.get("items") or [])
+    return items
 
 
 def _parse_markdown_audit(text: str) -> dict[str, Any]:

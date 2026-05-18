@@ -1,0 +1,22 @@
+To: Yusuke Sakai <sakai.yusuke.sr9@is.naist.jp>
+Subject: Taxonomy exchange: citation hallucination vs claim-support failure
+
+Hi HalluCiteChecker team,
+
+I saw your HalluCiteChecker work on detecting and verifying hallucinated citations in AI-generated scientific writing. I am building a complementary source-isolated audit tool, AI Judge Citation Audit, that focuses on AI-generated answers and reports.
+
+The overlap is citation reliability. The distinction I am trying to make explicit is:
+
+1. citation_status: does the source exist and match isolated evidence?
+2. source_relevance: is the source related to the generated claim?
+3. claim_support: does the source support the exact claim span?
+
+The hard case is a real and relevant source that reports association while the model states causation. AI Judge now emits citation_status=verified, source_relevance=relevant, but claim_support=contradicted with support_failure_code=overclaimed_causation.
+
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+Spec: https://github.com/reguorier/ai-judge/blob/main/docs/CLAIM_SUPPORT_AUDIT_SPEC.md
+
+Would you be open to comparing taxonomies or exchanging one hard benchmark case? I am especially interested in cases that pass bibliographic checks but fail exact claim support.
+
+Best,
+Reguorier

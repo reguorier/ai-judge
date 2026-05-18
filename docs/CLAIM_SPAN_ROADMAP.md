@@ -33,13 +33,32 @@ A single citation verdict cannot represent that cleanly. A real and relevant sou
 
 The source can be verified while the claim support is contradicted. AI Judge should keep those two facts separate.
 
+## Implemented MVP
+
+AI Judge now emits a separate `claim_support_audit` block after citation verification. The first deterministic rule covers the highest-value hard case:
+
+```text
+real/relevant source + association-only evidence + causal model claim
+= claim_support: contradicted
+= support_failure_code: overclaimed_causation
+```
+
+This preserves both truths at once:
+
+- citation status can stay `verified`,
+- source relevance can stay `relevant`,
+- claim support can still be `contradicted`.
+
+The judge therefore does not turn "this source exists" into "this conclusion is proven."
+
 ## Planned stages
 
 1. Keep citation-level verification as the stable public MVP.
-2. Add claim-span extraction for source-heavy answers.
-3. Score each claim-span against each cited source.
-4. Show a two-layer report: citation health and claim support.
-5. Expose the claim-span report to batch audit, CI, and governance-ledger workflows.
+2. Add deterministic claim-span/source support checks for high-risk linguistic patterns.
+3. Add richer claim-span extraction for source-heavy answers.
+4. Score each claim-span against each cited source.
+5. Show a two-layer report: citation health and claim support.
+6. Expose the claim-span report to batch audit, CI, and governance-ledger workflows.
 
 ## Non-goal
 

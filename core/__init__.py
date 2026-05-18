@@ -27,6 +27,7 @@ V3.3 / COUNCIL-004 Modules (MiroFish Augmentation Phase 1):
 
 COUNCIL-006 Grand Judge MVP:
   - citation_validator: citation-level verified / weakly_verified / irrelevant / unverifiable / contradicted
+  - claim_support: claim-span/source support audit, separate from citation/source matching
   - grand_judge: citation verification orchestration + Replay Ledger, without rewriting raw answers
   - evidence_gap_filler: evidence gap suggestions only, no body rewrite
   - evidence_broker / blind_cross_validation / human_review / eval_dataset: Evidence OS layer

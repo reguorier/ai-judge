@@ -93,8 +93,13 @@ Outputs:
 - Certification ID
 - Replay Ledger hash
 - Citation status counts
+- Claim-support status counts
+- Source-relevance counts
+- Support-failure reason codes
 - Unverifiable reason counts
 - Evidence provenance counts
+
+The current implementation includes a deterministic claim-support audit block for a narrow but important failure family: a real and relevant source that reports association while the model states causation. In that case, AI Judge can emit `citation_status=verified`, `source_relevance=relevant`, and `claim_support=contradicted` with `support_failure_code=overclaimed_causation`.
 
 The public demo is available at:
 
@@ -165,7 +170,9 @@ Example:
   "claim_span": "The AI review program caused a 22% reduction in churn.",
   "source_id": "EVID-001",
   "citation_status": "verified",
+  "source_relevance": "relevant",
   "claim_support": "contradicted",
+  "support_failure_code": "overclaimed_causation",
   "support_reason": "The source reports association and explicitly disclaims causation."
 }
 ```

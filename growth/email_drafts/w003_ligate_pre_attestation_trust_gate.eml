@@ -1,0 +1,25 @@
+To: hello@ligate.io
+Subject: AI citation audit hash as a pre-attestation trust gate?
+
+Hi Ligate team,
+
+I am building AI Judge Citation Audit, a source-available tool that audits AI-generated citations and claim support before an answer is reused in reports, memos, or governance logs.
+
+My read of Ligate/Themisra/Iris is that your stack answers: can this prompt, output, or agent action be witnessed and replayed? AI Judge answers a prior question: should this cited answer enter a witness chain as supported, unverifiable, or contradicted?
+
+The latest AI Judge report emits:
+
+- Certification ID
+- Replay Ledger hash
+- citation status counts
+- evidence provenance counts
+- claim-support hash
+- support failure codes such as overclaimed_causation
+
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+Spec: https://github.com/reguorier/ai-judge/blob/main/docs/CLAIM_SUPPORT_AUDIT_SPEC.md
+
+Would a minimal integration make sense where AI Judge produces a pre-attestation payload for themisra.proof-of-prompt/v1 or an adjacent receipt schema?
+
+Best,
+Reguorier

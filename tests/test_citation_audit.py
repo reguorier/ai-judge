@@ -50,6 +50,43 @@ def test_citation_audit_does_not_self_verify_candidate_source():
     assert verdict["grand_judge"]["evidence_broker"]["counts"]["candidate_source"] == 1
 
 
+def test_claim_support_catches_real_source_overclaimed_causation():
+    verdict = run_citation_audit(
+        title="Correlation is not causation",
+        question="Did the AI review program cause lower churn?",
+        answer=(
+            "The AI review program caused a 22% reduction in churn. "
+            "Source: https://example.com/research/ai-review-churn-2026"
+        ),
+        external_evidence=[
+            {
+                "url": "https://example.com/research/ai-review-churn-2026",
+                "title": "AI review program and 22% churn reduction study",
+                "snippet": (
+                    "The study reports a 22% churn reduction associated with the AI review program. "
+                    "The analysis is observational and does not establish causation."
+                ),
+            }
+        ],
+        run_id="audit-test-claim-support-1",
+        generated_at="2026-05-18T00:00:00+00:00",
+    )
+
+    summary = verdict["summary"]
+    citation_item = verdict["grand_judge"]["replay_ledger"][0]["citation_verification"]["items"][0]
+    claim_item = verdict["grand_judge"]["claim_support_audit"]["items"][0]
+
+    assert citation_item["status"] == "verified"
+    assert summary["overall_status"] == "verified"
+    assert claim_item["source_relevance"] == "relevant"
+    assert claim_item["claim_support"] == "contradicted"
+    assert claim_item["support_failure_code"] == "overclaimed_causation"
+    assert summary["overall_claim_support"] == "contradicted"
+    assert summary["claim_support_counts"]["contradicted"] == 1
+    assert summary["claim_support_failure_counts"]["overclaimed_causation"] == 1
+    assert "Claim Support" in render_audit_html(verdict)
+
+
 def test_markdown_loader_and_renderers(tmp_path):
     path = tmp_path / "audit.md"
     path.write_text(

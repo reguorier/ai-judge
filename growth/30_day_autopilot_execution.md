@@ -41,6 +41,8 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Day 30 decision memo | Ready | `growth/day30_decision.md` |
 | Follow-up queue | Ready for confirmation | `growth/followup_queue.md` |
 | Resonance Wave 002 | Prepared, not sent | `growth/resonance_wave_002.md`, `docs/PAPER_SEED_SOURCE_ISOLATED_CITATION_AUDIT.md`, `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` |
+| Claim-support audit | Implemented MVP | `core/claim_support.py`, `docs/CLAIM_SUPPORT_AUDIT_SPEC.md` |
+| Resonance Wave 003 | Prepared, not sent | `growth/resonance_wave_003_eval_taxonomy_infra.md` |
 
 ## Rules
 
@@ -132,3 +134,10 @@ External launch follow-up status:
 - Direct outreach Batch 001 is prepared with real targets and tailored drafts: `growth/outreach_batch_001.md`
 
 GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.
+
+Research-first next wave:
+
+- Eval4SD short/position paper path is the priority venue.
+- HalluCiteChecker and LegalCiteBench are the priority taxonomy-exchange targets.
+- Aequis and Ligate are the priority infrastructure/commercial-collaboration targets.
+- The technical wedge is claim-span/source audit: citation verification, source relevance, and exact claim support are separated so "real source" does not become "proven conclusion."
