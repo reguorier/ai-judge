@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PAPER_DIR = ROOT / "papers" / "eval4sd2026"
 MAIN_TEX = PAPER_DIR / "main.tex"
 BIB_FILE = PAPER_DIR / "references.bib"
+ACL_STYLE = PAPER_DIR / "acl.sty"
+ACL_BST = PAPER_DIR / "acl_natbib.bst"
 
 FORBIDDEN_REVIEW_TERMS = (
     "reguorier",
@@ -67,6 +69,8 @@ def latex_texttt(value: str) -> str:
 def main() -> int:
     tex = MAIN_TEX.read_text(encoding="utf-8")
     bib = BIB_FILE.read_text(encoding="utf-8")
+    acl_style = ACL_STYLE.read_text(encoding="utf-8")
+    acl_bst = ACL_BST.read_text(encoding="utf-8")
     errors: list[str] = []
 
     lowered = tex.lower()
@@ -77,6 +81,13 @@ def main() -> int:
     missing_keys = citation_keys(tex) - bib_keys(bib)
     if missing_keys:
         errors.append(f"Missing bibliography keys: {', '.join(sorted(missing_keys))}")
+
+    require_contains(errors, tex, "\\usepackage[review]{acl}", "ACL review package")
+    if "\\usepackage[margin=1in]{geometry}" in tex:
+        errors.append("main.tex still overrides ACL geometry.")
+    require_contains(errors, acl_style, "https://github.com/acl-org/acl-style-files/", "official ACL style source marker")
+    require_contains(errors, acl_style, "\\RequirePackage{natbib}", "ACL natbib loading")
+    require_contains(errors, acl_bst, "ENTRY", "ACL bibliography style body")
 
     full = run_bench(["tools/run_citation_bench.py", "--fail-under", "0.95"])
     hard = run_bench(
@@ -92,13 +103,13 @@ def main() -> int:
     require_contains(
         errors,
         tex,
-        f"\\texttt{{citation-bench-100}} & {full['total']} & {full['passed']} & {full['failed']} & {full['accuracy']:.2f}",
+        f"\\texttt{{bench-100}} & {full['total']} & {full['passed']} & {full['failed']} & {full['accuracy']:.2f}",
         "full benchmark table row",
     )
     require_contains(
         errors,
         tex,
-        f"\\texttt{{citation-bench-hard-11}} & {hard['total']} & {hard['passed']} & {hard['failed']} & {hard['accuracy']:.2f}",
+        f"\\texttt{{hard-11}} & {hard['total']} & {hard['passed']} & {hard['failed']} & {hard['accuracy']:.2f}",
         "hard benchmark table row",
     )
 

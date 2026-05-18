@@ -2,7 +2,8 @@
 
 ## Before PDF Build
 
-- [ ] Replace the generic `article` class with the official ACL template files.
+- [x] Replace the generic formatting with the official ACL template files.
+- [x] Build and inspect the anonymous PDF snapshot.
 - [ ] Keep author line anonymous for review.
 - [ ] Remove direct product, GitHub, Hugging Face, and private-contact identifiers from the submitted PDF.
 - [ ] Confirm whether the submission is archival or non-archival.

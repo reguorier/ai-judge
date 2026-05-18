@@ -17,7 +17,7 @@ papers/eval4sd2026/main.tex
 
 Required before submission:
 
-- Replace the generic LaTeX class with the official ACL template files.
+- Keep official ACL review template files in `papers/eval4sd2026/`.
 - Build and inspect the anonymous PDF.
 - Refresh benchmark table for citation-bench-100.
 - Refresh hard benchmark table for citation-bench-hard-11.

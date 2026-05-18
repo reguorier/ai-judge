@@ -22,6 +22,9 @@ Organizer fit reply on 2026-05-18:
 | File | Purpose |
 |---|---|
 | `main.tex` | Anonymous short-paper source. |
+| `main.pdf` | Current anonymous ACL review PDF build. |
+| `acl.sty` | Official ACL style file from `acl-org/acl-style-files`. |
+| `acl_natbib.bst` | Official ACL bibliography style from `acl-org/acl-style-files`. |
 | `references.bib` | Initial verified bibliography from arXiv, Eval4SD, and related public sources. |
 | `submission_checklist.md` | Final pre-submit gate. |
 
@@ -44,13 +47,17 @@ support_failure_code = overclaimed_causation
 
 ## Build Notes
 
-Use the official ACL template before final submission. This directory intentionally keeps the current draft anonymous and self-contained, but does not vendor `acl.sty`.
+The paper now uses the official ACL review style via:
 
-Suggested local flow once the ACL template is added:
+```latex
+\usepackage[review]{acl}
+```
+
+Suggested local flow:
 
 ```bash
 cd papers/eval4sd2026
-latexmk -pdf main.tex
+tectonic main.tex
 ```
 
 Before any PDF build or OpenReview upload, run:
@@ -58,5 +65,11 @@ Before any PDF build or OpenReview upload, run:
 ```bash
 python tools/check_eval4sd_packet.py
 ```
+
+Current build snapshot:
+
+- Built with `tectonic main.tex` on 2026-05-18.
+- PDF length: 3 pages.
+- Extracted PDF text check found no `reguorier`, `github.com`, `huggingface`, `AI Judge`, or email-address identity leaks.
 
 Do not include GitHub, Hugging Face, author names, or private correspondence in the double-blind PDF. Public artifact links can be restored for a non-archival version, camera-ready, or appendix if the review policy allows it.

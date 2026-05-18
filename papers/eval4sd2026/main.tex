@@ -1,10 +1,9 @@
 \documentclass[11pt]{article}
 
-\usepackage[margin=1in]{geometry}
+\usepackage[review]{acl}
 \usepackage{booktabs}
 \usepackage{enumitem}
-\usepackage{hyperref}
-\usepackage{url}
+\usepackage{tabularx}
 
 \title{Source-Isolated Citation and Claim-Support Audit for LLM Outputs in Specialized Domains}
 \author{Anonymous Authors}
@@ -46,7 +45,7 @@ The protocol keeps three layers separate:
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{ll}
+\begin{tabularx}{\columnwidth}{lX}
 \toprule
 Layer & Description \\
 \midrule
@@ -54,7 +53,7 @@ Raw answer & Original model text, preserved and not rewritten. \\
 External evidence & User-supplied, fetched, attested, or notarized evidence. \\
 Audit verdict & Labels, reason codes, provenance, hashes, and counts. \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \caption{Source-isolation layers.}
 \label{tab:layers}
 \end{table}
@@ -74,7 +73,7 @@ The citation-level labels are intentionally simple:
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{ll}
+\begin{tabularx}{\columnwidth}{lX}
 \toprule
 Label & Meaning \\
 \midrule
@@ -84,7 +83,7 @@ Label & Meaning \\
 \texttt{unverifiable} & Isolated evidence is insufficient; not false by default. \\
 \texttt{contradicted} & External evidence explicitly refutes the citation or claim. \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \caption{Citation audit labels.}
 \label{tab:labels}
 \end{table}
@@ -105,7 +104,7 @@ We implement a deterministic citation-audit path that requires no model API call
   \item a replay-ledger hash.
 \end{itemize}
 
-The current claim-support block covers a narrow but important failure family: a real and relevant source that reports association while the model states causation. In that case, the system emits \texttt{citation\_status=verified}, \texttt{source\_relevance=relevant}, and \texttt{claim\_support=contradicted}, with \texttt{support\_failure\_code=overclaimed\_causation}.
+The current claim-support block covers a narrow but important failure family: a real and relevant source that reports association while the model states causation. In that case, the system reports verified citation status, relevant source status, contradicted claim support, and the failure code \texttt{overclaimed\_causation}.
 
 \section{Evaluation}
 
@@ -114,14 +113,14 @@ We use two deterministic benchmarks. The default benchmark contains 100 cases ba
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabularx}{\columnwidth}{Xrrrr}
 \toprule
 Benchmark & Cases & Passed & Failed & Accuracy \\
 \midrule
-\texttt{citation-bench-100} & 100 & 100 & 0 & 1.00 \\
-\texttt{citation-bench-hard-11} & 11 & 11 & 0 & 1.00 \\
+\texttt{bench-100} & 100 & 100 & 0 & 1.00 \\
+\texttt{hard-11} & 11 & 11 & 0 & 1.00 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \caption{Deterministic benchmark snapshot.}
 \label{tab:benchmarks}
 \end{table}
@@ -151,13 +150,16 @@ The most important row is not a fabricated citation. It is a real-source / unsup
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{llll}
+\begin{tabularx}{\columnwidth}{lX}
 \toprule
-Citation & Relevance & Claim support & Failure code \\
+Field & Value \\
 \midrule
-\texttt{verified} & \texttt{relevant} & \texttt{contradicted} & \texttt{overclaimed\_causation} \\
+Citation status & \texttt{verified} \\
+Source relevance & \texttt{relevant} \\
+Claim support & \texttt{contradicted} \\
+Failure code & \texttt{overclaimed\_causation} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \caption{Real source, unsupported conclusion.}
 \label{tab:claimsupport}
 \end{table}
@@ -178,7 +180,6 @@ The present implementation is deterministic and intentionally narrow. It can mis
 
 Specialized-domain LLM workflows need citation audits that do not let generated source claims verify themselves. Source-isolated citation audit separates raw answer, external evidence, and audit verdict; distinguishes \texttt{unverifiable} from false; and records whether a real source actually supports the generated claim. The immediate product boundary is citation-level verification. The research boundary is claim-span/source support.
 
-\bibliographystyle{plain}
 \bibliography{references}
 
 \end{document}
