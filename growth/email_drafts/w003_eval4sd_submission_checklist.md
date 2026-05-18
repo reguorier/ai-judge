@@ -15,10 +15,17 @@ Current paper draft:
 papers/eval4sd2026/main.tex
 ```
 
+OpenReview form packet:
+
+```text
+papers/eval4sd2026/openreview_submission.md
+```
+
 Required before submission:
 
 - Keep official ACL review template files in `papers/eval4sd2026/`.
 - Build and inspect the anonymous PDF.
+- Use `papers/eval4sd2026/openreview_submission.md` for OpenReview form fields.
 - Refresh benchmark table for citation-bench-100.
 - Refresh hard benchmark table for citation-bench-hard-11.
 - Keep the claim-support audit hard case:

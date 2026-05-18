@@ -4,9 +4,10 @@
 
 - [x] Replace the generic formatting with the official ACL template files.
 - [x] Build and inspect the anonymous PDF snapshot.
-- [ ] Keep author line anonymous for review.
-- [ ] Remove direct product, GitHub, Hugging Face, and private-contact identifiers from the submitted PDF.
-- [ ] Confirm whether the submission is archival or non-archival.
+- [x] Keep author line anonymous for review.
+- [x] Remove direct product, GitHub, Hugging Face, and private-contact identifiers from the submitted PDF snapshot.
+- [x] Prepare OpenReview title, abstract, keywords, subject areas, and PDF path.
+- [x] Choose archival route unless the OpenReview form requires a different option.
 - [ ] Add any accepted taxonomy feedback from LegalCiteBench, RAGChecker, or HalluCiteChecker only if it can be cited publicly.
 
 ## Evidence Gate
@@ -25,6 +26,9 @@
 - Deadline: 2026-07-03 23:59 CEST
 - Venue: Eval4SD 2026
 - Route: OpenReview
+- Group: https://openreview.net/group?id=GSCL.org/KONVENS/2026/Workshop/Eval4SD
+- Prepared form packet: `papers/eval4sd2026/openreview_submission.md`
+- Prepared JSON packet: `papers/eval4sd2026/openreview_submission.json`
 
 ## Do Not Submit If
 

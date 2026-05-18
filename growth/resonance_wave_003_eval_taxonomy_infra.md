@@ -25,7 +25,7 @@ AI Judge's next public wedge is the `claim-span + source` audit layer: citation 
 
 | ID | Priority | Target | Route | Asset | Status |
 |---|---:|---|---|---|---|
-| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `papers/eval4sd2026/main.pdf` | organizer_fit_confirmed_pdf_built |
+| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `papers/eval4sd2026/openreview_submission.md` | openreview_packet_ready |
 | W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | sent_private_log |
 | W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_posted |
 | W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_route_unverified |
@@ -202,7 +202,7 @@ Reguorier
 
 ## Next Automatable Step
 
-Continue by doing a visual PDF pass and refreshing benchmark numbers immediately before submission. Eval4SD fit is confirmed by organizer reply: short/position paper is a good fit, and a demo paper with limited evaluation would also work; no further pre-fit check is needed. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, monitor the public GitHub Issue and only reply with technical taxonomy details. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
+Continue by opening the Eval4SD OpenReview group, logging in if needed, uploading `papers/eval4sd2026/main.pdf`, and using `papers/eval4sd2026/openreview_submission.md` for form fields. Eval4SD fit is confirmed by organizer reply: short/position paper is a good fit, and a demo paper with limited evaluation would also work; no further pre-fit check is needed. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, monitor the public GitHub Issue and only reply with technical taxonomy details. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
 
 Detailed third-party outreach metadata is intentionally kept out of public GitHub. The private local execution ledger lives under `.ai-judge/growth/`.
 
@@ -224,3 +224,5 @@ Detailed third-party outreach metadata is intentionally kept out of public GitHu
 - Eval4SD bibliography: `papers/eval4sd2026/references.bib`
 - Eval4SD checklist: `papers/eval4sd2026/submission_checklist.md`
 - Eval4SD pre-submit check: `tools/check_eval4sd_packet.py`
+- Eval4SD OpenReview form packet: `papers/eval4sd2026/openreview_submission.md`
+- Eval4SD OpenReview JSON packet: `papers/eval4sd2026/openreview_submission.json`

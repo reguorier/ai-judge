@@ -21,6 +21,8 @@ MAIN_TEX = PAPER_DIR / "main.tex"
 BIB_FILE = PAPER_DIR / "references.bib"
 ACL_STYLE = PAPER_DIR / "acl.sty"
 ACL_BST = PAPER_DIR / "acl_natbib.bst"
+PDF_FILE = PAPER_DIR / "main.pdf"
+OPENREVIEW_JSON = PAPER_DIR / "openreview_submission.json"
 
 FORBIDDEN_REVIEW_TERMS = (
     "reguorier",
@@ -66,11 +68,16 @@ def latex_texttt(value: str) -> str:
     return "\\texttt{" + value.replace("_", "\\_") + "}"
 
 
+def normalized(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().lower()
+
+
 def main() -> int:
     tex = MAIN_TEX.read_text(encoding="utf-8")
     bib = BIB_FILE.read_text(encoding="utf-8")
     acl_style = ACL_STYLE.read_text(encoding="utf-8")
     acl_bst = ACL_BST.read_text(encoding="utf-8")
+    openreview = json.loads(OPENREVIEW_JSON.read_text(encoding="utf-8"))
     errors: list[str] = []
 
     lowered = tex.lower()
@@ -88,6 +95,25 @@ def main() -> int:
     require_contains(errors, acl_style, "https://github.com/acl-org/acl-style-files/", "official ACL style source marker")
     require_contains(errors, acl_style, "\\RequirePackage{natbib}", "ACL natbib loading")
     require_contains(errors, acl_bst, "ENTRY", "ACL bibliography style body")
+    if not PDF_FILE.exists() or PDF_FILE.stat().st_size <= 0:
+        errors.append(f"Missing non-empty PDF: {PDF_FILE.relative_to(ROOT)}")
+
+    if openreview.get("title") not in tex:
+        errors.append("OpenReview title does not match main.tex title.")
+    if openreview.get("pdf") != str(PDF_FILE.relative_to(ROOT)):
+        errors.append("OpenReview JSON PDF path does not point to papers/eval4sd2026/main.pdf.")
+    if openreview.get("submission_type") != "Short / Position Paper":
+        errors.append("OpenReview JSON submission_type must be Short / Position Paper.")
+    if openreview.get("dual_submission_statement") != "This work is not under review elsewhere.":
+        errors.append("OpenReview JSON dual-submission statement is missing or changed.")
+    if len(openreview.get("keywords", [])) < 5:
+        errors.append("OpenReview JSON should include at least five keywords.")
+    if "source-heavy outputs" not in normalized(openreview.get("abstract", "")):
+        errors.append("OpenReview JSON abstract is missing the paper abstract.")
+    openreview_identity_surface = normalized(json.dumps(openreview, ensure_ascii=False))
+    for term in FORBIDDEN_REVIEW_TERMS:
+        if term in openreview_identity_surface:
+            errors.append(f"Review-anonymity leak in OpenReview packet: {term}")
 
     full = run_bench(["tools/run_citation_bench.py", "--fail-under", "0.95"])
     hard = run_bench(
@@ -140,6 +166,8 @@ def main() -> int:
             {
                 "schema": "eval4sd_packet_check.v1",
                 "paper": str(MAIN_TEX.relative_to(ROOT)),
+                "pdf": str(PDF_FILE.relative_to(ROOT)),
+                "openreview_packet": str(OPENREVIEW_JSON.relative_to(ROOT)),
                 "anonymous": True,
                 "citation_keys": sorted(citation_keys(tex)),
                 "benchmarks": {

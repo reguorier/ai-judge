@@ -1,0 +1,31 @@
+{
+  "schema": "eval4sd.openreview_submission.v1",
+  "venue": "GSCL KONVENS 2026 Workshop Eval4SD",
+  "venue_group_url": "https://openreview.net/group?id=GSCL.org/KONVENS/2026/Workshop/Eval4SD",
+  "submission_type": "Short / Position Paper",
+  "archival_recommendation": "archival",
+  "title": "Source-Isolated Citation and Claim-Support Audit for LLM Outputs in Specialized Domains",
+  "abstract": "Large language models increasingly produce source-heavy outputs in legal, medical, financial, and scientific workflows. In these domains, citation errors are not merely factual mistakes; they can become publication, compliance, and professional-risk events. We propose source-isolated citation audit: a lightweight protocol that keeps a model's raw answer, external evidence, and audit verdict separate. The protocol prevents model-mentioned sources from verifying themselves, labels citations as verified, weakly_verified, irrelevant, unverifiable, or contradicted, and adds evidence-provenance grades plus reason codes for failed verification. We instantiate the protocol in a deterministic local-first audit system that emits human-readable reports, automation-friendly JSON, certification identifiers, and replay-ledger hashes. A benchmark of 100 deterministic cases and 11 hard cases shows how the protocol handles fabricated sources, real-but-irrelevant sources, contradicted claims, missing evidence, and a hard case where a real source reports association while the model claims causation. We argue that citation-level audit is a practical minimum boundary for deployment, but specialized-domain workflows ultimately require the smaller audit atom of claim-span + source.",
+  "keywords": [
+    "LLM evaluation",
+    "citation verification",
+    "claim support",
+    "source isolation",
+    "legal AI",
+    "specialized domains",
+    "reproducibility",
+    "audit trails"
+  ],
+  "subject_areas": [
+    "Metrics and Evaluation Methodology",
+    "LLM Benchmarking",
+    "Law",
+    "Science / Research Writing"
+  ],
+  "pdf": "papers/eval4sd2026/main.pdf",
+  "dual_submission_statement": "This work is not under review elsewhere.",
+  "anonymous_review_notes": [
+    "Do not include public project links, author names, private correspondence, or product identity in the submitted review PDF.",
+    "Public artifact links can be restored for camera-ready or non-anonymous supplementary materials if allowed."
+  ]
+}

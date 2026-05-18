@@ -26,6 +26,8 @@ Organizer fit reply on 2026-05-18:
 | `acl.sty` | Official ACL style file from `acl-org/acl-style-files`. |
 | `acl_natbib.bst` | Official ACL bibliography style from `acl-org/acl-style-files`. |
 | `references.bib` | Initial verified bibliography from arXiv, Eval4SD, and related public sources. |
+| `openreview_submission.md` | Human-readable OpenReview form packet. |
+| `openreview_submission.json` | Machine-readable OpenReview form packet. |
 | `submission_checklist.md` | Final pre-submit gate. |
 
 ## Current Positioning
@@ -71,5 +73,11 @@ Current build snapshot:
 - Built with `tectonic main.tex` on 2026-05-18.
 - PDF length: 3 pages.
 - Extracted PDF text check found no `reguorier`, `github.com`, `huggingface`, `AI Judge`, or email-address identity leaks.
+
+Submission packet:
+
+- OpenReview group: `https://openreview.net/group?id=GSCL.org/KONVENS/2026/Workshop/Eval4SD`
+- Form content: `openreview_submission.md`
+- Upload file: `main.pdf`
 
 Do not include GitHub, Hugging Face, author names, or private correspondence in the double-blind PDF. Public artifact links can be restored for a non-archival version, camera-ready, or appendix if the review policy allows it.
