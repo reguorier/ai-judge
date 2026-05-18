@@ -27,8 +27,8 @@ AI Judge's next public wedge is the `claim-span + source` audit layer: citation 
 |---|---:|---|---|---|---|
 | W003-001 | P0 | Eval4SD 2026 | Workshop submission | `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` | fit_query_sent_private_log |
 | W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | sent_private_log |
-| W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_route_found |
-| W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_page_blocked |
+| W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_posted |
+| W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_route_unverified |
 | W003-005 | P1 | Ligate | Attestation payload integration | Email draft below | sent_private_log |
 
 ## Technical Anchor
@@ -202,11 +202,15 @@ Reguorier
 
 ## Next Automatable Step
 
-Continue converting W003-001 into a 4-page short / position paper while waiting for organizer feedback. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, prepare a public GitHub Issue draft but do not publish it without explicit public-post confirmation. For W003-004, retry the Aequis contact page from another browser/network before marking it failed.
+Continue converting W003-001 into a 4-page short / position paper while waiting for organizer feedback. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, monitor the public GitHub Issue and only reply with technical taxonomy details. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
 
 Detailed third-party outreach metadata is intentionally kept out of public GitHub. The private local execution ledger lives under `.ai-judge/growth/`.
 
 ## Channel Findings
 
-- W003-003 LegalCiteBench: the arXiv PDF and GitHub repository expose a GitHub repository (`Sijia711/LegalCiteBench`) and Hugging Face dataset (`legalcitebench/LegalCiteBench`), but no public email. GitHub Issues are enabled, so the next contact route is a public taxonomy-exchange issue.
-- W003-004 Aequis: the public site confirms the fit around provenance, jurisdiction, time, and reproducible legal AI benchmarks. Safari could not open `https://aequis.io/contact` because of a secure-connection failure; no public email was found in web search.
+- W003-003 LegalCiteBench: the arXiv PDF and GitHub repository expose a GitHub repository (`Sijia711/LegalCiteBench`) and Hugging Face dataset (`legalcitebench/LegalCiteBench`), but no public email. GitHub Issues are enabled; a public taxonomy-exchange issue was posted at `https://github.com/Sijia711/LegalCiteBench/issues/1`.
+- W003-004 Aequis: the public site confirms the fit around provenance, jurisdiction, time, and reproducible legal AI benchmarks. The site exposes collaboration/contact links, but they route through Cloudflare email protection. Local DNS resolves `aequis.io` to `198.18.1.23`, and direct HTTPS attempts fail with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`; Jina Reader cannot resolve the host. No verified public email or working GitHub organization route has been found, so this remains blocked rather than guessed.
+
+## Public Links
+
+- LegalCiteBench taxonomy exchange issue: `https://github.com/Sijia711/LegalCiteBench/issues/1`

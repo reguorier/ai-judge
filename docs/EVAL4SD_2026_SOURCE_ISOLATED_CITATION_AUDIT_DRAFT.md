@@ -3,7 +3,7 @@
 Working title:
 
 ```text
-Source-Isolated Citation Audit for LLM Outputs in Specialized Domains
+Source-Isolated Citation and Claim-Support Audit for LLM Outputs in Specialized Domains
 ```
 
 Submission target:
@@ -46,6 +46,26 @@ AI Judge separates the audit into three layers:
 | Audit verdict | Citation labels, reason codes, provenance counts, Certification ID, and Replay Ledger hash. |
 
 This design avoids using a second model to certify the first model's hallucination. It also makes failed evidence retrieval different from contradiction.
+
+Compact method figure:
+
+```text
+Raw LLM Answer
+      |
+      v
+Evidence Broker
+      |
+      v
+Citation Verification
+      |
+      v
+Claim-Span / Source Support Audit
+      |
+      v
+Replay Ledger + Certification ID
+```
+
+The judge never rewrites the raw answer. It only emits structured verdicts and hashes that can be replayed later.
 
 ## 3. Labels
 
@@ -132,6 +152,28 @@ The hard set includes:
 | Missing / blocked / unfetched evidence | The correct next action is retry or evidence request, not declaring falsehood. |
 | Real source, overclaimed support | The source reports correlation; the model claims causation. |
 
+Current benchmark snapshot:
+
+| Benchmark | Cases | Passed | Accuracy | Notes |
+|---|---:|---:|---:|---|
+| `citation-bench-hard-11` | 11 | 11 | 1.00 | Public hard launch set. |
+
+`citation-bench-hard-11` category coverage:
+
+| Expected status | Passed | Total |
+|---|---:|---:|
+| `verified` | 2 | 2 |
+| `weakly_verified` | 2 | 2 |
+| `irrelevant` | 2 | 2 |
+| `unverifiable` | 2 | 2 |
+| `contradicted` | 3 | 3 |
+
+Claim-support hard row:
+
+| Citation status | Source relevance | Claim support | Failure code | Interpretation |
+|---|---|---|---|---|
+| `verified` | `relevant` | `contradicted` | `overclaimed_causation` | The source exists and is on-topic, but it reports association while the model states causation. |
+
 Current command:
 
 ```bash
@@ -196,6 +238,16 @@ For the Eval4SD submission, add:
 3. One legal memo compound-claim case.
 4. One scientific citation case inspired by hallucinated-paper verification.
 5. Ablation: candidate-only source vs user-supplied evidence vs fetched evidence.
+
+Short-paper structure:
+
+| Section | Target contribution |
+|---|---|
+| Motivation | Explain why real citation does not imply supported conclusion. |
+| Protocol | Define raw answer, external evidence, and audit verdict isolation. |
+| System | Describe deterministic citation and claim-support audit outputs. |
+| Evaluation | Report `citation-bench-hard-11`, then add `citation-bench-100`. |
+| Discussion | Position claim-span/source as the next atomic unit for specialized-domain evaluation. |
 
 ## 11. Related Work To Cite
 
