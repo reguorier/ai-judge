@@ -214,18 +214,22 @@ def _matched_evidence(citation_item: dict[str, Any], evidence_items: list[dict[s
 def _claim_text(answer_text: str, citation_item: dict[str, Any]) -> str:
     context = str(citation_item.get("context") or "").strip()
     raw = str(citation_item.get("raw") or "").strip()
-    if not context:
-        context = answer_text
-    sentences = [sentence.strip() for sentence in _SENTENCE_SPLIT_RE.split(context) if sentence.strip()]
-    if raw:
-        for index, sentence in enumerate(sentences):
-            if raw in sentence:
-                cleaned = _remove_citation(sentence, raw)
-                if _tokens(cleaned):
-                    return cleaned
-                if index > 0:
-                    return _remove_citation(sentences[index - 1], "")
-    return _remove_citation(sentences[0] if sentences else context, raw)
+    candidates = [str(answer_text or "").strip(), context]
+    if not candidates[0]:
+        candidates = [context]
+    for candidate in candidates:
+        sentences = [sentence.strip() for sentence in _SENTENCE_SPLIT_RE.split(candidate) if sentence.strip()]
+        if raw:
+            for index, sentence in enumerate(sentences):
+                if raw in sentence:
+                    cleaned = _remove_citation(sentence, raw)
+                    if _tokens(cleaned):
+                        return cleaned
+                    if index > 0:
+                        return _remove_citation(sentences[index - 1], "")
+        if candidate == context and sentences:
+            return _remove_citation(sentences[0], raw)
+    return _remove_citation(context or answer_text, raw)
 
 
 def _remove_citation(text: str, raw: str) -> str:

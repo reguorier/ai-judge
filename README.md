@@ -91,10 +91,11 @@ Launch demos:
 PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html
 PYTHONPATH=. python cli/main.py audit examples/product-no-evidence.md --html reports/product-no-evidence-audit.html
 PYTHONPATH=. python cli/main.py audit examples/sounds-smart-low-judgment.md --html reports/sounds-smart-low-judgment-audit.html
+PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-causation.md --html reports/real-source-overclaimed-causation-audit.html
 PYTHONPATH=. python tools/run_citation_bench.py
 ```
 
-Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html), [`legal memo contradicted`](reports/legal-memo-contradicted-audit.html), [`open-source README irrelevant`](reports/opensource-readme-irrelevant-audit.html).
+Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html), [`legal memo contradicted`](reports/legal-memo-contradicted-audit.html), [`open-source README irrelevant`](reports/opensource-readme-irrelevant-audit.html), [`real source, overclaimed causation`](reports/real-source-overclaimed-causation-audit.html).
 
 `contradicted` audits intentionally return a non-zero CLI status because they should block publication; the generated HTML/JSON report is still written.
 

@@ -19,6 +19,7 @@ Open `reports/fake-citation-audit.html` in a browser.
 | Sounds smart, low judgment | [`examples/sounds-smart-low-judgment.md`](../examples/sounds-smart-low-judgment.md) | [`reports/sounds-smart-low-judgment-audit.html`](../reports/sounds-smart-low-judgment-audit.html) / [`json`](../reports/sounds-smart-low-judgment-audit.json) |
 | Legal memo contradicted | [`examples/legal-memo-contradicted.md`](../examples/legal-memo-contradicted.md) | [`reports/legal-memo-contradicted-audit.html`](../reports/legal-memo-contradicted-audit.html) / [`json`](../reports/legal-memo-contradicted-audit.json) |
 | Open-source README irrelevant | [`examples/opensource-readme-irrelevant.md`](../examples/opensource-readme-irrelevant.md) | [`reports/opensource-readme-irrelevant-audit.html`](../reports/opensource-readme-irrelevant-audit.html) / [`json`](../reports/opensource-readme-irrelevant-audit.json) |
+| Real source, overclaimed causation | [`examples/real-source-overclaimed-causation.md`](../examples/real-source-overclaimed-causation.md) | [`reports/real-source-overclaimed-causation-audit.html`](../reports/real-source-overclaimed-causation-audit.html) / [`json`](../reports/real-source-overclaimed-causation-audit.json) |
 
 ## Input format
 
@@ -72,6 +73,8 @@ PYTHONPATH=. python tools/run_citation_bench.py \
 ```
 
 The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, sources that exist but do not support the claim, and real sources whose correlation findings are overclaimed as causation.
+
+The overclaimed-causation demo is the key governance case: the citation can stay `verified`, the source can stay `relevant`, and the exact claim can still be `contradicted` because the source reports association while the answer states causation.
 
 ## Pro path
 

@@ -55,7 +55,8 @@ def test_claim_support_catches_real_source_overclaimed_causation():
         title="Correlation is not causation",
         question="Did the AI review program cause lower churn?",
         answer=(
-            "The AI review program caused a 22% reduction in churn. "
+            "The AI review program caused a 22% reduction in churn, "
+            "so the company should attribute retention gains to the program. "
             "Source: https://example.com/research/ai-review-churn-2026"
         ),
         external_evidence=[
