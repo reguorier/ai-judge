@@ -79,6 +79,10 @@ RECOVERABLE_WEB_CODES = {
     "submit_unconfirmed",
     "chrome_submit_unconfirmed",
     "composer_busy",
+    "page_error",
+    "model_page_error",
+    "chrome_crash",
+    "blank_page",
     "response_not_relevant",
     "long_prompt_still_in_input",
     "existing_answer_not_found",
@@ -104,6 +108,11 @@ FRESH_RESCUE_CODES = {
     "long_prompt_still_in_input",
     "input_not_found",
     "fixed_tab_not_found",
+    "page_error",
+    "model_page_error",
+    "chrome_crash",
+    "blank_page",
+    "page_recovery_failed",
 }
 CLEAN_SESSION_RESCUE_CODES = {
     "transcript_pollution",
@@ -274,6 +283,12 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
     }
     if action in {"chrome_submit_start", "start"}:
         base.update({"state": "submitting", "status": "提交中", "reason": "正在写入提示词或准备模型页面"})
+    elif action == "chrome_humanized_pacing":
+        base.update({"state": "submitting", "status": "缓速提交", "reason": "已启用拟人化节奏，避免连续快速操作触发页面异常"})
+    elif action in {"chrome_tab_recovery", "cdp_tab_recovery", "playwright_tab_recovery"}:
+        base.update({"state": "submitting", "status": "刷新恢复", "reason": "检测到页面错误或空白，已刷新并等待输入框恢复"})
+    elif action in {"chrome_tab_recovery_failed", "cdp_tab_recovery_failed", "playwright_tab_recovery_failed"}:
+        base.update({"state": "blocked", "status": "恢复失败", "reason": "页面刷新后仍未恢复到可提交状态", "code": "page_recovery_failed"})
     elif action == "chrome_submit_complete":
         base.update({"state": "waiting", "status": "等待回答", "reason": "提示词已发送，正在等待可验证回答"})
     elif action == "chrome_final_answer_nudge":
@@ -323,6 +338,11 @@ def _seat_error_label(code: str) -> str:
         "chrome_composer_blocked": "页面阻断",
         "page_blocked": "页面阻断",
         "composer_busy": "页面忙碌",
+        "page_error": "页面错误",
+        "model_page_error": "页面错误",
+        "chrome_crash": "标签崩溃",
+        "blank_page": "页面空白",
+        "page_recovery_failed": "恢复失败",
         "fixed_tab_not_found": "标签缺失",
         "transcript_pollution": "历史串流",
         "existing_answer_not_found": "旧页未返回",
@@ -344,6 +364,11 @@ def _seat_error_reason(code: str) -> str:
         "chrome_composer_blocked": "模型页面出现阻断态，系统没有提交新问题",
         "page_blocked": "模型页面出现阻断态，系统没有提交新问题",
         "composer_busy": "页面仍在生成，系统没有把新任务塞进忙碌会话",
+        "page_error": "模型页面反馈可重试错误，系统会刷新后补跑",
+        "model_page_error": "模型页面返回网络或生成错误，系统会刷新后补跑",
+        "chrome_crash": "Chrome 标签页疑似崩溃，系统会刷新后补跑",
+        "blank_page": "模型页面没有渲染有效内容，系统会刷新后补跑",
+        "page_recovery_failed": "刷新恢复后仍没有可用输入框，需要人工查看该标签",
         "fixed_tab_not_found": "没有找到该模型对应的 Chrome 固定标签",
         "transcript_pollution": "捕获内容混入旧 AI Judge 标记，已拒绝评分",
         "existing_answer_not_found": "已打开页面中没有找到该席位的 AI Judge 答案标记",

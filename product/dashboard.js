@@ -2662,6 +2662,11 @@ function statusLabel(reason, ready) {
   if (reason === "submit_unconfirmed") return "提交未确认";
   if (reason === "long_prompt_still_in_input") return "提交未确认";
   if (reason === "composer_busy") return "页面忙碌";
+  if (reason === "page_error") return "页面错误，待刷新补跑";
+  if (reason === "model_page_error") return "模型页错误，待刷新补跑";
+  if (reason === "chrome_crash") return "标签崩溃，待刷新补跑";
+  if (reason === "blank_page") return "页面空白，待刷新补跑";
+  if (reason === "page_recovery_failed") return "刷新恢复失败";
   if (reason === "response_not_relevant") return "疑似旧回答";
   if (reason === "existing_answer_not_found") return "旧页未返回";
   if (reason === "existing_answer_placeholder") return "仍是占位";

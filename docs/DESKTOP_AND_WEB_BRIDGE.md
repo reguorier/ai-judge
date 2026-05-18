@@ -141,6 +141,18 @@ Readiness now means:
 - the latest calibration passed and is not stale
 - the execution driver can run safely in the background
 
+## Recovery And Pacing
+
+The Chrome fixed-tab and CDP bridges now use the same recovery posture:
+
+- add short humanized delays before submit, after write, after click, between seats, and after reload
+- mark ChatGPT, DeepSeek, Qwen, and Wenxin as fragile pages by default
+- detect retryable page errors, blank pages, and Chrome crash pages before treating the seat as failed
+- reload a broken tab once, wait for the composer, and record recovery attempts in the trace
+- keep provider quota and login-required states non-retryable so the system does not loop on account limits
+
+This does not weaken the publish gate. Failed required seats still block completion unless they are explicitly supplementable; Grok remains best-effort and excluded from publish gating.
+
 ## Current Guarantee
 
 The product will not silently pretend a web model answered. If web mode is selected before seats are calibrated, the API returns a complete diagnostic report explaining exactly which seats are blocked and why.

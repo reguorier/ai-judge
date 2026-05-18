@@ -1,6 +1,7 @@
 from bridges.chrome_fixed_tab_bridge import (
     _build_capture_js,
     _build_click_send_js,
+    _build_clear_blocking_ui_js,
     _build_existing_answer_capture_js,
     _build_fresh_navigation_js,
     _build_prepare_submission_ui_js,
@@ -164,6 +165,16 @@ def test_fresh_navigation_reloads_same_url_page_errors():
     assert 'reason: "page_error"' in js
     assert "normalizeForNavigation" in js
     assert "currentUrl" in js
+
+
+def test_clear_blocking_ui_detects_crashes_blank_pages_and_retryable_errors():
+    js = _build_clear_blocking_ui_js()
+
+    assert "chrome_crash" in js
+    assert "blank_page" in js
+    assert "page_error" in js
+    assert "Aw, Snap" in js
+    assert "网络错误" in js
 
 
 def test_minimax_fixed_tab_has_dedicated_send_fallback():

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import re
 import subprocess
 import time
@@ -29,6 +30,20 @@ class ChromeFixedTabError(RuntimeError):
 MIN_MARKER_ANSWER_CHARS = 8
 MIN_FALLBACK_ANSWER_CHARS = 180
 SLOW_SEAT_FALLBACK_ANSWER_CHARS = 800
+FRAGILE_WEB_SEATS = {"chatgpt", "deepseek", "qwen", "wenxin"}
+RECOVERABLE_PAGE_REASONS = {
+    "page_error",
+    "model_page_error",
+    "composer_not_ready",
+    "input_not_found",
+    "send_button_not_found",
+    "submit_unconfirmed",
+    "long_prompt_still_in_input",
+    "apple_events_execute_failed",
+    "empty_result",
+    "chrome_crash",
+    "blank_page",
+}
 
 
 @dataclass
@@ -137,6 +152,14 @@ def run_chrome_fixed_tabs(
     total = max(1, len(requested))
     for index, seat in enumerate(requested, 1):
         seat_config = _seat_config(config, seat)
+        if index > 1:
+            delay = _humanized_sleep(config, seat_config, seat, "between_seats")
+            if trace and delay:
+                trace("seat", "chrome_humanized_pacing", f"{seat} 拟人化节奏等待后再提交", {
+                    "seat": seat,
+                    "phase": "between_seats",
+                    "delay_seconds": round(delay, 2),
+                })
         seat_timeout_seconds = _seat_timeout_seconds(config, seat_config)
         final_nudge_timeout_seconds = _final_nudge_timeout_seconds(config, seat_config)
         post_timeout_grace_seconds = _post_timeout_grace_seconds(config, seat_config)
@@ -193,8 +216,14 @@ def run_chrome_fixed_tabs(
         if config.get("show_fixed_tabs", True):
             _safe_activate_tab(tab)
         preflight = _safe_execute_json(tab, _build_clear_blocking_ui_js(), timeout=5)
+        if _page_state_needs_reload(preflight):
+            recovery = _recover_fixed_tab(tab, config, seat_config, seat, str(preflight.get("reason") or "preflight"), trace)
+            if recovery.get("ok"):
+                all_tabs = list_chrome_tabs()
+                tab = _match_tab(seat_config, all_tabs) or tab
+                preflight = _safe_execute_json(tab, _build_clear_blocking_ui_js(), timeout=5)
         if preflight.get("dismissed"):
-            time.sleep(0.8)
+            _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("seat", "chrome_blocking_ui_dismissed", f"{seat} 页面阻塞态已清理", {"seat": seat, "blocking": preflight})
         fresh_url = str(seat_config.get("fresh_url") or "").strip()
@@ -205,20 +234,26 @@ def run_chrome_fixed_tabs(
             if fresh.get("navigated") or fresh.get("reloaded"):
                 time.sleep(float(config.get("fresh_load_seconds") or 3.0))
         blocking = _safe_execute_json(tab, _build_clear_blocking_ui_js(), timeout=5)
+        if _page_state_needs_reload(blocking):
+            recovery = _recover_fixed_tab(tab, config, seat_config, seat, str(blocking.get("reason") or "blocking"), trace)
+            if recovery.get("ok"):
+                all_tabs = list_chrome_tabs()
+                tab = _match_tab(seat_config, all_tabs) or tab
+                blocking = _safe_execute_json(tab, _build_clear_blocking_ui_js(), timeout=5)
         if blocking.get("dismissed"):
-            time.sleep(0.8)
+            _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("seat", "chrome_blocking_ui_dismissed", f"{seat} 页面阻塞态已清理", {"seat": seat, "blocking": blocking})
         prepared = _safe_execute_json(tab, _build_prepare_submission_ui_js(prompt_id), timeout=5)
         if prepared.get("clicked"):
-            time.sleep(0.8)
+            _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("seat", "chrome_submission_ui_prepared", f"{seat} 提交前模式已准备", {"seat": seat, "prepared": prepared})
         if prepared.get("needs_followup"):
             followup = _safe_execute_json(tab, _build_prepare_submission_ui_js(prompt_id), timeout=5)
             prepared["followup"] = followup
             if followup.get("clicked"):
-                time.sleep(0.8)
+                _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("seat", "chrome_submission_ui_prepare_followup", f"{seat} 提交前模式二次确认", {"seat": seat, "prepared": prepared})
         if seat == "deepseek":
@@ -237,7 +272,13 @@ def run_chrome_fixed_tabs(
                     )
                 continue
         composer_wait = min(45.0, max(8.0, seat_timeout_seconds / 4))
-        readiness = _wait_for_composer(tab, timeout=composer_wait)
+        readiness = _wait_for_composer(tab, timeout=composer_wait, config=config, seat_config=seat_config, seat=seat)
+        if _readiness_can_recover(readiness):
+            recovery = _recover_fixed_tab(tab, config, seat_config, seat, str(readiness.get("reason") or "composer"), trace)
+            if recovery.get("ok"):
+                all_tabs = list_chrome_tabs()
+                tab = _match_tab(seat_config, all_tabs) or tab
+                readiness = _wait_for_composer(tab, timeout=composer_wait, config=config, seat_config=seat_config, seat=seat)
         if readiness.get("page_blocked"):
             submissions[seat] = _failed_result(
                 seat,
@@ -267,7 +308,14 @@ def run_chrome_fixed_tabs(
             continue
         before = _safe_execute_json(tab, _build_capture_js(prompt_id), timeout=12)
         written = _safe_execute_json(tab, _build_write_prompt_js(prompt_with_marker, prompt_id), timeout=15)
-        time.sleep(0.8)
+        if not written.get("ok") and _result_can_recover(written):
+            recovery = _recover_fixed_tab(tab, config, seat_config, seat, str(written.get("error") or "write_failed"), trace)
+            if recovery.get("ok"):
+                all_tabs = list_chrome_tabs()
+                tab = _match_tab(seat_config, all_tabs) or tab
+                before = _safe_execute_json(tab, _build_capture_js(prompt_id), timeout=12)
+                written = _safe_execute_json(tab, _build_write_prompt_js(prompt_with_marker, prompt_id), timeout=15)
+        _humanized_sleep(config, seat_config, seat, "after_write")
         if not written.get("ok"):
             presence = _safe_execute_json(tab, _build_prompt_presence_js(prompt_id), timeout=8)
             if presence.get("prompt_written"):
@@ -282,7 +330,7 @@ def run_chrome_fixed_tabs(
             submitted.setdefault("message", clicked.get("message") or "Prompt was written, but no unambiguous send button was available.")
         submitted["write"] = written
         if submitted.get("ok"):
-            time.sleep(1.0)
+            _humanized_sleep(config, seat_config, seat, "after_click")
             verification = _safe_execute_json(tab, _build_submission_check_js(prompt_id), timeout=8)
             submitted["verification"] = verification
         else:
@@ -293,7 +341,7 @@ def run_chrome_fixed_tabs(
                 retry = _safe_execute_json(tab, _build_retry_submit_js(prompt_id), timeout=10)
                 submitted["retry"] = retry
                 if retry.get("ok"):
-                    time.sleep(1.0)
+                    _humanized_sleep(config, seat_config, seat, "after_click")
                     verification = _safe_execute_json(tab, _build_submission_check_js(prompt_id), timeout=8)
                     submitted["verification"] = verification
                     submission_confirmed = bool(verification.get("submitted"))
@@ -378,8 +426,20 @@ def run_chrome_fixed_tabs(
         for seat in list(active_pending):
             item = submissions[seat]
             blocking = _safe_execute_json(item["tab"], _build_clear_blocking_ui_js(), timeout=5)
+            if _page_state_needs_reload(blocking) and not item.get("poll_recovery_attempted"):
+                item["poll_recovery_attempted"] = True
+                recovery = _recover_fixed_tab(
+                    item["tab"],
+                    config,
+                    _seat_config(config, seat),
+                    seat,
+                    str(blocking.get("reason") or "polling_page_state"),
+                    trace,
+                )
+                if recovery.get("ok"):
+                    continue
             if blocking.get("dismissed"):
-                time.sleep(0.8)
+                _humanized_sleep(config, _seat_config(config, seat), seat, "after_click")
                 if trace:
                     trace("seat", "chrome_blocking_ui_dismissed", f"{seat} 页面阻塞态已清理", {"seat": seat, "blocking": blocking})
             capture = _safe_execute_json(item["tab"], _build_capture_js(item["prompt_id"]), timeout=12)
@@ -482,8 +542,18 @@ def run_chrome_fixed_tabs(
                     )
                 time.sleep(min(3.0, remaining))
         blocking = _safe_execute_json(item["tab"], _build_clear_blocking_ui_js(), timeout=5)
+        if _page_state_needs_reload(blocking) and not item.get("final_recovery_attempted"):
+            item["final_recovery_attempted"] = True
+            _recover_fixed_tab(
+                item["tab"],
+                config,
+                _seat_config(config, seat),
+                seat,
+                str(blocking.get("reason") or "final_capture_page_state"),
+                trace,
+            )
         if blocking.get("dismissed"):
-            time.sleep(0.8)
+            _humanized_sleep(config, _seat_config(config, seat), seat, "after_click")
             if trace:
                 trace("seat", "chrome_blocking_ui_dismissed", f"{seat} 页面阻塞态已清理", {"seat": seat, "blocking": blocking})
         capture = _safe_execute_json(item["tab"], _build_capture_js(item["prompt_id"]), timeout=12)
@@ -787,7 +857,7 @@ def _safe_activate_tab(tab: ChromeTab) -> None:
         pass
 
 
-def _safe_reload_tab(tab: ChromeTab) -> None:
+def _safe_reload_tab(tab: ChromeTab) -> dict[str, Any]:
     try:
         _osascript(
             [
@@ -797,8 +867,139 @@ def _safe_reload_tab(tab: ChromeTab) -> None:
             ],
             timeout=4,
         )
+        return {"ok": True}
     except Exception:
-        pass
+        return {"ok": False}
+
+
+def _human_pacing_window(
+    config: dict[str, Any] | None,
+    seat_config: dict[str, Any] | None,
+    seat: str,
+    phase: str = "default",
+) -> tuple[float, float]:
+    """Return the min/max delay window for humanized model-page operations."""
+    config = config or {}
+    seat_config = seat_config or {}
+    if config.get("humanized_pacing") is False or seat_config.get("humanized_pacing") is False:
+        return 0.0, 0.0
+    pacing = config.get("human_pacing") if isinstance(config.get("human_pacing"), dict) else {}
+    fragile = bool(seat_config.get("fragile_page")) or seat in FRAGILE_WEB_SEATS
+
+    def number(key: str, fallback: float) -> float:
+        value = seat_config.get(key)
+        if value is None:
+            value = pacing.get(key)
+        try:
+            return float(value)
+        except Exception:
+            return fallback
+
+    base = number("base_delay_seconds", 1.0)
+    jitter = number("jitter_seconds", 1.2)
+    if fragile:
+        base = number("fragile_base_delay_seconds", max(base, 2.2))
+        jitter = number("fragile_jitter_seconds", max(jitter, 2.2))
+    if phase == "between_seats":
+        base = number("between_seats_seconds", max(base, 1.6))
+        jitter = max(0.8, jitter)
+    elif phase == "after_write":
+        base = number("after_write_seconds", max(0.6, base * 0.45))
+        jitter = max(0.4, jitter * 0.45)
+    elif phase == "after_click":
+        base = number("after_click_seconds", max(0.8, base * 0.55))
+        jitter = max(0.5, jitter * 0.55)
+    elif phase == "after_reload":
+        base = number("after_reload_seconds", max(3.5, base + 1.5))
+        jitter = max(1.0, jitter)
+    elif phase == "before_submit":
+        base = max(0.8, base * 0.75)
+        jitter = max(0.5, jitter * 0.75)
+    return max(0.0, base), max(0.0, base + jitter)
+
+
+def _humanized_sleep(
+    config: dict[str, Any] | None,
+    seat_config: dict[str, Any] | None,
+    seat: str,
+    phase: str = "default",
+) -> float:
+    low, high = _human_pacing_window(config, seat_config, seat, phase)
+    if high <= 0:
+        return 0.0
+    seconds = random.uniform(low, high)
+    time.sleep(seconds)
+    return seconds
+
+
+def _page_state_needs_reload(result: dict[str, Any]) -> bool:
+    if not isinstance(result, dict):
+        return False
+    if result.get("chrome_crash") or result.get("blank_page"):
+        return True
+    reason = str(result.get("reason") or result.get("error") or "")
+    if reason in {"provider_quota_limited", "login_required"}:
+        return False
+    return bool(result.get("page_error") or reason in RECOVERABLE_PAGE_REASONS)
+
+
+def _result_can_recover(result: dict[str, Any]) -> bool:
+    reason = str((result or {}).get("error") or (result or {}).get("reason") or "")
+    return reason in RECOVERABLE_PAGE_REASONS
+
+
+def _readiness_can_recover(readiness: dict[str, Any]) -> bool:
+    reason = str((readiness or {}).get("reason") or "")
+    if reason in {"provider_quota_limited", "login_required", "composer_busy"}:
+        return False
+    return bool((readiness or {}).get("page_blocked") or not (readiness or {}).get("input_found"))
+
+
+def _recover_fixed_tab(
+    tab: ChromeTab,
+    config: dict[str, Any],
+    seat_config: dict[str, Any],
+    seat: str,
+    reason: str,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> dict[str, Any]:
+    try:
+        attempts = int(seat_config.get("page_recovery_attempts") or config.get("page_recovery_attempts") or 0)
+    except Exception:
+        attempts = 0
+    if attempts <= 0:
+        return {"ok": False, "skipped": True, "reason": "page_recovery_disabled"}
+    last: dict[str, Any] = {"ok": False, "reason": reason}
+    for attempt in range(1, attempts + 1):
+        reload_result = _safe_reload_tab(tab)
+        delay = _humanized_sleep(config, seat_config, seat, "after_reload")
+        wait_seconds = float(seat_config.get("page_recovery_wait_seconds") or config.get("page_recovery_wait_seconds") or 10)
+        readiness = _wait_for_composer(
+            tab,
+            timeout=max(4.0, min(30.0, wait_seconds)),
+            config=config,
+            seat_config=seat_config,
+            seat=seat,
+            allow_reload=False,
+        )
+        last = {
+            "ok": bool(reload_result.get("ok") and readiness.get("input_found") and not readiness.get("page_blocked")),
+            "attempt": attempt,
+            "reason": reason,
+            "reload": reload_result,
+            "readiness": readiness,
+            "delay_seconds": round(delay, 2),
+        }
+        if trace:
+            trace(
+                "seat",
+                "chrome_tab_recovery" if last["ok"] else "chrome_tab_recovery_failed",
+                f"{seat} 页面刷新恢复{'完成' if last['ok'] else '未就绪'}",
+                {"seat": seat, **last},
+            )
+        if last["ok"]:
+            return last
+    return last
 
 
 def _safe_open_tab(url: str) -> dict[str, Any]:
@@ -840,7 +1041,14 @@ def _send_final_answer_nudge(tab: ChromeTab, prompt_id: str) -> dict[str, Any]:
     return {"ok": bool(clicked.get("ok")), "stage": "send", "write": written, "send": clicked}
 
 
-def _wait_for_composer(tab: ChromeTab, timeout: float = 25.0) -> dict[str, Any]:
+def _wait_for_composer(
+    tab: ChromeTab,
+    timeout: float = 25.0,
+    config: dict[str, Any] | None = None,
+    seat_config: dict[str, Any] | None = None,
+    seat: str = "",
+    allow_reload: bool = True,
+) -> dict[str, Any]:
     """Wait until the target tab exposes a visible prompt composer."""
     deadline = time.time() + timeout
     reloaded = False
@@ -854,11 +1062,12 @@ def _wait_for_composer(tab: ChromeTab, timeout: float = 25.0) -> dict[str, Any]:
         title = str(last.get("title") or "")
         body = str(last.get("body_sample") or "")
         page_text = f"{title}\n{body}"
-        if not reloaded and (
+        if allow_reload and not reloaded and (
             len(body.strip()) < 20
             or any(token in page_text for token in ("网络错误", "操作出了问题", "Aw, Snap", "This site can’t be reached"))
         ):
             _safe_reload_tab(tab)
+            _humanized_sleep(config, seat_config, seat, "after_reload")
             reloaded = True
         time.sleep(2)
     last.setdefault("ok", True)
@@ -1327,7 +1536,11 @@ def _build_clear_blocking_ui_js() -> str:
 (() => {
   const visible = el => !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
   const bodyText = document.body?.innerText || document.body?.textContent || "";
+  const titleText = document.title || "";
   let dismissed = false;
+  const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(bodyText + "\\n" + titleText);
+  const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText);
+  const blankPage = (bodyText || "").trim().length < 8;
   if (/chat\\.deepseek\\.com/i.test(location.hostname) && /已选择\\s*\\d+\\s*组对话/.test(bodyText)) {
     const cancel = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
       .find(el => visible(el) && /^(取消|Cancel)$/i.test((el.innerText || el.textContent || "").trim()));
@@ -1338,7 +1551,7 @@ def _build_clear_blocking_ui_js() -> str:
       } catch (_) {}
     }
   }
-  if (/操作出了问题|出了点问题|出了些问题|please try again|try again/i.test(bodyText)) {
+  if (pageError) {
     const retry = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
       .find(el => visible(el) && /^(再试一次|重试|Retry|Try again)$/i.test((el.innerText || el.textContent || "").trim()));
     if (retry) {
@@ -1348,7 +1561,16 @@ def _build_clear_blocking_ui_js() -> str:
       } catch (_) {}
     }
   }
-  return JSON.stringify({ ok: true, dismissed, title: document.title, url: location.href });
+  return JSON.stringify({
+    ok: true,
+    dismissed,
+    page_error: pageError,
+    chrome_crash: chromeCrash,
+    blank_page: blankPage,
+    reason: chromeCrash ? "chrome_crash" : (pageError ? "page_error" : (blankPage ? "blank_page" : null)),
+    title: document.title,
+    url: location.href
+  });
 })();
 """
 
@@ -2001,8 +2223,11 @@ def _build_composer_probe_js() -> str:
     return rect.width >= 20 && rect.height >= 8;
   };
   const bodyText = (document.body && document.body.innerText) || "";
+  const titleText = document.title || "";
   const quotaBlocked = /消息限制已达|使用上限|rate limit|usage limit|message limit|too many requests|升级到\\s*SuperGrok/i.test(bodyText);
-  const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again/i.test(bodyText);
+  const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(bodyText + "\\n" + titleText);
+  const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText);
+  const blankPage = bodyText.trim().length < 8;
   const loginRequired = /doubao\\.com/i.test(location.hostname) && /登录/.test(bodyText) && /下载电脑版/.test(bodyText);
   const inputSelectors = [
     ".chat-input-editor[contenteditable='true']",
@@ -2029,9 +2254,9 @@ def _build_composer_probe_js() -> str:
     input_tag: input ? input.tagName : null,
     input_role: input ? input.getAttribute("role") : null,
     page_busy: /停止回答|stop generating|stop response|停止生成/i.test(bodyText),
-    page_blocked: quotaBlocked || pageError || loginRequired,
-    reason: quotaBlocked ? "provider_quota_limited" : (pageError ? "page_error" : (loginRequired ? "login_required" : null)),
-    message: quotaBlocked ? "The provider page reports a usage/message limit." : (pageError ? "The provider page reports a retryable page error." : (loginRequired ? "The provider page requires login before prompts can be submitted." : null)),
+    page_blocked: quotaBlocked || pageError || chromeCrash || loginRequired || blankPage,
+    reason: quotaBlocked ? "provider_quota_limited" : (chromeCrash ? "chrome_crash" : (pageError ? "page_error" : (loginRequired ? "login_required" : (blankPage ? "blank_page" : null)))),
+    message: quotaBlocked ? "The provider page reports a usage/message limit." : (chromeCrash ? "The provider tab appears to have crashed." : (pageError ? "The provider page reports a retryable page error." : (loginRequired ? "The provider page requires login before prompts can be submitted." : (blankPage ? "The provider page did not render usable content." : null)))),
     body_sample: bodyText.slice(0, 180)
   });
 })();
@@ -2127,10 +2352,14 @@ def _build_retry_submit_js(prompt_id: str) -> str:
     return rect.width >= 20 && rect.height >= 8;
   }};
   const bodyText = document.body?.innerText || document.body?.textContent || "";
+  const titleText = document.title || "";
   if (/消息限制已达|使用上限|rate limit|usage limit|message limit|too many requests|升级到\\s*SuperGrok/i.test(bodyText)) {{
     return JSON.stringify({{ ok: false, error: "provider_quota_limited", message: "The provider page reports a usage/message limit.", title: document.title, url: location.href }});
   }}
-  if (/操作出了问题|出了点问题|出了些问题|please try again|try again/i.test(bodyText)) {{
+  if (/Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText)) {{
+    return JSON.stringify({{ ok: false, error: "chrome_crash", message: "The provider tab appears to have crashed.", title: document.title, url: location.href }});
+  }}
+  if (/操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(bodyText + "\\n" + titleText)) {{
     return JSON.stringify({{ ok: false, error: "page_error", message: "The provider page reports a retryable page error.", title: document.title, url: location.href }});
   }}
   if (/doubao\\.com/i.test(location.hostname) && /登录/.test(bodyText) && /下载电脑版/.test(bodyText)) {{

@@ -35,6 +35,7 @@ from core.seat_personas import SEAT_PERSONAS, render_jury_prompt
 from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
     _deepseek_prepare_verified,
+    _humanized_sleep,
     chrome_apple_events_status,
     list_chrome_tabs,
     run_chrome_fixed_tabs,
@@ -53,6 +54,7 @@ RETRYABLE_WEB_ERROR_CODES = {
     "response_not_relevant",
     "model_page_error",
     "page_error",
+    "chrome_crash",
     "submit_unconfirmed",
     "send_button_not_found",
     "composer_busy",
@@ -149,6 +151,19 @@ def default_config() -> dict[str, Any]:
         "required_final_nudge_timeout_seconds": 120,
         "required_post_timeout_grace_seconds": 120,
         "auto_open_missing_tabs": False,
+        "humanized_pacing": True,
+        "human_pacing": {
+            "base_delay_seconds": 1.2,
+            "jitter_seconds": 1.4,
+            "fragile_base_delay_seconds": 2.4,
+            "fragile_jitter_seconds": 2.6,
+            "between_seats_seconds": 2.0,
+            "after_write_seconds": 0.8,
+            "after_click_seconds": 1.1,
+            "after_reload_seconds": 4.0,
+        },
+        "page_recovery_attempts": 1,
+        "page_recovery_wait_seconds": 12,
         "profile_root": str(PROFILE_ROOT),
         "input_selectors": DEFAULT_INPUT_SELECTORS,
         "submit_selectors": DEFAULT_SUBMIT_SELECTORS,
@@ -172,6 +187,7 @@ def default_config() -> dict[str, Any]:
                 "execution_required": seat != "grok",
                 "best_effort": seat == "grok",
                 "exclude_from_publish_gate": seat == "grok",
+                "fragile_page": seat in {"chatgpt", "deepseek", "qwen", "wenxin"},
                 "notes": "Set enabled=true after logging into this model in its isolated profile.",
             }
             for seat in SEAT_PERSONAS
@@ -1121,6 +1137,7 @@ def _ask_one_seat(
         if trace:
             trace("browser", "page_loaded", f"{seat} 页面已加载", {"seat": seat, "url": url})
         prompt_id = f"AIJUDGE-{seat}-{time.time_ns()}"
+        _humanized_sleep(config, seat_config, seat, "before_submit")
         if seat == "deepseek":
             prepared = _prepare_playwright_submission_ui(page, prompt_id)
             if not _deepseek_prepare_verified(prepared):
@@ -1136,6 +1153,8 @@ def _ask_one_seat(
                 )
         prompt = _seat_prompt(seat, question, mode)
         input_locator = _find_visible_locator(page, _selectors(config, seat_config, "input_selectors"), min(timeout_ms, 20000))
+        if input_locator is None and _recover_playwright_page(page, config, seat_config, seat, "input_not_found", trace):
+            input_locator = _find_visible_locator(page, _selectors(config, seat_config, "input_selectors"), min(timeout_ms, 20000))
         if input_locator is None:
             if trace:
                 trace("browser", "input_not_found", f"{seat} 未找到输入框", {
@@ -1144,6 +1163,7 @@ def _ask_one_seat(
                 })
             return _failed_result(seat, "input_not_found", "Prompt input was not found. The seat may need login or selector tuning.")
         input_locator.fill(prompt, timeout=min(timeout_ms, 20000))
+        _humanized_sleep(config, seat_config, seat, "after_write")
         if trace:
             trace("browser", "prompt_filled", f"{seat} 已写入专业提示词", {
                 "seat": seat,
@@ -1153,10 +1173,12 @@ def _ask_one_seat(
         submit_locator = _find_visible_locator(page, _selectors(config, seat_config, "submit_selectors"), 5000)
         if submit_locator is not None:
             submit_locator.click(timeout=5000)
+            _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("browser", "submit_clicked", f"{seat} 发送按钮已点击", {"seat": seat})
         else:
             page.keyboard.press("Enter")
+            _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("browser", "submit_enter", f"{seat} 未找到发送按钮，改用 Enter 提交", {"seat": seat})
 
@@ -1188,6 +1210,43 @@ def _ask_one_seat(
         }
     finally:
         context.close()
+
+
+def _recover_playwright_page(
+    page: Any,
+    config: dict[str, Any],
+    seat_config: dict[str, Any],
+    seat: str,
+    reason: str,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> bool:
+    """Reload an isolated browser tab once when a model page loses its composer."""
+    try:
+        attempts = int(seat_config.get("page_recovery_attempts") or config.get("page_recovery_attempts") or 0)
+    except Exception:
+        attempts = 0
+    if attempts <= 0:
+        return False
+    try:
+        page.reload(wait_until="domcontentloaded", timeout=15000)
+        delay = _humanized_sleep(config, seat_config, seat, "after_reload")
+        wait_seconds = float(seat_config.get("page_recovery_wait_seconds") or config.get("page_recovery_wait_seconds") or 8)
+        page.wait_for_timeout(max(800, min(20000, int(wait_seconds * 1000))))
+        if trace:
+            trace("seat", "playwright_tab_recovery", f"{seat} 页面已刷新恢复", {
+                "seat": seat,
+                "reason": reason,
+                "delay_seconds": round(delay, 2),
+            })
+        return True
+    except Exception as exc:
+        if trace:
+            trace("seat", "playwright_tab_recovery_failed", f"{seat} 页面刷新恢复失败", {
+                "seat": seat,
+                "reason": reason,
+                "error": str(exc),
+            })
+        return False
 
 
 def _seat_prompt(seat: str, question: str, mode: str) -> str:

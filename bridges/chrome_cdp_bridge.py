@@ -14,10 +14,13 @@ import requests
 from core.seat_personas import SEAT_PERSONAS
 from bridges.chrome_fixed_tab_bridge import (
     _build_capture_js,
+    _build_clear_blocking_ui_js,
     _build_prepare_submission_ui_js,
     _capture_acceptance,
     _deepseek_prepare_verified,
     _failed_result,
+    _humanized_sleep,
+    _page_state_needs_reload,
     _response_text_from_capture,
     _seat_config,
     _seat_prompt,
@@ -137,18 +140,21 @@ def run_chrome_cdp_tabs(
                 })
             try:
                 page.bring_to_front()
+                _humanized_sleep(config, seat_config, seat, "before_submit")
                 fresh_url = str(seat_config.get("fresh_url") or "").strip()
                 if fresh_url and config.get("fresh_conversation_per_run", False):
                     page.goto(fresh_url, wait_until="domcontentloaded", timeout=15000)
+                    _humanized_sleep(config, seat_config, seat, "after_reload")
                     page.wait_for_timeout(int(float(config.get("fresh_load_seconds") or 3.0) * 1000))
+                preflight = _clear_or_recover_page(page, config, seat_config, seat, "preflight", trace)
                 prepared = _prepare_submission_ui(page, prompt_id)
                 if prepared.get("clicked"):
-                    page.wait_for_timeout(800)
+                    _humanized_sleep(config, seat_config, seat, "after_click")
                 if prepared.get("needs_followup"):
                     followup = _prepare_submission_ui(page, prompt_id)
                     prepared["followup"] = followup
                     if followup.get("clicked"):
-                        page.wait_for_timeout(800)
+                        _humanized_sleep(config, seat_config, seat, "after_click")
                 if seat == "deepseek" and not _deepseek_prepare_verified(prepared):
                     submissions[seat] = _failed_result(
                         seat,
@@ -163,8 +169,9 @@ def run_chrome_cdp_tabs(
                     continue
                 before = _capture_page(page, prompt_id)
                 fill_result = _fill_prompt(page, prompt_with_marker)
-                time.sleep(0.25)
+                _humanized_sleep(config, seat_config, seat, "after_write")
                 send_result = _send_prompt(page)
+                _humanized_sleep(config, seat_config, seat, "after_click")
                 submission_confirmed = bool(send_result.get("ok"))
                 submissions[seat] = {
                     "seat": seat,
@@ -176,7 +183,7 @@ def run_chrome_cdp_tabs(
                     "before_length": before.get("text_length") or 0,
                     "before_text": before.get("text") or "",
                     "submission_confirmed": submission_confirmed,
-                    "submit_result": {"fill": fill_result, "send": send_result},
+                    "submit_result": {"fill": fill_result, "send": send_result, "preflight": preflight},
                 }
                 if trace:
                     trace("seat", "cdp_submit_complete", f"{seat} 提示词已发送", {
@@ -281,6 +288,38 @@ def run_chrome_cdp_tabs(
     if progress:
         progress("Chrome CDP 收集完成，进入评分", 0.74)
     return list(submissions.values())
+
+
+def _clear_or_recover_page(
+    page: Any,
+    config: dict[str, Any],
+    seat_config: dict[str, Any],
+    seat: str,
+    reason: str,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> dict[str, Any]:
+    """Clear blocking UI and reload a CDP tab once when it is visibly broken."""
+    try:
+        raw = page.evaluate(_build_clear_blocking_ui_js())
+        state = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
+    except Exception as exc:
+        state = {"ok": False, "error": "cdp_preflight_failed", "message": str(exc)}
+    if not _page_state_needs_reload(state):
+        return state
+    try:
+        page.reload(wait_until="domcontentloaded", timeout=15000)
+        delay = _humanized_sleep(config, seat_config, seat, "after_reload")
+        wait_seconds = float(seat_config.get("page_recovery_wait_seconds") or config.get("page_recovery_wait_seconds") or 8)
+        page.wait_for_timeout(max(800, min(20000, int(wait_seconds * 1000))))
+        recovered = {"ok": True, "recovered": True, "reason": reason, "before": state, "delay_seconds": round(delay, 2)}
+        if trace:
+            trace("seat", "cdp_tab_recovery", f"{seat} CDP 页面已刷新恢复", {"seat": seat, **recovered})
+        return recovered
+    except Exception as exc:
+        failed = {"ok": False, "recovered": False, "reason": reason, "before": state, "error": str(exc)}
+        if trace:
+            trace("seat", "cdp_tab_recovery_failed", f"{seat} CDP 页面刷新恢复失败", {"seat": seat, **failed})
+        return failed
 
 
 def _fill_prompt(page: Any, prompt: str) -> dict[str, Any]:

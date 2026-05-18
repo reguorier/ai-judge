@@ -29,6 +29,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95` |
 | Batch audit MVP | Implemented | `ai-judge audit-batch`, `core/citation_batch.py`, `docs/BATCH_AUDIT_SPEC.md` |
 | GitHub Action batch mode | Implemented | `.github/actions/citation-audit/action.yml`, `.github/workflows/citation-audit.yml`, `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
+| Web-seat recovery | Implemented | Chrome fixed-tab/CDP/Playwright pacing and one-shot tab recovery for retryable page failures |
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
 | Outreach queue | Batch 001 partly sent, follow-ups gated | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md`, `growth/outreach_status.md` |
 | Free audit offer | Ready | `growth/free_audit_offer.md` |

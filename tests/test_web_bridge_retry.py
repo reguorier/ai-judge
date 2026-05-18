@@ -1,4 +1,10 @@
-from bridges.chrome_fixed_tab_bridge import _final_nudge_timeout_seconds, _post_timeout_grace_seconds, _seat_timeout_seconds
+from bridges.chrome_fixed_tab_bridge import (
+    _final_nudge_timeout_seconds,
+    _human_pacing_window,
+    _page_state_needs_reload,
+    _post_timeout_grace_seconds,
+    _seat_timeout_seconds,
+)
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from bridges.web_seat_bridge import (
@@ -120,6 +126,36 @@ def test_rescue_config_overrides_enable_clean_conversation_without_losing_seat_s
     assert merged["seats"]["minimax"]["timeout_seconds"] == 900
     assert merged["seats"]["minimax"]["url"] == "https://agent.minimax.io/chat"
     assert merged["seats"]["minimax"]["fallback_url"] == "https://agent.minimaxi.com/chat"
+
+
+def test_default_config_enables_humanized_pacing_and_fragile_seats():
+    config = default_config()
+
+    assert config["humanized_pacing"] is True
+    assert config["page_recovery_attempts"] == 1
+    assert config["human_pacing"]["after_reload_seconds"] >= 4
+    assert config["seats"]["chatgpt"]["fragile_page"] is True
+    assert config["seats"]["deepseek"]["fragile_page"] is True
+    assert config["seats"]["qwen"]["fragile_page"] is True
+    assert config["seats"]["wenxin"]["fragile_page"] is True
+    assert config["seats"]["gemini"]["fragile_page"] is False
+
+
+def test_human_pacing_can_be_disabled_and_is_more_conservative_for_fragile_pages():
+    assert _human_pacing_window({"humanized_pacing": False}, {}, "chatgpt") == (0.0, 0.0)
+
+    normal = _human_pacing_window(default_config(), default_config()["seats"]["gemini"], "gemini", "before_submit")
+    fragile = _human_pacing_window(default_config(), default_config()["seats"]["chatgpt"], "chatgpt", "before_submit")
+
+    assert fragile[0] > normal[0]
+    assert fragile[1] > normal[1]
+
+
+def test_page_state_reload_filter_ignores_quota_but_recovers_crash_and_page_error():
+    assert _page_state_needs_reload({"page_error": True, "reason": "page_error"})
+    assert _page_state_needs_reload({"chrome_crash": True, "reason": "chrome_crash"})
+    assert _page_state_needs_reload({"blank_page": True, "reason": "blank_page"})
+    assert not _page_state_needs_reload({"page_error": True, "reason": "provider_quota_limited"})
 
 
 def test_fixed_tab_timeout_prefers_per_seat_retry_timeout():
