@@ -243,7 +243,7 @@ The current monetization path is intentionally narrow: prove citation audit valu
 | [`docs/LAUNCH_CITATION_AUDIT.md`](docs/LAUNCH_CITATION_AUDIT.md) | 30-day launch plan, public demos, and stop/go thresholds |
 | [`docs/UNVERIFIABLE_IS_NOT_FALSE.md`](docs/UNVERIFIABLE_IS_NOT_FALSE.md) | Public explainer for the most important trust-boundary concept |
 | [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Implemented Markdown/JSON batch-audit scope without building billing too early |
-| [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration example for Markdown/document PRs |
+| [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration examples for single-file and batch Markdown/document PRs |
 | [`docs/AI_DECISION_AUDIT_SAMPLE.md`](docs/AI_DECISION_AUDIT_SAMPLE.md) | Concrete sample deliverable for audit-service conversations |
 | [`reports/citation-batch/index.html`](reports/citation-batch/index.html) | Six-example batch audit proof with manifest and per-file reports |
 | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) | Publish-ready long-form launch essay |
@@ -289,7 +289,7 @@ No. AI Judge now separates citation matching from claim support. In the overclai
 Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
 
 **What becomes Pro?**
-The first Pro surface is repository-scale batch audit, with advanced GitHub Action mode, history ledger, network-backed Evidence Broker, and document parsing on the roadmap. Single-file local audit stays free.
+The first Pro surface is repository-scale batch audit, with GitHub Action batch mode, history ledger, network-backed Evidence Broker, and document parsing on the roadmap. Single-file local audit stays free.
 
 ## v3.1 Foundation
 

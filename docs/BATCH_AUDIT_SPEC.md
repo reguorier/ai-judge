@@ -40,6 +40,7 @@ Launch proof artifact:
 
 - Batch index: `reports/citation-batch/index.html`
 - Manifest: `reports/citation-batch/manifest.json`
+- GitHub Action batch mode: `.github/actions/citation-audit/action.yml`
 
 ## Output
 

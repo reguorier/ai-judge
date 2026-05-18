@@ -32,6 +32,7 @@ COUNCIL-006 Grand Judge MVP:
   - evidence_gap_filler: evidence gap suggestions only, no body rewrite
   - evidence_broker / blind_cross_validation / human_review / eval_dataset: Evidence OS layer
   - citation_audit: self-serve Markdown/JSON citation audit with HTML/JSON launch reports
+  - citation_batch: batch manifests and index reports for repository-scale citation audit
 
 V3.2 NEW Modules (Tianfu Agent Migration):
   - evidence: Structured evidence objects with source tracing (Tianfu: knowledge-tracing)

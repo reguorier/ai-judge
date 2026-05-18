@@ -31,6 +31,40 @@ jobs:
           allow-network: "false"
 ```
 
+## Batch PR check
+
+Use batch mode when a repository has many Markdown audit fixtures or generated AI answers:
+
+```yaml
+name: Citation Batch Audit
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  citation-batch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/citation-audit
+        with:
+          mode: batch
+          input: "examples/*.md"
+          output-dir: reports/citation-batch
+          manifest: reports/citation-batch/manifest.json
+          fail-on: contradicted
+          warn-on: unverifiable,weakly_verified,irrelevant,partially_supported,unsupported
+          artifact-name: ai-judge-citation-batch
+```
+
+For demo-only workflows that intentionally include contradicted examples, set `fail-on: ""` so the reports upload without failing CI.
+
 ## Failure policy
 
 Launch behavior is report-first:
@@ -57,6 +91,7 @@ The action uploads:
 
 - HTML report
 - JSON report
+- batch directory and manifest in batch mode
 
 Downstream CI can parse:
 
@@ -69,3 +104,5 @@ Downstream CI can parse:
   }
 }
 ```
+
+Batch manifests use `citation_audit_batch.v1` and include per-file report paths, Certification IDs, Replay Ledger hashes, trust gates, warning counts, and failure counts.

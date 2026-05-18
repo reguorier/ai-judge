@@ -6,6 +6,7 @@ on:
       - "**/*.md"
       - "citation-bench/**"
       - "core/citation_audit.py"
+      - "core/citation_batch.py"
       - "core/citation_validator.py"
       - "core/evidence_broker.py"
       - "tools/run_citation_bench.py"
@@ -40,13 +41,29 @@ jobs:
           input: examples/fake-citation.md
           output-html: reports/fake-citation-audit.html
           output-json: reports/fake-citation-audit.json
+          artifact-name: citation-audit-fake-citation
       - uses: ./.github/actions/citation-audit
         with:
           input: examples/product-no-evidence.md
           output-html: reports/product-no-evidence-audit.html
           output-json: reports/product-no-evidence-audit.json
+          artifact-name: citation-audit-product-no-evidence
       - uses: ./.github/actions/citation-audit
         with:
           input: examples/sounds-smart-low-judgment.md
           output-html: reports/sounds-smart-low-judgment-audit.html
           output-json: reports/sounds-smart-low-judgment-audit.json
+          artifact-name: citation-audit-sounds-smart-low-judgment
+
+  batch-audit-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/citation-audit
+        with:
+          mode: batch
+          input: examples/*.md
+          output-dir: reports/citation-batch
+          manifest: reports/citation-batch/manifest.json
+          fail-on: ""
+          artifact-name: ai-judge-citation-batch

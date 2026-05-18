@@ -28,7 +28,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Blog outline | Archived planning aid | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md` |
 | Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95` |
 | Batch audit MVP | Implemented | `ai-judge audit-batch`, `core/citation_batch.py`, `docs/BATCH_AUDIT_SPEC.md` |
-| GitHub Action guide | Ready | `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
+| GitHub Action batch mode | Implemented | `.github/actions/citation-audit/action.yml`, `.github/workflows/citation-audit.yml`, `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
 | Outreach queue | Batch 001 partly sent, follow-ups gated | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md`, `growth/outreach_status.md` |
 | Free audit offer | Ready | `growth/free_audit_offer.md` |
@@ -122,7 +122,7 @@ Automated and reversible work is complete through Day 30:
 - Public copy is drafted for Hugging Face, Show HN, Reddit, V2EX, Zhihu, short-form posts, replies, and follow-ups.
 - The demo package includes six reproducible reports, the default 100-case benchmark, and a hard 11-case launch benchmark.
 - Pro demand capture is ready through `product/pro_early_access.html`, `docs/PRO_EARLY_ACCESS.md`, `docs/GITHUB_SPONSORS.md`, and `.github/FUNDING.yml`.
-- Paid-feature scope is constrained to batch audit, GitHub Action advanced mode, history ledger, and network-backed Evidence Broker.
+- Paid-feature scope is constrained to batch audit, GitHub Action batch mode, history ledger, and network-backed Evidence Broker.
 - Stop/go evaluation is centralized in `growth/metrics_dashboard.md` and `growth/day30_decision.md`.
 
 External launch follow-up status:

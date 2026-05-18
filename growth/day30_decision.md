@@ -78,4 +78,4 @@ Keep monetization capture available, but spend the next automatable cycle on sub
 
 ## Compressed execution update
 
-2026-05-18: the next automatable Pro value step was pulled forward instead of waiting for Day 30. `ai-judge audit-batch` now runs Markdown/JSON citation audits across files, directories, or glob patterns and writes per-file reports, `manifest.json`, and `index.html`.
+2026-05-18: the next automatable Pro value step was pulled forward instead of waiting for Day 30. `ai-judge audit-batch` now runs Markdown/JSON citation audits across files, directories, or glob patterns and writes per-file reports, `manifest.json`, and `index.html`. GitHub Action batch mode is also implemented, so CI can upload batch artifacts from Markdown/document PRs.

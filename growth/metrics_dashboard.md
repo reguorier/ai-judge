@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-18 23:06 HKT
+Last refreshed: 2026-05-18 23:12 HKT
 
 ## Targets
 
@@ -17,7 +17,7 @@ Last refreshed: 2026-05-18 23:06 HKT
 | Channel | URL | Status | Visits | Replies | Stars attributed | Pro asks | Notes |
 |---|---|---|---:|---:|---:|---:|---|
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live_http_200_checked_2026-05-18 | TBD | TBD | TBD | TBD | Space page is reachable; sample switcher remains a code/deploy follow-up if HF write access is available. |
-| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_with_forms | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; structured issue forms now collect benchmark cases and batch audit demand. |
+| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_checked_2026-05-18_2312_hkt | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; #2 and #4 still have no external comments; #3/#5 only have maintainer progress updates. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
 | X / short-form | https://x.com/liuweidi2/status/2056387592187510933 | live_wave_001_posted_cleanup_pending | TBD | 7 self-replies | TBD | TBD | Professional review thread is live with CTAs for issue #2/#3/#4, HF demo, and repo trial. One accidental `.` reply needs deletion confirmation before cleanup. |
@@ -32,7 +32,7 @@ Last refreshed: 2026-05-18 23:06 HKT
 | Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | openreview_profile_activation_pending | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview packet and PDF are ready. Signup is submitted, QQ + company email are confirmed, and profile activation is pending before upload. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
-| Pro early access | growth/pro_interest_status.md | batch_mvp_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields, and `ai-judge audit-batch` now implements the first Markdown/JSON batch value step before billing. |
+| Pro early access | growth/pro_interest_status.md | batch_mvp_and_action_mode_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields; `ai-judge audit-batch` and GitHub Action batch mode implement the first Markdown/JSON batch value step before billing. |
 | Sponsors | growth/sponsor_status.md | manual_sponsor_path_ready | 0 | 0 | 0 | 0 | GitHub Sponsors copy is ready; manual sponsor intent can be tracked until Sponsors is enabled. |
 
 ## Manual update cadence

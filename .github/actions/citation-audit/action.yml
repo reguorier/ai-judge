@@ -2,8 +2,12 @@ name: AI Judge Citation Audit
 description: Audit AI-generated Markdown for fabricated, weak, irrelevant, unverifiable, and contradicted citations.
 
 inputs:
+  mode:
+    description: "Audit mode: single or batch"
+    required: false
+    default: single
   input:
-    description: Markdown or JSON audit input file
+    description: Markdown/JSON audit input file, directory, or glob pattern
     required: true
   output-html:
     description: HTML report output path
@@ -13,10 +17,30 @@ inputs:
     description: JSON report output path
     required: false
     default: ai-judge-citation-audit.json
+  output-dir:
+    description: Batch output directory
+    required: false
+    default: reports/citation-batch
+  manifest:
+    description: Batch manifest JSON path
+    required: false
+    default: reports/citation-batch/manifest.json
   allow-network:
     description: Allow Evidence Broker URL fetching
     required: false
     default: "false"
+  fail-on:
+    description: Comma-separated statuses that fail batch mode
+    required: false
+    default: contradicted
+  warn-on:
+    description: Comma-separated statuses that warn in batch mode
+    required: false
+    default: unverifiable,weakly_verified,irrelevant,partially_supported,unsupported
+  artifact-name:
+    description: Uploaded artifact name
+    required: false
+    default: ai-judge-citation-audit
 
 runs:
   using: composite
@@ -32,14 +56,25 @@ runs:
         if [ "${{ inputs.allow-network }}" = "true" ]; then
           extra="--allow-network"
         fi
-        PYTHONPATH=. python cli/main.py audit "${{ inputs.input }}" \
-          --html "${{ inputs.output-html }}" \
-          --json "${{ inputs.output-json }}" \
-          $extra
+        if [ "${{ inputs.mode }}" = "batch" ]; then
+          PYTHONPATH=. python cli/main.py audit-batch "${{ inputs.input }}" \
+            --out "${{ inputs.output-dir }}" \
+            --manifest "${{ inputs.manifest }}" \
+            --fail-on "${{ inputs.fail-on }}" \
+            --warn-on "${{ inputs.warn-on }}" \
+            $extra
+        else
+          PYTHONPATH=. python cli/main.py audit "${{ inputs.input }}" \
+            --html "${{ inputs.output-html }}" \
+            --json "${{ inputs.output-json }}" \
+            $extra
+        fi
     - name: Upload citation audit artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ai-judge-citation-audit
+        name: ${{ inputs.artifact-name }}
         path: |
           ${{ inputs.output-html }}
           ${{ inputs.output-json }}
+          ${{ inputs.output-dir }}
+          ${{ inputs.manifest }}

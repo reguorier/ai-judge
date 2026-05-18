@@ -11,7 +11,7 @@ It is for people who need to audit more than one answer or document at a time.
 - batch Markdown/JSON audit via `ai-judge audit-batch`
 - Evidence Broker network fetch mode
 - historical Replay Ledger
-- GitHub Action advanced mode
+- GitHub Action batch mode
 - exportable Certification ID reports
 - PDF/Docx parser roadmap access
 
@@ -43,6 +43,17 @@ Current batch command:
 
 ```bash
 PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" --out reports/citation-batch
+```
+
+Current GitHub Action batch mode:
+
+```yaml
+- uses: ./.github/actions/citation-audit
+  with:
+    mode: batch
+    input: "examples/*.md"
+    output-dir: reports/citation-batch
+    manifest: reports/citation-batch/manifest.json
 ```
 
 Record inbound interest:
