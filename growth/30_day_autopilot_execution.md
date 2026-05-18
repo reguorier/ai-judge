@@ -42,7 +42,8 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Follow-up queue | Ready for confirmation | `growth/followup_queue.md` |
 | Resonance Wave 002 | Prepared, not sent | `growth/resonance_wave_002.md`, `docs/PAPER_SEED_SOURCE_ISOLATED_CITATION_AUDIT.md`, `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` |
 | Claim-support audit | Implemented MVP | `core/claim_support.py`, `docs/CLAIM_SUPPORT_AUDIT_SPEC.md` |
-| Resonance Wave 003 | Prepared, not sent | `growth/resonance_wave_003_eval_taxonomy_infra.md` |
+| Resonance Wave 003 | Partially sent / posted | `growth/resonance_wave_003_eval_taxonomy_infra.md` |
+| Resonance Wave 004 | RAGChecker taxonomy issue posted | `growth/resonance_wave_004_refchecker_claim_audit.md` |
 
 ## Rules
 
@@ -141,3 +142,4 @@ Research-first next wave:
 - HalluCiteChecker and LegalCiteBench are the priority taxonomy-exchange targets.
 - Aequis and Ligate are the priority infrastructure/commercial-collaboration targets.
 - The technical wedge is claim-span/source audit: citation verification, source relevance, and exact claim support are separated so "real source" does not become "proven conclusion."
+- RAGChecker is now the active claim-level / RAG-faithfulness taxonomy route because RefChecker is archived/read-only.

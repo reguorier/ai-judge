@@ -15,6 +15,8 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | V2EX | https://www.v2ex.com/invite/activate | blocked_account_activation_required | Logged in as `reguorider`, but the account cannot post until an invite code or `$V2EX` activation is completed. |
 | 2026-05-18 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | HF login and email confirmation are complete, but the public discussion submit flow is blocked by repeated hCaptcha challenges. Draft remains in `growth/huggingface_community_post.md`. |
 | 2026-05-18 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | User confirmed no activation code is available; stop spending automation time on V2EX until activation exists. |
+| 2026-05-18 | LegalCiteBench GitHub Issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | live | Posted public taxonomy exchange because arXiv/GitHub/HF dataset expose no public email. |
+| 2026-05-18 | RAGChecker GitHub Issue | https://github.com/amazon-science/RAGChecker/issues/38 | live | RefChecker route was archived/read-only, so the claim-span/source question was reframed as RAG faithfulness and posted to active RAGChecker. |
 | 2026-05-17 | Hacker News | https://news.ycombinator.com/submit | blocked_by_login | Chrome reaches submit page, but HN account is not logged in. |
 | 2026-05-17 | Reddit | https://www.reddit.com/r/LocalLLaMA/submit | blocked_by_login | Chrome is not logged into Reddit. |
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_login | Chrome is not logged into Hugging Face. |
@@ -49,6 +51,9 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-18 | Trust wording | BSL 1.1 wording can undermine governance positioning if described casually as open source. | README and launch docs now use source-available wording where appropriate. |
 | 2026-05-18 | Article 11 reply | Sent a public-safe reply through QQ Mail with the f22f2de update, claim-span roadmap, and Truth Gate demo invitation. | Wait for their Truth Gate response before sending raw/evidence/audit blocks. |
 | 2026-05-18 | Resonance Wave 002 | Prepared a targeted queue for Eval4SD, LegalCiteBench, HalluCiteChecker, LLMTrust, Aequis, Ligate, AEX, audit-trail research, GEM, FAGEN, and public legal/RAG discussions. | Use `growth/resonance_wave_002.md`; each external send still needs action-time confirmation. |
+| 2026-05-18 | LegalCiteBench taxonomy route | No public email was exposed by the arXiv PDF, GitHub repository, or Hugging Face dataset card, but Issues were enabled. | Posted `https://github.com/Sijia711/LegalCiteBench/issues/1`; monitor for replies before adding benchmark mapping claims. |
+| 2026-05-18 | Aequis route investigation | Site direction matches legal AI provenance benchmarks, but contact links are Cloudflare-protected and local DNS/TLS fails; no verified email or GitHub org route found. | Keep as blocked; retry only from a clean DNS/network path or verified public channel, not guessed email. |
+| 2026-05-18 | RAGChecker taxonomy route | RefChecker is archived/read-only; RAGChecker is active, not archived, and has Issues enabled. | Posted `https://github.com/amazon-science/RAGChecker/issues/38`; monitor for taxonomy feedback. |
 | 2026-05-17 | GitHub metadata | Attempted to update repo description, homepage, and topics. | Blocked by GitHub API 404 from current `gh repo edit` permission path; push/issue/release permissions still work. |
 | 2026-05-17 | GitHub issue #1 | https://github.com/reguorier/ai-judge/issues/1#issuecomment-4470493105 | Added comment linking issue #1 to the new launch contribution funnel. |
 | 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |
@@ -63,6 +68,8 @@ This file records public launch links, replies, objections, and product signals 
 | `unverifiable` vs `contradicted` edge cases | https://github.com/reguorier/ai-judge/issues/3 |
 | Batch Markdown/PDF/Docx demand | https://github.com/reguorier/ai-judge/issues/4 |
 | Demo gallery examples | https://github.com/reguorier/ai-judge/issues/5 |
+| LegalCiteBench taxonomy exchange | https://github.com/Sijia711/LegalCiteBench/issues/1 |
+| RAGChecker taxonomy exchange | https://github.com/amazon-science/RAGChecker/issues/38 |
 | X launch post | https://x.com/liuweidi2/status/2055973517779521750 |
 | Zhihu long-form launch | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | Reddit r/LocalLLaMA launch attempt | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ |
