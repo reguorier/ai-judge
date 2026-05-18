@@ -163,6 +163,56 @@ def test_report_keeps_navigation_and_full_web_answers():
     assert "全部展开" in rendered
 
 
+def test_report_renders_cross_temporal_closeout():
+    api_server = _load_api_server()
+    rendered = api_server._render_html_report({
+        "question": "横纵分析是否能进入报告",
+        "one_liner": "条件支持，但需要补齐旧页面答案。",
+        "verdict_label": "条件支持",
+        "confidence": 78,
+        "average_score": 0.71,
+        "reasons": ["网页席位未全量回收。"],
+        "next_steps": ["先回收旧页面答案。"],
+        "cross_temporal_analysis": {
+            "schema": "cross_temporal_analysis.v1",
+            "method": "纵向追时间深度，横向追同期广度，交叉后形成可执行判断。",
+            "closeout_report": {
+                "decision_score": "78/100 · 均分 0.710",
+                "executive_summary": "最终判决：条件支持。席位覆盖 2/3，MiniMax 待回收。",
+            },
+            "vertical_trace": {
+                "bridge_health": "网页桥接部分完成",
+                "key_turn": "网页席位未全量回收，结论必须带条件",
+                "timeline": [{"phase": "collect", "detail": "等待 MiniMax"}],
+            },
+            "horizontal_comparison": {
+                "ok_count": 2,
+                "requested_count": 3,
+                "consensus_label": "席位不完整",
+                "comparison_note": "只回收到 2/3 席，当前判断不能包装成全模型共识。",
+                "seat_ranking": [{"seat_name": "ChatGPT", "score": 0.82, "status": "已返回", "claims_count": 4}],
+            },
+            "math_audit": {
+                "signals": [
+                    {
+                        "label": "容斥式席位覆盖",
+                        "severity": "block",
+                        "value": 0.667,
+                        "summary": "2/3 席形成有效答案。",
+                        "next_action": "先补齐可回收席位。",
+                    }
+                ]
+            },
+            "recommended_actions": ["先执行旧页面只读回收。"],
+        },
+    })
+
+    assert 'id="cross-temporal"' in rendered
+    assert "横纵分析收口报告" in rendered
+    assert "最终判决：条件支持" in rendered
+    assert "容斥式席位覆盖" in rendered
+
+
 def test_report_renders_mentor_resonance_supplements():
     api_server = _load_api_server()
     rendered = api_server._render_html_report({

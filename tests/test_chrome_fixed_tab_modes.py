@@ -6,6 +6,7 @@ from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
     _build_submission_check_js,
     _deepseek_prepare_verified,
+    _should_send_final_answer_nudge,
     _seat_prompt,
 )
 from core.prompt_resonance import build_prompt_flow
@@ -51,6 +52,28 @@ def test_chatgpt_prepare_prefers_reliable_mode_for_bridge_output():
     assert "chatgpt_reliable_mode" in js
     assert "chatgpt_mode_menu_open" in js
     assert "chatgpt_thinking_mode" not in js
+    assert "reliableChatgptMode" in js
+    assert "shortChatgptLabel" in js
+    assert "inOpenMenu" in js
+    assert "Auto" in js
+    assert "No Thinking" in js
+
+
+def test_mimo_fresh_navigation_treats_hash_chat_ids_as_stale_routes():
+    js = _build_fresh_navigation_js("https://aistudio.xiaomimimo.com/#/chat")
+
+    assert "hashSensitiveNavigation" in js
+    assert "hash_route_mismatch" in js
+    assert "mimo_existing_chat_reused" in js
+    assert "aistudio\\.xiaomimimo\\.com" in js
+
+
+def test_mimo_prepare_opens_new_chat_from_history_page():
+    js = _build_prepare_submission_ui_js("AIJUDGE-mimo-test")
+
+    assert "mimo_new_chat_from_history" in js
+    assert "新对话" in js
+    assert "aistudio\\.xiaomimimo\\.com" in js
 
 
 def test_first_round_prompt_requests_resonance_questions():
@@ -76,6 +99,30 @@ def test_capture_scans_all_answer_markers_and_qwen_blocks():
     assert ".response-message-content" in js
     assert ".qwen-markdown" in js
     assert "已经完成思考" in js
+    assert "qwenThinkingCompleteOnly" in js
+    assert "qwen_thinking_complete_only" in js
+    assert js.index("const answerMarkerInBody") < js.index("const qwenThinkingCompleteOnly")
+    assert js.index("const answerMarkerInRaw") < js.index("const qwenThinkingCompleteOnly")
+
+
+def test_qwen_thinking_complete_can_nudge_despite_prompt_echo():
+    item = {
+        "submission_confirmed": True,
+        "submitted_at": 1,
+        "timeout_seconds": 120,
+    }
+    capture = {
+        "qwen_thinking_complete_only": True,
+        "page_busy": False,
+    }
+    assessment = {
+        "accepted": False,
+        "polluted": False,
+        "prompt_echo": True,
+        "response_text": "",
+    }
+
+    assert _should_send_final_answer_nudge("qwen", item, capture, assessment)
 
 
 def test_existing_answer_capture_reads_prior_markers_without_prompt_write():
@@ -126,6 +173,24 @@ def test_minimax_fixed_tab_has_dedicated_send_fallback():
     assert "miniMaxButtons" in js
     assert "closeToComposerRight" in js
     assert "提出共振" in js
+
+
+def test_mimo_send_fallback_is_composer_scoped():
+    js = _build_click_send_js("AIJUDGE-mimo-test")
+
+    assert "aistudio\\.xiaomimimo\\.com" in js
+    assert "mimoButtons" in js
+    assert "inputRect.right - 120" in js
+    assert "rect.bottom <= inputRect.bottom + 160" in js
+
+
+def test_doubao_fixed_tab_has_dedicated_send_fallback():
+    js = _build_click_send_js("AIJUDGE-doubao-test")
+
+    assert "doubao\\.com" in js
+    assert "doubaoButtons" in js
+    assert "send-btn" in js
+    assert "emptyRightIcon" in js
 
 
 def test_forecast_market_product_term_does_not_force_prediction_intent():

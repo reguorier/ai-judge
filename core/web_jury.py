@@ -258,16 +258,18 @@ def extract_resonance_questions(response: str, limit: int = 5) -> list[str]:
     text = response.strip()
     if not text:
         return []
-    lines = [line.strip(" \t-•*#0123456789.、)") for line in text.splitlines()]
     questions: list[str] = []
     in_resonance = False
-    for raw_line in lines:
-        line = raw_line.strip()
+    for raw_line in text.splitlines():
+        raw_line = raw_line.strip()
+        line = _clean_question_candidate(raw_line)
         if not line:
             continue
-        if re.search(r"共振提问|反问|关键问题|追问|需要澄清", line):
+        if re.search(r"共振提问|反问|关键问题|追问|需要澄清", raw_line):
             in_resonance = True
-            question_part = re.sub(r"^(共振提问|反问|关键问题|追问|需要澄清)[:：]?", "", line).strip()
+            question_part = _clean_question_candidate(
+                re.sub(r"^(共振提问|反问|关键问题|追问|需要澄清)[:：]?", "", raw_line).strip()
+            )
             if question_part and _looks_like_question(question_part):
                 questions.append(question_part)
             continue
@@ -279,7 +281,7 @@ def extract_resonance_questions(response: str, limit: int = 5) -> list[str]:
             break
     if len(questions) < 3:
         for match in re.findall(r"[^。！？?\n]{6,120}[？?]", text):
-            candidate = match.strip()
+            candidate = _clean_question_candidate(match)
             if candidate not in questions:
                 questions.append(candidate)
             if len(questions) >= limit:
@@ -783,6 +785,13 @@ def _looks_like_question(text: str) -> bool:
         or any(token in text for token in ("是否", "如何", "怎样", "什么", "哪些", "为何", "为什么", "能否", "要不要"))
         or any(token in lowered for token in ("how", "what", "why", "whether", "which"))
     )
+
+
+def _clean_question_candidate(text: str) -> str:
+    candidate = text.strip(" \t-•*#")
+    candidate = re.sub(r"^\d+[.、)]\s*", "", candidate).strip()
+    candidate = re.sub(r"^(共振提问|反问|关键问题|追问|需要澄清)[:：]\s*", "", candidate).strip()
+    return candidate
 
 
 def _fallback_resonance_questions(question: str, response: str) -> list[str]:

@@ -13,8 +13,9 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "3.6.1"
+VERSION = "3.6.2"
 ARCH = "arm64"
+MIN_MACOS = "13.0"
 APP_NAME = "AI Judge"
 SHARED_ROOT = Path("/Users/Shared/AI Judge")
 RUNTIME_INSTALL_ROOT = SHARED_ROOT / "runtime"
@@ -51,6 +52,8 @@ def python_source() -> Path:
 def build_app() -> Path:
     env = os.environ.copy()
     env["AI_JUDGE_DESKTOP_PROJECT_ROOT"] = str(RUNTIME_INSTALL_ROOT)
+    env["AI_JUDGE_DESKTOP_ARCH"] = ARCH
+    env["AI_JUDGE_MACOS_DEPLOYMENT_TARGET"] = MIN_MACOS
     run([sys.executable, str(PROJECT_ROOT / "tools" / "build_mac_app.py")], env=env)
     return PROJECT_ROOT / "dist" / "mac" / f"{APP_NAME}.app"
 
@@ -114,8 +117,22 @@ def prepare_runtime(runtime_root: Path) -> None:
 
 def write_scripts() -> None:
     SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
-    preinstall = """#!/bin/zsh
+    preinstall = f"""#!/bin/zsh
 set -euo pipefail
+
+if [[ "$(uname -m)" != "{ARCH}" ]]; then
+  osascript -e 'display dialog "AI Judge v{VERSION} 这个安装包只支持 Apple Silicon Mac（arm64）。Intel Mac 需要单独的 x86_64 安装包。" buttons {{"OK"}} default button "OK"' >/dev/null 2>&1 || true
+  echo "AI Judge v{VERSION} requires Apple Silicon Mac ({ARCH})." >&2
+  exit 112
+fi
+
+autoload -Uz is-at-least
+OS_VERSION="$(sw_vers -productVersion)"
+if ! is-at-least "{MIN_MACOS}" "$OS_VERSION"; then
+  osascript -e 'display dialog "AI Judge v{VERSION} 需要 macOS {MIN_MACOS} 或更高版本。当前系统是 '"$OS_VERSION"'。" buttons {{"OK"}} default button "OK"' >/dev/null 2>&1 || true
+  echo "AI Judge v{VERSION} requires macOS {MIN_MACOS} or later. Current macOS: $OS_VERSION." >&2
+  exit 112
+fi
 
 osascript -e 'tell application id "local.ai-judge.desktop" to quit' >/dev/null 2>&1 || true
 pkill -f '/Users/Shared/AI Judge/runtime/product/api_server.py' >/dev/null 2>&1 || true
@@ -153,6 +170,7 @@ def write_readme(target: Path) -> None:
 2. 安装完成后从 /Applications 打开 AI Judge
 
 说明：
+- 需要 Apple Silicon Mac（arm64）和 macOS {MIN_MACOS} 或更高版本
 - 应用安装到 /Applications/AI Judge.app
 - 本地运行时安装到 /Users/Shared/AI Judge/runtime
 - 不包含打包者本机的 tasks.db、runs 历史记录或网页登录数据

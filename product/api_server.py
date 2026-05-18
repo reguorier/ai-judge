@@ -39,6 +39,7 @@ from bridges.web_seat_bridge import bridge_status, calibrate_bridge, load_bridge
 from core.async_task_manager import TaskManager
 from core.auto_jury import format_verdict_markdown, run_auto_jury
 from core.blind_cross_validation import aggregate_blind_reviews, build_blind_cross_validation_packet
+from core.cross_temporal_analysis import attach_cross_temporal_analysis
 from core.evidence_broker import build_evidence_broker_report
 from core.evidence_gap_filler import suggest_evidence_gaps
 from core.evidence_gap_queue import build_evidence_gap_queue, resolve_gap_task
@@ -80,6 +81,7 @@ RECOVERABLE_WEB_CODES = {
 
 
 def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
+    attach_cross_temporal_analysis(verdict)
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "verdict.json").write_text(json.dumps(verdict, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -96,7 +98,10 @@ def _load_run(run_id: str) -> dict[str, Any] | None:
         return result
     run_file = RUNS_DIR / run_id / "verdict.json"
     if run_file.exists():
-        return json.loads(run_file.read_text(encoding="utf-8"))
+        result = json.loads(run_file.read_text(encoding="utf-8"))
+        if isinstance(result, dict) and "cross_temporal_analysis" not in result:
+            attach_cross_temporal_analysis(result)
+        return result
     return None
 
 
@@ -759,6 +764,7 @@ def _run_worker(
                     display_question=question,
                     external_evidence=external_evidence,
                     evidence_options=evidence_options,
+                    collect_followups=True,
                     progress=web_progress,
                     trace=trace_event,
                 )
@@ -1122,7 +1128,7 @@ def _run_supplement_worker(
 def health():
     return jsonify({
         "status": "ok",
-        "version": "3.6.1",
+        "version": "3.6.2",
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["local", "web"],
         "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
@@ -2227,6 +2233,83 @@ def _evidence_gate_class(gate: str) -> str:
     return "warn"
 
 
+def _render_cross_temporal_analysis(result: dict[str, Any]) -> str:
+    analysis = result.get("cross_temporal_analysis") or {}
+    if not analysis:
+        return ""
+    closeout = analysis.get("closeout_report") or {}
+    vertical = analysis.get("vertical_trace") or {}
+    horizontal = analysis.get("horizontal_comparison") or {}
+    math_audit = analysis.get("math_audit") or {}
+    actions = analysis.get("recommended_actions") or []
+    signals = math_audit.get("signals") or []
+    ranking = horizontal.get("seat_ranking") or []
+    action_items = "".join(f"<li>{html.escape(str(item))}</li>" for item in actions[:6]) or "<li>暂无建议动作。</li>"
+    signal_rows = "".join(
+        "<tr>"
+        f"<td>{html.escape(str(item.get('label', '-')))}</td>"
+        f"<td><span class=\"status-pill {_signal_status_class(str(item.get('severity', 'ok')))}\">{html.escape(_signal_status_label(str(item.get('severity', 'ok'))))}</span></td>"
+        f"<td>{html.escape(str(item.get('value', '-')))}</td>"
+        f"<td>{html.escape(_compact_report_text(item.get('summary', ''), 220))}</td>"
+        f"<td>{html.escape(_compact_report_text(item.get('next_action', ''), 180))}</td>"
+        "</tr>"
+        for item in signals[:8]
+    ) or "<tr><td colspan=\"5\">暂无数学审计信号。</td></tr>"
+    ranking_rows = "".join(
+        "<tr>"
+        f"<td>{html.escape(str(item.get('seat_name') or item.get('seat') or '-'))}</td>"
+        f"<td>{html.escape(_format_report_score(item.get('score')))}</td>"
+        f"<td>{html.escape(str(item.get('status', '-')))}</td>"
+        f"<td>{html.escape(str(item.get('claims_count', 0)))}</td>"
+        "</tr>"
+        for item in ranking[:12]
+    ) or "<tr><td colspan=\"4\">暂无席位评分。</td></tr>"
+    timeline_items = "".join(
+        f"<li><strong>{html.escape(str(item.get('phase', '-')))}</strong><span>{html.escape(_compact_report_text(item.get('detail', ''), 160))}</span></li>"
+        for item in (vertical.get("timeline") or [])[-6:]
+    ) or "<li><strong>complete</strong><span>暂无可展示的底层轨迹。</span></li>"
+    return (
+        '<section class="band" id="cross-temporal">'
+        '<div class="section-head"><div>'
+        "<h2>横纵分析收口报告</h2>"
+        f'<p class="muted">{html.escape(str(analysis.get("method") or ""))}</p>'
+        "</div></div>"
+        '<section class="summary-grid compact" aria-label="横纵分析状态">'
+        f"<div><span>最终判断</span><strong>{html.escape(str(closeout.get('decision_score', '-')))}</strong></div>"
+        f"<div><span>席位覆盖</span><strong>{html.escape(str(horizontal.get('ok_count', 0)))}/{html.escape(str(horizontal.get('requested_count', 0)))}</strong></div>"
+        f"<div><span>共识状态</span><strong>{html.escape(str(horizontal.get('consensus_label', '-')))}</strong></div>"
+        f"<div><span>桥接健康</span><strong>{html.escape(str(vertical.get('bridge_health', '-')))}</strong></div>"
+        "</section>"
+        f'<p class="report-lead">{html.escape(str(closeout.get("executive_summary", "")))}</p>'
+        '<div class="report-columns">'
+        '<section class="report-column">'
+        "<h3>纵向：从执行轨迹看卡点</h3>"
+        f"<p>{html.escape(str(vertical.get('key_turn', '-')))}</p>"
+        f'<ul class="trace-mini">{timeline_items}</ul>'
+        "</section>"
+        '<section class="report-column">'
+        "<h3>横向：从模型席位看分歧</h3>"
+        f"<p>{html.escape(str(horizontal.get('comparison_note', '-')))}</p>"
+        "<table><thead><tr><th>席位</th><th>分数</th><th>状态</th><th>Claims</th></tr></thead>"
+        f"<tbody>{ranking_rows}</tbody></table>"
+        "</section></div>"
+        "<h3>数学审计信号</h3>"
+        "<table><thead><tr><th>信号</th><th>状态</th><th>值</th><th>解释</th><th>动作</th></tr></thead>"
+        f"<tbody>{signal_rows}</tbody></table>"
+        "<h3>执行建议</h3>"
+        f'<ol class="compact-list">{action_items}</ol>'
+        "</section>"
+    )
+
+
+def _signal_status_label(status: str) -> str:
+    return {"ok": "ok", "warn": "watch", "block": "block"}.get(status, status)
+
+
+def _signal_status_class(status: str) -> str:
+    return {"ok": "good", "warn": "warn", "block": "bad"}.get(status, "warn")
+
+
 def _render_html_report(result: dict[str, Any]) -> str:
     reasons = "".join(
         f"<li>{html.escape(_compact_report_text(r, 260))}</li>"
@@ -2292,6 +2375,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     )
     raw_json = html.escape(json.dumps(result, ensure_ascii=False, indent=2))
     collection_html = _render_collection_summary(result)
+    cross_temporal_html = _render_cross_temporal_analysis(result)
     judge_answer_html = _render_judge_answer(result)
     score_rounds_html = _render_score_rounds(result)
     seat_digest_html = _render_seat_digest(result)
@@ -2308,6 +2392,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     deliberation_link = '<a href="#deliberation">查看互评评分</a>' if deliberation_html else ""
     citation_link = '<a href="#citation-verification">引用验证</a>' if citation_verification_html else ""
     evidence_os_link = '<a href="#evidence-os">Evidence OS</a>' if evidence_os_html else ""
+    cross_temporal_link = '<a href="#cross-temporal">横纵收口</a>' if cross_temporal_html else ""
     return f"""<!doctype html>
 <html lang="zh-Hans">
 <head>
@@ -2349,6 +2434,14 @@ def _render_html_report(result: dict[str, Any]) -> str:
     pre {{ white-space: pre-wrap; overflow: auto; background: #070b14; padding: 14px; border-radius: 8px; border:1px solid #1f2937; line-height:1.55; }}
     .section-head {{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }}
     .section-head p {{ margin:8px 0 0; }}
+    .report-lead {{ font-size:16px; line-height:1.75; color:var(--text); background:#0f172a; border:1px solid var(--line); border-radius:8px; padding:14px; }}
+    .report-columns {{ display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.2fr); gap:12px; margin:12px 0; }}
+    .report-column {{ border:1px solid var(--line); border-radius:8px; background:#101622; padding:14px; min-width:0; }}
+    .report-column h3 {{ margin-top:0; }}
+    .trace-mini {{ list-style:none; padding:0; margin:0; display:grid; gap:8px; }}
+    .trace-mini li {{ border:1px solid var(--line); border-radius:8px; padding:9px 10px; background:#0b1020; }}
+    .trace-mini strong {{ display:block; color:var(--accent); font-size:12px; margin-bottom:4px; }}
+    .trace-mini span {{ color:var(--muted); font-size:12px; line-height:1.45; }}
     .mini-actions {{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }}
     button {{ color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#101622; font-weight:700; cursor:pointer; }}
     button:hover, .actions a:hover, .nav a:hover {{ border-color:var(--accent); }}
@@ -2369,6 +2462,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     @media (max-width: 760px) {{
       .summary-grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }}
       .section-head {{ display:block; }}
+      .report-columns {{ grid-template-columns:1fr; }}
       .mini-actions {{ justify-content:flex-start; margin-top:10px; }}
       .seat-answer summary {{ grid-template-columns:1fr; }}
       .seat-meta {{ text-align:left; }}
@@ -2387,9 +2481,10 @@ def _render_html_report(result: dict[str, Any]) -> str:
     <p class="badge">{html.escape(str(result.get("mode_emoji", "")))} {html.escape(str(result.get("verdict_label", "")))} · {result.get("confidence", 0)}%</p>
     <h1>{html.escape(str(result.get("one_liner", "AI Judge Verdict")))}</h1>
     <p class="question">{html.escape(str(result.get("question", "")))}</p>
-    <div class="actions"><a href="/">返回提问界面</a>{judge_answer_link}{score_rounds_link}{citation_link}{evidence_os_link}{seat_digest_link}{seat_answers_link}{mentor_supplements_link}{deliberation_link}</div>
+    <div class="actions"><a href="/">返回提问界面</a>{cross_temporal_link}{judge_answer_link}{score_rounds_link}{citation_link}{evidence_os_link}{seat_digest_link}{seat_answers_link}{mentor_supplements_link}{deliberation_link}</div>
   </section>
   {collection_html}
+  {cross_temporal_html}
   {judge_answer_html}
   {score_rounds_html}
   {citation_verification_html}
@@ -2428,7 +2523,7 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
-    print("\n  AI Judge API Server v3.6.1")
+    print("\n  AI Judge API Server v3.6.2")
     print(f"  http://{args.host}:{args.port}")
     print(f"  {len(SEAT_PERSONAS)} seats available")
     print("  POST /api/judge now runs automatically\n")

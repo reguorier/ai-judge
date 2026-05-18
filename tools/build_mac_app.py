@@ -19,6 +19,8 @@ CONTENTS = APP_DIR / "Contents"
 MACOS = CONTENTS / "MacOS"
 RESOURCES = CONTENTS / "Resources"
 EXECUTABLE = "AIJudgeDesktop"
+DEFAULT_ARCH = "arm64"
+DEFAULT_DEPLOYMENT_TARGET = "13.0"
 
 
 def main() -> int:
@@ -37,13 +39,18 @@ def main() -> int:
 
     executable_path = MACOS / EXECUTABLE
     swift_source = PROJECT_ROOT / "desktop" / "AIJudgeDesktop.swift"
+    arch = os.environ.get("AI_JUDGE_DESKTOP_ARCH", DEFAULT_ARCH)
+    deployment_target = os.environ.get("AI_JUDGE_MACOS_DEPLOYMENT_TARGET", DEFAULT_DEPLOYMENT_TARGET)
     env = os.environ.copy()
     env["CLANG_MODULE_CACHE_PATH"] = str(clang_cache)
     env["SWIFT_MODULE_CACHE_PATH"] = str(swift_cache)
+    env["MACOSX_DEPLOYMENT_TARGET"] = deployment_target
     subprocess.run(
         [
             swift,
             str(swift_source),
+            "-target",
+            f"{arch}-apple-macos{deployment_target}",
             "-o",
             str(executable_path),
             "-framework",
@@ -65,9 +72,9 @@ def main() -> int:
         "CFBundleInfoDictionaryVersion": "6.0",
         "CFBundleName": APP_NAME,
         "CFBundlePackageType": "APPL",
-        "CFBundleShortVersionString": "3.6.1",
-        "CFBundleVersion": "3.6.1",
-        "LSMinimumSystemVersion": "13.0",
+        "CFBundleShortVersionString": "3.6.2",
+        "CFBundleVersion": "3.6.2",
+        "LSMinimumSystemVersion": deployment_target,
         "NSHighResolutionCapable": True,
     }
     with (CONTENTS / "Info.plist").open("wb") as fh:

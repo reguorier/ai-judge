@@ -7,6 +7,7 @@ from core.web_jury import (
     build_single_judge_baseline,
     build_web_deliberation,
     build_web_claims,
+    run_web_jury,
     _bridge_collection_insufficient,
 )
 
@@ -84,6 +85,50 @@ def test_resonance_followup_prompt_uses_model_questions():
     assert "如何定义验收标准？" in prompts[0]["questions"]
     assert "[AIJUDGE_RESONANCE_FOLLOWUP]" in prompts[0]["prompt"]
     assert "带入用户角色" in prompts[0]["prompt"]
+
+
+def test_run_web_jury_collects_second_round_resonance_answers(monkeypatch):
+    calls = []
+
+    def fake_run_web_seats(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return [
+                {
+                    "seat": "chatgpt",
+                    "seat_name": "ChatGPT",
+                    "ok": True,
+                    "response": "初轮方案。共振提问：\n1. 如何定义验收标准？\n2. 哪些接口要改？",
+                }
+            ]
+        return [
+            {
+                "seat": "chatgpt",
+                "seat_name": "ChatGPT",
+                "ok": True,
+                "elapsed_seconds": 3.2,
+                "response": "二轮方案：带入用户角色后，先补齐状态字段、接口和验收测试。",
+            }
+        ]
+
+    monkeypatch.setattr("core.web_jury.run_web_seats", fake_run_web_seats)
+
+    verdict = run_web_jury(
+        question="修复二次共振互动",
+        mode="flash",
+        seats=["chatgpt"],
+        run_id="run-followup-test",
+        collect_followups=True,
+    )
+
+    supplements = verdict["web_bridge"]["mentor_supplements"]
+    assert len(calls) == 2
+    assert calls[1]["seats"] == ["chatgpt"]
+    assert "[AIJUDGE_RESONANCE_FOLLOWUP]" in calls[1]["question"]
+    assert "带入用户角色" in calls[1]["question"]
+    assert supplements[0]["ok"] is True
+    assert supplements[0]["source_questions"] == ["如何定义验收标准？", "哪些接口要改？"]
+    assert "状态字段、接口和验收测试" in supplements[0]["response"]
 
 
 def test_slow_pending_seats_do_not_turn_partial_run_into_bridge_failure():

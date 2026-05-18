@@ -169,6 +169,91 @@ def test_send_button_failures_are_recoverable():
     })
 
 
+def test_web_worker_enables_second_round_resonance_collection(monkeypatch):
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    captured = {}
+
+    class FakeTasks:
+        def __init__(self):
+            self.completed = {}
+            self.failed = {}
+            self.progress = []
+
+        def update_progress(self, run_id, step, progress):
+            self.progress.append((run_id, step, progress))
+
+        def complete(self, run_id, verdict):
+            self.completed[run_id] = verdict
+
+        def fail(self, run_id, error):
+            self.failed[run_id] = error
+
+    fake_tasks = FakeTasks()
+
+    def fake_run_web_jury(**kwargs):
+        captured.update(kwargs)
+        return {
+            "run_id": kwargs["run_id"],
+            "question": kwargs["display_question"],
+            "mode": kwargs["mode"],
+            "seats": kwargs["seats"],
+            "web_bridge": {"raw_results": [], "mentor_supplements": []},
+            "average_score": 0.61,
+            "verdict": "conditional",
+            "verdict_label": "建议推进但需验证",
+            "one_liner": "二轮共振已进入收集链路。",
+        }
+
+    with tempfile.TemporaryDirectory() as tmp:
+        api_server.RUNS_DIR = Path(tmp)
+        api_server.TASKS = fake_tasks
+        monkeypatch.setattr(api_server, "bridge_status", lambda: {
+            "enabled_count": 1,
+            "configured_count": 1,
+            "ready_count": 1,
+            "playwright_installed": True,
+            "seat_browser_matrix": [],
+            "isolation": {},
+        })
+        monkeypatch.setattr(api_server, "build_prompt_flow", lambda *args, **kwargs: {
+            "intent": "fix",
+            "trace_id": "trace-followup",
+            "required_output": ["二轮共振"],
+            "assumptions_to_check": [],
+            "professional_prompt": "专业化后的修复请求",
+        })
+        monkeypatch.setattr(api_server, "decide_execution", lambda **kwargs: {
+            "can_run_deep_collection": True,
+            "runnable_seats": ["chatgpt"],
+            "message": "ready",
+        })
+        monkeypatch.setattr(api_server, "run_web_jury", fake_run_web_jury)
+        monkeypatch.setattr(api_server, "_attach_product_run_metadata", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "_attach_citation_mvp", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "generate_secure_view_url", lambda run_id: f"/view/{run_id}")
+        monkeypatch.setattr(api_server, "_save_run", lambda *args, **kwargs: None)
+        try:
+            api_server._run_worker(
+                "run-web-followup",
+                "修复二次共振互动",
+                "flash",
+                ["chatgpt"],
+                "web",
+                {},
+            )
+        finally:
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert fake_tasks.failed == {}
+    assert captured["question"] == "专业化后的修复请求"
+    assert captured["display_question"] == "修复二次共振互动"
+    assert captured["collect_followups"] is True
+    assert "run-web-followup" in fake_tasks.completed
+
+
 def test_progress_diagnostics_names_waiting_and_stale_seats():
     api_server = _load_api_server()
     old_runs_dir = api_server.RUNS_DIR

@@ -468,7 +468,15 @@ def run_chrome_fixed_tabs(
         item = submissions[seat]
         grace = float(item.get("post_timeout_grace_seconds") or 0.0)
         if grace > 0:
-            time.sleep(grace)
+            grace_deadline = time.time() + grace
+            while time.time() < grace_deadline:
+                remaining = max(0.0, grace_deadline - time.time())
+                if progress:
+                    progress(
+                        f"Chrome 固定标签最终采集缓冲：等待 {_seat_label(seat)}，剩余 {int(remaining)}s",
+                        0.72,
+                    )
+                time.sleep(min(3.0, remaining))
         blocking = _safe_execute_json(item["tab"], _build_clear_blocking_ui_js(), timeout=5)
         if blocking.get("dismissed"):
             time.sleep(0.8)
@@ -1068,7 +1076,10 @@ def _should_send_final_answer_nudge(
         return False
     if not item.get("submission_confirmed"):
         return False
-    if assessment.get("accepted") or assessment.get("polluted") or assessment.get("prompt_echo"):
+    thinking_only = bool(capture.get("thinking_only") or capture.get("qwen_thinking_complete_only"))
+    if assessment.get("accepted") or assessment.get("polluted"):
+        return False
+    if assessment.get("prompt_echo") and not thinking_only:
         return False
     if capture.get("page_busy"):
         return False
@@ -1078,7 +1089,7 @@ def _should_send_final_answer_nudge(
     response_text = str(assessment.get("response_text") or "").strip()
     if len(response_text) >= MIN_FALLBACK_ANSWER_CHARS:
         return False
-    return bool(capture.get("thinking_only") or capture.get("assistant_empty"))
+    return bool(thinking_only or capture.get("assistant_empty"))
 
 
 def _clean_response_text(text: str, prompt_id: str) -> str:
@@ -1381,17 +1392,46 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
     }}
   }}
   if (/chatgpt\\.com/i.test(location.hostname)) {{
-    const reliableOption = Array.from(document.querySelectorAll("[role='menuitemradio'],[role='menuitem'],button,[role='option'],div,span"))
-      .find(el => visible(el) && /^(Instant|快速|Fast|默认|Default)$/i.test(textOf(el)));
+    const chatgptLabel = el => (labelOf(el) || textOf(el)).replace(/\\s+/g, " ").trim();
+    const shortChatgptLabel = el => {{
+      const label = chatgptLabel(el);
+      return label.length <= 48 ? label : "";
+    }};
+    const reliableChatgptMode = label => /(^|\\b)(Instant|Fast|Default|Auto|No Thinking|Quick|快速|默认|自动|普通|不思考|非思考)(\\b|$)/i.test(label)
+      && !/(Thinking|Think|Reason|Deep Research|Agent|Search|Canvas|思考|深入|推理|研究|搜索|代理)/i.test(label);
+    const inOpenMenu = el => !!el?.closest?.("[role='menu'],[role='listbox'],[role='dialog'],[data-radix-popper-content-wrapper]");
+    const chatgptOptions = Array.from(document.querySelectorAll("[role='menuitemradio'],[role='menuitem'],button,[role='option']"))
+      .filter(el => visible(el) && el.getBoundingClientRect().width > 20 && shortChatgptLabel(el));
+    const reliableOption = chatgptOptions.find(el => inOpenMenu(el) && reliableChatgptMode(shortChatgptLabel(el)) && !selected(clickTarget(el)))
+      || chatgptOptions.find(el => inOpenMenu(el) && reliableChatgptMode(shortChatgptLabel(el)));
     const thinkingModeButton = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu']"))
-      .find(el => visible(el) && /^(深入|Thinking|Think|思考|Reason|推理)$/.test(textOf(el)));
+      .find(el => visible(el) && /(深入|Thinking|Think|思考|Reason|推理)/i.test(shortChatgptLabel(el)));
     if (reliableOption) {{
       click("chatgpt_reliable_mode", reliableOption);
+      needsFollowup = true;
     }} else if (thinkingModeButton) {{
       click("chatgpt_mode_menu_open", thinkingModeButton);
       needsFollowup = true;
+    }} else if (chatgptOptions.some(el => reliableChatgptMode(shortChatgptLabel(el)) && selected(clickTarget(el)))) {{
+      clicked.push("chatgpt_reliable_mode_verified");
     }} else {{
       clicked.push("chatgpt_reliable_mode_verified");
+    }}
+  }}
+  if (/aistudio\\.xiaomimimo\\.com/i.test(location.hostname)) {{
+    const usableInput = el => {{
+      if (!visible(el)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width >= 20 && rect.height >= 8;
+    }};
+    const hasComposer = Array.from(document.querySelectorAll("textarea,input,[contenteditable='true'],[role='textbox']")).some(usableInput);
+    if (!hasComposer && /^#\\/?$/.test(location.hash || "")) {{
+      const newChat = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
+        .find(el => visible(el) && /^(新对话|新建对话|New chat)$/i.test(textOf(el)));
+      if (newChat) {{
+        click("mimo_new_chat_from_history", newChat);
+        needsFollowup = true;
+      }}
     }}
   }}
   if (/chat\\.deepseek\\.com/i.test(location.hostname)) {{
@@ -1458,16 +1498,27 @@ def _build_fresh_navigation_js(fresh_url: str) -> str:
   }};
   const currentUrl = new URL(location.href);
   const targetUrl = new URL(target, location.href);
-  const sameTarget = normalizeForNavigation(currentUrl.href) === normalizeForNavigation(targetUrl.href);
+  const mimoExistingChatRoute = /aistudio\\.xiaomimimo\\.com/i.test(targetUrl.hostname)
+    && /^#\\/chat\\//.test(currentUrl.hash || "")
+    && (targetUrl.hash || "") === "#/chat";
+  if (mimoExistingChatRoute) {{
+    return JSON.stringify({{ ok: true, navigated: false, reason: "mimo_existing_chat_reused", url: currentUrl.href, previous_url: previous }});
+  }}
+  const hashSensitiveNavigation = /aistudio\\.xiaomimimo\\.com/i.test(targetUrl.hostname) || !!targetUrl.hash;
+  const normalizeFull = value => String(value || "").replace(/\\/$/, "");
+  const sameTarget = hashSensitiveNavigation
+    ? normalizeFull(currentUrl.href) === normalizeFull(targetUrl.href)
+    : normalizeForNavigation(currentUrl.href) === normalizeForNavigation(targetUrl.href);
+  const hashMismatch = hashSensitiveNavigation && currentUrl.hash !== targetUrl.hash;
   const bodyText = document.body?.innerText || document.body?.textContent || "";
   const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again/i.test(bodyText);
   if (sameTarget && pageError) {{
     location.reload();
     return JSON.stringify({{ ok: true, navigated: false, reloaded: true, reason: "page_error", url: target, previous_url: previous }});
   }}
-  if (!sameTarget && location.href !== target) {{
+  if ((hashMismatch || !sameTarget) && normalizeFull(location.href) !== normalizeFull(targetUrl.href)) {{
     location.href = targetUrl.href;
-    return JSON.stringify({{ ok: true, navigated: true, url: targetUrl.href, previous_url: previous }});
+    return JSON.stringify({{ ok: true, navigated: true, reason: hashMismatch ? "hash_route_mismatch" : "target_mismatch", url: targetUrl.href, previous_url: previous }});
   }}
   return JSON.stringify({{ ok: true, navigated: false, url: location.href }});
 }})();
@@ -1676,17 +1727,41 @@ def _build_click_send_js(prompt_id: str) -> str:
   }}
   if (!sendButton && /aistudio\\.xiaomimimo\\.com/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
-    const mimoButtons = Array.from(document.querySelectorAll("button"))
+    const mimoButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],[class*='send'],[class*='Send'],svg,i,span,div")).map(clickTarget))
+      .filter(btn => visible(btn) && !hasDisabledAncestor(btn) && !blockedLabel.test(buttonLabel(btn)))
+      .filter(btn => {{
+        const rect = btn.getBoundingClientRect();
+        const label = buttonLabel(btn);
+        const forceSend = /(send|发送|submit|arrow|icon-send|input-send|up-arrow|send-btn)/i.test(label);
+        return (forceSend || (rect.left >= inputRect.right - 120 && rect.left <= inputRect.right + 220))
+          && rect.top >= inputRect.top - 80
+          && rect.bottom <= inputRect.bottom + 160
+          && rect.width <= 96
+          && rect.height <= 96;
+      }});
+    sendButton = mimoButtons[mimoButtons.length - 1] || null;
+  }}
+  if (!sendButton && /doubao\\.com/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const doubaoButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],[class*='send'],[class*='Send'],[class*='submit'],[class*='Submit'],[class*='arrow'],svg,i,span,div")).map(clickTarget))
       .filter(btn => visible(btn) && !hasDisabledAncestor(btn))
       .filter(btn => {{
         const rect = btn.getBoundingClientRect();
-        return rect.left >= inputRect.right - 90
-          && rect.top >= inputRect.bottom - 30
-          && rect.top <= inputRect.bottom + 80
-          && rect.width <= 60
-          && rect.height <= 60;
+        if (!rect.width || !rect.height || rect.width > 120 || rect.height > 120) return false;
+        const label = buttonLabel(btn);
+        const forceSend = /(send|发送|submit|arrow|icon-send|input-send|up-arrow|send-btn|sendbtn|send-button|doubao-send)/i.test(label);
+        if (blockedLabel.test(label) && !forceSend) return false;
+        const closeToComposer = rect.top >= inputRect.top - 120
+          && rect.bottom <= inputRect.bottom + 180
+          && rect.left >= inputRect.left - 80
+          && rect.left <= inputRect.right + 280;
+        const emptyRightIcon = !(btn.innerText || "").trim()
+          && rect.left >= inputRect.right - 180
+          && rect.left <= inputRect.right + 260
+          && /(send|submit|arrow|icon|btn|wrapper)/i.test(label);
+        return (forceSend || emptyRightIcon) && closeToComposer;
       }});
-    sendButton = mimoButtons[mimoButtons.length - 1] || null;
+    sendButton = doubaoButtons[doubaoButtons.length - 1] || null;
   }}
   if (!sendButton && /agent\\.minimaxi\\.com/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
@@ -2085,22 +2160,46 @@ def _build_retry_submit_js(prompt_id: str) -> str:
     const label = buttonLabel(el);
     if (!forceSendLabel.test(label)) return false;
     if (blockedLabel.test(label) && !/(submit-btn|input-send-icon|chat-prompt-send-button|message-input-right-button-send|icon-send|icon-send1|send-button)/i.test(label)) return false;
-    return nearActiveInput(el) || /bigmodel\\.cn|chat\\.qwen\\.ai|aistudio\\.xiaomimimo\\.com/i.test(location.hostname);
+    return nearActiveInput(el) || /bigmodel\\.cn|chat\\.qwen\\.ai/i.test(location.hostname);
   }});
   let button = sendCandidates[sendCandidates.length - 1] || null;
   if (!button && /aistudio\\.xiaomimimo\\.com/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
-    const mimoButtons = Array.from(document.querySelectorAll("button"))
+    const mimoButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],[class*='send'],[class*='Send'],svg,i,span,div")).map(clickTarget))
+      .filter(btn => visible(btn) && !hasDisabledAncestor(btn) && !blockedLabel.test(buttonLabel(btn)))
+      .filter(btn => {{
+        const rect = btn.getBoundingClientRect();
+        const label = buttonLabel(btn);
+        const forceSend = /(send|发送|submit|arrow|icon-send|input-send|up-arrow|send-btn)/i.test(label);
+        return (forceSend || (rect.left >= inputRect.right - 120 && rect.left <= inputRect.right + 220))
+          && rect.top >= inputRect.top - 80
+          && rect.bottom <= inputRect.bottom + 160
+          && rect.width <= 96
+          && rect.height <= 96;
+      }});
+    button = mimoButtons[mimoButtons.length - 1] || null;
+  }}
+  if (!button && /doubao\\.com/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const doubaoButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],[class*='send'],[class*='Send'],[class*='submit'],[class*='Submit'],[class*='arrow'],svg,i,span,div")).map(clickTarget))
       .filter(btn => visible(btn) && !hasDisabledAncestor(btn))
       .filter(btn => {{
         const rect = btn.getBoundingClientRect();
-        return rect.left >= inputRect.right - 90
-          && rect.top >= inputRect.bottom - 30
-          && rect.top <= inputRect.bottom + 80
-          && rect.width <= 60
-          && rect.height <= 60;
+        if (!rect.width || !rect.height || rect.width > 120 || rect.height > 120) return false;
+        const label = buttonLabel(btn);
+        const forceSend = /(send|发送|submit|arrow|icon-send|input-send|up-arrow|send-btn|sendbtn|send-button|doubao-send)/i.test(label);
+        if (blockedLabel.test(label) && !forceSend) return false;
+        const closeToComposer = rect.top >= inputRect.top - 120
+          && rect.bottom <= inputRect.bottom + 180
+          && rect.left >= inputRect.left - 80
+          && rect.left <= inputRect.right + 280;
+        const emptyRightIcon = !(btn.innerText || "").trim()
+          && rect.left >= inputRect.right - 180
+          && rect.left <= inputRect.right + 260
+          && /(send|submit|arrow|icon|btn|wrapper)/i.test(label);
+        return (forceSend || emptyRightIcon) && closeToComposer;
       }});
-    button = mimoButtons[mimoButtons.length - 1] || null;
+    button = doubaoButtons[doubaoButtons.length - 1] || null;
   }}
   if (!button && /agent\\.minimaxi\\.com/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
@@ -2195,7 +2294,6 @@ def _build_capture_js(prompt_id: str) -> str:
     .map(el => [el.getAttribute("aria-label") || "", el.innerText || "", el.textContent || "", String(el.className || "")].join(" "))
     .join(" ");
   const pageBusy = /停止回答|stop generating|stop response|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
-  const thinkingOnly = /已思考\\s*\\d+\\s*s|thinking\\s*\\d+\\s*s|思考中|已经完成思考|已完成思考|完成思考|thinking/i.test(bodyRaw) && assistantEmpty;
   const editableAncestors = node => {{
     for (let el = node.parentElement; el; el = el.parentElement) {{
       const tag = (el.tagName || "").toLowerCase();
@@ -2218,6 +2316,12 @@ def _build_capture_js(prompt_id: str) -> str:
   const bodyText = nonInputParts.join("\\n").trim();
   const answerMarkerInBody = bodyText.includes(answerStart);
   const answerMarkerInRaw = bodyRaw.includes(answerStart) || pageRaw.includes(answerStart);
+  const qwenThinkingCompleteOnly = /chat\\.qwen\\.ai/i.test(location.hostname)
+    && /已经完成思考|已完成思考|完成思考/i.test(bodyRaw)
+    && !answerMarkerInRaw
+    && !answerMarkerInBody;
+  const thinkingOnly = (/已思考\\s*\\d+\\s*s|thinking\\s*\\d+\\s*s|思考中|已经完成思考|已完成思考|完成思考|thinking/i.test(bodyRaw) && assistantEmpty)
+    || qwenThinkingCompleteOnly;
   let markerFound = false;
   let knownError = null;
   let markerText = "";
@@ -2305,7 +2409,7 @@ def _build_capture_js(prompt_id: str) -> str:
   const fallbackText = pickFallback(unique);
   const text = markerText && markerText.length >= 80 ? markerText : fallbackText;
   const finalText = markerClosed ? markerText : (markerText && markerText.length >= 80 ? markerText : fallbackText);
-  return JSON.stringify({{ ok: true, title: document.title, url: location.href, text: finalText, text_length: finalText.length, marker_found: markerFound, marker_closed: markerClosed, marker_in_input: markerInInput, known_error: knownError, blocking_ui_active: blockingUiActive, assistant_empty: assistantEmpty, thinking_only: thinkingOnly, page_busy: pageBusy }});
+  return JSON.stringify({{ ok: true, title: document.title, url: location.href, text: finalText, text_length: finalText.length, marker_found: markerFound, marker_closed: markerClosed, marker_in_input: markerInInput, known_error: knownError, blocking_ui_active: blockingUiActive, assistant_empty: assistantEmpty, qwen_thinking_complete_only: qwenThinkingCompleteOnly, thinking_only: thinkingOnly, page_busy: pageBusy }});
 }})();
 """
 

@@ -49,6 +49,7 @@ const state = {
   autoRecheckTimer: null,
   autoRecheckRunId: null,
   recheckInFlight: false,
+  selectedTaskId: localStorage.getItem("ai_judge_selected_task") || "request",
   mentorEnabled: localStorage.getItem("ai_judge_mentor_enabled") === "1",
   mentorConfirmed: false,
   mentorSignature: "",
@@ -61,15 +62,38 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyProductMode(state.productMode);
   renderTimeline(0);
   initMentor();
+  renderTaskCenter();
+  renderEvidenceTree();
+  renderCouncilCompletion();
   await refreshAll();
   applyMode("flash");
   applyEngine("local");
   await restoreLastRun();
+  renderTaskCenter();
+  renderEvidenceTree();
+  renderCouncilCompletion();
 });
 
 function bindUI() {
   $$(".tab").forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
   $$("[data-tab-shortcut]").forEach(item => item.addEventListener("click", () => switchTab(item.dataset.tabShortcut)));
+  $("#task-table-body")?.addEventListener("click", event => {
+    const openButton = event.target.closest("[data-task-open]");
+    if (openButton) {
+      event.stopPropagation();
+      switchTab(openButton.dataset.taskOpen);
+      return;
+    }
+    const row = event.target.closest("[data-task-id]");
+    if (!row) return;
+    state.selectedTaskId = row.dataset.taskId || "request";
+    localStorage.setItem("ai_judge_selected_task", state.selectedTaskId);
+    renderTaskCenter();
+  });
+  $("#task-detail-actions")?.addEventListener("click", event => {
+    const target = event.target.closest("[data-task-open]");
+    if (target) switchTab(target.dataset.taskOpen);
+  });
   $$("#product-switch .product-mode").forEach(btn => btn.addEventListener("click", () => applyProductMode(btn.dataset.productMode)));
   $("#btn-refresh").addEventListener("click", refreshAll);
   $("#btn-history-refresh").addEventListener("click", loadHistory);
@@ -112,6 +136,7 @@ function bindUI() {
     renderSeats();
     updateMentorPreflight();
     updateSubmitState();
+    renderTaskCenter();
   });
   $("#btn-clear-all").addEventListener("click", () => {
     state.selectedSeats.clear();
@@ -119,6 +144,7 @@ function bindUI() {
     renderSeats();
     updateMentorPreflight();
     updateSubmitState();
+    renderTaskCenter();
   });
   $("#btn-init-bridge").addEventListener("click", initBridgeConfig);
   $("#btn-calibrate-bridge").addEventListener("click", calibrateBridge);
@@ -132,6 +158,10 @@ function bindUI() {
     renderPublishGate("已标记为发布级可用");
   });
   $$(".action-tile").forEach(btn => btn.addEventListener("click", () => openInfoEntry(btn.dataset.openInfo)));
+  ["notify-email", "notify-webhook", "notify-feishu", "notify-wecom", "notify-browser"].forEach(id => {
+    $(`#${id}`)?.addEventListener("input", renderTaskCenter);
+    $(`#${id}`)?.addEventListener("change", renderTaskCenter);
+  });
 }
 
 function applyProductMode(mode) {
@@ -140,15 +170,25 @@ function applyProductMode(mode) {
   $("#app-shell").classList.toggle("pro-mode", state.productMode === "pro");
   $("#app-shell").classList.toggle("simple-mode", state.productMode !== "pro");
   $$("#product-switch .product-mode").forEach(btn => btn.classList.toggle("active", btn.dataset.productMode === state.productMode));
-  if (state.currentVerdict) renderDecisionMemo(state.currentVerdict);
+  if (state.currentVerdict) {
+    renderDecisionMemo(state.currentVerdict);
+    renderCrossTemporal(state.currentVerdict);
+  }
   renderArena();
   renderSimpleSeatSummary();
+  renderTaskCenter();
+  renderEvidenceTree();
+  renderCouncilCompletion();
 }
 
 async function refreshAll() {
   await Promise.all([loadModes(), loadSeats(), loadBridgeStatus(), loadHistory(), loadSeatScoreboard()]);
   renderSeatScores();
   renderArena();
+  renderTaskCenter();
+  renderEvidenceTree();
+  renderCouncilCompletion();
+  renderMentorGateChecklist();
   updateTopStatus();
 }
 
@@ -217,6 +257,8 @@ async function loadBridgeStatus() {
   renderBridgeStatus();
   renderMapping();
   renderArena();
+  renderTaskCenter();
+  renderCouncilCompletion();
   updateTopStatus();
 }
 
@@ -255,6 +297,8 @@ function applyMode(mode) {
   updateMentorPreflight();
   updateSubmitState();
   updateTopStatus();
+  renderTaskCenter();
+  renderCouncilCompletion();
 }
 
 function applyEngine(engine) {
@@ -266,6 +310,7 @@ function applyEngine(engine) {
   updateMentorPreflight();
   updateSubmitState();
   updateTopStatus();
+  renderTaskCenter();
 }
 
 function renderBridgeStatus() {
@@ -321,6 +366,275 @@ function bridgeChannelCounts() {
   return counts;
 }
 
+function renderTaskCenter() {
+  const body = $("#task-table-body");
+  if (!body) return;
+  const tasks = buildTaskItems();
+  if (!tasks.some(task => task.id === state.selectedTaskId)) {
+    state.selectedTaskId = tasks[0]?.id || "request";
+  }
+  const selected = tasks.find(task => task.id === state.selectedTaskId) || tasks[0];
+  body.innerHTML = tasks.map(task => `
+    <tr data-task-id="${escapeAttr(task.id)}" class="${task.id === selected.id ? "active" : ""}">
+      <td><strong>${escapeHtml(task.title)}</strong><span class="muted">${escapeHtml(task.summary)}</span></td>
+      <td>${escapeHtml(task.stage)}</td>
+      <td><span class="state-label ${escapeAttr(task.risk)}">${escapeHtml(task.riskLabel)}</span></td>
+      <td>${escapeHtml(task.seats)}</td>
+      <td><button class="task-action" data-task-open="${escapeAttr(task.tab)}">${escapeHtml(task.next)}</button></td>
+    </tr>
+  `).join("");
+  const pending = tasks.filter(task => task.risk !== "ok").length;
+  const running = state.currentTask?.status === "running" && !state.currentTask?.progress_diagnostics?.stale ? 1 : 0;
+  const counts = bridgeChannelCounts();
+  const publishSummary = buildPublishGateSummary();
+  $("#task-pending-count").textContent = pending;
+  $("#task-running-count").textContent = running;
+  $("#task-ready-count").textContent = `${counts.webReady}/${counts.webTotal}`;
+  $("#task-blocker-count").textContent = publishSummary.blockers;
+  renderTaskInspector(selected, publishSummary);
+}
+
+function buildTaskItems() {
+  const counts = bridgeChannelCounts();
+  const coverage = seatCoverageSummary();
+  const hasVerdict = Boolean(state.currentVerdict);
+  const hasQuestion = Boolean($("#question-input")?.value.trim());
+  const bridgeNeedsWork = counts.webTotal > 0 && counts.webReady < counts.webTotal;
+  const publishSummary = buildPublishGateSummary();
+  const evidenceSummary = evidenceGateSummary();
+  const mentorSummary = mentorGateSummary();
+  const draftRisk = state.currentTask?.status === "running"
+    ? "warn"
+    : hasVerdict
+      ? "ok"
+      : "warn";
+  return [
+    {
+      id: "request",
+      title: "新的议题评审",
+      summary: state.mentorEnabled ? "从问题录入、导师预检和执行确认开始" : "快速模式直达，可随时打开导师门禁",
+      stage: "录入",
+      risk: mentorSummary.state,
+      riskLabel: mentorSummary.label,
+      seats: state.selectedSeats.size ? `${state.selectedSeats.size} 席` : "按模式",
+      next: hasQuestion ? "确认任务" : "填写问题",
+      tab: "request",
+      detail: mentorSummary.detail,
+    },
+    {
+      id: "draft",
+      title: "最近判词",
+      summary: hasVerdict ? "当前判词已恢复，可查看草稿与执行轨迹" : "运行一次评议后生成可审计草稿",
+      stage: "生成",
+      risk: draftRisk,
+      riskLabel: hasVerdict ? "可查看" : state.currentTask?.status === "running" ? "运行中" : "等待结果",
+      seats: coverage.label,
+      next: "查看草稿",
+      tab: "draft",
+      detail: hasVerdict ? finalReportText(state.currentVerdict).slice(0, 220) : "提交问题后，这里会恢复最后一次 run 的生成结果和报告出口。",
+    },
+    {
+      id: "evidence",
+      title: "证据链审查",
+      summary: "把主张、模型原文、分歧和执行日志拆开审查",
+      stage: "审查",
+      risk: evidenceSummary.state,
+      riskLabel: evidenceSummary.label,
+      seats: `${evidenceSummary.nodes} 节点`,
+      next: "看证据树",
+      tab: "evidence",
+      detail: evidenceSummary.detail,
+    },
+    {
+      id: "council",
+      title: "网页桥接校准",
+      summary: "确认网页/桌面席位是否可后台收集，并查看 COUNCIL-004 人格席位",
+      stage: "席位",
+      risk: bridgeNeedsWork ? "warn" : "ok",
+      riskLabel: bridgeNeedsWork ? "需校准" : "就绪",
+      seats: `${counts.webReady}/${counts.webTotal}`,
+      next: "模型对比",
+      tab: "council",
+      detail: bridgeNeedsWork
+        ? `仍有 ${Math.max(0, counts.webTotal - counts.webReady)} 个网页席位未就绪，专业版可查看每席位原因。`
+        : "网页席位和桌面席位已进入可观察状态。",
+    },
+    {
+      id: "publish",
+      title: "发布门禁",
+      summary: "证据、分歧、风险披露、日志和人工确认的硬门禁",
+      stage: "发布",
+      risk: publishSummary.blockers ? "block" : "ok",
+      riskLabel: publishSummary.blockers ? `${publishSummary.blockers} 阻断` : "可发布",
+      seats: coverage.label,
+      next: "复核门禁",
+      tab: "publish",
+      detail: publishSummary.reason,
+    },
+  ];
+}
+
+function renderTaskInspector(task, publishSummary) {
+  if (!task) return;
+  $("#task-detail-title").textContent = task.title;
+  $("#task-detail-summary").textContent = task.detail || task.summary;
+  $("#task-detail-actions").innerHTML = `
+    <button class="primary-action" data-task-open="${escapeAttr(task.tab)}">${escapeHtml(task.next)}</button>
+    <button class="ghost" data-task-open="publish">查看发布门禁</button>
+  `;
+  $("#task-inspector-title").textContent = task.title;
+  $("#task-inspector-summary").textContent = task.summary;
+  $("#task-inspector-stage").textContent = task.stage;
+  $("#task-inspector-gate").textContent = task.riskLabel;
+  $("#task-inspector-next").textContent = task.next;
+  renderBridgeHealth("#task-bridge-health", { limit: state.productMode === "pro" ? 13 : 6 });
+  renderNotificationStrip();
+  if (publishSummary?.blockers !== undefined) {
+    $("#task-blocker-count").classList.toggle("danger-text", publishSummary.blockers > 0);
+  }
+}
+
+function renderBridgeHealth(selector, options = {}) {
+  const target = $(selector);
+  if (!target) return;
+  const rows = bridgeHealthRows();
+  const limit = options.limit || rows.length;
+  target.innerHTML = rows.slice(0, limit).map(row => `
+    <div class="bridge-health-card ${escapeAttr(row.state)}">
+      <strong>${escapeHtml(row.name)}</strong>
+      <span>${escapeHtml(row.label)} · ${escapeHtml(row.detail)}</span>
+    </div>
+  `).join("") || `<div class="bridge-health-card warn"><strong>等待配置</strong><span>读取本地席位和网页桥接状态后显示。</span></div>`;
+}
+
+function bridgeHealthRows() {
+  const seats = state.seats.length ? state.seats : fallbackSeats();
+  return seats.map(seat => seatOperationalState(seat));
+}
+
+function seatOperationalState(seat) {
+  const seatId = seat.id || seat.seat;
+  const raw = ((state.currentVerdict?.web_bridge || {}).raw_results || []).find(item => item.seat === seatId);
+  if (raw) {
+    if (raw.ok) {
+      return { seat: seatId, name: seat.name || seatName(seatId), state: "ok", label: "有效", detail: `${String(raw.response || "").length} 字已回收` };
+    }
+    const code = raw.error?.code || "未返回";
+    return {
+      seat: seatId,
+      name: seat.name || seatName(seatId),
+      state: isSupplementableResult(raw) ? "warn" : "block",
+      label: isSupplementableResult(raw) ? "待回收" : "阻断",
+      detail: statusLabel(code, false),
+    };
+  }
+  const diag = (state.currentTask?.progress_diagnostics?.seats || []).find(item => item.seat === seatId);
+  if (diag) {
+    const stateName = diag.state || "";
+    const blocked = ["blocked", "failed"].includes(stateName);
+    const done = ["done", "complete"].includes(stateName);
+    return {
+      seat: seatId,
+      name: diag.name || seat.name || seatName(seatId),
+      state: done ? "ok" : blocked ? "block" : "warn",
+      label: diag.status || (done ? "完成" : "观察中"),
+      detail: diag.reason || diag.detail || "运行中",
+    };
+  }
+  if (state.engine !== "web") {
+    return { seat: seatId, name: seat.name || seatName(seatId), state: "ok", label: "本地", detail: seat.strength || "本地席位就绪" };
+  }
+  const mapped = bridgeMatrixBySeat(seatId) || {};
+  const bridgeSeat = bridgeSeatById(seatId) || {};
+  const ready = Boolean((mapped.ready ?? bridgeSeat.ready) || false);
+  const channel = mapped.channel || bridgeSeat.channel || "web";
+  const reason = mapped.reason || bridgeSeat.reason;
+  if (ready) {
+    return { seat: seatId, name: seat.name || seatName(seatId), state: "ok", label: channelLabel(channel), detail: "校准通过" };
+  }
+  const configured = Boolean(mapped.target || bridgeSeat.url || bridgeSeat.browser_label || bridgeSeat.configured);
+  return {
+    seat: seatId,
+    name: seat.name || seatName(seatId),
+    state: configured ? "warn" : "block",
+    label: configured ? "待校准" : "未配置",
+    detail: statusLabel(reason || (configured ? "needs_calibration" : "not_configured"), false),
+  };
+}
+
+function renderNotificationStrip() {
+  const target = $("#task-notify-strip");
+  if (!target) return;
+  const channels = activeNotificationChannels();
+  const runState = state.currentTask?.status === "running" ? "后台运行中" : state.currentVerdict ? "最近判词已完成" : "等待任务";
+  target.innerHTML = [
+    `<span class="tag">${escapeHtml(runState)}</span>`,
+    channels.length
+      ? channels.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("")
+      : `<span class="tag chip-warn">未配置通知</span>`,
+  ].join("");
+}
+
+function activeNotificationChannels() {
+  const channels = [];
+  if ($("#notify-email")?.value.trim()) channels.push("Email");
+  if ($("#notify-webhook")?.value.trim()) channels.push("Webhook");
+  if ($("#notify-feishu")?.value.trim()) channels.push("飞书");
+  if ($("#notify-wecom")?.value.trim()) channels.push("企微");
+  if ($("#notify-browser")?.checked) channels.push("桌面通知");
+  return channels;
+}
+
+function mentorGateSummary() {
+  const question = $("#question-input")?.value.trim() || "";
+  if (!state.mentorEnabled) {
+    return { state: "ok", label: "快速直达", detail: "导师门禁未启用，任务会按当前问题直接进入评议。" };
+  }
+  const snapshot = state.mentorSnapshot || buildMentorPreflight(question);
+  if (!question) return { state: "block", label: "待输入", detail: "先输入问题，导师门禁才能判断清晰度和风险边界。" };
+  if (!state.mentorConfirmed) return { state: "warn", label: "待确认", detail: snapshot.next_question || "确认导师预检后再运行。" };
+  return { state: "ok", label: "已确认", detail: snapshot.execution_draft || "导师预检已确认。" };
+}
+
+function evidenceGateSummary() {
+  const nodes = buildEvidenceNodes();
+  const blockers = nodes.filter(item => item.state === "block").length;
+  const warnings = nodes.filter(item => item.state === "warn").length;
+  if (blockers) return { state: "block", label: `${blockers} 阻断`, nodes: nodes.length, detail: "证据链仍有硬阻断，不能进入发布级可用。" };
+  if (warnings) return { state: "warn", label: `${warnings} 待复核`, nodes: nodes.length, detail: "证据链可读，但仍有回收、引用或分歧需要人工复核。" };
+  return { state: "ok", label: "可审查", nodes: nodes.length, detail: "主张、证据和日志已形成可审查链路。" };
+}
+
+function seatCoverageSummary() {
+  const v = state.currentVerdict || {};
+  const raw = v.web_bridge?.raw_results || [];
+  const rawOk = raw.filter(item => item.ok).length;
+  const scoreCount = (v.seat_scores || []).length;
+  const ok = raw.length ? rawOk : scoreCount;
+  const total = Number(v.web_bridge?.requested_count || raw.length || v.seat_count || state.selectedSeats.size || state.seats.length || 0);
+  const pct = total ? Math.round((ok / total) * 100) : 0;
+  return { ok, total, pct, label: total ? `${ok}/${total}` : "按模式" };
+}
+
+function buildPublishGateSummary() {
+  const checks = buildPublishGateChecks();
+  const blockers = checks.filter(item => item.state === "block").length;
+  const warnings = checks.filter(item => item.state === "warn").length;
+  const human = checks.find(item => item.key === "human_confirmation");
+  const nonHumanBlockers = checks.filter(item => item.key !== "human_confirmation" && item.state === "block").length;
+  const ready = Boolean(state.currentVerdict && nonHumanBlockers === 0 && state.publishCleared);
+  const reason = ready
+    ? "全部硬门禁通过，已完成发布级人工确认。"
+    : nonHumanBlockers
+      ? `仍有 ${nonHumanBlockers} 个硬门禁阻断。`
+      : human?.state !== "ok"
+        ? "硬门禁已满足，等待人工发布确认。"
+        : warnings
+          ? `还有 ${warnings} 个复核提醒。`
+          : "等待判词生成。";
+  return { checks, blockers, warnings, nonHumanBlockers, ready, reason };
+}
+
 async function initBridgeConfig() {
   $("#bridge-status").textContent = "生成配置中...";
   try {
@@ -337,6 +651,8 @@ async function initBridgeConfig() {
   }
   renderBridgeStatus();
   renderMapping();
+  renderTaskCenter();
+  renderCouncilCompletion();
   updateSubmitState();
 }
 
@@ -364,6 +680,8 @@ async function calibrateBridge() {
   renderBridgeStatus();
   renderMapping();
   renderSeats();
+  renderTaskCenter();
+  renderCouncilCompletion();
   updateSubmitState();
 }
 
@@ -386,6 +704,7 @@ function renderSeats() {
     renderSeats();
     updateMentorPreflight();
     updateSubmitState();
+    renderTaskCenter();
   }));
   $("#selected-count").textContent = `当前 ${state.selectedSeats.size} 席`;
   renderArena();
@@ -400,6 +719,7 @@ function renderArena() {
   renderArenaRounds();
   renderDeltaRibbon();
   renderSimpleSeatSummary();
+  renderCouncilCompletion();
 }
 
 function renderSimpleSeatSummary() {
@@ -630,6 +950,8 @@ function updateMentorPreflight() {
     panel.hidden = true;
     inline.textContent = "快速模式直达";
     state.mentorSnapshot = null;
+    renderMentorGateChecklist();
+    renderTaskCenter();
     return;
   }
   panel.hidden = false;
@@ -643,6 +965,51 @@ function updateMentorPreflight() {
   $("#mentorAssumptions").innerHTML = snapshot.assumptions.map(item => `<li>${escapeHtml(item)}</li>`).join("");
   $("#mentorRoutes").innerHTML = snapshot.model_routes.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("");
   inline.textContent = state.mentorConfirmed ? "已确认，可执行" : "需确认理解后执行";
+  renderMentorGateChecklist();
+  renderTaskCenter();
+}
+
+function renderMentorGateChecklist() {
+  const list = $("#mentorGateChecklist");
+  if (!list) return;
+  const question = $("#question-input")?.value.trim() || "";
+  const snapshot = state.mentorEnabled ? (state.mentorSnapshot || buildMentorPreflight(question)) : null;
+  const items = state.mentorEnabled ? [
+    {
+      title: "问题清晰度",
+      hint: question ? "目标、输出和边界已进入预检" : "还没有可评审的问题",
+      meta: question ? `${snapshot.clarity}` : "待输入",
+      state: !question ? "block" : snapshot.clarity >= 70 ? "ok" : "warn",
+    },
+    {
+      title: "风险边界",
+      hint: "发布、隐私、部署、金融等外部影响会触发二次确认",
+      meta: `${snapshot.risk}`,
+      state: snapshot.risk >= 68 && !state.mentorConfirmed ? "warn" : "ok",
+    },
+    {
+      title: "模型路由",
+      hint: (snapshot.model_routes || []).join("；") || "默认快速评议",
+      meta: snapshot.route_label || "Direct",
+      state: (snapshot.model_routes || []).length ? "ok" : "warn",
+    },
+    {
+      title: "执行确认",
+      hint: snapshot.next_question || "确认后进入后台任务",
+      meta: state.mentorConfirmed ? "已确认" : "待确认",
+      state: state.mentorConfirmed ? "ok" : "block",
+    },
+  ] : [
+    { title: "快速模式", hint: "当前不会阻断提交，适合低风险问题", meta: "直达", state: "ok" },
+    { title: "导师增强", hint: "打开“先帮我想清楚”后启用清晰度、风险和复杂度门禁", meta: "可选", state: "warn" },
+    { title: "模型路由", hint: "提交时仍会按当前议事深度选择席位", meta: state.selectedMode, state: "ok" },
+  ];
+  list.innerHTML = items.map(item => `
+    <li class="${escapeAttr(item.state)}">
+      <span class="mentor-gate-title"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.hint)}</small></span>
+      <span>${escapeHtml(item.meta)}</span>
+    </li>
+  `).join("");
 }
 
 function buildMentorPreflight(question) {
@@ -989,6 +1356,8 @@ function handleTask(task) {
   const pct = Math.round((Number(task.progress) || 0) * 100);
   setProgress(pct, task.current_step || task.status || "运行中");
   renderRunDiagnostics(task);
+  renderTaskCenter();
+  renderCouncilCompletion();
 
   if (task.status === "complete") {
     cleanupProgress();
@@ -1051,6 +1420,7 @@ function renderVerdict(v) {
   renderExecutionPlan(v.execution_plan, v.web_bridge);
   renderJudgeAnswer(v);
   renderScoreRounds(v.web_bridge);
+  renderCrossTemporal(v);
   renderTrace(v.execution_trace);
   if (v.run_id) loadTrace(v.run_id);
   loadSeatScoreboard().then(() => {
@@ -1060,7 +1430,10 @@ function renderVerdict(v) {
   renderSeatScores();
   renderArena();
   renderSimpleSeatSummary();
+  renderEvidenceTree();
+  renderCouncilCompletion();
   renderPublishGate();
+  renderTaskCenter();
 }
 
 function finalReportText(v) {
@@ -1101,44 +1474,173 @@ function renderDecisionMemo(v) {
   renderSeatStatusStrip("#memo-seat-strip", raw, { includeEmpty: false });
 }
 
+function renderCrossTemporal(v) {
+  const analysis = v?.cross_temporal_analysis || null;
+  const memo = $("#xray-memo-section");
+  const panel = $("#cross-temporal-panel");
+  if (!analysis) {
+    if (memo) memo.hidden = true;
+    if (panel) panel.hidden = true;
+    return;
+  }
+  const closeout = analysis.closeout_report || {};
+  const vertical = analysis.vertical_trace || {};
+  const horizontal = analysis.horizontal_comparison || {};
+  const mathAudit = analysis.math_audit || {};
+  const signals = mathAudit.signals || [];
+  if (memo) {
+    memo.hidden = false;
+    $("#xray-mini").innerHTML = [
+      ["纵向卡点", vertical.bridge_health || vertical.current_stage || "-"],
+      ["横向共识", horizontal.consensus_label || "-"],
+      ["覆盖率", `${horizontal.ok_count || 0}/${horizontal.requested_count || 0}`],
+    ].map(([label, value]) => `
+      <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
+    `).join("");
+    $("#xray-summary").textContent = state.productMode === "pro"
+      ? (closeout.executive_summary || "")
+      : excerpt(closeout.executive_summary || closeout.final_judgment || "", 260);
+  }
+  if (!panel) return;
+  panel.hidden = false;
+  $("#cross-temporal-summary").textContent = closeout.executive_summary || analysis.method || "";
+  const tags = [
+    closeout.decision_score ? `评分 ${closeout.decision_score}` : "",
+    horizontal.leader?.seat_name ? `领先 ${horizontal.leader.seat_name}` : "",
+    horizontal.outlier?.seat_name ? `反例 ${horizontal.outlier.seat_name}` : "",
+    vertical.retry_event_count ? `回收 ${vertical.retry_event_count}` : "",
+  ].filter(Boolean);
+  $("#cross-temporal-tags").innerHTML = tags.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("");
+  $("#math-signal-list").innerHTML = signals.slice(0, 6).map(signal => `
+    <div class="math-signal ${escapeAttr(signal.severity || "ok")}">
+      <strong>${escapeHtml(signal.label || signal.id || "-")}</strong>
+      <small>${escapeHtml(signalSeverityLabel(signal.severity))}</small>
+      <span>${escapeHtml(signal.summary || "")}</span>
+    </div>
+  `).join("");
+}
+
+function buildPublishGateChecks() {
+  const v = state.currentVerdict;
+  const hasVerdict = Boolean(v);
+  const confidence = Number(v?.confidence || 0);
+  const raw = v?.web_bridge?.raw_results || [];
+  const supplementable = raw.filter(isSupplementableResult).length;
+  const hardFailures = raw.filter(item => item && !item.ok && !isSupplementableResult(item)).length;
+  const coverage = seatCoverageSummary();
+  const evidence = evidenceGateSummary();
+  const traceEvents = currentTraceEvents();
+  const disagreements = v?.web_bridge?.deliberation?.disagreements || v?.disagreements || [];
+  const riskText = [
+    ...(v?.reasons || []),
+    ...(v?.next_steps || []),
+    v?.one_liner || "",
+    v?.cross_temporal_analysis?.closeout_report?.executive_summary || "",
+  ].join(" ");
+  const mentor = v?.mentor_preflight || state.mentorSnapshot;
+  const mentorEnabledForRun = Boolean(v?.mentor_preflight || state.mentorEnabled);
+  const nonHumanReady = hasVerdict
+    && supplementable === 0
+    && hardFailures === 0
+    && evidence.state !== "block"
+    && coverage.total > 0
+    && (coverage.pct >= 60 || state.engine !== "web")
+    && (traceEvents.length > 0 || hasVerdict);
+  return [
+    {
+      key: "verdict",
+      text: "判词已生成",
+      hint: "完整保留问题、立场、结论和下一步",
+      meta: hasVerdict ? "通过" : "等待结果",
+      state: hasVerdict ? "ok" : "block",
+    },
+    {
+      key: "mentor",
+      text: "导师预检记录",
+      hint: "高风险问题需要明确清晰度、风险和模型路由",
+      meta: mentorEnabledForRun ? (mentor?.route_label || mentor?.route || "已记录") : "快速直达",
+      state: mentorEnabledForRun && !mentor ? "warn" : "ok",
+    },
+    {
+      key: "seat_coverage",
+      text: "席位覆盖率",
+      hint: "网页席位不能把部分返回伪装成全模型共识",
+      meta: coverage.total ? `${coverage.ok}/${coverage.total} · ${coverage.pct}%` : "等待席位",
+      state: !hasVerdict ? "block" : coverage.total && coverage.pct >= 60 ? "ok" : "warn",
+    },
+    {
+      key: "web_recovery",
+      text: "网页答案回收",
+      hint: "失败、慢生成、旧页面答案必须显式标记",
+      meta: supplementable ? `${supplementable} 席待回收` : hardFailures ? `${hardFailures} 席失败` : "无待回收",
+      state: supplementable ? "warn" : hardFailures ? "block" : "ok",
+    },
+    {
+      key: "evidence",
+      text: "证据链完整",
+      hint: "Reasoning Tree 中至少要有主张、证据和下一步",
+      meta: `${evidence.nodes} 节点`,
+      state: evidence.state,
+    },
+    {
+      key: "dissent",
+      text: "分歧处理",
+      hint: "有反方或低可信度时只允许带风险发布",
+      meta: disagreements.length ? `${disagreements.length} 条分歧` : "无显式分歧",
+      state: disagreements.length && confidence < 80 ? "warn" : "ok",
+    },
+    {
+      key: "risk_disclosure",
+      text: "风险披露",
+      hint: "报告要写明不确定性、阻断或人工复核边界",
+      meta: /风险|阻断|不足|不确定|复核|回收|失败/.test(riskText) ? "已披露" : "待补充",
+      state: !hasVerdict ? "block" : /风险|阻断|不足|不确定|复核|回收|失败/.test(riskText) ? "ok" : "warn",
+    },
+    {
+      key: "audit_log",
+      text: "审计日志",
+      hint: "需要保留执行轨迹、桥接状态或历史 run 入口",
+      meta: traceEvents.length ? `${traceEvents.length} 条` : hasVerdict ? "判词可追溯" : "等待日志",
+      state: traceEvents.length || hasVerdict ? "ok" : "block",
+    },
+    {
+      key: "human_confirmation",
+      text: "人工发布确认",
+      hint: "发布按钮不会发送外部内容，只标记本轮可发布",
+      meta: state.publishCleared ? "通过" : "待确认",
+      state: state.publishCleared && nonHumanReady ? "ok" : "block",
+    },
+  ];
+}
+
 function renderPublishGate(message = "") {
   if (!$("#publishChecklist")) return;
+  const summary = buildPublishGateSummary();
   const hasVerdict = Boolean(state.currentVerdict);
-  const supplementable = supplementableRawResults().length;
   const confidence = Number(state.currentVerdict?.confidence || 0);
-  const ready = state.publishCleared || (hasVerdict && confidence >= 80 && supplementable === 0);
-  const items = [
-    { text: "判词已生成", hint: "完整保留问题、立场与下一步", meta: hasVerdict ? "通过" : "等待结果", state: hasVerdict ? "ok" : "block" },
-    { text: "旧页面答案回收", hint: "失败或超时席位不伪装为共识", meta: supplementable ? `${supplementable} 席待回收` : "无待回收", state: supplementable ? "warn" : "ok" },
-    { text: "可信度阈值", hint: "低于阈值时只允许内部保存", meta: hasVerdict ? `${confidence}%` : "等待评分", state: confidence >= 80 ? "ok" : hasVerdict ? "warn" : "block" },
-    { text: "人工发布确认", hint: "最终发布仍需人工确认", meta: ready ? (message || "通过") : "需要确认", state: ready ? "ok" : "block" },
-  ];
-  $("#publishChecklist").innerHTML = items.map(item => `
-    <li class="${item.state}">
+  const ready = summary.ready;
+  $("#publishChecklist").innerHTML = summary.checks.map(item => `
+    <li class="${escapeAttr(item.state)}">
       <span class="gate-check-title"><strong>${escapeHtml(item.text)}</strong><small>${escapeHtml(item.hint)}</small></span>
-      <span>${escapeHtml(item.meta)}</span>
+      <span>${escapeHtml(item.key === "human_confirmation" && ready && message ? message : item.meta)}</span>
     </li>
   `).join("");
-  const blockers = items.filter(item => item.state !== "ok").length;
-  $("#blockerCount").textContent = blockers;
-  $("#publishBlockerMetric").textContent = blockers;
+  $("#blockerCount").textContent = summary.blockers;
+  $("#publishBlockerMetric").textContent = summary.blockers;
   $("#publishConfidence").textContent = hasVerdict ? `${confidence}%` : "-";
-  $("#publishStatusText").textContent = ready ? "可发布" : blockers ? "阻断中" : "待确认";
-  $("#gateBadge").className = `pill ${ready ? "chip-ok" : "chip-block"}`;
-  $("#gateBadge").textContent = ready ? "READY" : "LOCKED";
+  $("#publishStatusText").textContent = ready ? "可发布" : summary.nonHumanBlockers ? "阻断中" : hasVerdict ? "待人工确认" : "等待判词";
+  $("#gateBadge").className = `pill ${ready ? "chip-ok" : summary.nonHumanBlockers ? "chip-block" : "chip-warn"}`;
+  $("#gateBadge").textContent = ready ? "READY" : summary.nonHumanBlockers ? "LOCKED" : "REVIEW";
   $("#gateState").classList.toggle("is-ready", ready);
   $("#gateState").classList.toggle("is-locked", !ready);
-  $("#gateState").textContent = ready ? "可发布" : "不可发布";
+  $("#gateState").textContent = ready ? "可发布" : summary.nonHumanBlockers ? "不可发布" : "待确认";
   $("#gateMeter")?.classList.toggle("is-ready", ready);
-  const gateReason = ready
-    ? "全部门禁通过，报告可标记为发布级可用。"
-    : supplementable
-      ? `仍有 ${supplementable} 个旧页面答案需要回收，请回到请求录入页右侧处理。`
-      : blockers
-        ? `仍有 ${blockers} 个门禁项需要处理。`
-        : "没有硬阻断，但仍建议人工复核后发布。";
-  if ($("#gateReason")) $("#gateReason").textContent = gateReason;
+  if ($("#gateReason")) $("#gateReason").textContent = summary.reason;
+  const canConfirm = hasVerdict && summary.nonHumanBlockers === 0;
+  $("#clearBlockersBtn").disabled = !canConfirm;
+  $("#clearBlockersBtn").textContent = state.publishCleared ? "已人工确认" : "人工确认发布级";
   $("#publishBtn").disabled = !ready;
+  renderTaskCenter();
 }
 
 function renderMentorVerdict(preflight) {
@@ -1246,6 +1748,10 @@ function renderTrace(trace) {
   state.currentTrace = trace || null;
   if (!events.length) {
     panel.hidden = true;
+    renderEvidenceTree();
+    renderCouncilCompletion();
+    renderPublishGate();
+    renderTaskCenter();
     return;
   }
   panel.hidden = false;
@@ -1267,6 +1773,229 @@ function renderTrace(trace) {
       </li>
     `;
   }).join("");
+  renderEvidenceTree();
+  renderCouncilCompletion();
+  renderPublishGate();
+  renderTaskCenter();
+}
+
+function currentTraceEvents() {
+  return state.currentTrace?.events || state.currentVerdict?.execution_trace?.events || [];
+}
+
+function buildEvidenceNodes() {
+  const v = state.currentVerdict;
+  const traceEvents = currentTraceEvents();
+  if (!v) {
+    const counts = bridgeChannelCounts();
+    return [
+      {
+        layer: "L1",
+        title: "等待判词生成",
+        body: "提交议题后，系统会把最终结论拆成主张、证据、分歧和下一步。",
+        state: "warn",
+        tags: ["Claim pending"],
+      },
+      {
+        layer: "L2",
+        title: "网页席位健康基线",
+        body: counts.webTotal ? `当前网页席位 ${counts.webReady}/${counts.webTotal} 就绪。` : "还没有读取到网页席位配置。",
+        state: counts.webTotal && counts.webReady === counts.webTotal ? "ok" : "warn",
+        tags: ["Web bridge", `${counts.webReady}/${counts.webTotal}`],
+      },
+      {
+        layer: "L3",
+        title: "发布前审计轨迹",
+        body: "判词完成后会显示执行轨迹、回收状态和发布门禁。",
+        state: "block",
+        tags: ["Trace pending"],
+      },
+    ];
+  }
+  const raw = v.web_bridge?.raw_results || [];
+  const okRaw = raw.filter(item => item.ok);
+  const failedRaw = raw.filter(item => item && !item.ok);
+  const reasons = (v.reasons || []).filter(Boolean);
+  const nextSteps = (v.next_steps || []).filter(Boolean);
+  const nodes = [
+    {
+      layer: "L1",
+      title: v.one_liner || v.verdict_label || "最终主张",
+      body: finalReportText(v),
+      state: Number(v.confidence || 0) >= 80 ? "ok" : "warn",
+      tags: [`可信度 ${v.confidence ?? "-"}%`, v.verdict_label || v.verdict || "verdict"],
+    },
+  ];
+  reasons.slice(0, state.productMode === "pro" ? 5 : 3).forEach((reason, index) => {
+    nodes.push({
+      layer: "L1",
+      title: `主张 ${index + 1}`,
+      body: reason,
+      state: /风险|阻断|失败|不足|不确定/.test(reason) ? "warn" : "ok",
+      tags: ["Reason", `R${index + 1}`],
+    });
+  });
+  if (raw.length) {
+    nodes.push({
+      layer: "L2",
+      title: "席位原文回收",
+      body: `${okRaw.length}/${raw.length} 个网页席位返回有效答案；失败或慢生成不会计入共识。`,
+      state: failedRaw.length ? (failedRaw.some(item => !isSupplementableResult(item)) ? "block" : "warn") : "ok",
+      tags: ["Raw answers", `${okRaw.length}/${raw.length}`],
+    });
+    failedRaw.slice(0, 4).forEach(item => {
+      nodes.push({
+        layer: "L2",
+        title: `${seatName(item.seat)} 未形成有效证据`,
+        body: item.error?.message || statusLabel(item.error?.code, false),
+        state: isSupplementableResult(item) ? "warn" : "block",
+        tags: [item.error?.code || "failed", isSupplementableResult(item) ? "可回收" : "硬阻断"],
+      });
+    });
+  } else if ((v.seat_scores || []).length) {
+    nodes.push({
+      layer: "L2",
+      title: "本地席位评分",
+      body: `${v.seat_scores.length} 个本地席位参与评分，原始评分保留在模型对比页。`,
+      state: "ok",
+      tags: ["Local seats", `${v.seat_scores.length}`],
+    });
+  } else {
+    nodes.push({
+      layer: "L2",
+      title: "证据来源待补充",
+      body: "当前判词没有可展示的网页原文或席位评分，发布前需要人工复核来源。",
+      state: "warn",
+      tags: ["Evidence gap"],
+    });
+  }
+  const disagreements = v.web_bridge?.deliberation?.disagreements || v.disagreements || [];
+  if (disagreements.length) {
+    nodes.push({
+      layer: "L2",
+      title: "模型分歧",
+      body: disagreements.slice(0, 3).map(item => item.summary || item.reason || String(item)).join("；"),
+      state: Number(v.confidence || 0) >= 80 ? "warn" : "block",
+      tags: ["Dissent", `${disagreements.length}`],
+    });
+  }
+  if (traceEvents.length) {
+    const latest = traceEvents[traceEvents.length - 1] || {};
+    nodes.push({
+      layer: "L3",
+      title: "执行轨迹",
+      body: `${traceEvents.length} 条事件，最近阶段：${latest.phase || "-"} / ${latest.action || "-"}`,
+      state: "ok",
+      tags: ["Trace", `${traceEvents.length}`],
+    });
+  } else {
+    nodes.push({
+      layer: "L3",
+      title: "执行轨迹入口",
+      body: v.run_id ? `Run ${compactRunId(v.run_id)} 可通过完整报告追踪。` : "缺少 run id。",
+      state: v.run_id ? "ok" : "block",
+      tags: ["Ledger"],
+    });
+  }
+  if (nextSteps.length) {
+    nodes.push({
+      layer: "L3",
+      title: "下一步动作",
+      body: nextSteps.slice(0, 3).join("；"),
+      state: /回收|复核|补|确认|阻断/.test(nextSteps.join(" ")) ? "warn" : "ok",
+      tags: ["Action"],
+    });
+  }
+  return nodes;
+}
+
+function renderEvidenceTree() {
+  const target = $("#reasoning-tree");
+  if (!target) return;
+  const nodes = buildEvidenceNodes();
+  target.innerHTML = nodes.map(node => `
+    <article class="reason-node ${escapeAttr(node.state)}">
+      <span class="reason-layer">${escapeHtml(node.layer)}</span>
+      <div class="reason-main">
+        <h3>${escapeHtml(node.title)}</h3>
+        <p>${escapeHtml(excerpt(node.body, state.productMode === "pro" ? 520 : 260))}</p>
+        <div class="reason-tags">${(node.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+      </div>
+      <span class="audit-status ${escapeAttr(node.state)} reason-state">${escapeHtml(reviewStateLabel(node.state))}</span>
+    </article>
+  `).join("");
+  const checks = [
+    { title: "原始问题保留", meta: state.currentVerdict?.question ? "通过" : "等待", state: state.currentVerdict?.question ? "ok" : "block" },
+    { title: "证据节点", meta: `${nodes.length} 个`, state: nodes.some(node => node.state === "block") ? "block" : nodes.some(node => node.state === "warn") ? "warn" : "ok" },
+    { title: "网页席位校准", meta: bridgeChannelCounts().webTotal ? `${bridgeChannelCounts().webReady}/${bridgeChannelCounts().webTotal}` : "本地", state: bridgeChannelCounts().webReady === bridgeChannelCounts().webTotal ? "ok" : "warn" },
+    { title: "发布引用复核", meta: "看发布门禁", state: buildPublishGateSummary().nonHumanBlockers ? "block" : "ok" },
+  ];
+  $("#evidence-check-list").innerHTML = checks.map(item => `
+    <li class="${escapeAttr(item.state)}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.meta)}</span></li>
+  `).join("");
+  const blockers = nodes.filter(node => node.state === "block").length;
+  $("#evidence-next-action").textContent = blockers
+    ? `还有 ${blockers} 个证据阻断，先处理失败席位或缺失日志。`
+    : nodes.some(node => node.state === "warn")
+      ? "证据链已形成，但仍建议先处理黄色提示后再发布。"
+      : "证据链可进入发布门禁复核。";
+}
+
+function renderCouncilCompletion() {
+  renderTraceDepthGrid();
+  renderPersonaGrid();
+}
+
+function renderTraceDepthGrid() {
+  const target = $("#trace-depth-grid");
+  if (!target) return;
+  const v = state.currentVerdict || {};
+  const coverage = seatCoverageSummary();
+  const traceEvents = currentTraceEvents();
+  const nodes = buildEvidenceNodes();
+  const items = [
+    ["L1 主张", `${(v.reasons || []).length || (v.one_liner ? 1 : 0)} 条`, "结论、理由和风险披露是否同向"],
+    ["L2 证据", coverage.total ? coverage.label : `${nodes.length} 节点`, "席位原文、评分和失败状态是否可追溯"],
+    ["L3 追踪", traceEvents.length ? `${traceEvents.length} 条` : (v.run_id ? "Run 可追溯" : "待生成"), "执行轨迹、回收事件和日志入口"],
+  ];
+  target.innerHTML = items.map(([label, value, detail]) => `
+    <div class="trace-depth-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <p>${escapeHtml(detail)}</p>
+    </div>
+  `).join("");
+}
+
+function renderPersonaGrid() {
+  const target = $("#persona-grid");
+  if (!target) return;
+  const seats = state.seats.length ? state.seats : fallbackSeats();
+  const scoreBySeat = new Map((state.currentVerdict?.seat_scores || []).map(item => [item.seat, item]));
+  target.innerHTML = seats.map(seat => {
+    const health = seatOperationalState(seat);
+    const score = scoreBySeat.get(seat.id);
+    const tags = [
+      seat.mbti || "MBTI",
+      channelLabel((bridgeMatrixBySeat(seat.id) || bridgeSeatById(seat.id) || {}).channel || (state.engine === "web" ? "web" : "local")),
+      score ? `分 ${Number(score.average_score || 0).toFixed(2)}` : health.label,
+    ];
+    return `
+      <article class="persona-card ${escapeAttr(health.state)}">
+        <strong>${escapeHtml(seat.name)}</strong>
+        <p>${escapeHtml(seat.strength || "COUNCIL-004 固定席位人格")}</p>
+        <div class="persona-meta">${tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+        <p>${escapeHtml(health.detail)}</p>
+      </article>
+    `;
+  }).join("");
+}
+
+function reviewStateLabel(stateName) {
+  if (stateName === "ok") return "通过";
+  if (stateName === "warn") return "需复核";
+  if (stateName === "block") return "阻断";
+  return "等待";
 }
 
 function renderSeatScores() {
@@ -1423,6 +2152,8 @@ function renderTaskSnapshot(task) {
   const pct = Math.round((Number(task.progress) || 0) * 100);
   setProgress(pct, task.current_step || task.status || "运行中");
   renderRunDiagnostics(task);
+  renderTaskCenter();
+  renderCouncilCompletion();
   setBusy(task.status === "running" && !task.progress_diagnostics?.stale);
   if (task.status === "running" && !task.progress_diagnostics?.stale) startProgress(task.run_id);
 }
@@ -1716,10 +2447,15 @@ function resetRunUI() {
   $("#execution-panel").hidden = true;
   $("#judge-answer-panel").hidden = true;
   $("#score-round-panel").hidden = true;
+  $("#cross-temporal-panel").hidden = true;
+  $("#xray-memo-section").hidden = true;
   $("#trace-panel").hidden = true;
   renderSupplementButton();
   renderArena();
+  renderEvidenceTree();
+  renderCouncilCompletion();
   renderPublishGate();
+  renderTaskCenter();
 }
 
 function cleanupProgress() {
@@ -1777,6 +2513,12 @@ function statusLabel(reason, ready) {
   return reason || "待配置";
 }
 
+function signalSeverityLabel(status) {
+  if (status === "block") return "阻断";
+  if (status === "warn") return "观察";
+  return "正常";
+}
+
 function downloadJSON(data, filename) {
   download(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), filename);
 }
@@ -1814,6 +2556,15 @@ function downloadMarkdown(v) {
       const avg = item.average_score === null || item.average_score === undefined ? "-" : Number(item.average_score).toFixed(3);
       return `- ${item.label || item.id}: ${item.claim_count || 0} claims, avg ${avg}`;
     })),
+    "",
+    "## Cross-Temporal Closeout",
+    v.cross_temporal_analysis?.closeout_report?.executive_summary || "",
+    "",
+    "### Math Audit Signals",
+    ...((v.cross_temporal_analysis?.math_audit?.signals || []).map(item => `- ${item.label || item.id}: ${item.summary || ""}`)),
+    "",
+    "### Cross-Temporal Actions",
+    ...((v.cross_temporal_analysis?.recommended_actions || []).map(item => `- ${item}`)),
     "",
     "## Next Steps",
     ...(v.next_steps || []).map(step => `- ${step}`),

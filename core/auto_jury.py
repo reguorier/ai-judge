@@ -18,6 +18,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+from core.cross_temporal_analysis import cross_temporal_markdown
 from core.modes import resolve_mode
 from core.scoring_v2 import score_jury_v2
 from core.seat_personas import SEAT_PERSONAS
@@ -183,7 +184,7 @@ def build_local_claims(question: str, mode: str, seats: list[str]) -> list[dict[
 def format_verdict_markdown(verdict: dict[str, Any]) -> str:
     """Render a verdict object as Markdown."""
     lines = [
-        f"# AI Judge Verdict",
+        "# AI Judge Verdict",
         "",
         f"**Run ID:** {verdict.get('run_id') or '-'}",
         f"**Mode:** {verdict.get('mode_emoji', '')} {verdict.get('mode_name', verdict.get('mode'))}",
@@ -191,7 +192,7 @@ def format_verdict_markdown(verdict: dict[str, Any]) -> str:
         f"**Verdict:** {verdict.get('verdict_label', verdict.get('verdict'))}",
         f"**Confidence:** {verdict.get('confidence', 0)}%",
         "",
-        f"## One Liner",
+        "## One Liner",
         "",
         verdict.get("one_liner", ""),
         "",
@@ -222,6 +223,8 @@ def format_verdict_markdown(verdict: dict[str, Any]) -> str:
             avg = item.get("average_score")
             avg_text = "-" if avg is None else f"{float(avg):.3f}"
             lines.append(f"| {item.get('label', item.get('id'))} | {item.get('claim_count', 0)} | {avg_text} |")
+
+    lines.extend(["", *cross_temporal_markdown(verdict)])
 
     lines.extend(["", "## Next Steps", ""])
     for step in verdict.get("next_steps", []):
@@ -352,7 +355,7 @@ def _one_liner(verdict: str, question: str, confidence: int) -> str:
 
 def _summary_text(question: str, mode: str, verdict: str, confidence: int, reasons: list[str]) -> str:
     lines = [
-        f"AI Judge v3.4 自动判词",
+        "AI Judge v3.4 自动判词",
         f"问题：{question}",
         f"模式：{mode}",
         f"结论：{VERDICT_LABELS.get(verdict, verdict)}",
