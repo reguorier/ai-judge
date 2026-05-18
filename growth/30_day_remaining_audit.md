@@ -1,7 +1,7 @@
 # 30-Day Remaining Task Audit
 
 Status: refreshed
-Last refreshed: 2026-05-19 02:55 HKT
+Last refreshed: 2026-05-19 03:22 HKT
 
 ## Current Evidence
 
@@ -11,6 +11,7 @@ Last refreshed: 2026-05-19 02:55 HKT
 | Repo issues | `gh issue list --repo reguorier/ai-judge` | #1-#5 open; comments are maintainer-only |
 | LegalCiteBench issue | `gh issue view 1 --repo Sijia711/LegalCiteBench` | open, 0 comments |
 | RAGChecker issue | `gh issue view 38 --repo amazon-science/RAGChecker` | open, 0 comments |
+| GitHub repo metadata | `gh repo edit reguorier/ai-judge` | still blocked by API 404 for description/homepage/topics |
 | OpenReview account | QQ Mail OpenReview notification | profile created and under moderation; usually less than 1 business day, up to 2 weeks |
 | Pro requests | `growth/pro_interest_status.md` | 0 requests |
 | Paid / invoice signal | `growth/pro_interest_status.md`, `growth/sponsor_status.md` | 0 |
@@ -48,6 +49,7 @@ Last refreshed: 2026-05-19 02:55 HKT
 - Expanded the hard benchmark from 11 to 13 cases with deterministic claim-support expectations for overclaimed causation, overclaimed absolutes, and overclaimed quantified effects.
 - Regenerated the eight-example citation batch gallery and the two new public demo reports.
 - Added a 3-minute proof kit so external readers can try the live Space, one local audit, the eight-report gallery, both benchmarks, and the contribution funnel from one page.
+- Added reusable proof-kit CTAs for X/email/GitHub replies and confirmed GitHub repo metadata is still permission-blocked.
 
 ## Next Non-Gated Move
 
