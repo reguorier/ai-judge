@@ -209,14 +209,49 @@ def test_report_renders_paper_style_final_report():
     })
 
     assert 'id="final-report"' in rendered
-    assert "AI Judge 最终方案报告" in rendered
+    assert "AI Judge 轮值法官最终报告" in rendered
     assert "ABSTRACT" in rendered
+    assert "THESIS" in rendered
+    assert "RECOMMENDATION" in rendered
+    assert "KEY FINDINGS" in rendered
     assert "POSTULATE 1" in rendered
     assert "EVIDENCE MAP" in rendered
     assert "EXECUTION PLAN" in rendered
     assert "VERIFICATION CONTRACT" in rendered
     assert "席位覆盖 2/3" in rendered
     assert "最终方案" in rendered
+
+
+def test_final_report_does_not_dump_raw_closeout_into_abstract():
+    api_server = _load_api_server()
+    raw_dump = "RAW_SHOULD_NOT_APPEAR " + ("ChatGPT: 很长的席位原文；" * 40)
+    rendered = api_server._render_html_report({
+        "run_id": "paper-clean-001",
+        "question": "商业化路线怎么收口？",
+        "one_liner": "建议先做研究型开源工具，再验证商业包装。",
+        "verdict_label": "建议推进但需验证",
+        "confidence": 81,
+        "chief_judge": {"id": "deepseek", "name": "DeepSeek", "label": "DeepSeek 轮值主审", "mbti": "INTJ", "strength": "工程拆解"},
+        "reasons": [raw_dump],
+        "next_steps": ["先验证 GitHub 可跑通 demo 和可传播 README。"],
+        "cross_temporal_analysis": {
+            "trust_tier": {"tier": "B", "label": "B · 可内部参考"},
+            "closeout_report": {"professional_report": raw_dump, "executive_summary": raw_dump},
+        },
+        "web_bridge": {
+            "ok_count": 12,
+            "failed_count": 0,
+            "requested_count": 12,
+            "collection_complete": True,
+        },
+    })
+
+    abstract_start = rendered.index("ABSTRACT")
+    abstract_end = rendered.index("FINAL POSITION")
+    abstract_html = rendered[abstract_start:abstract_end]
+    assert "RAW_SHOULD_NOT_APPEAR" not in abstract_html
+    assert "DeepSeek 轮值法官" in rendered
+    assert "RECOMMENDATION" in rendered
 
 
 def test_report_renders_cross_temporal_closeout():

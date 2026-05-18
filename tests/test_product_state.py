@@ -89,7 +89,10 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
     assert verdict["single_judge_baseline"]["label"] == "DeepSeek 单模型对照"
     assert verdict["roster_sensitivity"]
     assert verdict["final_report"]["schema"] == "ai_judge.final_report.v1"
-    assert verdict["final_report"]["title"] == "AI Judge 最终方案报告"
+    assert verdict["final_report"]["title"] == "AI Judge 轮值法官最终报告"
+    assert verdict["final_report"]["judge_editor"]["label"] == "DeepSeek 轮值法官"
+    assert verdict["final_report"]["recommendation"]
+    assert verdict["final_report"]["key_findings"]
     assert verdict["final_report"]["postulates"]
     assert "本轮判断成立" in verdict["final_report"]["abstract"]
 

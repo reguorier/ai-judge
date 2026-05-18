@@ -1684,11 +1684,13 @@ function renderFinalReport(v, executionComplete = true) {
   const plan = (report.implementation_plan || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
   const risks = (report.risks_and_limits || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
   const contract = (report.verification_contract || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  const findings = (report.key_findings || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  const judgeEditor = report.judge_editor || {};
   target.innerHTML = `
     <div class="paper-heading">
       <p class="paper-kicker">${escapeHtml(report.subtitle || "FINAL VERDICT")}</p>
       <h3>${escapeHtml(report.title || "AI Judge 最终方案报告")}</h3>
-      <p class="paper-status">${escapeHtml(report.status_label || "-")} · ${escapeHtml(report.status_reason || "")}</p>
+      <p class="paper-status">${escapeHtml(judgeEditor.label || "轮值法官")} · ${escapeHtml(report.status_label || "-")} · ${escapeHtml(report.status_reason || "")}</p>
     </div>
     <div class="paper-meta">${meta}</div>
     <section class="paper-block">
@@ -1699,6 +1701,14 @@ function renderFinalReport(v, executionComplete = true) {
     <section class="paper-block">
       <h3>FINAL POSITION</h3>
       <p>${escapeHtml(position.summary || "")}</p>
+    </section>
+    <section class="paper-columns">
+      <div class="paper-block"><h3>THESIS</h3><p>${escapeHtml(report.thesis || "")}</p></div>
+      <div class="paper-block"><h3>RECOMMENDATION</h3><p>${escapeHtml(report.recommendation || "")}</p></div>
+    </section>
+    <section class="paper-block">
+      <h3>KEY FINDINGS</h3>
+      <ul>${findings}</ul>
     </section>
     <div class="paper-postulates">${postulates}</div>
     <section class="paper-block paper-evidence">
@@ -2926,7 +2936,18 @@ function finalReportMarkdown(report) {
     `- 结论：${report.final_position?.label || "-"}`,
     `- 可信：${report.final_position?.trust || "-"}`,
     `- 置信度：${report.final_position?.confidence || "-"}`,
+    `- 轮值法官：${report.judge_editor?.label || "-"}`,
     `- 摘要：${report.final_position?.summary || "-"}`,
+    "",
+    "### JUDGE CLOSEOUT",
+    "",
+    `**Thesis:** ${report.thesis || "-"}`,
+    "",
+    `**Recommendation:** ${report.recommendation || "-"}`,
+    "",
+    "### KEY FINDINGS",
+    "",
+    ...((report.key_findings || []).map(item => `- ${item}`)),
     "",
     "### POSTULATES",
     "",
