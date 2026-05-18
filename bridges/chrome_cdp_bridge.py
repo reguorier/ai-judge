@@ -18,6 +18,7 @@ from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
     _capture_acceptance,
     _deepseek_prepare_verified,
+    _doubao_prepare_verified,
     _failed_result,
     _humanized_sleep,
     _page_state_needs_reload,
@@ -163,6 +164,18 @@ def run_chrome_cdp_tabs(
                     )
                     if trace:
                         trace("seat", "deepseek_expert_mode_blocked", f"{seat} 未确认专家模式，拒绝提交", {
+                            "seat": seat,
+                            "prepared": prepared,
+                        })
+                    continue
+                if seat == "doubao" and not _doubao_prepare_verified(prepared):
+                    submissions[seat] = _failed_result(
+                        seat,
+                        "doubao_expert_mode_not_verified",
+                        "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
+                    )
+                    if trace:
+                        trace("seat", "doubao_expert_mode_blocked", f"{seat} 未确认专家/超能模式，拒绝提交", {
                             "seat": seat,
                             "prepared": prepared,
                         })

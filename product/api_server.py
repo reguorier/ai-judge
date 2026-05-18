@@ -312,6 +312,7 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
         "chrome_composer_not_ready",
         "fixed_tab_not_found",
         "chrome_response_page_error",
+        "doubao_expert_mode_blocked",
     }:
         submit = data.get("submit") or {}
         verification = submit.get("verification") or {}
@@ -319,6 +320,7 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
             submit.get("error")
             or verification.get("reason")
             or ((data.get("known_error") or {}).get("code"))
+            or ("doubao_expert_mode_not_verified" if action == "doubao_expert_mode_blocked" else "")
             or action
         )
         base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code), "code": code})
@@ -343,6 +345,7 @@ def _seat_error_label(code: str) -> str:
         "chrome_crash": "标签崩溃",
         "blank_page": "页面空白",
         "page_recovery_failed": "恢复失败",
+        "doubao_expert_mode_not_verified": "专家模式未确认",
         "fixed_tab_not_found": "标签缺失",
         "transcript_pollution": "历史串流",
         "existing_answer_not_found": "旧页未返回",
@@ -369,6 +372,7 @@ def _seat_error_reason(code: str) -> str:
         "chrome_crash": "Chrome 标签页疑似崩溃，系统会刷新后补跑",
         "blank_page": "模型页面没有渲染有效内容，系统会刷新后补跑",
         "page_recovery_failed": "刷新恢复后仍没有可用输入框，需要人工查看该标签",
+        "doubao_expert_mode_not_verified": "豆包未能确认专家/超能模式，系统已拒绝快速模式提交",
         "fixed_tab_not_found": "没有找到该模型对应的 Chrome 固定标签",
         "transcript_pollution": "捕获内容混入旧 AI Judge 标记，已拒绝评分",
         "existing_answer_not_found": "已打开页面中没有找到该席位的 AI Judge 答案标记",

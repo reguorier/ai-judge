@@ -7,6 +7,7 @@ from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
     _build_submission_check_js,
     _deepseek_prepare_verified,
+    _doubao_prepare_verified,
     _should_send_final_answer_nudge,
     _seat_prompt,
 )
@@ -36,6 +37,31 @@ def test_deepseek_prepare_requires_expert_and_tools_verified():
     })
     assert not _deepseek_prepare_verified({
         "clicked_names": ["deepseek_expert_verified:yes", "deepseek_tools_verified:no"],
+    })
+
+
+def test_doubao_prepare_enforces_expert_or_super_mode_before_submission():
+    js = _build_prepare_submission_ui_js("AIJUDGE-doubao-test")
+
+    assert "doubao_expert_clicked" in js
+    assert "doubao_expert_verified:yes" in js
+    assert "超能模式" in js
+    assert "专家模式" in js
+    assert "专业模式" in js
+    assert "深度思考" in js
+    assert "nearComposer" in js
+
+
+def test_doubao_prepare_requires_expert_mode_verified():
+    assert _doubao_prepare_verified({
+        "clicked_names": ["doubao_expert_clicked:超能模式 Beta", "doubao_expert_verified:yes"],
+    })
+    assert _doubao_prepare_verified({
+        "clicked_names": ["doubao_expert_verified:no"],
+        "followup": {"clicked_names": ["doubao_expert_clicked:专家模式", "doubao_expert_verified:yes"]},
+    })
+    assert not _doubao_prepare_verified({
+        "clicked_names": ["doubao_expert_verified:no"],
     })
 
 
@@ -149,6 +175,14 @@ def test_slow_seat_prompts_require_direct_final_body_not_thinking_only():
     assert "不要只停在思考完成提示" in qwen_prompt
     assert "完整保留 AIJUDGE 起止标记" in chatgpt_prompt
     assert "完整保留 AIJUDGE 起止标记" in qwen_prompt
+
+
+def test_doubao_prompt_requires_expert_mode_guardrail():
+    prompt = _seat_prompt("doubao", "升级 AI Judge", "strategic")
+
+    assert "专家/超能模式" in prompt
+    assert "不要使用快速模式" in prompt
+    assert "完整保留 AIJUDGE 起止标记" in prompt
 
 
 def test_submission_check_prioritizes_prompt_still_in_input():

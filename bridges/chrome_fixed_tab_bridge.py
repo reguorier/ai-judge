@@ -271,6 +271,21 @@ def run_chrome_fixed_tabs(
                         {"seat": seat, "prepared": prepared},
                     )
                 continue
+        if seat == "doubao":
+            if not _doubao_prepare_verified(prepared):
+                submissions[seat] = _failed_result(
+                    seat,
+                    "doubao_expert_mode_not_verified",
+                    "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
+                )
+                if trace:
+                    trace(
+                        "seat",
+                        "doubao_expert_mode_blocked",
+                        f"{seat} 未确认专家/超能模式，拒绝提交",
+                        {"seat": seat, "prepared": prepared},
+                    )
+                continue
         composer_wait = min(45.0, max(8.0, seat_timeout_seconds / 4))
         readiness = _wait_for_composer(tab, timeout=composer_wait, config=config, seat_config=seat_config, seat=seat)
         if _readiness_can_recover(readiness):
@@ -1399,6 +1414,8 @@ def _seat_prompt(seat: str, question: str, mode: str) -> str:
         seat_guard = "\nChatGPT 专用要求：不要切换到深入/思考模式；直接输出最终正文，并完整保留 AIJUDGE 起止标记。"
     elif seat == "qwen":
         seat_guard = "\nQwen 专用要求：不要只停在思考完成提示；必须输出最终正文，并完整保留 AIJUDGE 起止标记。"
+    elif seat == "doubao":
+        seat_guard = "\nDoubao 专用要求：本轮必须在专家/超能模式下回答；不要使用快速模式，并完整保留 AIJUDGE 起止标记。"
     if is_resonance_followup:
         return (
             f"{base}\n\n"
@@ -1704,6 +1721,41 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
       }}
     }}
   }}
+  if (/doubao\\.com/i.test(location.hostname)) {{
+    const usableInput = el => {{
+      if (!visible(el)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width >= 20 && rect.height >= 8;
+    }};
+    const inputs = Array.from(document.querySelectorAll("textarea,input,[contenteditable='true'],[role='textbox']")).filter(usableInput);
+    const activeInput = inputs[inputs.length - 1] || null;
+    const shortText = el => textOf(el).replace(/\\s+/g, " ").trim();
+    const nearComposer = el => {{
+      if (!activeInput) return true;
+      const inputRect = activeInput.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || !rect.height) return false;
+      return rect.top >= inputRect.top - 220
+        && rect.bottom <= inputRect.bottom + 180
+        && rect.left >= inputRect.left - 80
+        && rect.right <= inputRect.right + 360;
+    }};
+    const doubaoModeCandidates = Array.from(document.querySelectorAll("button,[role='button'],label,div,span"))
+      .filter(el => visible(el) && el.getBoundingClientRect().width > 12 && nearComposer(el))
+      .filter(el => {{
+        const label = shortText(el);
+        return label.length > 0 && label.length <= 40;
+      }});
+    const expertCandidate = doubaoModeCandidates.find(el => /^(超能模式|专家模式|专业模式|深度思考)(\\s*Beta)?$/i.test(shortText(el)))
+      || doubaoModeCandidates.find(el => /超能模式|专家模式|专业模式|深度思考/i.test(shortText(el)));
+    if (expertCandidate) {{
+      click(`doubao_expert_clicked:${{shortText(expertCandidate)}}`, expertCandidate);
+      clicked.push("doubao_expert_verified:yes");
+    }} else {{
+      clicked.push("doubao_expert_verified:no");
+      needsFollowup = true;
+    }}
+  }}
   if (/chat\\.deepseek\\.com/i.test(location.hostname)) {{
     const deepseekNewChatKey = `${{key}}-deepseek-new-chat`;
     if (!sessionStorage.getItem(deepseekNewChatKey)) {{
@@ -1749,6 +1801,12 @@ def _deepseek_prepare_verified(prepared: dict[str, Any]) -> bool:
     final_prepared = _final_prepared_state(prepared or {})
     clicked_names = [str(name) for name in (final_prepared.get("clicked_names") or [])]
     return "deepseek_expert_verified:yes" in clicked_names and "deepseek_tools_verified:yes" in clicked_names
+
+
+def _doubao_prepare_verified(prepared: dict[str, Any]) -> bool:
+    final_prepared = _final_prepared_state(prepared or {})
+    clicked_names = [str(name) for name in (final_prepared.get("clicked_names") or [])]
+    return "doubao_expert_verified:yes" in clicked_names
 
 
 def _build_fresh_navigation_js(fresh_url: str) -> str:

@@ -2667,6 +2667,7 @@ function statusLabel(reason, ready) {
   if (reason === "chrome_crash") return "标签崩溃，待刷新补跑";
   if (reason === "blank_page") return "页面空白，待刷新补跑";
   if (reason === "page_recovery_failed") return "刷新恢复失败";
+  if (reason === "doubao_expert_mode_not_verified") return "豆包专家模式未确认";
   if (reason === "response_not_relevant") return "疑似旧回答";
   if (reason === "existing_answer_not_found") return "旧页未返回";
   if (reason === "existing_answer_placeholder") return "仍是占位";

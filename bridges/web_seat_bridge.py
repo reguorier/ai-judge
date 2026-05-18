@@ -35,6 +35,7 @@ from core.seat_personas import SEAT_PERSONAS, render_jury_prompt
 from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
     _deepseek_prepare_verified,
+    _doubao_prepare_verified,
     _humanized_sleep,
     chrome_apple_events_status,
     list_chrome_tabs,
@@ -1150,6 +1151,19 @@ def _ask_one_seat(
                     seat,
                     "deepseek_expert_mode_not_verified",
                     "DeepSeek expert mode, 深度思考, and 智能搜索 were not all verified before submission; the bridge refused to collect a fast-mode answer.",
+                )
+        if seat == "doubao":
+            prepared = _prepare_playwright_submission_ui(page, prompt_id)
+            if not _doubao_prepare_verified(prepared):
+                if trace:
+                    trace("seat", "doubao_expert_mode_blocked", f"{seat} 未确认专家/超能模式，拒绝提交", {
+                        "seat": seat,
+                        "prepared": prepared,
+                    })
+                return _failed_result(
+                    seat,
+                    "doubao_expert_mode_not_verified",
+                    "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
                 )
         prompt = _seat_prompt(seat, question, mode)
         input_locator = _find_visible_locator(page, _selectors(config, seat_config, "input_selectors"), min(timeout_ms, 20000))

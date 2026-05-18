@@ -71,6 +71,24 @@ def test_progress_diagnostics_surface_page_recovery_states():
     assert "刷新后补跑" in api_server._seat_error_reason("page_error")
 
 
+def test_progress_diagnostics_surface_doubao_expert_mode_block():
+    api_server = _load_api_server()
+    event = {
+        "phase": "seat",
+        "action": "doubao_expert_mode_blocked",
+        "detail": "doubao 未确认专家/超能模式",
+        "at": "2026-05-18T12:00:02+00:00",
+        "data": {"seat": "doubao", "prepared": {"clicked_names": ["doubao_expert_verified:no"]}},
+    }
+
+    state = api_server._next_seat_progress_state("doubao", None, event)
+
+    assert state["state"] == "blocked"
+    assert state["code"] == "doubao_expert_mode_not_verified"
+    assert state["status"] == "专家模式未确认"
+    assert "拒绝快速模式提交" in state["reason"]
+
+
 def test_seat_scoreboard_aggregates_runs_and_rounds():
     api_server = _load_api_server()
     verdicts = [
