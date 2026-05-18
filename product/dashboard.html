@@ -1636,7 +1636,7 @@
           <button class="product-mode active" data-product-mode="simple">简约版</button>
           <button class="product-mode" data-product-mode="pro">专业版</button>
         </span>
-        <span class="status-pill"><i class="status-dot"></i><span id="app-status">本地引擎就绪</span></span>
+        <span class="status-pill"><i class="status-dot"></i><span id="app-status">网页桥接模式</span></span>
         <span class="status-pill" id="seat-ready-count">网页席位 0/0</span>
         <button class="refresh" id="btn-refresh">刷新</button>
       </div>
@@ -1684,14 +1684,14 @@
           </section>
           <aside class="panel task-inspector">
             <h2 id="task-inspector-title">当前判断</h2>
-            <p class="muted" id="task-inspector-summary">默认仍是快速模式直达；打开“先帮我想清楚”后，客户端会先生成导师预检、执行稿、模型路由，再让你确认后运行。</p>
+            <p class="muted" id="task-inspector-summary">默认走网页端全量深度陪审；本地会议只用于验证、草稿和桥接失败后的补充。</p>
             <div class="inspector-metrics">
               <div><span>阶段</span><strong id="task-inspector-stage">录入</strong></div>
               <div><span>门禁</span><strong id="task-inspector-gate">待判断</strong></div>
               <div><span>下一步</span><strong id="task-inspector-next">填写问题</strong></div>
             </div>
             <div class="tag-list">
-              <span class="tag">Fast default</span>
+              <span class="tag">网页全量默认</span>
               <span class="tag">Mentor gate</span>
               <span class="tag">Web bridge</span>
               <span class="tag">Publish gate</span>
@@ -1722,8 +1722,8 @@
             <div class="control-row">
               <span>引擎</span>
               <div class="segmented" id="engine-strip">
-                <button class="segment active" data-engine="local">本地</button>
-                <button class="segment" data-engine="web">网页</button>
+                <button class="segment" data-engine="local">本地验证</button>
+                <button class="segment active" data-engine="web">网页全量</button>
               </div>
               <span>议事深度</span>
               <div class="segmented" id="mode-strip"></div>

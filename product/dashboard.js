@@ -41,8 +41,8 @@ const state = {
   productCapabilities: null,
   benchmarks: null,
   productMode: localStorage.getItem("ai_judge_product_mode") || "simple",
-  selectedMode: "flash",
-  engine: "local",
+  selectedMode: "strategic",
+  engine: "web",
   chiefJudge: localStorage.getItem("ai_judge_chief_judge") || "auto",
   selectedSeats: new Set(),
   lastHistoryRunId: localStorage.getItem("ai_judge_last_run_id") || null,
@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderEvidenceTree();
   renderCouncilCompletion();
   await refreshAll();
-  applyMode("flash");
-  applyEngine("local");
+  applyMode("strategic");
+  applyEngine("web");
   await restoreLastRun();
   renderTaskCenter();
   renderEvidenceTree();
@@ -331,7 +331,7 @@ function shortModeName(mode) {
 }
 
 function applyMode(mode) {
-  state.selectedMode = mode || "flash";
+  state.selectedMode = mode || "strategic";
   $$("#mode-strip .segment").forEach(btn => btn.classList.toggle("active", btn.dataset.mode === state.selectedMode));
   const config = state.modes.find(item => item.mode === state.selectedMode);
   state.selectedSeats.clear();
@@ -346,7 +346,7 @@ function applyMode(mode) {
 }
 
 function applyEngine(engine) {
-  state.engine = engine || "local";
+  state.engine = engine || "web";
   $$("#engine-strip .segment").forEach(btn => btn.classList.toggle("active", btn.dataset.engine === state.engine));
   state.mentorConfirmed = false;
   renderBridgeStatus();
@@ -2857,7 +2857,7 @@ function updateSubmitState() {
 
 function submitButtonLabel() {
   if (state.mentorEnabled && !state.mentorConfirmed) return "确认任务";
-  return state.engine === "web" ? "网页陪审" : "开始评议";
+  return state.engine === "web" ? "网页全量陪审" : "本地验证";
 }
 
 function isReady() {
@@ -3131,7 +3131,7 @@ function fallbackModes() {
   return [
     { mode: "flash", name: "Flash 快速陪审", seats: ["gemini", "grok", "doubao"] },
     { mode: "standard", name: "Standard 标准陪审", seats: ["gemini", "deepseek", "claude", "kimi", "grok", "doubao"] },
-    { mode: "strategic", name: "Strategic 深度陪审", seats: [] },
+    { mode: "strategic", name: "Strategic 深度陪审", seats: ["gemini", "chatgpt", "deepseek", "qwen", "kimi", "grok", "yuanbao", "mimo", "doubao", "claude", "minimax", "zhipu", "wenxin"] },
   ];
 }
 

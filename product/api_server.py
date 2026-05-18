@@ -66,6 +66,8 @@ if CORS:
 
 PRODUCT_VERSION = "3.8.0"
 PRODUCT_NAME = "AI Judge Trust Workbench"
+DEFAULT_JUDGE_MODE = "strategic"
+DEFAULT_JUDGE_ENGINE = "web"
 TASKS = TaskManager()
 RUNS_DIR = _PROJECT_ROOT / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
@@ -2061,8 +2063,8 @@ def calibrate_web_bridge():
 def submit_judge():
     data = request.get_json(silent=True) or {}
     question = str(data.get("question", "")).strip()
-    mode = str(data.get("mode", "flash")).lower().strip() or "flash"
-    engine = str(data.get("engine", "local")).lower().strip() or "local"
+    mode = str(data.get("mode", DEFAULT_JUDGE_MODE)).lower().strip() or DEFAULT_JUDGE_MODE
+    engine = str(data.get("engine", DEFAULT_JUDGE_ENGINE)).lower().strip() or DEFAULT_JUDGE_ENGINE
     override_seats = _normalize_seat_list(data.get("seats"))
     abstained_seats = _normalize_seat_list(data.get("abstained_seats"))
     chief_judge = str(data.get("chief_judge") or "auto").lower().strip()

@@ -47,6 +47,64 @@ def test_product_capabilities_and_health_are_v38():
     assert capabilities["human_gavel"]["states"][2]["id"] == "publishable"
 
 
+def test_judge_submission_defaults_to_full_web_council(monkeypatch):
+    api_server = _load_api_server()
+    captured = {}
+
+    class FakeTasks:
+        def submit(self, question, mode, seats):
+            captured["submitted"] = {"question": question, "mode": mode, "seats": seats}
+            return "run-default-web"
+
+    def fake_start_worker(*args):
+        (
+            run_id,
+            question,
+            mode,
+            seats,
+            engine,
+            notify_config,
+            chief_judge,
+            abstained_seats,
+            mentor_preflight,
+            external_evidence,
+            evidence_options,
+        ) = args
+        captured["worker"] = {
+            "run_id": run_id,
+            "question": question,
+            "mode": mode,
+            "seats": seats,
+            "engine": engine,
+            "notify_config": notify_config,
+            "chief_judge": chief_judge,
+            "abstained_seats": abstained_seats,
+            "mentor_preflight": mentor_preflight,
+            "external_evidence": external_evidence,
+            "evidence_options": evidence_options,
+        }
+
+    old_tasks = api_server.TASKS
+    try:
+        api_server.TASKS = FakeTasks()
+        monkeypatch.setattr(api_server, "_start_worker", fake_start_worker)
+        response = api_server.app.test_client().post(
+            "/api/judge",
+            json={"question": "跑一次网页端全量 AI Judge 会议"},
+        )
+    finally:
+        api_server.TASKS = old_tasks
+
+    data = response.get_json()
+    assert response.status_code == 202
+    assert data["mode"] == "strategic"
+    assert data["engine"] == "web"
+    assert data["seat_count"] == len(api_server.SEAT_PERSONAS)
+    assert captured["submitted"]["mode"] == "strategic"
+    assert captured["worker"]["engine"] == "web"
+    assert captured["worker"]["seats"] == data["seats"]
+
+
 def test_benchmark_summary_returns_four_reliability_cards(monkeypatch):
     api_server = _load_api_server()
     monkeypatch.setattr(api_server, "_iter_saved_verdicts", lambda limit=80: iter([]))

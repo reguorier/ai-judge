@@ -18,12 +18,26 @@ When launched, the app starts `product/api_server.py` on `127.0.0.1:8501` if the
 
 This local wrapper is unsigned. Internal/local use is fine, but public distribution should add Apple Developer signing and notarization.
 
+## Default Launch Policy
+
+AI Judge meetings default to the full web-seat path:
+
+- engine: `web`
+- mode: `strategic`
+- seat scope: all configured web seats
+
+Local AI Judge meetings are a verification and fallback layer only. They can be
+used to sanity-check a route, build a draft, or recover when web seats are
+blocked, but they must not be represented as the primary full council result.
+
 ## Seat Engines
 
 AI Judge now exposes two product-side engines:
 
-- `local`: deterministic local jury, stable default, no external login required.
-- `web`: isolated browser bridge for live model web apps. Web seats must pass calibration before deep collection.
+- `web`: isolated browser bridge for live model web apps. This is the default
+  full-council path. Web seats must pass calibration before deep collection.
+- `local`: deterministic local jury for verification, drafting, and fallback;
+  it is not the primary full-council result.
 
 The dashboard shows both under "席位来源". Web mode can always create a diagnosis report, but deep collection only starts when enough calibrated seats are ready.
 
