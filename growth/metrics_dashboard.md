@@ -17,7 +17,7 @@ Last refreshed: 2026-05-18 22:04 HKT
 | Channel | URL | Status | Visits | Replies | Stars attributed | Pro asks | Notes |
 |---|---|---|---:|---:|---:|---:|---|
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live_http_200_checked_2026-05-18 | TBD | TBD | TBD | TBD | Space page is reachable; sample switcher remains a code/deploy follow-up if HF write access is available. |
-| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; #2-#5 are the primary contribution funnel. |
+| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_with_forms | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; structured issue forms now collect benchmark cases and batch audit demand. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
 | X / short-form | https://x.com/liuweidi2/status/2055973517779521750 | live | TBD | TBD | TBD | TBD | First short-form post published. |

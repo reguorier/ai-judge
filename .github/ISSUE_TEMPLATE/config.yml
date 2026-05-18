@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Try AI Judge Citation Audit in the browser
+    url: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+    about: Run the public demo before filing an issue.
+  - name: Pro Early Access
+    url: https://github.com/reguorier/ai-judge/blob/main/docs/PRO_EARLY_ACCESS.md
+    about: Batch audit, GitHub Action advanced mode, historical Replay Ledger, and Evidence Broker.

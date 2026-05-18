@@ -1,0 +1,79 @@
+name: Batch / PDF / Docx audit demand
+description: Tell us which document workflow would make Citation Audit worth using.
+title: "[Batch Audit Demand]: "
+labels:
+  - help wanted
+  - launch feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when your real need is not a single Markdown answer, but a repeated audit workflow.
+
+        This helps decide whether Pro should prioritize batch Markdown, PDF, Docx, GitHub Action comments, or historical Replay Ledger tracking.
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Primary workflow
+      options:
+        - Batch Markdown reports
+        - PDF reports or papers
+        - Docx / Word documents
+        - GitHub PR comments
+        - CI gate for documentation
+        - Evidence Broker / external retrieval
+        - Historical Replay Ledger
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: current_process
+    attributes:
+      label: Current process
+      description: How do you currently catch citation or claim-support errors?
+      placeholder: We manually check sources before publishing...
+    validations:
+      required: true
+  - type: textarea
+    id: input_shape
+    attributes:
+      label: Input shape and volume
+      description: File types, number of documents, number of citations, frequency, and whether the data can leave your machine.
+      placeholder: 20 Markdown docs per week, 5-20 citations each, local-only...
+    validations:
+      required: true
+  - type: dropdown
+    id: blocker
+    attributes:
+      label: What blocks adoption today?
+      options:
+        - Needs batch mode
+        - Needs PDF parsing
+        - Needs Docx parsing
+        - Needs GitHub Action output
+        - Needs network-backed evidence retrieval
+        - Needs private/local-only mode
+        - Needs exportable audit report
+        - Needs pricing/license clarity
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: paid_signal
+    attributes:
+      label: Would this be a paid workflow if solved?
+      options:
+        - Yes, likely
+        - Maybe after testing
+        - No, open-source/local only
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: success_criteria
+    attributes:
+      label: Success criteria
+      description: What would AI Judge need to output for this to be useful?
+      placeholder: HTML report, JSON report, PR annotations, CSV summary...
+    validations:
+      required: true

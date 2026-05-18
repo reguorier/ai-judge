@@ -1,0 +1,98 @@
+name: Hard citation benchmark case
+description: Submit a public-safe AI citation failure case for the benchmark.
+title: "[Benchmark Case]: "
+labels:
+  - good first benchmark case
+  - citation audit feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve AI Judge Citation Audit.
+
+        Please keep the three layers separate:
+        raw AI answer, isolated external evidence, and your expected audit verdict.
+        Redact private, client, patient, legal, or proprietary material before posting.
+  - type: textarea
+    id: raw_answer
+    attributes:
+      label: Raw AI answer or excerpt
+      description: Paste the shortest public-safe answer span that contains the citation problem.
+      placeholder: The model wrote "...", citing Source X.
+    validations:
+      required: true
+  - type: textarea
+    id: cited_source
+    attributes:
+      label: Cited source
+      description: Include the source name, URL, DOI, case citation, paper title, or other locator if available.
+      placeholder: Source title / URL / DOI / legal citation
+    validations:
+      required: true
+  - type: textarea
+    id: isolated_evidence
+    attributes:
+      label: Isolated external evidence
+      description: Paste only evidence that exists outside the model answer. If none is available, say so.
+      placeholder: The source says "..."; or "No external evidence available."
+    validations:
+      required: true
+  - type: dropdown
+    id: expected_citation_status
+    attributes:
+      label: Expected citation-level status
+      options:
+        - verified
+        - weakly_verified
+        - irrelevant
+        - unverifiable
+        - contradicted
+        - not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: expected_claim_support
+    attributes:
+      label: Expected claim-support status
+      description: Use this when the source is real but the model overclaims what it proves.
+      options:
+        - supported
+        - partially_supported
+        - unsupported
+        - contradicted
+        - unknown
+        - not applicable
+    validations:
+      required: true
+  - type: dropdown
+    id: failure_shape
+    attributes:
+      label: Failure shape
+      options:
+        - fabricated source
+        - real source but irrelevant
+        - real source but weak match
+        - real source but overclaimed causation
+        - real source but wrong proposition
+        - inaccessible or paywalled source
+        - no citation supplied
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: why_it_matters
+    attributes:
+      label: Why this case matters
+      description: Explain the boundary this case tests.
+      placeholder: This should be separate from false because...
+    validations:
+      required: true
+  - type: checkboxes
+    id: permission
+    attributes:
+      label: Public-safety check
+      options:
+        - label: I confirm this issue does not include private, confidential, client, patient, legal-case-sensitive, or proprietary information.
+          required: true
+        - label: AI Judge may convert this into an anonymized benchmark fixture if it is useful.
+          required: false
