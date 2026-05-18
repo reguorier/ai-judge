@@ -51,6 +51,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Resonance Wave 004 | RAGChecker taxonomy issue posted | `growth/resonance_wave_004_refchecker_claim_audit.md` |
 | Submission Council 2026 | Research/commercial venue plan ready | `growth/submission_council_2026.md` |
 | Submission abstract variants | RLEval, CLEAR, SeT-LLM, and KDD agentic-eval drafts ready | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` |
+| Submission fit-check queue | RLEval and CLEAR emails prepared, not sent | `growth/submission_fitcheck_queue.md`, `growth/email_drafts/w005_rleval_fit_check.eml`, `growth/email_drafts/w006_clear_fit_check.eml` |
 
 ## Rules
 

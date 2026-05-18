@@ -1,0 +1,22 @@
+To: rl-eval@googlegroups.com
+Subject: Fit check: source-isolated trust gate for agentic LLM evaluation?
+
+Hi RLEval organizers,
+
+I am preparing a short system/position note around AI Judge Citation Audit, a
+local-first audit protocol for LLM and agent outputs. The narrow contribution is
+to separate three states that are often collapsed in evaluation reports:
+
+1. whether a cited source exists,
+2. whether it is relevant to the generated claim, and
+3. whether it supports the exact claim span.
+
+The hard case is a real source that reports association while the model or
+agent states causation. The audit keeps the raw answer, external evidence, and
+verdict metadata separate, then emits a replay ledger and certification hash.
+
+Would this fit RLEval better as a short position/system note on evaluation
+methodology for agentic outputs, or is it outside the workshop scope?
+
+Best,
+Reguorier

@@ -1,0 +1,17 @@
+To: themis.xanthopoulou@umu.se
+Subject: Fit check: legal citation audit where real source != supported proposition
+
+Hi CLEAR organizers,
+
+I am preparing a short paper/demo around source-isolated citation audit for LLM
+outputs. The motivating legal hard case is when a generated answer cites a real
+authority, but the proposition overstates what the authority actually supports.
+
+The protocol reports citation existence, source relevance, and exact claim
+support separately, preserving raw model answer, external evidence, and audit
+verdict metadata in separate layers.
+
+Would a short system/position paper on this failure mode fit CLEAR?
+
+Best,
+Reguorier
