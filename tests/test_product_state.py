@@ -42,6 +42,35 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
     assert verdict["roster_sensitivity"]
 
 
+def test_progress_diagnostics_surface_page_recovery_states():
+    api_server = _load_api_server()
+    previous = None
+    recovery_event = {
+        "phase": "seat",
+        "action": "chrome_tab_recovery",
+        "detail": "chatgpt 页面刷新恢复完成",
+        "at": "2026-05-18T12:00:00+00:00",
+        "data": {"seat": "chatgpt", "reason": "page_error"},
+    }
+    failed_event = {
+        "phase": "seat",
+        "action": "chrome_tab_recovery_failed",
+        "detail": "qwen 页面刷新恢复未就绪",
+        "at": "2026-05-18T12:00:01+00:00",
+        "data": {"seat": "qwen", "reason": "chrome_crash"},
+    }
+
+    recovering = api_server._next_seat_progress_state("chatgpt", previous, recovery_event)
+    blocked = api_server._next_seat_progress_state("qwen", previous, failed_event)
+
+    assert recovering["state"] == "submitting"
+    assert recovering["status"] == "刷新恢复"
+    assert blocked["state"] == "blocked"
+    assert blocked["code"] == "page_recovery_failed"
+    assert api_server._seat_error_label("chrome_crash") == "标签崩溃"
+    assert "刷新后补跑" in api_server._seat_error_reason("page_error")
+
+
 def test_seat_scoreboard_aggregates_runs_and_rounds():
     api_server = _load_api_server()
     verdicts = [
