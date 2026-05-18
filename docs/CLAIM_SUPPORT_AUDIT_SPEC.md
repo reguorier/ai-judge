@@ -1,5 +1,12 @@
 # Claim Support Audit Spec
 
+Status: frozen MVP contract as of 2026-05-19.
+
+This document is the source-isolation contract for the Eval4SD fastlane and the
+public citation-audit demo. Implementation details may improve, but the trust
+boundary below should not be relaxed without a new benchmark row and a migration
+note.
+
 AI Judge now separates three questions that are often collapsed:
 
 1. Did the cited source enter an isolated evidence layer?
@@ -17,6 +24,19 @@ This matters because a real source is not the same as a proven conclusion. A sou
 | Claim support | Does the source prove the claim span? | `claim_support=contradicted` |
 
 The key design choice is that these statuses can disagree without overwriting each other.
+
+## Frozen Trust Boundary
+
+The MVP must preserve these invariants:
+
+| Invariant | Required behavior |
+|---|---|
+| Raw-answer preservation | The system may quote or score the submitted answer, but must not rewrite it into the final truth source. |
+| Source isolation | Model-mentioned citations are candidates until matched against external evidence. |
+| Claim-support separation | Citation status, source relevance, and exact claim support can disagree. |
+| Unverifiable semantics | `unverifiable` means insufficient isolated evidence, not false. |
+| Human-final verdict | The judge summarizes, scores, and records; it does not become an authority that certifies reality by itself. |
+| Replayability | Reports must include deterministic IDs, reason codes, and replay-ledger hashes where available. |
 
 ## MVP Rules
 

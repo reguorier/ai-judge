@@ -29,6 +29,8 @@ Organizer fit reply on 2026-05-18:
 | `openreview_submission.md` | Human-readable OpenReview form packet. |
 | `openreview_submission.json` | Machine-readable OpenReview form packet. |
 | `submission_checklist.md` | Final pre-submit gate. |
+| `fastlane_status.md` / `fastlane_status.json` | Latest one-command readiness receipt. |
+| `../../citation-bench/citation-bench-50-manifest.json` | Minimum 50-case experiment manifest. |
 
 ## Current Positioning
 
@@ -81,7 +83,7 @@ tectonic main.tex
 Before any PDF build or OpenReview upload, run:
 
 ```bash
-python tools/check_eval4sd_packet.py
+PYTHONPATH=. python3 tools/check_eval4sd_packet.py
 ```
 
 Current build snapshot:

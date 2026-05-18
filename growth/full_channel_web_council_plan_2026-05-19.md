@@ -182,9 +182,12 @@ Use these as the next AI Judge jury input:
 
 ### Days 1-7
 
+Status: completed in compressed fastlane on 2026-05-19. See
+`growth/day7_fastlane_completion_2026-05-19.md`.
+
 1. Freeze the source-isolation spec.
 2. Add 50-case benchmark manifest.
-3. Improve Hugging Face demo with 3 sample cases.
+3. Improve Hugging Face demo with 3+ sample cases.
 4. Turn current web-council failure receipt into a "production evaluation fidelity" appendix.
 5. Draft Eval4SD abstract and related work.
 

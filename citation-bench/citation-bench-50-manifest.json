@@ -1,0 +1,128 @@
+{
+  "schema": "ai_judge.citation_bench_manifest.v1",
+  "name": "citation-bench-50",
+  "created_at": "2026-05-19",
+  "source_dataset": "citation-bench/citation-bench-100.jsonl",
+  "purpose": "Minimum Eval4SD experiment slice: five citation-status families, ten deterministic cases each.",
+  "does_not_use_model_apis": true,
+  "does_not_use_browser_bridges": true,
+  "source_isolation_layers": [
+    "raw_answer",
+    "external_evidence",
+    "audit_verdict"
+  ],
+  "labels": [
+    "verified",
+    "weakly_verified",
+    "irrelevant",
+    "unverifiable",
+    "contradicted"
+  ],
+  "slices": [
+    {
+      "name": "verified",
+      "expected_status": "verified",
+      "count": 10,
+      "case_ids": [
+        "CJ-001",
+        "CJ-002",
+        "CJ-003",
+        "CJ-004",
+        "CJ-005",
+        "CJ-006",
+        "CJ-007",
+        "CJ-008",
+        "CJ-009",
+        "CJ-010"
+      ],
+      "question": "Can the system match a cited source against supplied external evidence?"
+    },
+    {
+      "name": "weakly_verified",
+      "expected_status": "weakly_verified",
+      "count": 10,
+      "case_ids": [
+        "CJ-021",
+        "CJ-022",
+        "CJ-023",
+        "CJ-024",
+        "CJ-025",
+        "CJ-026",
+        "CJ-027",
+        "CJ-028",
+        "CJ-029",
+        "CJ-030"
+      ],
+      "question": "Can the system mark partial or implied source matches without overstating confidence?"
+    },
+    {
+      "name": "irrelevant",
+      "expected_status": "irrelevant",
+      "count": 10,
+      "case_ids": [
+        "CJ-041",
+        "CJ-042",
+        "CJ-043",
+        "CJ-044",
+        "CJ-045",
+        "CJ-046",
+        "CJ-047",
+        "CJ-048",
+        "CJ-049",
+        "CJ-050"
+      ],
+      "question": "Can the system separate source existence from topical relevance?"
+    },
+    {
+      "name": "unverifiable",
+      "expected_status": "unverifiable",
+      "count": 10,
+      "case_ids": [
+        "CJ-061",
+        "CJ-062",
+        "CJ-063",
+        "CJ-064",
+        "CJ-065",
+        "CJ-066",
+        "CJ-067",
+        "CJ-068",
+        "CJ-069",
+        "CJ-070"
+      ],
+      "question": "Can the system preserve the difference between insufficient evidence and falsity?"
+    },
+    {
+      "name": "contradicted",
+      "expected_status": "contradicted",
+      "count": 10,
+      "case_ids": [
+        "CJ-081",
+        "CJ-082",
+        "CJ-083",
+        "CJ-084",
+        "CJ-085",
+        "CJ-086",
+        "CJ-087",
+        "CJ-088",
+        "CJ-089",
+        "CJ-090"
+      ],
+      "question": "Can the system catch direct contradiction from isolated external evidence?"
+    }
+  ],
+  "hard_case_extension": {
+    "source_dataset": "citation-bench/citation-bench-hard-11.jsonl",
+    "count": 13,
+    "required_for_public_claims": true,
+    "focus": [
+      "real_source_overclaimed_causation",
+      "real_source_overclaimed_absolute",
+      "real_source_overclaimed_quantified_effect"
+    ]
+  },
+  "verification_commands": [
+    "PYTHONPATH=. python3 tools/run_citation_bench.py --fail-under 0.95",
+    "PYTHONPATH=. python3 tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95",
+    "PYTHONPATH=. python3 tools/run_eval4sd_fastlane.py"
+  ]
+}

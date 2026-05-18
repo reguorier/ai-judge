@@ -60,8 +60,17 @@ The answer text goes here. Source: https://example.com/source
 
 ## Run the benchmark
 
+The Eval4SD minimum experiment is pinned by:
+
+```text
+citation-bench/citation-bench-50-manifest.json
+```
+
+It fixes five 10-case slices from the deterministic 100-case dataset:
+`verified`, `weakly_verified`, `irrelevant`, `unverifiable`, and `contradicted`.
+
 ```bash
-PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95
+PYTHONPATH=. python3 tools/run_citation_bench.py --fail-under 0.95
 ```
 
 The default benchmark has 100 deterministic cases and does not use browser bridges or model APIs.
@@ -69,7 +78,7 @@ The default benchmark has 100 deterministic cases and does not use browser bridg
 Run the hard launch set when changing citation extraction, evidence matching, or status classification:
 
 ```bash
-PYTHONPATH=. python tools/run_citation_bench.py \
+PYTHONPATH=. python3 tools/run_citation_bench.py \
   --bench citation-bench/citation-bench-hard-11.jsonl \
   --fail-under 0.95
 ```
