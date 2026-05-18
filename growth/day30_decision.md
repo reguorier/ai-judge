@@ -1,7 +1,7 @@
 # Day 30 Stop / Go Decision
 
 Status: compressed execution in progress
-Last refreshed: 2026-05-18 22:04 HKT
+Last refreshed: 2026-05-19 00:26 HKT
 
 ## Inputs
 
@@ -16,7 +16,7 @@ Primary source files:
 | Signal | Threshold | Actual | Pass |
 |---|---:|---:|---|
 | GitHub stars | 100 | 3 | No |
-| Distinct users / replies / issues | 20 | 5 open repo issues + 2 substantive external replies + 2 taxonomy issues pending | Not yet |
+| Distinct users / replies / issues | 20 | 5 open repo issues with maintainer-only comments + 2 substantive external replies + 2 taxonomy issues pending | Not yet |
 | Pro requests | 3 | 0 | No |
 | Paid users, invoice requests, or manual sponsor support | 1 | 0 | No |
 
@@ -79,3 +79,5 @@ Keep monetization capture available, but spend the next automatable cycle on sub
 ## Compressed execution update
 
 2026-05-18: the next automatable Pro value step was pulled forward instead of waiting for Day 30. `ai-judge audit-batch` now runs Markdown/JSON citation audits across files, directories, or glob patterns and writes per-file reports, `manifest.json`, and `index.html`. GitHub Action batch mode is also implemented, so CI can upload batch artifacts from Markdown/document PRs. A parser-roadmap guard was added for PDF/Docx: batch runs now surface unsupported or unmatched inputs in `skipped_inputs`, and strict CI can fail on `unsupported_input` or `unmatched_input`.
+
+2026-05-19: plan audit rerun. GitHub stars remain at 3, repo issues #1-#5 remain open with no external comments, and LegalCiteBench/RAGChecker taxonomy issues remain open with no replies. The next non-gated product step is improving the final-report closeout quality; external posts, outreach follow-ups, and OpenReview upload remain action-time confirmation items.
