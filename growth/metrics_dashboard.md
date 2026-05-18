@@ -6,7 +6,7 @@ Status: active tracking template
 
 | Metric | Day 30 continue threshold | Current |
 |---|---:|---:|
-| GitHub stars | 100 | 2 |
+| GitHub stars | 100 | 3 |
 | Distinct users / replies / issues | 20 | 5 open issues |
 | Pro feature requests | 3 | TBD |
 | Paid users or invoice requests | 1 | TBD |
@@ -15,7 +15,7 @@ Status: active tracking template
 
 | Channel | URL | Status | Visits | Replies | Stars attributed | Pro asks | Notes |
 |---|---|---|---:|---:|---:|---:|---|
-| Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live | TBD | TBD | TBD | TBD | Space source now includes a sample switcher for fabricated citations and real-source/unsupported-claim audits. |
+| Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | deploy_auth_blocked | TBD | TBD | TBD | TBD | Sample switcher is ready in GitHub; deploy helper is prepared, but HF push needs `HF_TOKEN`. |
 | GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live | TBD | 0 | TBD | TBD | Issues #2-#5 created for benchmark, labels, batch audit, and demos. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |

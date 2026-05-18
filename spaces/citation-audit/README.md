@@ -32,6 +32,17 @@ This HuggingFace Space is the public self-serve demo for AI Judge Citation Audit
 3. Upload this folder plus the repository `core/` package, or deploy from the full GitHub repository with this folder as the Space root.
 4. Pin the Space README to the GitHub repository: `https://github.com/reguorier/ai-judge`.
 
+## Deploy helper
+
+From the repository root:
+
+```bash
+python tools/deploy_hf_space.py
+HF_TOKEN=... python tools/deploy_hf_space.py --push
+```
+
+The helper copies `app.py`, `README.md`, and `requirements.txt` into a local Space worktree and validates that the Space uses the current `ai-judge@main` claim-support logic.
+
 ## Demo prompts
 
 The Space includes two built-in examples:
