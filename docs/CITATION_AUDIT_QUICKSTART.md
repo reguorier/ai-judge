@@ -76,10 +76,28 @@ The hard set focuses on edge cases that matter in public demos: implied referenc
 
 The overclaimed-causation demo is the key governance case: the citation can stay `verified`, the source can stay `relevant`, and the exact claim can still be `contradicted` because the source reports association while the answer states causation.
 
+## Run a batch audit
+
+```bash
+PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" \
+  --out reports/citation-batch \
+  --manifest reports/citation-batch/manifest.json
+```
+
+The batch run writes one HTML/JSON report per supported Markdown/JSON input, plus a manifest and index page. Unsupported document inputs are visible instead of ignored: PDF, Doc, and Docx files appear under `skipped_inputs` with parser statuses such as `pdf_parser_pending` or `docx_parser_pending`.
+
+Use a stricter input policy in CI when every requested file must be audited:
+
+```bash
+PYTHONPATH=. python cli/main.py audit-batch "docs/**/*" \
+  --fail-on contradicted,unsupported_input,unmatched_input
+```
+
 ## Pro path
 
-The free path stays local and single-file. Pro early access is reserved for workflows that need batch audit, CI gating, history, or network-backed evidence fetching:
+The free path stays local and single-file. The first Pro value step now has an executable Markdown/JSON batch MVP; Pro early access is reserved for workflows that need stricter CI gating, history, network-backed evidence fetching, or the PDF/Docx parser path:
 
 - [`docs/BATCH_AUDIT_SPEC.md`](BATCH_AUDIT_SPEC.md)
 - [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](GITHUB_ACTION_CITATION_AUDIT.md)
 - [`docs/PRO_EARLY_ACCESS.md`](PRO_EARLY_ACCESS.md)
+- [`docs/DOCUMENT_PARSER_ROADMAP.md`](DOCUMENT_PARSER_ROADMAP.md)

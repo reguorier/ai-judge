@@ -21,34 +21,65 @@ from core.citation_audit import run_audit_file, write_audit_outputs
 
 
 SUPPORTED_SUFFIXES = {".md", ".markdown", ".json"}
+KNOWN_UNSUPPORTED_SUFFIXES = {".pdf", ".doc", ".docx"}
 DEFAULT_FAIL_ON = {"contradicted"}
-DEFAULT_WARN_ON = {"unverifiable", "weakly_verified", "irrelevant", "partially_supported", "unsupported"}
+DEFAULT_WARN_ON = {
+    "unverifiable",
+    "weakly_verified",
+    "irrelevant",
+    "partially_supported",
+    "unsupported",
+    "unsupported_input",
+    "unmatched_input",
+}
 
 
 def expand_batch_inputs(inputs: Iterable[str | Path]) -> list[Path]:
     """Expand files, directories, and shell-style glob patterns into audit inputs."""
+    return inspect_batch_inputs(inputs)["supported"]
+
+
+def inspect_batch_inputs(inputs: Iterable[str | Path]) -> dict[str, Any]:
+    """Expand batch inputs and report unsupported or unmatched document inputs.
+
+    PDF/Docx are intentional roadmap formats. They should never disappear from
+    a Pro-facing batch run without a manifest entry explaining that they were
+    not audited.
+    """
     seen: set[Path] = set()
     paths: list[Path] = []
+    skipped_seen: set[str] = set()
+    skipped: list[dict[str, Any]] = []
     for raw in inputs:
         token = str(raw)
         candidates: list[Path] = []
         source = Path(token)
         if source.exists():
             if source.is_dir():
-                candidates.extend(source.rglob("*.md"))
-                candidates.extend(source.rglob("*.markdown"))
-                candidates.extend(source.rglob("*.json"))
+                for suffix in sorted(SUPPORTED_SUFFIXES | KNOWN_UNSUPPORTED_SUFFIXES):
+                    candidates.extend(source.rglob(f"*{suffix}"))
             else:
                 candidates.append(source)
         else:
             candidates.extend(Path(item) for item in glob.glob(token, recursive=True))
+        if not candidates:
+            _append_skip(skipped, skipped_seen, _unmatched_input(token))
+            continue
         for candidate in candidates:
-            if candidate.is_file() and candidate.suffix.lower() in SUPPORTED_SUFFIXES:
-                resolved = candidate.resolve()
+            if not candidate.is_file():
+                continue
+            suffix = candidate.suffix.lower()
+            resolved = candidate.resolve()
+            if suffix in SUPPORTED_SUFFIXES:
                 if resolved not in seen:
                     seen.add(resolved)
                     paths.append(resolved)
-    return sorted(paths, key=lambda item: str(item))
+            elif suffix in KNOWN_UNSUPPORTED_SUFFIXES or source.is_file():
+                _append_skip(skipped, skipped_seen, _unsupported_input(resolved, token))
+    return {
+        "supported": sorted(paths, key=lambda item: str(item)),
+        "skipped": sorted(skipped, key=lambda item: str(item.get("input") or item.get("raw_input") or "")),
+    }
 
 
 def run_audit_batch(
@@ -69,7 +100,12 @@ def run_audit_batch(
     output_dir.mkdir(parents=True, exist_ok=True)
     selected_fail = _normalize_policy(fail_on, DEFAULT_FAIL_ON)
     selected_warn = _normalize_policy(warn_on, DEFAULT_WARN_ON)
-    audit_inputs = expand_batch_inputs(inputs)
+    input_report = inspect_batch_inputs(inputs)
+    audit_inputs = input_report["supported"]
+    skipped_inputs = [
+        _apply_skip_policy(item, selected_fail, selected_warn)
+        for item in input_report["skipped"]
+    ]
     current_batch_id = batch_id or f"batch-{uuid.uuid4().hex[:12]}"
     results: list[dict[str, Any]] = []
     for index, input_path in enumerate(audit_inputs, 1):
@@ -107,15 +143,17 @@ def run_audit_batch(
             "failed": failed,
             "warning": warned and not failed,
         })
-    failed_count = sum(1 for item in results if item["failed"])
-    warning_count = sum(1 for item in results if item["warning"])
+    failed_count = sum(1 for item in results if item["failed"]) + sum(1 for item in skipped_inputs if item["failed"])
+    warning_count = sum(1 for item in results if item["warning"]) + sum(1 for item in skipped_inputs if item["warning"])
     manifest = {
         "schema": "citation_audit_batch.v1",
         "product": "AI Judge Citation Audit",
         "version": "3.7.0",
         "batch_id": current_batch_id,
         "generated_at": created_at,
-        "input_count": len(audit_inputs),
+        "input_count": len(audit_inputs) + len(skipped_inputs),
+        "supported_count": len(audit_inputs),
+        "skipped_count": len(skipped_inputs),
         "failed_count": failed_count,
         "warning_count": warning_count,
         "certification_ids": [item["certification_id"] for item in results if item.get("certification_id")],
@@ -127,6 +165,7 @@ def run_audit_batch(
             "reviewers": reviewers or ["gemini", "chatgpt", "deepseek", "qwen"],
         },
         "results": results,
+        "skipped_inputs": skipped_inputs,
         "index_html": str(output_dir / "index.html"),
         "manifest_path": str(Path(manifest_path) if manifest_path else output_dir / "manifest.json"),
         "exit_code": 1 if failed_count else 0,
@@ -152,6 +191,17 @@ def render_batch_index_html(manifest: dict[str, Any]) -> str:
             f"<td>{_e(item.get('trust_gate'))}</td>"
             f"<td>{_e(item.get('certification_id'))}</td>"
             f"<td>{_e(item.get('gap_count'))}</td>"
+            "</tr>"
+        )
+    skipped_rows = []
+    for item in manifest.get("skipped_inputs") or []:
+        state = "failed" if item.get("failed") else "warning" if item.get("warning") else "ok"
+        skipped_rows.append(
+            "<tr>"
+            f"<td>{_e(item.get('input') or item.get('raw_input'))}</td>"
+            f"<td><span class=\"pill {state}\">{_e(item.get('overall_status'))}</span></td>"
+            f"<td>{_e(item.get('parser_status'))}</td>"
+            f"<td>{_e(item.get('reason'))}</td>"
             "</tr>"
         )
     return f"""<!doctype html>
@@ -186,6 +236,8 @@ def render_batch_index_html(manifest: dict[str, Any]) -> str:
     <div>Batch ID: {_e(manifest.get('batch_id'))}</div>
     <div class="summary">
       <div class="card"><div class="label">Inputs</div><div class="value">{_e(manifest.get('input_count'))}</div></div>
+      <div class="card"><div class="label">Supported</div><div class="value">{_e(manifest.get('supported_count'))}</div></div>
+      <div class="card"><div class="label">Skipped</div><div class="value">{_e(manifest.get('skipped_count'))}</div></div>
       <div class="card"><div class="label">Failed</div><div class="value">{_e(manifest.get('failed_count'))}</div></div>
       <div class="card"><div class="label">Warnings</div><div class="value">{_e(manifest.get('warning_count'))}</div></div>
       <div class="card"><div class="label">Network</div><div class="value">{_e((manifest.get('policy') or {}).get('allow_network'))}</div></div>
@@ -195,6 +247,11 @@ def render_batch_index_html(manifest: dict[str, Any]) -> str:
     <table>
       <thead><tr><th>File</th><th>Status</th><th>Claim Support</th><th>Trust Gate</th><th>Certification</th><th>Gaps</th></tr></thead>
       <tbody>{''.join(rows) or '<tr><td colspan="6">No supported input files found.</td></tr>'}</tbody>
+    </table>
+    <h2>Skipped Inputs</h2>
+    <table>
+      <thead><tr><th>Input</th><th>Status</th><th>Parser</th><th>Reason</th></tr></thead>
+      <tbody>{''.join(skipped_rows) or '<tr><td colspan="4">No skipped inputs.</td></tr>'}</tbody>
     </table>
   </main>
 </body>
@@ -229,6 +286,59 @@ def _positive_count(value: Any) -> bool:
         return int(value) > 0
     except (TypeError, ValueError):
         return bool(value)
+
+
+def _append_skip(skipped: list[dict[str, Any]], seen: set[str], item: dict[str, Any]) -> None:
+    key = str(item.get("input") or item.get("raw_input") or "")
+    if key and key not in seen:
+        seen.add(key)
+        skipped.append(item)
+
+
+def _unmatched_input(token: str) -> dict[str, Any]:
+    return {
+        "raw_input": token,
+        "input": token,
+        "overall_status": "unmatched_input",
+        "parser_status": "unmatched_input",
+        "policy_statuses": ["unmatched_input"],
+        "reason": "No files matched this input. The batch ran, but this token did not produce an auditable file.",
+    }
+
+
+def _unsupported_input(path: Path, raw_input: str) -> dict[str, Any]:
+    suffix = path.suffix.lower()
+    parser_status = {
+        ".pdf": "pdf_parser_pending",
+        ".doc": "doc_parser_pending",
+        ".docx": "docx_parser_pending",
+    }.get(suffix, "unsupported_suffix")
+    reason = {
+        "pdf_parser_pending": "PDF audit is on the roadmap; convert to Markdown/JSON or wait for page-anchor parsing.",
+        "doc_parser_pending": "Word document audit is on the roadmap; convert to Markdown/JSON or wait for paragraph-anchor parsing.",
+        "docx_parser_pending": "Docx audit is on the roadmap; convert to Markdown/JSON or wait for paragraph-anchor parsing.",
+        "unsupported_suffix": "This file suffix is not supported by the batch audit MVP.",
+    }[parser_status]
+    return {
+        "raw_input": raw_input,
+        "input": _display_path(path),
+        "suffix": suffix,
+        "overall_status": "unsupported_input",
+        "parser_status": parser_status,
+        "policy_statuses": ["unsupported_input", parser_status],
+        "reason": reason,
+    }
+
+
+def _apply_skip_policy(item: dict[str, Any], fail_on: set[str], warn_on: set[str]) -> dict[str, Any]:
+    statuses = {str(status) for status in item.get("policy_statuses") or [] if status}
+    failed = bool(statuses & fail_on)
+    warning = bool(statuses & warn_on) and not failed
+    merged = dict(item)
+    merged["policy_statuses"] = sorted(statuses)
+    merged["failed"] = failed
+    merged["warning"] = warning
+    return merged
 
 
 def _artifact_stem(index: int, path: Path) -> str:

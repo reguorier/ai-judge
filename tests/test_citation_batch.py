@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from core.citation_batch import expand_batch_inputs, run_audit_batch
+from core.citation_batch import expand_batch_inputs, inspect_batch_inputs, run_audit_batch
 
 
 def _write_verified_case(path: Path) -> None:
@@ -54,6 +54,19 @@ def test_expand_batch_inputs_accepts_directory_and_supported_files(tmp_path: Pat
     assert [path.name for path in paths] == ["one.md"]
 
 
+def test_inspect_batch_inputs_reports_known_document_formats(tmp_path: Path):
+    _write_verified_case(tmp_path / "one.md")
+    (tmp_path / "paper.pdf").write_bytes(b"%PDF-1.7\n")
+    (tmp_path / "memo.docx").write_bytes(b"docx")
+
+    report = inspect_batch_inputs([tmp_path])
+
+    assert [path.name for path in report["supported"]] == ["one.md"]
+    skipped = {item["input"]: item for item in report["skipped"]}
+    assert any(name.endswith("paper.pdf") for name in skipped)
+    assert any(item["parser_status"] == "docx_parser_pending" for item in skipped.values())
+
+
 def test_run_audit_batch_writes_manifest_and_index(tmp_path: Path):
     input_dir = tmp_path / "inputs"
     input_dir.mkdir()
@@ -81,6 +94,32 @@ def test_run_audit_batch_writes_manifest_and_index(tmp_path: Path):
     assert all(Path(item["json"]).exists() for item in manifest["results"])
 
 
+def test_run_audit_batch_records_skipped_documents_in_manifest(tmp_path: Path):
+    input_dir = tmp_path / "inputs"
+    input_dir.mkdir()
+    _write_verified_case(input_dir / "verified.md")
+    (input_dir / "report.pdf").write_bytes(b"%PDF-1.7\n")
+    out_dir = tmp_path / "batch"
+
+    manifest = run_audit_batch(
+        [input_dir],
+        out_dir=out_dir,
+        batch_id="batch-skip-test",
+        fail_on=["contradicted"],
+        warn_on=["unsupported_input"],
+        generated_at="2026-05-18T00:00:00+00:00",
+    )
+
+    assert manifest["input_count"] == 2
+    assert manifest["supported_count"] == 1
+    assert manifest["skipped_count"] == 1
+    assert manifest["failed_count"] == 0
+    assert manifest["warning_count"] >= 1
+    assert manifest["skipped_inputs"][0]["overall_status"] == "unsupported_input"
+    assert manifest["skipped_inputs"][0]["parser_status"] == "pdf_parser_pending"
+    assert "Skipped Inputs" in (out_dir / "index.html").read_text(encoding="utf-8")
+
+
 def test_run_audit_batch_can_fail_on_policy_status(tmp_path: Path):
     input_dir = tmp_path / "inputs"
     input_dir.mkdir()
@@ -95,6 +134,27 @@ def test_run_audit_batch_can_fail_on_policy_status(tmp_path: Path):
         generated_at="2026-05-18T00:00:00+00:00",
     )
 
+    assert manifest["failed_count"] == 1
+    assert manifest["warning_count"] == 0
+    assert manifest["exit_code"] == 1
+
+
+def test_run_audit_batch_can_fail_on_unsupported_input_policy(tmp_path: Path):
+    pdf_path = tmp_path / "only.pdf"
+    pdf_path.write_bytes(b"%PDF-1.7\n")
+
+    manifest = run_audit_batch(
+        [pdf_path],
+        out_dir=tmp_path / "batch",
+        batch_id="batch-unsupported-test",
+        fail_on=["unsupported_input"],
+        warn_on=["unsupported_input"],
+        generated_at="2026-05-18T00:00:00+00:00",
+    )
+
+    assert manifest["input_count"] == 1
+    assert manifest["supported_count"] == 0
+    assert manifest["skipped_count"] == 1
     assert manifest["failed_count"] == 1
     assert manifest["warning_count"] == 0
     assert manifest["exit_code"] == 1

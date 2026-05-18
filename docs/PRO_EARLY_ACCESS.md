@@ -13,7 +13,7 @@ It is for people who need to audit more than one answer or document at a time.
 - historical Replay Ledger
 - GitHub Action batch mode
 - exportable Certification ID reports
-- PDF/Docx parser roadmap access
+- PDF/Docx parser roadmap access; current batch runs mark these files as parser-pending skipped inputs rather than silently auditing them
 
 ## Manual purchase path
 
@@ -43,6 +43,13 @@ Current batch command:
 
 ```bash
 PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" --out reports/citation-batch
+```
+
+Strict document-workflow check:
+
+```bash
+PYTHONPATH=. python cli/main.py audit-batch "docs/**/*" \
+  --fail-on contradicted,unsupported_input,unmatched_input
 ```
 
 Current GitHub Action batch mode:

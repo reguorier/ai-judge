@@ -39,7 +39,7 @@ Next actions:
 - build batch Markdown audit - done as `ai-judge audit-batch`
 - wire Pro license checks
 - connect Lemon Squeezy or Stripe Payment Links
-- publish PDF/Docx parser roadmap
+- publish PDF/Docx parser roadmap - done as `docs/DOCUMENT_PARSER_ROADMAP.md`; parser implementation remains gated
 
 ### Pivot demo story
 
@@ -78,4 +78,4 @@ Keep monetization capture available, but spend the next automatable cycle on sub
 
 ## Compressed execution update
 
-2026-05-18: the next automatable Pro value step was pulled forward instead of waiting for Day 30. `ai-judge audit-batch` now runs Markdown/JSON citation audits across files, directories, or glob patterns and writes per-file reports, `manifest.json`, and `index.html`. GitHub Action batch mode is also implemented, so CI can upload batch artifacts from Markdown/document PRs.
+2026-05-18: the next automatable Pro value step was pulled forward instead of waiting for Day 30. `ai-judge audit-batch` now runs Markdown/JSON citation audits across files, directories, or glob patterns and writes per-file reports, `manifest.json`, and `index.html`. GitHub Action batch mode is also implemented, so CI can upload batch artifacts from Markdown/document PRs. A parser-roadmap guard was added for PDF/Docx: batch runs now surface unsupported or unmatched inputs in `skipped_inputs`, and strict CI can fail on `unsupported_input` or `unmatched_input`.

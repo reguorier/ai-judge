@@ -9,18 +9,18 @@ Use this when someone replies to the Pro early-access CTA or asks whether batch/
 ```text
 Thanks. I am validating Pro before building billing infrastructure.
 
-The early-access offer is $49 lifetime for the first 100 users. The first paid workflows are:
+The early-access offer is $49 lifetime for the first 100 users. The current executable Pro-facing workflow is Markdown/JSON batch audit, and the next paid workflows are:
 
-- batch Markdown audit
+- Markdown/JSON batch audit
+- GitHub Action batch mode
 - PDF/Docx parser roadmap access
-- GitHub Action advanced mode
 - Evidence Broker network mode
 - historical Replay Ledger
 - exportable Certification ID reports
 
 To make sure I build the right version first, which workflow do you need most?
 
-1. Markdown batch
+1. Markdown/JSON batch
 2. PDF
 3. Docx
 4. GitHub PR / CI

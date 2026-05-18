@@ -18,11 +18,11 @@ The citation audit path does not need a judge model for its core status labels. 
 
 ## "Can it audit PDFs or Word documents?"
 
-The launch version audits Markdown/JSON. PDF/Docx batch audit is the planned Pro feature because it needs parsing, page anchors, export formats, and better error handling.
+The executable batch version audits Markdown/JSON. If PDF/Docx files are included in a batch, they are recorded as `unsupported_input` with `pdf_parser_pending` or `docx_parser_pending` so they are not silently treated as audited. Full PDF/Docx audit is the planned Pro parser path because it needs page/paragraph anchors, parser warnings, export formats, and better error handling.
 
 ## "Can I use it in CI?"
 
-Yes. The repo includes a composite GitHub Action at `.github/actions/citation-audit`. It can run on Markdown/JSON audit inputs and upload HTML/JSON reports as artifacts.
+Yes. The repo includes a composite GitHub Action at `.github/actions/citation-audit`. It can run single-file or batch Markdown/JSON audit inputs and upload HTML/JSON reports plus the batch manifest as artifacts. Strict CI can fail on `unsupported_input` or `unmatched_input` when every requested file must be audited.
 
 ## "What should I contribute?"
 

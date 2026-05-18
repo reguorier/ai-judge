@@ -12,7 +12,7 @@
     "phase": "citation_verification_mvp",
     "run_id": "launch-batch-001-005",
     "question": "Does the cited study prove that the AI review program caused lower churn?",
-    "certification_id": "CITE-20260518-E0275389F0",
+    "certification_id": "CITE-20260518-29416C6837",
     "citation_verification": {
       "schema": "citation_validator.summary.v1",
       "status_schema": [
@@ -50,8 +50,8 @@
       },
       "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
       "verification_hash": "c1255e4b420a2810ada1d48320067307be7c930c919ab2b475cee0e8bea7cdcb",
-      "certification_id": "CITE-20260518-E0275389F0",
-      "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+      "certification_id": "CITE-20260518-29416C6837",
+      "replay_ledger_hash": "0a25c5d57099f4d7b2bdd0f689c507eacaa741911a24c514d74167440791cb0c",
       "external_evidence_count": 1
     },
     "replay_ledger": [
@@ -120,17 +120,17 @@
                 "evidence_hash": "3f79930bca8bc3c57f9af4151cbaa69a27267bee29849957bdd87c38d3be5e3e"
               },
               "relevance_score": 0.45,
-              "verified_at": "2026-05-18T15:05:22.872378+00:00"
+              "verified_at": "2026-05-18T15:33:00.903316+00:00"
             }
           ],
           "external_evidence_used": 1,
           "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
-          "verified_at": "2026-05-18T15:05:22.872378+00:00",
-          "verification_hash": "6ff8a992dee9a2794beb809df1950c1521c87f3c7aff56ac1c9f2c7f13ed1aaa"
+          "verified_at": "2026-05-18T15:33:00.903316+00:00",
+          "verification_hash": "dd775e5046a8cb3bc3ea3ac001c7c862c5ef3325cde3d7411cf3fb54985aa1ba"
         },
         "mentor_citation_verification": null,
         "unverifiable_reasons": [],
-        "verification_timestamp": "2026-05-18T15:05:22.872378+00:00",
+        "verification_timestamp": "2026-05-18T15:33:00.903316+00:00",
         "source_isolation": {
           "raw_answer": "replay_ledger[].raw_answer",
           "mentor_supplement": "replay_ledger[].mentor_supplement",
@@ -139,7 +139,7 @@
         }
       }
     ],
-    "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+    "replay_ledger_hash": "0a25c5d57099f4d7b2bdd0f689c507eacaa741911a24c514d74167440791cb0c",
     "external_evidence_index": [
       {
         "evidence_id": "USR-EVID-001",
@@ -189,11 +189,11 @@
       "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
       "unverifiable 不是 false，UI 必须解释清楚。"
     ],
-    "created_at": "2026-05-18T15:05:22.872378+00:00",
-    "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
+    "created_at": "2026-05-18T15:33:00.903316+00:00",
+    "certification_hash": "c0227a5086db2e3e374752648177d5d36d555f342790e0f2d574684d615b2993",
     "evidence_broker": {
       "schema": "evidence_broker.v1",
-      "created_at": "2026-05-18T15:05:22.872378+00:00",
+      "created_at": "2026-05-18T15:33:00.903316+00:00",
       "question": "Does the cited study prove that the AI review program caused lower churn?",
       "allow_network": false,
       "source_policy": {
@@ -247,7 +247,7 @@
           "notarized": 0
         }
       },
-      "broker_hash": "644b3730fdfb81de0f2aae431fb21fb41a8a5f16176865df51efbd826c50781f"
+      "broker_hash": "ada3adf9041ae058a3262a6d23b97562b5b61aebe4b2d60079c12f265e3f45b1"
     },
     "claim_support_audit": {
       "schema": "claim_support.v1",
@@ -309,13 +309,13 @@
           "support_failure_code": "overclaimed_causation",
           "support_reason": "The claim uses causal language, while the matched source reports association or explicitly disclaims causation.",
           "matched_evidence_hash": "3f79930bca8bc3c57f9af4151cbaa69a27267bee29849957bdd87c38d3be5e3e",
-          "audited_at": "2026-05-18T15:05:22.872378+00:00"
+          "audited_at": "2026-05-18T15:33:00.903316+00:00"
         }
       ],
       "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
-      "audited_at": "2026-05-18T15:05:22.872378+00:00",
+      "audited_at": "2026-05-18T15:33:00.903316+00:00",
       "overall_claim_support": "contradicted",
-      "claim_support_hash": "6c2d5f780379188820b4a0aac200f167a19c9baf82a61ecb1bbfcce50f0d389e"
+      "claim_support_hash": "bdd5914e7ccc5fcd227e4a40f7af456c7d3762723dade64bf455ad4220307184"
     },
     "evidence_gap_suggestions": {
       "schema": "evidence_gap_filler.suggestion_only.v1",
@@ -342,16 +342,16 @@
     },
     "evidence_gap_queue": {
       "schema": "evidence_gap_queue.v1",
-      "created_at": "2026-05-18T15:05:22.872378+00:00",
+      "created_at": "2026-05-18T15:33:00.903316+00:00",
       "open_count": 0,
       "tasks": [],
       "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
-      "queue_hash": "2279a333cc9bc557aa502093a40b3911271d144675b5db759eca60c4cd76c574"
+      "queue_hash": "eb26ee98a3a92a7a8556b28bd1425b3088f23e91a97ff5acf0556a38ec61b35d"
     },
     "blind_cross_validation": {
       "schema": "blind_cross_validation.v1",
       "status": "pending_model_reviews",
-      "created_at": "2026-05-18T15:05:22.872378+00:00",
+      "created_at": "2026-05-18T15:33:00.903316+00:00",
       "reviewer_count": 4,
       "threshold": 0.67,
       "anonymization": {
@@ -390,7 +390,7 @@
         }
       ],
       "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
-      "packet_hash": "1b7e369b947b615b4a8d4edc4e4db1d625d40f8370a8bec598114743cd1d2817"
+      "packet_hash": "2ec4b97fc84efcb549a78f1f691dfbd68e7a50d77f83c3e2f858760509583f6f"
     },
     "eval_case": {
       "schema": "ai_judge_eval_case.v1",
@@ -421,25 +421,25 @@
         "hard_evidence_count": 1,
         "trust_gate": "pass"
       },
-      "certification_id": "CITE-20260518-E0275389F0",
-      "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
-      "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+      "certification_id": "CITE-20260518-29416C6837",
+      "certification_hash": "c0227a5086db2e3e374752648177d5d36d555f342790e0f2d574684d615b2993",
+      "replay_ledger_hash": "0a25c5d57099f4d7b2bdd0f689c507eacaa741911a24c514d74167440791cb0c",
       "human_label": null,
-      "created_at": "2026-05-18T15:05:22.872873+00:00",
-      "case_hash": "87d7b22183847b9e533f0efd86a2d3c7a239d496c74b89905469f437d8660be4"
+      "created_at": "2026-05-18T15:33:00.903871+00:00",
+      "case_hash": "60b42d94d389178e83fbf26d318d7a77f21c02329c3436bb937b0ac2bfd4bccf"
     }
   },
   "human_review_status": {
     "status": "optional",
     "reason": "引用状态较稳，可选人工签名。"
   },
-  "created_at": "2026-05-18T15:05:22.872378+00:00",
+  "created_at": "2026-05-18T15:33:00.903316+00:00",
   "summary": {
     "overall_status": "verified",
     "overall_claim_support": "contradicted",
-    "certification_id": "CITE-20260518-E0275389F0",
-    "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
-    "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+    "certification_id": "CITE-20260518-29416C6837",
+    "certification_hash": "c0227a5086db2e3e374752648177d5d36d555f342790e0f2d574684d615b2993",
+    "replay_ledger_hash": "0a25c5d57099f4d7b2bdd0f689c507eacaa741911a24c514d74167440791cb0c",
     "item_count": 1,
     "counts": {
       "verified": 1,

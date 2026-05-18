@@ -59,7 +59,7 @@ jobs:
           output-dir: reports/citation-batch
           manifest: reports/citation-batch/manifest.json
           fail-on: contradicted
-          warn-on: unverifiable,weakly_verified,irrelevant,partially_supported,unsupported
+          warn-on: unverifiable,weakly_verified,irrelevant,partially_supported,unsupported,unsupported_input,unmatched_input
           artifact-name: ai-judge-citation-batch
 ```
 
@@ -73,6 +73,7 @@ Launch behavior is report-first:
 - `unverifiable` should warn first, because it means evidence is missing, not false.
 - `irrelevant` should usually fail for publishable docs.
 - `weakly_verified` should require reviewer attention.
+- `unsupported_input` and `unmatched_input` should fail strict document workflows when every requested file must be audited.
 
 ## Example PR fixture
 
@@ -105,4 +106,10 @@ Downstream CI can parse:
 }
 ```
 
-Batch manifests use `citation_audit_batch.v1` and include per-file report paths, Certification IDs, Replay Ledger hashes, trust gates, warning counts, and failure counts.
+Batch manifests use `citation_audit_batch.v1` and include per-file report paths, Certification IDs, Replay Ledger hashes, trust gates, warning counts, failure counts, supported/skipped counts, and skipped input details.
+
+PDF, Doc, and Docx files appear in `skipped_inputs` with parser statuses such as `pdf_parser_pending` or `docx_parser_pending`; unmatched globs appear as `unmatched_input`. To make CI fail when a requested document was not audited, include those statuses in `fail-on`:
+
+```yaml
+fail-on: contradicted,unsupported_input,unmatched_input
+```

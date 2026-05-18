@@ -83,7 +83,7 @@ PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" \
   --manifest reports/citation-batch/manifest.json
 ```
 
-The launch batch demo intentionally returns non-zero when contradicted claims are present. Inspect the generated index at [`reports/citation-batch/index.html`](reports/citation-batch/index.html) and the machine-readable manifest at [`reports/citation-batch/manifest.json`](reports/citation-batch/manifest.json).
+The launch batch demo intentionally returns non-zero when contradicted claims are present. Inspect the generated index at [`reports/citation-batch/index.html`](reports/citation-batch/index.html) and the machine-readable manifest at [`reports/citation-batch/manifest.json`](reports/citation-batch/manifest.json). PDF/Docx inputs are not silently treated as audited; batch manifests list them under `skipped_inputs` with parser statuses such as `pdf_parser_pending` or `docx_parser_pending`.
 
 The audit returns:
 
@@ -243,6 +243,7 @@ The current monetization path is intentionally narrow: prove citation audit valu
 | [`docs/LAUNCH_CITATION_AUDIT.md`](docs/LAUNCH_CITATION_AUDIT.md) | 30-day launch plan, public demos, and stop/go thresholds |
 | [`docs/UNVERIFIABLE_IS_NOT_FALSE.md`](docs/UNVERIFIABLE_IS_NOT_FALSE.md) | Public explainer for the most important trust-boundary concept |
 | [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Implemented Markdown/JSON batch-audit scope without building billing too early |
+| [`docs/DOCUMENT_PARSER_ROADMAP.md`](docs/DOCUMENT_PARSER_ROADMAP.md) | PDF/Docx parser gates and current unsupported-input policy |
 | [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration examples for single-file and batch Markdown/document PRs |
 | [`docs/AI_DECISION_AUDIT_SAMPLE.md`](docs/AI_DECISION_AUDIT_SAMPLE.md) | Concrete sample deliverable for audit-service conversations |
 | [`reports/citation-batch/index.html`](reports/citation-batch/index.html) | Six-example batch audit proof with manifest and per-file reports |
@@ -289,7 +290,7 @@ No. AI Judge now separates citation matching from claim support. In the overclai
 Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
 
 **What becomes Pro?**
-The first Pro surface is repository-scale batch audit, with GitHub Action batch mode, history ledger, network-backed Evidence Broker, and document parsing on the roadmap. Single-file local audit stays free.
+The first Pro surface is repository-scale Markdown/JSON batch audit, with GitHub Action batch mode, history ledger, network-backed Evidence Broker, and PDF/Docx document parsing on the roadmap. Single-file local audit stays free.
 
 ## v3.1 Foundation
 

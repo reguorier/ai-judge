@@ -32,7 +32,7 @@ Last refreshed: 2026-05-18 23:12 HKT
 | Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | openreview_profile_registered_packet_verified | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; confirmation email arrived, profile registration was completed, and the anonymous PDF/form packet passed local verification. Upload/form fill is next; final submit still needs action-time confirmation. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
-| Pro early access | growth/pro_interest_status.md | batch_mvp_and_action_mode_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields; `ai-judge audit-batch` and GitHub Action batch mode implement the first Markdown/JSON batch value step before billing. |
+| Pro early access | growth/pro_interest_status.md | batch_mvp_action_mode_parser_guard_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields; `ai-judge audit-batch` and GitHub Action batch mode implement the first Markdown/JSON batch value step before billing. PDF/Docx inputs now surface as parser-pending skipped inputs instead of disappearing from batch proof. |
 | Sponsors | growth/sponsor_status.md | manual_sponsor_path_ready | 0 | 0 | 0 | 0 | GitHub Sponsors copy is ready; manual sponsor intent can be tracked until Sponsors is enabled. |
 
 ## Manual update cadence

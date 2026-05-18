@@ -12,7 +12,7 @@
     "phase": "citation_verification_mvp",
     "run_id": "launch-batch-001-004",
     "question": "Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?",
-    "certification_id": "CITE-20260518-4A0F27725C",
+    "certification_id": "CITE-20260518-2661C58B96",
     "citation_verification": {
       "schema": "citation_validator.summary.v1",
       "status_schema": [
@@ -50,8 +50,8 @@
       },
       "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
       "verification_hash": "f4c9d69dcbaed50f0de02580cd6371450609c8ee5fbeef8b816b337aa897ddd1",
-      "certification_id": "CITE-20260518-4A0F27725C",
-      "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+      "certification_id": "CITE-20260518-2661C58B96",
+      "replay_ledger_hash": "a55af134aad9cdb0ba8a4c147270fbc9ba5f2102915bf8e1794f2fe606c1bc98",
       "external_evidence_count": 2
     },
     "replay_ledger": [
@@ -120,14 +120,14 @@
                 "evidence_hash": "6aef513293ffe683068832fb511cec9b84f5afeb84f223bb24bf2b817842b24e"
               },
               "relevance_score": 0.0,
-              "verified_at": "2026-05-18T15:05:22.871050+00:00",
+              "verified_at": "2026-05-18T15:33:00.901054+00:00",
               "unverifiable_reason_code": "candidate_not_fetched"
             }
           ],
           "external_evidence_used": 2,
           "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
-          "verified_at": "2026-05-18T15:05:22.871050+00:00",
-          "verification_hash": "eab51f22a85573818552d5d6764ccdeb2b9823703bf4b3e0a7bc8f6cd363574c"
+          "verified_at": "2026-05-18T15:33:00.901054+00:00",
+          "verification_hash": "d0b4d7f0fc1875d1cef82fdd2a6d36b0d7ff9374e2af0aadef7b4e1f9751af37"
         },
         "mentor_citation_verification": null,
         "unverifiable_reasons": [
@@ -138,7 +138,7 @@
             "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。"
           }
         ],
-        "verification_timestamp": "2026-05-18T15:05:22.871050+00:00",
+        "verification_timestamp": "2026-05-18T15:33:00.901054+00:00",
         "source_isolation": {
           "raw_answer": "replay_ledger[].raw_answer",
           "mentor_supplement": "replay_ledger[].mentor_supplement",
@@ -147,7 +147,7 @@
         }
       }
     ],
-    "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+    "replay_ledger_hash": "a55af134aad9cdb0ba8a4c147270fbc9ba5f2102915bf8e1794f2fe606c1bc98",
     "external_evidence_index": [
       {
         "evidence_id": "EVID-PRODUCT-001",
@@ -207,11 +207,11 @@
       "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
       "unverifiable 不是 false，UI 必须解释清楚。"
     ],
-    "created_at": "2026-05-18T15:05:22.871050+00:00",
-    "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
+    "created_at": "2026-05-18T15:33:00.901054+00:00",
+    "certification_hash": "8f00d4b1213ad3fa9840191fb6aced55bf48d6d9bae9606b1543c943452f05c2",
     "evidence_broker": {
       "schema": "evidence_broker.v1",
-      "created_at": "2026-05-18T15:05:22.871050+00:00",
+      "created_at": "2026-05-18T15:33:00.901054+00:00",
       "question": "Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?",
       "allow_network": false,
       "source_policy": {
@@ -301,7 +301,7 @@
           "notarized": 0
         }
       },
-      "broker_hash": "28c05fe07d00537045f7c829117c1c85fb370f8df0db1ddbd80bbdb38f81b2e1"
+      "broker_hash": "193d4463a6459708480dc9f9f9687702a6c78ea83bc4aeadb9ce9f68aff03d0f"
     },
     "claim_support_audit": {
       "schema": "claim_support.v1",
@@ -363,13 +363,13 @@
           "support_failure_code": "missing_claim_evidence",
           "support_reason": "The citation is currently unverifiable, so claim-level support cannot be upgraded.",
           "matched_evidence_hash": "6aef513293ffe683068832fb511cec9b84f5afeb84f223bb24bf2b817842b24e",
-          "audited_at": "2026-05-18T15:05:22.871050+00:00"
+          "audited_at": "2026-05-18T15:33:00.901054+00:00"
         }
       ],
       "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
-      "audited_at": "2026-05-18T15:05:22.871050+00:00",
+      "audited_at": "2026-05-18T15:33:00.901054+00:00",
       "overall_claim_support": "unknown",
-      "claim_support_hash": "ce8d45c801db91ed91e2ea104bde72550baa667954e7c30a60ac17ee96821ac3"
+      "claim_support_hash": "26de6073e2391ee79e4d8e916f6afd7e10ccadfc293345994504aaeee5c8ef07"
     },
     "evidence_gap_suggestions": {
       "schema": "evidence_gap_filler.suggestion_only.v1",
@@ -408,7 +408,7 @@
     },
     "evidence_gap_queue": {
       "schema": "evidence_gap_queue.v1",
-      "created_at": "2026-05-18T15:05:22.871050+00:00",
+      "created_at": "2026-05-18T15:33:00.901054+00:00",
       "open_count": 1,
       "tasks": [
         {
@@ -421,16 +421,16 @@
           "gap": "缺少可匹配的外部证据。",
           "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
           "queue_status": "open",
-          "created_at": "2026-05-18T15:05:22.871050+00:00"
+          "created_at": "2026-05-18T15:33:00.901054+00:00"
         }
       ],
       "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
-      "queue_hash": "fcf7c16be1ebc4a17477c26318400a0a6d7f76bbe499f6ffbe3e17049146d5e3"
+      "queue_hash": "54e8cd2dfcd953901c7e28e739c27992e33d7d642b1f817584c5239aa599f907"
     },
     "blind_cross_validation": {
       "schema": "blind_cross_validation.v1",
       "status": "pending_model_reviews",
-      "created_at": "2026-05-18T15:05:22.871050+00:00",
+      "created_at": "2026-05-18T15:33:00.901054+00:00",
       "reviewer_count": 4,
       "threshold": 0.67,
       "anonymization": {
@@ -469,7 +469,7 @@
         }
       ],
       "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
-      "packet_hash": "df7c533f83381ddf116c93e429dd1f7e40fae840a6a7aca53ee7bb4ea5470e12"
+      "packet_hash": "ab20a7e7501fe119af26775f5d76079adb28ff9a84e966db3c472ca75fc9cf9b"
     },
     "eval_case": {
       "schema": "ai_judge_eval_case.v1",
@@ -500,25 +500,25 @@
         "hard_evidence_count": 2,
         "trust_gate": "needs_more_evidence"
       },
-      "certification_id": "CITE-20260518-4A0F27725C",
-      "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
-      "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+      "certification_id": "CITE-20260518-2661C58B96",
+      "certification_hash": "8f00d4b1213ad3fa9840191fb6aced55bf48d6d9bae9606b1543c943452f05c2",
+      "replay_ledger_hash": "a55af134aad9cdb0ba8a4c147270fbc9ba5f2102915bf8e1794f2fe606c1bc98",
       "human_label": null,
-      "created_at": "2026-05-18T15:05:22.871685+00:00",
-      "case_hash": "019f8229c99c1c16dad17656fb15c484d2cf5c33c3a8ca5b88cfd5edbec80af4"
+      "created_at": "2026-05-18T15:33:00.901688+00:00",
+      "case_hash": "313f5ebbd62b6f67bbc82885bf1f3def34f97e6c2cb021abbee4a2cab5d6f248"
     }
   },
   "human_review_status": {
     "status": "required",
     "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。"
   },
-  "created_at": "2026-05-18T15:05:22.871050+00:00",
+  "created_at": "2026-05-18T15:33:00.901054+00:00",
   "summary": {
     "overall_status": "unverifiable",
     "overall_claim_support": "unknown",
-    "certification_id": "CITE-20260518-4A0F27725C",
-    "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
-    "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+    "certification_id": "CITE-20260518-2661C58B96",
+    "certification_hash": "8f00d4b1213ad3fa9840191fb6aced55bf48d6d9bae9606b1543c943452f05c2",
+    "replay_ledger_hash": "a55af134aad9cdb0ba8a4c147270fbc9ba5f2102915bf8e1794f2fe606c1bc98",
     "item_count": 1,
     "counts": {
       "verified": 0,

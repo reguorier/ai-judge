@@ -125,18 +125,18 @@ launch feedback, help wanted
 Body:
 
 ```markdown
-The launch version audits Markdown-style inputs and produces HTML/JSON reports.
+The launch version audits Markdown/JSON inputs and produces HTML/JSON reports plus a batch manifest. PDF/Doc/Docx are visible as `unsupported_input` / parser-pending skipped inputs so they are not silently counted as audited.
 
 Potential Pro direction:
 
-- batch Markdown audit
+- batch Markdown/JSON audit
 - PDF citation extraction with page anchors
 - Docx citation extraction with paragraph anchors
 - historical Replay Ledger per file
 - exportable Certification ID reports
 - GitHub Action artifact output
 
-This issue collects real user needs before implementation.
+This issue collects real user needs before implementing the document parsers and PR-comment layer.
 
 Please comment with:
 
@@ -149,7 +149,7 @@ Please comment with:
 Acceptance:
 
 ```text
-Collect at least 3 concrete user workflows before building batch audit.
+Collect at least 3 concrete user workflows before building PDF/Docx parser support or PR comments.
 ```
 
 ## Issue 4

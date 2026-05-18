@@ -418,6 +418,8 @@ def cmd_audit_batch(args: argparse.Namespace) -> int:
     print(json.dumps({
         "batch_id": manifest["batch_id"],
         "input_count": manifest["input_count"],
+        "supported_count": manifest["supported_count"],
+        "skipped_count": manifest["skipped_count"],
         "failed_count": manifest["failed_count"],
         "warning_count": manifest["warning_count"],
         "manifest": manifest["manifest_path"],

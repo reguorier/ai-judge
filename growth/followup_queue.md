@@ -56,9 +56,9 @@ Reguorier
 ```text
 That sounds like the Pro workflow I am validating.
 
-Which input do you need first: Markdown batch, PDF, Docx, or GitHub PR comments?
+Which input do you need next: stricter Markdown/JSON batch CI, PDF, Docx, or GitHub PR comments?
 
-I am keeping the first paid version narrow: batch audit, Evidence Broker network mode, historical Replay Ledger, and exportable Certification reports.
+I am keeping the first paid version narrow: executable Markdown/JSON batch audit, Evidence Broker network mode, historical Replay Ledger, and exportable Certification reports. PDF/Docx are now visible as pending-parser inputs instead of being silently skipped.
 ```
 
 ## Follow-up 3: free audit

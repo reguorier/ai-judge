@@ -11,6 +11,8 @@ Updated: 2026-05-18
 - Pulled the GitHub Action advanced-mode step forward: `.github/actions/citation-audit` now supports `mode: batch` and the CI workflow uploads a batch artifact.
 - Checked GitHub issues #1-#5; #2 and #4 still have no external comments, so no no-op public follow-up is due.
 - Strengthened web-seat execution reliability with humanized pacing, retryable page-error detection, and one-shot tab recovery across fixed Chrome, CDP, and Playwright bridge paths.
+- Added a document-parser guardrail: PDF/Doc/Docx and unmatched batch inputs now appear in `skipped_inputs` with policy statuses, so document workflows are not silently marked as audited.
+- Published the PDF/Docx parser roadmap in `docs/DOCUMENT_PARSER_ROADMAP.md`.
 - README, Pro early-access docs, batch spec, metrics dashboard, and Day 30 decision notes now point to the executable batch MVP.
 
 ## Already done before this pass
