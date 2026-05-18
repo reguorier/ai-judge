@@ -49,6 +49,8 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Claim-support audit | Implemented MVP | `core/claim_support.py`, `docs/CLAIM_SUPPORT_AUDIT_SPEC.md` |
 | Resonance Wave 003 | Eval4SD OpenReview packet pushed / activation-moderation blocked / organizer support request sent / taxonomy issues posted | `growth/resonance_wave_003_eval_taxonomy_infra.md`, `papers/eval4sd2026/openreview_submission.md` |
 | Resonance Wave 004 | RAGChecker taxonomy issue posted | `growth/resonance_wave_004_refchecker_claim_audit.md` |
+| Submission Council 2026 | Research/commercial venue plan ready | `growth/submission_council_2026.md` |
+| Submission abstract variants | RLEval, CLEAR, SeT-LLM, and KDD agentic-eval drafts ready | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` |
 
 ## Rules
 

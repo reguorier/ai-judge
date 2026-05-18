@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-19 03:22 HKT
+Last refreshed: 2026-05-19 03:44 HKT
 
 ## Targets
 
@@ -32,6 +32,8 @@ Last refreshed: 2026-05-19 03:22 HKT
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition; checked by `gh issue view`, no comments yet. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support; checked by `gh issue view`, no comments yet. |
 | Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | organizer_support_request_sent_packet_verified_hard13 | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview says profile is created and under moderation, usually less than 1 business day and up to 2 weeks. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance; packet check now passes with full 100/100 and hard 13/13. |
+| Submission council | `growth/submission_council_2026.md` | venue_matrix_ready | 0 | 0 | TBD | TBD | Nine-seat council produced current venue matrix, paper variants, fit-check drafts, and a 72-hour execution plan. |
+| Submission abstract variants | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` | drafts_ready_not_submitted | 0 | 0 | TBD | TBD | Four venue-specific abstract variants are ready; final external send/submit still requires action-time confirmation. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
 | Pro early access | growth/pro_interest_status.md | batch_mvp_action_mode_parser_guard_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields; `ai-judge audit-batch` and GitHub Action batch mode implement the first Markdown/JSON batch value step before billing. PDF/Docx inputs now surface as parser-pending skipped inputs instead of disappearing from batch proof. |
