@@ -44,6 +44,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-18 | Free audit funnel | Added three-slot tracker and intake message for free AI Decision Audits in exchange for testimonial or public-safe lesson permission. | Reserve a slot when a reply expresses interest. |
 | 2026-05-18 | Pro early access | Added Pro interest event tracking and upgraded the early-access CTA to collect workflow, volume, and use-case fields. | Record inbound Pro requests with `tools/record_pro_interest.py`. |
 | 2026-05-18 | Sponsors | Added manual sponsor intake and event tracking while GitHub Sponsors remains disabled. | Record sponsor requests or manual support with `tools/record_sponsor_event.py`. |
+| 2026-05-18 | Private outreach handling | Private replies and permission-pending benchmark leads are intentionally not recorded in the public repo with target-level details. | Keep private notes outside the repo, ask before replying, and only convert material into public benchmark fixtures after anonymization or explicit permission. |
 | 2026-05-17 | GitHub metadata | Attempted to update repo description, homepage, and topics. | Blocked by GitHub API 404 from current `gh repo edit` permission path; push/issue/release permissions still work. |
 | 2026-05-17 | GitHub issue #1 | https://github.com/reguorier/ai-judge/issues/1#issuecomment-4470493105 | Added comment linking issue #1 to the new launch contribution funnel. |
 | 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |
@@ -69,3 +70,6 @@ This file records public launch links, replies, objections, and product signals 
 | How is this different from RAG eval tools? | Narrow citation-level source isolation before publishing. | Add competitor comparison section if repeated. |
 | Why is `unverifiable` not `false`? | Missing evidence is not contradiction. | Turn into Day 28 explainer. |
 | Can it audit PDF/Docx/batches? | Planned Pro scope. | Convert repeated asks into paid feature validation. |
+| Does citation-level verdict hide mixed legal or audit claims? | Strong objection: one citation can support part of a generated claim while failing or contradicting another part. | Add claim-span/source as the next audit atom after citation-level MVP. |
+| Is user-supplied evidence equivalent to fetched or attested evidence? | No. Current source isolation is necessary but not sufficient for provenance grade. | Add evidence provenance classes: user_supplied, fetched, independently_attested, notarized. |
+| Is BSL compatible with trust infrastructure positioning? | Current repo is source-available under BSL, not OSI open-source. | Clarify wording and define what remains open, what needs a production license, and why trust gates remain verifiable. |

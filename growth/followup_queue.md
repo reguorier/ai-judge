@@ -26,6 +26,31 @@ The fields I need are:
 - why the label fits
 ```
 
+## Follow-up 1A: P0 governance reply
+
+Status: draft only, send only after action-time confirmation.
+
+```text
+Hi,
+
+This is exactly the kind of reply I was hoping for. Thank you for taking the tool seriously enough to run the taxonomy against a hard case instead of just reacting to the pitch.
+
+I agree with the main critique: citation-level labels are a useful MVP, but legal/audit use needs the smaller atom of claim-span plus source. Your benchmark direction is valuable because it forces the label boundary between source relevance and claim support instead of letting "real source" accidentally become "verified claim."
+
+I am going to treat your note as five concrete work items:
+
+1. Add an anonymized fixture for the label-boundary case after permission.
+2. Split `unverifiable` reason codes so fabricated source and inaccessible source are not collapsed.
+3. Separate evidence provenance classes: user_supplied, fetched, independently_attested, and notarized.
+4. Add a claim-span/source roadmap note for legal and audit workflows.
+5. Tighten the license wording so I do not casually call BSL "open-source" when the trust posture needs more precision.
+
+I would like to take you up on the offer to run one AI Judge audit case through your governance framing. The cleanest first case is the fabricated-source demo because it exercises the exact "do not write hallucinated evidence into a ledger" boundary. If you prefer, I can send the raw answer, isolated evidence JSON, and audit result as three separate blocks so the test preserves source isolation end to end.
+
+Best,
+Reguorier
+```
+
 ## Follow-up 2: Pro interest
 
 ```text
