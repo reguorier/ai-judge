@@ -59,6 +59,7 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 | Quote cards | [`product/social_quote_cards.html`](../product/social_quote_cards.html) |
 | Blog draft | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) |
 | Blog outline | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md) |
+| Growth playbook | [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](AI_JUDGE_GROWTH_PLAYBOOK.md) |
 | Follow-up queue | [`growth/followup_queue.md`](../growth/followup_queue.md) |
 
 ## Conversion assets
@@ -114,3 +115,7 @@ Continue building Pro only if at least one of these happens within 30 days:
 - 1 user pays for early access.
 
 If none happen, pause monetization and focus on a better demo story.
+
+The current strategy is an 81/100 conditional go: continue research credibility,
+public proof, and professional benchmark collection; do not overbuild a paid SaaS
+until at least one stop/go threshold is met.

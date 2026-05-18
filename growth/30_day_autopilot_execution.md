@@ -26,6 +26,8 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Quote-card layouts | Ready | `product/social_quote_cards.html` |
 | Blog draft | Ready | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` |
 | Blog outline | Archived planning aid | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md` |
+| Growth playbook | Ready | `docs/AI_JUDGE_GROWTH_PLAYBOOK.md` |
+| Codex autopilot template | Ready | `growth/codex_autopilot_template.md` |
 | Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95` |
 | Batch audit MVP | Implemented | `ai-judge audit-batch`, `core/citation_batch.py`, `docs/BATCH_AUDIT_SPEC.md` |
 | GitHub Action batch mode | Implemented | `.github/actions/citation-audit/action.yml`, `.github/workflows/citation-audit.yml`, `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
@@ -55,6 +57,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 - Model text, mentor additions, and external evidence stay separate.
 - Public posts ask for benchmark cases first, not money first.
 - Any final external send/post action needs a final click-time confirmation.
+- Current operating thesis is an 81/100 conditional go: continue research credibility and public proof, but do not overbuild Pro/SaaS before demand signals appear.
 
 ## Days 1-7: Make It Easy To Try
 
@@ -146,3 +149,4 @@ Research-first next wave:
 - Aequis and Ligate are the priority infrastructure/commercial-collaboration targets.
 - The technical wedge is claim-span/source audit: citation verification, source relevance, and exact claim support are separated so "real source" does not become "proven conclusion."
 - RAGChecker is now the active claim-level / RAG-faithfulness taxonomy route because RefChecker is archived/read-only.
+- The reusable Codex execution prompt now lives in `growth/codex_autopilot_template.md`; use it to keep future automation cycles aligned with the conditional-go strategy.

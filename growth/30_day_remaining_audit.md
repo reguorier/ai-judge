@@ -1,7 +1,7 @@
 # 30-Day Remaining Task Audit
 
 Status: refreshed
-Last refreshed: 2026-05-19 00:26 HKT
+Last refreshed: 2026-05-19 00:57 HKT
 
 ## Current Evidence
 
@@ -11,6 +11,7 @@ Last refreshed: 2026-05-19 00:26 HKT
 | Repo issues | `gh issue list --repo reguorier/ai-judge` | #1-#5 open; comments are maintainer-only |
 | LegalCiteBench issue | `gh issue view 1 --repo Sijia711/LegalCiteBench` | open, 0 comments |
 | RAGChecker issue | `gh issue view 38 --repo amazon-science/RAGChecker` | open, 0 comments |
+| OpenReview account | QQ Mail OpenReview notification | profile created and under moderation; usually less than 1 business day, up to 2 weeks |
 | Pro requests | `growth/pro_interest_status.md` | 0 requests |
 | Paid / invoice signal | `growth/pro_interest_status.md`, `growth/sponsor_status.md` | 0 |
 
@@ -43,6 +44,7 @@ Last refreshed: 2026-05-19 00:26 HKT
 - Verified current GitHub and taxonomy issue status.
 - Refreshed metrics and Day 30 stop/go notes.
 - Continued the non-gated product branch: final reports now read as a rotating-judge closeout with thesis, recommendation, key findings, and stronger Markdown/HTML rendering.
+- Converted the 81/100 conditional-go answer into a public growth playbook and reusable Codex autopilot prompt.
 
 ## Next Non-Gated Move
 

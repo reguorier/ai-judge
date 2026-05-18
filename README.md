@@ -25,6 +25,7 @@
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
+  <a href="docs/AI_JUDGE_GROWTH_PLAYBOOK.md">Growth Playbook</a> ·
   <a href="docs/PRO_EARLY_ACCESS.md">Pro Early Access</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
   <a href="#what-v38-adds">What v3.8 Adds</a> ·
@@ -60,6 +61,8 @@ It separates polished language from actual thinking quality, then gives the huma
 ## Citation Audit in 60 Seconds
 
 Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citation-audit wedge, then adds a narrower product question: **which citations and model-seat answers are reliable enough to become a human-confirmed decision?**
+
+The current growth strategy is intentionally constrained: prove the citation and claim-support protocol first, collect hard benchmark cases from professional users, and delay full SaaS monetization until there is visible demand. See [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](docs/AI_JUDGE_GROWTH_PLAYBOOK.md).
 
 Try it in the browser first:
 

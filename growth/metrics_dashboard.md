@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-19 00:39 HKT
+Last refreshed: 2026-05-19 00:57 HKT
 
 ## Targets
 
@@ -29,7 +29,7 @@ Last refreshed: 2026-05-19 00:39 HKT
 | Outreach email | growth/outreach_status.md | sent_5_reply_1_benchmark_case_1 | 0 | 1 | TBD | 0 | O001-O004 were sent through QQ Mail; O005 Eval4SD support-path request was sent after user confirmation; O002 produced a high-value benchmark/taxonomy signal. Wait 3-5 days before routine follow-ups unless replies arrive. |
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition; checked by `gh issue view`, no comments yet. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support; checked by `gh issue view`, no comments yet. |
-| Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | organizer_support_request_sent_packet_verified | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; confirmation emails arrived and profile registration was completed repeatedly. Login attempts can produce a new activation token and return to the profile-completion flow, then back to a public page still showing `Login`. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance. |
+| Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | organizer_support_request_sent_packet_verified | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview says profile is created and under moderation, usually less than 1 business day and up to 2 weeks. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
 | Pro early access | growth/pro_interest_status.md | batch_mvp_action_mode_parser_guard_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields; `ai-judge audit-batch` and GitHub Action batch mode implement the first Markdown/JSON batch value step before billing. PDF/Docx inputs now surface as parser-pending skipped inputs instead of disappearing from batch proof. |
