@@ -40,7 +40,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Metrics dashboard | Ready | `growth/metrics_dashboard.md` |
 | Day 30 decision memo | Ready | `growth/day30_decision.md` |
 | Follow-up queue | Ready for confirmation | `growth/followup_queue.md` |
-| Resonance Wave 002 | Prepared, not sent | `growth/resonance_wave_002.md`, `docs/PAPER_SEED_SOURCE_ISOLATED_CITATION_AUDIT.md` |
+| Resonance Wave 002 | Prepared, not sent | `growth/resonance_wave_002.md`, `docs/PAPER_SEED_SOURCE_ISOLATED_CITATION_AUDIT.md`, `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` |
 
 ## Rules
 

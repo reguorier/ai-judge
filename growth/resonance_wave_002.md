@@ -202,3 +202,8 @@ I am collecting hard benchmark cases, especially legal/compliance examples where
 3. Prepare individual email drafts as `.eml` files.
 4. Ask for action-time confirmation before each send.
 5. If any recipient replies with a benchmark case, keep private notes outside the public repo until anonymization permission is explicit.
+
+Current paper artifacts:
+
+- `docs/PAPER_SEED_SOURCE_ISOLATED_CITATION_AUDIT.md`
+- `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md`
