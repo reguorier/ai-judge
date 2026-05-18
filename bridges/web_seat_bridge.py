@@ -29,6 +29,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from core.execution_drivers import driver_for_bridge_seat
+from core.seat_execution_policy import annotate_execution_results
 from core.seat_personas import SEAT_PERSONAS, render_jury_prompt
 from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
@@ -135,8 +136,12 @@ def default_config() -> dict[str, Any]:
         "timeout_seconds": 120,
         "settle_seconds": 3,
         "retry_failed_seats": True,
-        "retry_attempts": 1,
-        "retry_timeout_seconds": 120,
+        "retry_attempts": 2,
+        "retry_timeout_seconds": 600,
+        "required_timeout_seconds": 420,
+        "required_retry_timeout_seconds": 600,
+        "required_final_nudge_timeout_seconds": 120,
+        "required_post_timeout_grace_seconds": 120,
         "auto_open_missing_tabs": False,
         "profile_root": str(PROFILE_ROOT),
         "input_selectors": DEFAULT_INPUT_SELECTORS,
@@ -157,6 +162,9 @@ def default_config() -> dict[str, Any]:
                     "path": DEFAULT_TARGETS.get(seat, {}).get("app_path"),
                 } if DEFAULT_TARGETS.get(seat, {}).get("channel") == "desktop" else None,
                 "headless": None,
+                "execution_required": seat != "grok",
+                "best_effort": seat == "grok",
+                "exclude_from_publish_gate": seat == "grok",
                 "notes": "Set enabled=true after logging into this model in its isolated profile.",
             }
             for seat in SEAT_PERSONAS
@@ -324,6 +332,9 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
             "driver_label": driver["driver_label"],
             "safe_background": driver["safe_background"],
             "operator_required": driver["operator_required"],
+            "execution_required": bool(seat_config.get("execution_required", seat != "grok")),
+            "best_effort": bool(seat_config.get("best_effort") or seat_config.get("exclude_from_publish_gate")),
+            "exclude_from_publish_gate": bool(seat_config.get("exclude_from_publish_gate")),
             "provider": seat_config.get("provider", persona["name"]),
             "browser_label": seat_config.get("browser_label", seat_config.get("url", "")),
             "url": seat_config.get("url", ""),
@@ -369,6 +380,9 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 "ready": seat.get("ready"),
                 "reason": seat.get("reason"),
                 "safe_background": seat.get("safe_background"),
+                "execution_required": seat.get("execution_required"),
+                "best_effort": seat.get("best_effort"),
+                "exclude_from_publish_gate": seat.get("exclude_from_publish_gate"),
                 "calibration_status": (seat.get("calibration") or {}).get("status"),
                 "calibration_error_code": ((seat.get("calibration") or {}).get("error") or {}).get("code"),
                 "calibration_age_hours": (seat.get("calibration") or {}).get("age_hours"),
@@ -700,7 +714,7 @@ def run_web_seats(
 
     if progress:
         progress("网页席位收集完成，进入评分", 0.72)
-    return results
+    return annotate_execution_results(results, config=config)
 
 
 def _run_driver_with_retries(
@@ -714,7 +728,10 @@ def _run_driver_with_retries(
     driver_label: str,
 ) -> list[dict[str, Any]]:
     """Run a fixed-tab driver and retry transient collection failures per seat."""
-    results = runner(question=question, seats=seats, config=config, mode=mode, progress=progress, trace=trace)
+    results = annotate_execution_results(
+        runner(question=question, seats=seats, config=config, mode=mode, progress=progress, trace=trace),
+        config=config,
+    )
     attempts = _retry_attempts(config)
     if attempts <= 0:
         return results
@@ -757,7 +774,7 @@ def _run_driver_with_retries(
             progress=retry_progress,
             trace=trace,
         )
-        results = _merge_retry_results(results, retry_results, attempt)
+        results = annotate_execution_results(_merge_retry_results(results, retry_results, attempt), config=config)
         if trace:
             trace(
                 "bridge",
@@ -772,7 +789,7 @@ def _run_driver_with_retries(
             )
     if progress:
         progress("网页席位补跑完成，进入评分", 0.96)
-    return results
+    return annotate_execution_results(results, config=config)
 
 
 def _retry_attempts(config: dict[str, Any]) -> int:

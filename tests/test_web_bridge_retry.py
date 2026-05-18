@@ -121,7 +121,7 @@ def test_final_nudge_timeout_is_shorter_than_slow_seat_timeout():
 def test_post_timeout_grace_is_opt_in_and_bounded():
     assert _post_timeout_grace_seconds({}, {}) == 0
     assert _post_timeout_grace_seconds({}, {"post_timeout_grace_seconds": 45}) == 45
-    assert _post_timeout_grace_seconds({}, {"post_timeout_grace_seconds": 120}) == 90
+    assert _post_timeout_grace_seconds({}, {"post_timeout_grace_seconds": 120}) == 120
 
 
 def test_deepseek_desktop_path_is_explicitly_blocked_until_expert_operator_exists():

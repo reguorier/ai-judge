@@ -11,6 +11,7 @@ const RECOVERABLE_WEB_CODES = new Set([
   "existing_answer_placeholder",
   "existing_answer_prompt_echo",
 ]);
+const OPTIONAL_EXECUTION_SEATS = new Set(["grok", "gork"]);
 
 const timelineSteps = [
   { key: "accept", label: "受理问题" },
@@ -608,6 +609,14 @@ function evidenceGateSummary() {
 function seatCoverageSummary() {
   const v = state.currentVerdict || {};
   const raw = v.web_bridge?.raw_results || [];
+  const usesWeb = Boolean(raw.length || String(v.engine || "").includes("web"));
+  const policy = usesWeb ? executionPolicySummary(v) : null;
+  if (policy?.required_count) {
+    const ok = Number(policy.required_valid_count || 0);
+    const total = Number(policy.required_count || 0);
+    const pct = total ? Math.round((ok / total) * 100) : 0;
+    return { ok, total, pct, label: total ? `${ok}/${total}` : "按模式", required: true };
+  }
   const rawOk = raw.filter(item => item.ok).length;
   const scoreCount = (v.seat_scores || []).length;
   const ok = raw.length ? rawOk : scoreCount;
@@ -1126,6 +1135,73 @@ function clampScore(value) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function normalizeSeatId(seat) {
+  const id = String(seat || "").trim().toLowerCase();
+  return id === "gork" ? "grok" : id;
+}
+
+function isOptionalExecutionSeat(seat) {
+  const id = normalizeSeatId(seat);
+  const bridgeSeat = (state.bridge?.seats || []).find(item => normalizeSeatId(item.id) === id);
+  if (bridgeSeat && (bridgeSeat.best_effort || bridgeSeat.exclude_from_publish_gate || bridgeSeat.execution_required === false)) {
+    return true;
+  }
+  return OPTIONAL_EXECUTION_SEATS.has(id);
+}
+
+function resultExecutionRequired(item) {
+  if (!item) return false;
+  const validity = item.execution_validity || {};
+  if (validity.required !== undefined) return Boolean(validity.required);
+  if (item.execution_required !== undefined) return Boolean(item.execution_required);
+  return !isOptionalExecutionSeat(item.seat);
+}
+
+function resultExecutionValid(item) {
+  if (!item?.ok) return false;
+  const validity = item.execution_validity || {};
+  if (validity.valid !== undefined) return Boolean(validity.valid);
+  return Boolean(String(item.response || "").trim());
+}
+
+function executionPolicySummary(verdict = state.currentVerdict) {
+  const bridge = verdict?.web_bridge || {};
+  if (bridge.execution_policy) return bridge.execution_policy;
+  const raw = bridge.raw_results || [];
+  const requested = (verdict?.seats || raw.map(item => item.seat || "")).map(normalizeSeatId).filter(Boolean);
+  const required = requested.filter(seat => !isOptionalExecutionSeat(seat));
+  const optional = requested.filter(seat => isOptionalExecutionSeat(seat));
+  const bySeat = new Map(raw.map(item => [normalizeSeatId(item.seat), item]));
+  const failures = [];
+  let validCount = 0;
+  required.forEach(seat => {
+    const item = bySeat.get(seat);
+    if (resultExecutionValid(item)) {
+      validCount += 1;
+      return;
+    }
+    failures.push({
+      seat,
+      seat_name: item?.seat_name || seatName(seat),
+      error: item?.error || { code: "missing_result" },
+      supplementable: item ? isSupplementableResult(item) : false,
+      execution_validity: item?.execution_validity || {},
+    });
+  });
+  return {
+    policy_version: "required-web-seat-v1",
+    required_seats: required,
+    optional_seats: optional,
+    required_count: required.length,
+    required_valid_count: validCount,
+    required_failed_count: failures.length,
+    required_failures: failures,
+    required_supplementable_seats: failures.filter(item => item.supplementable),
+    collection_complete: failures.length === 0,
+    grok_counts_as: "optional_dissent_best_effort",
+  };
+}
+
 async function submitJudge() {
   const question = $("#question-input").value.trim();
   if (!question) return;
@@ -1191,7 +1267,8 @@ function isSupplementableResult(item) {
 }
 
 function supplementableRawResults() {
-  return ((state.currentVerdict?.web_bridge || {}).raw_results || []).filter(isSupplementableResult);
+  const raw = (state.currentVerdict?.web_bridge || {}).raw_results || [];
+  return raw.filter(item => resultExecutionRequired(item) && isSupplementableResult(item));
 }
 
 function renderSupplementButton() {
@@ -1207,8 +1284,8 @@ function renderSupplementButton() {
   if (panel) panel.hidden = !visible;
   btn.disabled = false;
   btn.textContent = seats.length
-    ? `回收旧页面答案 (${seats.map(item => item.seat_name || item.seat).join("、")})`
-    : "回收旧页面答案";
+    ? `补全必需席位 (${seats.map(item => item.seat_name || item.seat).join("、")})`
+    : "补全必需席位";
 }
 
 async function supplementSlowSeats() {
@@ -1219,9 +1296,9 @@ async function supplementSlowSeats() {
   const btn = $("#btn-supplement-slow");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "读取旧页面...";
+    btn.textContent = "补全必需席位中...";
   }
-  setProgress(4, `读取旧页面答案：${seats.join(", ")}`);
+  setProgress(4, `补全必需席位：${seats.join(", ")}`);
   const notify = {
     email: $("#notify-email").value.trim(),
     webhook_url: $("#notify-webhook").value.trim(),
@@ -1247,11 +1324,11 @@ async function supplementSlowSeats() {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     state.currentRunId = data.run_id;
     $("#run-id").textContent = data.run_id;
-    $("#run-meta").textContent = `旧页面回收 ${data.seat_count} 席 · 合并回 ${sourceRunId}`;
+    $("#run-meta").textContent = `必需席位补全 ${data.seat_count} 席 · 合并回 ${sourceRunId}`;
     startProgress(data.run_id);
     await loadHistory();
   } catch (err) {
-    setProgress(0, `旧页面回收失败：${err.message}`);
+    setProgress(0, `必需席位补全失败：${err.message}`);
     renderSupplementButton();
   }
 }
@@ -1398,6 +1475,8 @@ function renderVerdict(v) {
   $("#verdict-question").textContent = v.question || "";
   const judge = v.judge_answer || {};
   const bridge = v.web_bridge || {};
+  const policy = bridge.raw_results?.length || String(v.engine || "").includes("web") ? executionPolicySummary(v) : {};
+  const executionComplete = !policy.required_count || Boolean(policy.collection_complete);
   const okCount = bridge.ok_count ?? judge.ok_count;
   const totalCount = bridge.requested_count ?? ((judge.ok_count || 0) + (judge.failed_count || 0));
   const reportMeta = [
@@ -1407,6 +1486,9 @@ function renderVerdict(v) {
     okCount !== undefined && totalCount !== undefined ? `席位 ${okCount}/${totalCount}` : "",
   ].filter(Boolean);
   $("#report-meta").innerHTML = reportMeta.map(item => `<span>${escapeHtml(item)}</span>`).join("");
+  if ($("#final-report-title")) {
+    $("#final-report-title").textContent = executionComplete ? "最终结论报告" : "执行未完成报告";
+  }
   $("#final-report-answer").textContent = finalReportText(v);
   $("#reason-list").innerHTML = (v.reasons || []).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
   $("#step-list").innerHTML = (v.next_steps || []).map(step => `<li>${escapeHtml(step)}</li>`).join("");
@@ -1437,6 +1519,8 @@ function renderVerdict(v) {
 }
 
 function finalReportText(v) {
+  const closeoutReport = v?.cross_temporal_analysis?.closeout_report?.professional_report || "";
+  if (closeoutReport) return closeoutReport;
   const judgeAnswer = v?.judge_answer?.answer || v?.single_judge_baseline?.answer || "";
   if (judgeAnswer) return judgeAnswer;
   const line = v?.one_liner || "本轮判断已完成。";
@@ -1449,18 +1533,25 @@ function renderDecisionMemo(v) {
   if (!$("#decision-memo")) return;
   const bridge = v?.web_bridge || {};
   const raw = bridge.raw_results || [];
+  const policy = raw.length || String(v?.engine || "").includes("web") ? executionPolicySummary(v) : {};
   const okCount = bridge.ok_count ?? raw.filter(item => item.ok).length;
   const failedCount = bridge.failed_count ?? raw.filter(item => !item.ok).length;
   const totalCount = (bridge.requested_count ?? raw.length) || (v?.seat_count || v?.seats?.length || 0);
-  const confidence = v?.confidence !== undefined ? `${v.confidence}%` : "-";
+  const requiredCount = Number(policy.required_count || 0);
+  const requiredOk = Number(policy.required_valid_count || 0);
+  const executionComplete = !requiredCount || Boolean(policy.collection_complete);
+  const trust = trustTier(v);
+  const confidence = v?.confidence !== undefined ? `${trust.tier || "-"} / ${v.confidence}%` : trust.label || "-";
   const reasons = (v?.reasons || []).filter(Boolean);
   const steps = (v?.next_steps || []).filter(Boolean);
-  const risk = reasons.find(item => /风险|阻断|不足|失败|不完整/.test(item)) || (failedCount ? `${failedCount} 个席位未形成可评分答案` : "未发现硬阻断");
-  $("#memo-subject").textContent = v?.one_liner || "AI Judge 最终结论";
+  const risk = trust.summary || reasons.find(item => /风险|阻断|不足|失败|不完整/.test(item)) || (failedCount ? `${failedCount} 个席位未形成可评分答案` : "未发现硬阻断");
+  $("#memo-subject").textContent = executionComplete
+    ? (v?.one_liner || "AI Judge 最终结论")
+    : (v?.one_liner || "必需席位执行未完成");
   $("#memo-executive").textContent = excerpt(finalReportText(v), state.productMode === "pro" ? 520 : 260);
   $("#memo-confidence").textContent = confidence;
   $("#memo-verdict").textContent = v?.verdict_label || v?.verdict || "-";
-  $("#memo-seats").textContent = totalCount ? `${okCount}/${totalCount} 有效` : "-";
+  $("#memo-seats").textContent = requiredCount ? `${requiredOk}/${requiredCount} 必需有效` : totalCount ? `${okCount}/${totalCount} 有效` : "-";
   $("#memo-risk").textContent = excerpt(risk, 90);
   $("#memo-next").textContent = excerpt(steps[0] || "先复核报告结论，再处理阻断席位。", 90);
   $("#memo-reasons").innerHTML = (reasons.length ? reasons : ["保留原问题、模型原文、评分与下一步，避免摘要覆盖底层证据。"])
@@ -1487,13 +1578,15 @@ function renderCrossTemporal(v) {
   const vertical = analysis.vertical_trace || {};
   const horizontal = analysis.horizontal_comparison || {};
   const mathAudit = analysis.math_audit || {};
+  const trust = analysis.trust_tier || closeout.trust_tier || trustTier(v);
   const signals = mathAudit.signals || [];
   if (memo) {
     memo.hidden = false;
     $("#xray-mini").innerHTML = [
+      ["可信等级", trust.label || "-"],
       ["纵向卡点", vertical.bridge_health || vertical.current_stage || "-"],
       ["横向共识", horizontal.consensus_label || "-"],
-      ["覆盖率", `${horizontal.ok_count || 0}/${horizontal.requested_count || 0}`],
+      ["必需席位", `${horizontal.required_ok_count ?? horizontal.ok_count ?? 0}/${horizontal.required_count ?? horizontal.requested_count ?? 0}`],
     ].map(([label, value]) => `
       <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
     `).join("");
@@ -1505,13 +1598,15 @@ function renderCrossTemporal(v) {
   panel.hidden = false;
   $("#cross-temporal-summary").textContent = closeout.executive_summary || analysis.method || "";
   const tags = [
+    trust.label ? `可信 ${trust.label}` : "",
     closeout.decision_score ? `评分 ${closeout.decision_score}` : "",
     horizontal.leader?.seat_name ? `领先 ${horizontal.leader.seat_name}` : "",
     horizontal.outlier?.seat_name ? `反例 ${horizontal.outlier.seat_name}` : "",
     vertical.retry_event_count ? `回收 ${vertical.retry_event_count}` : "",
   ].filter(Boolean);
   $("#cross-temporal-tags").innerHTML = tags.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("");
-  $("#math-signal-list").innerHTML = signals.slice(0, 6).map(signal => `
+  const visibleSignals = signals.slice(0, state.productMode === "pro" ? 10 : 6);
+  $("#math-signal-list").innerHTML = visibleSignals.map(signal => `
     <div class="math-signal ${escapeAttr(signal.severity || "ok")}">
       <strong>${escapeHtml(signal.label || signal.id || "-")}</strong>
       <small>${escapeHtml(signalSeverityLabel(signal.severity))}</small>
@@ -1520,18 +1615,46 @@ function renderCrossTemporal(v) {
   `).join("");
 }
 
+function trustTier(v = state.currentVerdict) {
+  const tier = v?.cross_temporal_analysis?.trust_tier || v?.cross_temporal_analysis?.closeout_report?.trust_tier || null;
+  if (tier) return tier;
+  const confidence = Number(v?.confidence || 0);
+  const coverage = seatCoverageSummary();
+  const complete = !coverage.total || coverage.pct >= 100;
+  if (!v || confidence <= 0 || !complete) {
+    return { tier: "D", label: "D · 不可发布", summary: "席位或证据尚未闭环，只能作为阶段性状态。" };
+  }
+  if (confidence >= 85) return { tier: "A", label: "A · 可发布", summary: "覆盖和置信度达到发布门槛。" };
+  if (confidence >= 70) return { tier: "B", label: "B · 可内部参考", summary: "可内部参考，发布前仍需人工复核。" };
+  return { tier: "C", label: "C · 阶段性判断", summary: "适合继续补证，不适合直接执行。" };
+}
+
 function buildPublishGateChecks() {
   const v = state.currentVerdict;
   const hasVerdict = Boolean(v);
   const confidence = Number(v?.confidence || 0);
   const raw = v?.web_bridge?.raw_results || [];
   const verdictUsesWeb = Boolean(raw.length || String(v?.engine || "").includes("web"));
-  const supplementable = raw.filter(isSupplementableResult).length;
-  const hardFailures = raw.filter(item => item && !item.ok && !isSupplementableResult(item)).length;
+  const policy = verdictUsesWeb ? executionPolicySummary(v) : {
+    required_failures: [],
+    required_supplementable_seats: [],
+    collection_complete: true,
+  };
+  const requiredFailures = policy.required_failures || [];
+  const supplementable = requiredFailures.filter(item => item.supplementable).length;
+  const hardFailures = requiredFailures.filter(item => !item.supplementable).length;
   const coverage = seatCoverageSummary();
   const evidence = evidenceGateSummary();
   const traceEvents = currentTraceEvents();
   const disagreements = v?.web_bridge?.deliberation?.disagreements || v?.disagreements || [];
+  const trust = trustTier(v);
+  const trustState = !hasVerdict
+    ? "block"
+    : trust.tier === "A"
+      ? "ok"
+      : trust.tier === "B"
+        ? "warn"
+        : "block";
   const riskText = [
     ...(v?.reasons || []),
     ...(v?.next_steps || []),
@@ -1543,9 +1666,10 @@ function buildPublishGateChecks() {
   const nonHumanReady = hasVerdict
     && supplementable === 0
     && hardFailures === 0
+    && (!verdictUsesWeb || policy.collection_complete)
     && evidence.state !== "block"
     && coverage.total > 0
-    && (coverage.pct >= 60 || !verdictUsesWeb)
+    && (coverage.pct >= 100 || !verdictUsesWeb)
     && (traceEvents.length > 0 || hasVerdict);
   return [
     {
@@ -1564,17 +1688,24 @@ function buildPublishGateChecks() {
     },
     {
       key: "seat_coverage",
-      text: "席位覆盖率",
-      hint: "网页席位不能把部分返回伪装成全模型共识",
+      text: "必需席位执行有效",
+      hint: "非 Grok 网页席位必须全部有可验证回答；Grok 只作可选异议",
       meta: coverage.total ? `${coverage.ok}/${coverage.total} · ${coverage.pct}%` : "等待席位",
-      state: !hasVerdict ? "block" : coverage.total && (coverage.pct >= 60 || !verdictUsesWeb) ? "ok" : "block",
+      state: !hasVerdict ? "block" : coverage.total && (coverage.pct >= 100 || !verdictUsesWeb) ? "ok" : "block",
     },
     {
       key: "web_recovery",
-      text: "网页答案回收",
-      hint: "失败、慢生成、旧页面答案必须显式标记",
-      meta: supplementable ? `${supplementable} 席待回收` : hardFailures ? `${hardFailures} 席失败` : "无待回收",
+      text: "必需席位补全",
+      hint: "慢生成、发送未确认和旧页面答案必须回收到执行有效状态",
+      meta: supplementable ? `${supplementable} 个必需席位待补全` : hardFailures ? `${hardFailures} 个必需席位失败` : "必需席位已补齐",
       state: supplementable || hardFailures ? "block" : "ok",
+    },
+    {
+      key: "trust_tier",
+      text: "可信等级",
+      hint: "A 可发布；B 只适合内部参考；C/D 不能当最终判决发布",
+      meta: trust.label || "-",
+      state: trustState,
     },
     {
       key: "evidence",

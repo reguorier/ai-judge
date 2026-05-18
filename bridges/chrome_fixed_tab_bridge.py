@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from core.seat_execution_policy import attach_execution_validity, seat_execution_required
 from core.seat_personas import SEAT_PERSONAS, render_jury_prompt
 
 
@@ -434,7 +435,7 @@ def run_chrome_fixed_tabs(
                     trace("seat", "chrome_final_answer_nudge", f"{seat} 检测到空思考回复，已追问最终答案", {"seat": seat, "nudge": nudge})
                 continue
             if capture.get("ok") and assessment["accepted"]:
-                submissions[seat] = {
+                submissions[seat] = attach_execution_validity({
                     "seat": seat,
                     "seat_name": SEAT_PERSONAS[seat]["name"],
                     "ok": True,
@@ -443,7 +444,10 @@ def run_chrome_fixed_tabs(
                     "elapsed_seconds": round(time.time() - float(item["submitted_at"]), 2),
                     "response": response_text,
                     "error": None,
-                }
+                    "prompt_id": item.get("prompt_id"),
+                    "submission_confirmed": True,
+                    "capture_mode": assessment["mode"],
+                }, config=config, submitted=True, accepted=True, marker_found=marker_found, marker_closed=assessment["marker_closed"], matches_question=matches_question, prompt_echo=False, polluted=False, page_busy=False, capture_mode=assessment["mode"], response_text=response_text, prompt_id=item.get("prompt_id"))
                 pending.remove(seat)
                 if trace:
                     trace(
@@ -506,7 +510,7 @@ def run_chrome_fixed_tabs(
         polluted = assessment["polluted"]
         matches_question = assessment["matches_question"]
         if capture.get("ok") and assessment["accepted"]:
-            submissions[seat] = {
+            submissions[seat] = attach_execution_validity({
                 "seat": seat,
                 "seat_name": SEAT_PERSONAS[seat]["name"],
                 "ok": True,
@@ -515,7 +519,10 @@ def run_chrome_fixed_tabs(
                 "elapsed_seconds": round(time.time() - float(item["submitted_at"]), 2),
                 "response": response_text,
                 "error": None,
-            }
+                "prompt_id": item.get("prompt_id"),
+                "submission_confirmed": True,
+                "capture_mode": assessment["mode"],
+            }, config=config, submitted=True, accepted=True, marker_found=marker_found, marker_closed=assessment["marker_closed"], matches_question=matches_question, prompt_echo=False, polluted=False, page_busy=False, capture_mode=assessment["mode"], response_text=response_text, prompt_id=item.get("prompt_id"))
             if trace:
                 trace(
                     "seat",
@@ -552,6 +559,21 @@ def run_chrome_fixed_tabs(
                     "prompt_id": item.get("prompt_id"),
                     "submitted_at": item.get("submitted_at"),
                 })
+            failed = attach_execution_validity(
+                failed,
+                config=config,
+                submitted=bool(item.get("submission_confirmed")),
+                accepted=False,
+                marker_found=marker_found,
+                marker_closed=assessment.get("marker_closed"),
+                matches_question=matches_question,
+                prompt_echo=assessment.get("prompt_echo"),
+                polluted=polluted,
+                page_busy=assessment.get("page_busy"),
+                capture_mode=assessment.get("mode"),
+                response_text=response_text,
+                prompt_id=item.get("prompt_id"),
+            )
             submissions[seat] = failed
             if trace:
                 trace(
@@ -644,7 +666,7 @@ def recover_existing_fixed_tab_answers(
             and matches_question
         )
         if accepted:
-            results.append({
+            results.append(attach_execution_validity({
                 "seat": seat,
                 "seat_name": SEAT_PERSONAS[seat]["name"],
                 "ok": True,
@@ -656,7 +678,7 @@ def recover_existing_fixed_tab_answers(
                 "recovered_from_existing_page": True,
                 "capture_mode": str(capture.get("capture_mode") or ("existing_answer_marker" if marker_found else "existing_answer_fallback")),
                 "prompt_id": prompt_id,
-            })
+            }, config=config, submitted=True, accepted=True, marker_found=marker_found, marker_closed=marker_found, matches_question=matches_question, prompt_echo=False, polluted=False, page_busy=False, capture_mode=str(capture.get("capture_mode") or ("existing_answer_marker" if marker_found else "existing_answer_fallback")), response_text=response_text, prompt_id=prompt_id, source="existing_page_recovery"))
             if trace:
                 trace("seat", "existing_answer_captured", f"{seat} 已从旧页面读取答案", {
                     "seat": seat,
@@ -695,6 +717,22 @@ def recover_existing_fixed_tab_answers(
                 "page_busy": bool(capture.get("page_busy")),
             },
         })
+        failed = attach_execution_validity(
+            failed,
+            config=config,
+            submitted=True,
+            accepted=False,
+            marker_found=marker_found,
+            marker_closed=False,
+            matches_question=matches_question,
+            prompt_echo=prompt_echo,
+            polluted=polluted,
+            page_busy=bool(capture.get("page_busy")),
+            capture_mode=str(capture.get("capture_mode") or ""),
+            response_text=response_text,
+            prompt_id=prompt_id,
+            source="existing_page_recovery",
+        )
         results.append(failed)
         if trace:
             trace("seat", "existing_answer_rejected", f"{seat} 旧页面没有可用答案", {
@@ -929,7 +967,15 @@ def _seat_label(seat: str) -> str:
 def _seat_timeout_seconds(config: dict[str, Any], seat_config: dict[str, Any]) -> float:
     """Return a per-seat answer deadline, with a slower retry path when configured."""
     retry_run = bool(config.get("_retry_run"))
-    keys = ("retry_timeout_seconds", "timeout_seconds") if retry_run else ("timeout_seconds",)
+    required = bool(seat_config.get("execution_required", not seat_config.get("best_effort")))
+    if retry_run and required:
+        keys = ("required_retry_timeout_seconds", "retry_timeout_seconds", "required_timeout_seconds", "timeout_seconds")
+    elif retry_run:
+        keys = ("retry_timeout_seconds", "timeout_seconds")
+    elif required:
+        keys = ("required_timeout_seconds", "timeout_seconds")
+    else:
+        keys = ("timeout_seconds",)
     for key in keys:
         value = seat_config.get(key)
         if value is not None:
@@ -948,7 +994,8 @@ def _seat_timeout_seconds(config: dict[str, Any], seat_config: dict[str, Any]) -
 
 
 def _final_nudge_timeout_seconds(config: dict[str, Any], seat_config: dict[str, Any]) -> float:
-    for key in ("final_nudge_timeout_seconds", "chatgpt_final_nudge_timeout_seconds"):
+    keys = ("final_nudge_timeout_seconds", "required_final_nudge_timeout_seconds", "chatgpt_final_nudge_timeout_seconds")
+    for key in keys:
         value = seat_config.get(key)
         if value is None:
             value = config.get(key)
@@ -961,13 +1008,14 @@ def _final_nudge_timeout_seconds(config: dict[str, Any], seat_config: dict[str, 
 
 
 def _post_timeout_grace_seconds(config: dict[str, Any], seat_config: dict[str, Any]) -> float:
-    for key in ("post_timeout_grace_seconds", "chatgpt_post_timeout_grace_seconds"):
+    keys = ("post_timeout_grace_seconds", "required_post_timeout_grace_seconds", "chatgpt_post_timeout_grace_seconds")
+    for key in keys:
         value = seat_config.get(key)
         if value is None:
             value = config.get(key)
         if value is not None:
             try:
-                return max(0.0, min(90.0, float(value)))
+                return max(0.0, min(180.0, float(value)))
             except Exception:
                 pass
     return 0.0
@@ -1072,7 +1120,7 @@ def _should_send_final_answer_nudge(
     assessment: dict[str, Any],
 ) -> bool:
     """Recover web UIs that produce an empty thinking turn but no final answer."""
-    if seat not in {"chatgpt", "qwen"} or item.get("final_answer_nudge"):
+    if not seat_execution_required(seat) or item.get("final_answer_nudge"):
         return False
     if not item.get("submission_confirmed"):
         return False

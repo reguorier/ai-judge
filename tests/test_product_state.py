@@ -169,6 +169,33 @@ def test_send_button_failures_are_recoverable():
     })
 
 
+def test_supplementable_run_seats_prefers_required_non_grok_seats():
+    api_server = _load_api_server()
+    verdict = {
+        "seats": ["chatgpt", "qwen", "grok"],
+        "web_bridge": {
+            "raw_results": [
+                {"seat": "chatgpt", "ok": True, "response": "done"},
+                {
+                    "seat": "qwen",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "slow_response_pending"},
+                },
+                {
+                    "seat": "grok",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "slow_response_pending"},
+                },
+            ],
+        },
+    }
+
+    assert api_server._supplementable_run_seats(verdict) == ["qwen"]
+    assert api_server._supplementable_run_seats(verdict, requested=["grok"]) == ["grok"]
+
+
 def test_web_worker_enables_second_round_resonance_collection(monkeypatch):
     api_server = _load_api_server()
     old_tasks = api_server.TASKS

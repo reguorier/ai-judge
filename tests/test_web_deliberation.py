@@ -1,4 +1,5 @@
 from core.web_jury import (
+    assemble_web_verdict_from_raw_results,
     build_mentor_supplement_claims,
     build_resonance_followup_prompts,
     build_judge_answer,
@@ -131,7 +132,7 @@ def test_run_web_jury_collects_second_round_resonance_answers(monkeypatch):
     assert "状态字段、接口和验收测试" in supplements[0]["response"]
 
 
-def test_slow_pending_seats_do_not_turn_partial_run_into_bridge_failure():
+def test_required_slow_pending_seat_blocks_complete_verdict():
     results = [
         {"seat": "chatgpt", "ok": True, "response": "ok"},
         {
@@ -142,7 +143,51 @@ def test_slow_pending_seats_do_not_turn_partial_run_into_bridge_failure():
         },
     ]
 
+    assert _bridge_collection_insufficient(results, ok_count=1, failed_count=1, total=2)
+
+
+def test_optional_grok_slow_pending_does_not_block_required_completion():
+    results = [
+        {"seat": "chatgpt", "ok": True, "response": "ok"},
+        {
+            "seat": "grok",
+            "ok": False,
+            "supplementable": True,
+            "error": {"code": "slow_response_pending", "message": "still thinking"},
+        },
+    ]
+
     assert not _bridge_collection_insufficient(results, ok_count=1, failed_count=1, total=2)
+
+
+def test_assemble_verdict_marks_required_execution_incomplete_but_excludes_grok():
+    verdict = assemble_web_verdict_from_raw_results(
+        question="升级 AI Judge",
+        mode="flash",
+        seats=["chatgpt", "qwen", "grok"],
+        raw_results=[
+            {"seat": "chatgpt", "ok": True, "response": "建议升级，先补齐执行有效性。"},
+            {
+                "seat": "qwen",
+                "ok": False,
+                "supplementable": True,
+                "error": {"code": "slow_response_pending", "message": "still thinking"},
+            },
+            {
+                "seat": "grok",
+                "ok": False,
+                "supplementable": True,
+                "error": {"code": "slow_response_pending", "message": "optional slow"},
+            },
+        ],
+    )
+
+    policy = verdict["web_bridge"]["execution_policy"]
+    assert verdict["execution_status"] == "requires_recovery"
+    assert policy["required_count"] == 2
+    assert policy["required_valid_count"] == 1
+    assert policy["optional_seats"] == ["grok"]
+    assert [item["seat"] for item in policy["required_supplementable_seats"]] == ["qwen"]
 
 
 def test_score_rounds_and_judge_baseline_are_visible_artifacts():

@@ -192,3 +192,17 @@ def test_qwen_empty_thinking_turn_triggers_final_answer_nudge():
     assessment = {"accepted": False, "polluted": False, "prompt_echo": False, "response_text": ""}
 
     assert _should_send_final_answer_nudge("qwen", item, capture, assessment)
+
+
+def test_required_non_grok_empty_turn_triggers_final_answer_nudge():
+    item = {
+        "prompt_id": "AIJUDGE-doubao-123",
+        "submitted_at": time.time() - 90,
+        "timeout_seconds": 180,
+        "submission_confirmed": True,
+    }
+    capture = {"assistant_empty": True, "thinking_only": True}
+    assessment = {"accepted": False, "polluted": False, "prompt_echo": False, "response_text": ""}
+
+    assert _should_send_final_answer_nudge("doubao", item, capture, assessment)
+    assert not _should_send_final_answer_nudge("grok", item, capture, assessment)

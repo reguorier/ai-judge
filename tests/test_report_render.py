@@ -178,8 +178,10 @@ def test_report_renders_cross_temporal_closeout():
             "method": "纵向追时间深度，横向追同期广度，交叉后形成可执行判断。",
             "closeout_report": {
                 "decision_score": "78/100 · 均分 0.710",
+                "trust_tier": {"tier": "C", "label": "C · 阶段性判断", "summary": "仍需补齐旧页面答案。"},
                 "executive_summary": "最终判决：条件支持。席位覆盖 2/3，MiniMax 待回收。",
             },
+            "trust_tier": {"tier": "C", "label": "C · 阶段性判断", "summary": "仍需补齐旧页面答案。"},
             "vertical_trace": {
                 "bridge_health": "网页桥接部分完成",
                 "key_turn": "网页席位未全量回收，结论必须带条件",
@@ -210,6 +212,7 @@ def test_report_renders_cross_temporal_closeout():
     assert 'id="cross-temporal"' in rendered
     assert "横纵分析收口报告" in rendered
     assert "最终判决：条件支持" in rendered
+    assert "C · 阶段性判断" in rendered
     assert "容斥式席位覆盖" in rendered
 
 

@@ -1,4 +1,4 @@
-"""AI Judge Core — Citation Audit and multi-model AI jury package v3.6.2.
+"""AI Judge Core — Citation Audit and multi-model AI jury package v3.7.0.
 
 Public modules (this repository):
   - license_validator: Community license shim
@@ -53,6 +53,6 @@ Production modules (paid core, not in this repository):
   - reflect: Performance trend analysis
 """
 
-__version__ = "3.6.2"
+__version__ = "3.7.0"
 __author__ = "AI Judge Contributors"
 __license__ = "BSL-1.1"

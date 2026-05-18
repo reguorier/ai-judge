@@ -59,16 +59,27 @@ def _sample_verdict() -> dict:
 def test_cross_temporal_analysis_marks_partial_bridge_and_actions():
     analysis = build_cross_temporal_analysis(_sample_verdict())
 
-    assert analysis["schema"] == "cross_temporal_analysis.v1"
+    assert analysis["schema"] == "cross_temporal_analysis.v2"
     assert analysis["horizontal_comparison"]["ok_count"] == 2
     assert analysis["horizontal_comparison"]["pending_count"] == 1
     assert analysis["horizontal_comparison"]["consensus_label"] == "席位不完整"
     assert analysis["vertical_trace"]["retry_event_count"] == 1
     assert "2/3" in analysis["closeout_report"]["executive_summary"]
     assert any("旧页面只读回收" in item for item in analysis["recommended_actions"])
+    assert analysis["trust_tier"]["tier"] == "D"
 
     coverage = next(item for item in analysis["math_audit"]["signals"] if item["id"] == "coverage_gate")
     assert coverage["severity"] == "block"
+    signal_ids = {item["id"] for item in analysis["math_audit"]["signals"]}
+    assert {
+        "svd_noise_filter",
+        "simpson_aggregate_trap",
+        "bertrand_standard_sensitivity",
+        "birthday_claim_collision",
+        "cauchy_schwarz_redundancy",
+        "axiomatic_self_consistency",
+    } <= signal_ids
+    assert len(analysis["math_audit"]["roi_decisions"]) == 6
 
 
 def test_markdown_includes_cross_temporal_closeout():
@@ -78,7 +89,9 @@ def test_markdown_includes_cross_temporal_closeout():
     rendered = format_verdict_markdown(verdict)
 
     assert "## Cross-Temporal Closeout" in rendered
+    assert "Trust tier" in rendered
     assert "容斥式席位覆盖" in rendered
+    assert "SVD 评分噪声过滤" in rendered
     assert "只读回收" in rendered
 
 
@@ -109,5 +122,37 @@ def test_api_save_run_attaches_cross_temporal_analysis(tmp_path, monkeypatch):
     api_server._save_run("run-xray", verdict)
 
     saved = json.loads((tmp_path / "run-xray" / "verdict.json").read_text(encoding="utf-8"))
-    assert saved["cross_temporal_analysis"]["schema"] == "cross_temporal_analysis.v1"
+    assert saved["cross_temporal_analysis"]["schema"] == "cross_temporal_analysis.v2"
     assert "Cross-Temporal Closeout" in (tmp_path / "run-xray" / "verdict.md").read_text(encoding="utf-8")
+
+
+def test_required_policy_treats_grok_as_optional_for_trust_tier():
+    verdict = _sample_verdict()
+    verdict["confidence"] = 88
+    verdict["web_bridge"] = {
+        "requested_count": 3,
+        "ok_count": 2,
+        "failed_count": 1,
+        "collection_complete": True,
+        "execution_policy": {
+            "required_count": 2,
+            "required_valid_count": 2,
+            "required_failed_count": 0,
+            "required_supplementable_seats": [],
+            "optional_seats": ["grok"],
+            "collection_complete": True,
+        },
+        "raw_results": [
+            {"seat": "chatgpt", "seat_name": "ChatGPT", "ok": True, "response": "支持，证据充足。"},
+            {"seat": "qwen", "seat_name": "Qwen", "ok": True, "response": "支持，路径清晰。"},
+            {"seat": "grok", "seat_name": "Grok", "ok": False, "error": {"code": "provider_quota_limited"}},
+        ],
+    }
+
+    analysis = build_cross_temporal_analysis(verdict)
+
+    assert analysis["horizontal_comparison"]["required_ok_count"] == 2
+    assert analysis["horizontal_comparison"]["required_count"] == 2
+    coverage = next(item for item in analysis["math_audit"]["signals"] if item["id"] == "coverage_gate")
+    assert coverage["severity"] == "ok"
+    assert analysis["trust_tier"]["tier"] in {"A", "B"}

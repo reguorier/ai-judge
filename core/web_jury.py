@@ -19,6 +19,10 @@ from bridges.web_seat_bridge import run_web_seats
 from core.auto_jury import assemble_verdict
 from core.modes import resolve_mode
 from core.scoring_v2 import score_claim_v2
+from core.seat_execution_policy import (
+    annotate_execution_results,
+    execution_policy_summary,
+)
 from core.seat_personas import SEAT_PERSONAS
 
 
@@ -87,6 +91,7 @@ def assemble_web_verdict_from_raw_results(
 ) -> dict[str, Any]:
     """Score already-collected web-seat responses into a verdict."""
     resolved_seats = [seat for seat in seats if seat in SEAT_PERSONAS]
+    raw_results = annotate_execution_results(raw_results)
     mentor_supplements = mentor_supplements or []
     external_evidence = external_evidence or []
     primary_claims = build_web_claims(question=question, mode=mode, results=raw_results)
@@ -96,6 +101,7 @@ def assemble_web_verdict_from_raw_results(
     ok_count = sum(1 for item in raw_results if item.get("ok"))
     failed_count = sum(1 for item in raw_results if not item.get("ok"))
     mentor_ok_count = sum(1 for item in mentor_supplements if item.get("ok"))
+    execution_policy = execution_policy_summary(raw_results, requested_seats=resolved_seats)
     if trace:
         trace("jury", "web_jury_collected", "网页席位收集完成，进入答案总结与互评", {
             "ok_count": ok_count,
@@ -123,8 +129,14 @@ def assemble_web_verdict_from_raw_results(
                 "ok_count": ok_count,
                 "failed_count": failed_count,
                 "requested_count": len(raw_results),
-                "collection_complete": failed_count == 0 and ok_count == len(raw_results),
+                "collection_complete": execution_policy["collection_complete"],
+                "legacy_collection_complete": failed_count == 0 and ok_count == len(raw_results),
+                "execution_policy": execution_policy,
+                "required_ok_count": execution_policy["required_valid_count"],
+                "required_count": execution_policy["required_count"],
+                "required_failed_count": execution_policy["required_failed_count"],
                 "supplementable_seats": _supplementable_seats(raw_results),
+                "required_supplementable_seats": execution_policy["required_supplementable_seats"],
                 "mentor_supplements": _public_mentor_supplements(mentor_supplements),
                 "external_evidence": external_evidence,
                 "deliberation": _public_deliberation(deliberation),
@@ -161,8 +173,8 @@ def assemble_web_verdict_from_raw_results(
             }
         },
     )
-    if _bridge_collection_insufficient(raw_results, ok_count, failed_count, len(raw_results)):
-        verdict.update(_bridge_incomplete_fields(raw_results, ok_count, failed_count))
+    if not execution_policy["collection_complete"]:
+        verdict.update(_bridge_incomplete_fields(raw_results, ok_count, failed_count, execution_policy=execution_policy))
     _attach_web_judge_explainability(verdict, report_question, raw_results, deliberation)
     return verdict
 
@@ -888,6 +900,9 @@ def _bridge_collection_insufficient(
     """Return whether the web run is an infrastructure failure, not a verdict."""
     if total <= 0:
         return True
+    policy = execution_policy_summary(results)
+    if policy["required_count"] > 0:
+        return not policy["collection_complete"]
     if failed_count <= 0:
         return False
     hard_failed = [item for item in results if not item.get("ok") and not _is_slow_supplementable(item)]
@@ -896,30 +911,43 @@ def _bridge_collection_insufficient(
     return ok_count < total or failed_count > 0
 
 
-def _bridge_incomplete_fields(results: list[dict[str, Any]], ok_count: int, failed_count: int) -> dict[str, Any]:
+def _bridge_incomplete_fields(
+    results: list[dict[str, Any]],
+    ok_count: int,
+    failed_count: int,
+    execution_policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    execution_policy = execution_policy or execution_policy_summary(results)
     reasons: list[str] = []
-    for item in results:
-        if item.get("ok"):
-            continue
-        error = item.get("error") or {}
-        seat_name = item.get("seat_name") or item.get("seat")
+    for failure in execution_policy.get("required_failures") or []:
+        error = failure.get("error") or {}
+        seat_name = failure.get("seat_name") or failure.get("seat")
         code = error.get("code", "unknown")
-        message = error.get("message", "No response captured.")
-        prefix = "慢席待回收" if _is_slow_supplementable(item) else "未完成"
+        message = error.get("message") or failure.get("reason") or "No response captured."
+        prefix = "必需席位待补全" if failure.get("supplementable") else "必需席位未完成"
         reasons.append(f"{seat_name}: {prefix} / {code} - {message}")
         if len(reasons) >= 5:
             break
     if not reasons:
-        reasons = ["网页桥接没有收集到足够独立答案。"]
+        reasons = ["非 Grok 必需席位尚未全部形成执行有效答案。"]
+    required_ok = int(execution_policy.get("required_valid_count") or 0)
+    required_total = int(execution_policy.get("required_count") or 0)
+    optional = execution_policy.get("optional_seats") or []
     return {
         "verdict": "unverified",
-        "verdict_label": "网页桥接未完成",
-        "one_liner": f"网页桥接只拿到 {ok_count}/{len(results)} 个席位完整回答，{failed_count} 个席位未完成；这不是问题本身的判决。",
+        "verdict_label": "必需席位执行未完成",
+        "one_liner": (
+            f"非 Grok 必需网页席位只拿到 {required_ok}/{required_total} 个执行有效回答；"
+            f"Grok/Gork 按可选异议席位处理，不计入硬阻断。这不是问题本身的判决。"
+        ),
         "confidence": 0,
+        "execution_status": "requires_recovery",
+        "required_execution_complete": False,
+        "optional_execution_seats": optional,
         "reasons": reasons,
         "next_steps": [
-            "对慢生成席位使用旧页面答案回收按钮，只读取已打开页面的答案，成功后回填原始回答、互评和评分。",
-            "逐席修复失败 adapter，直到本轮要求的所有网页席位都返回完整回答。",
+            "先补全所有非 Grok 必需席位；成功后系统会回填原始回答、互评和评分。",
+            "Grok/Gork 只作为可选异议席位；它的慢生成或失败不阻断发布门禁。",
             "对 send_button_not_found 的站点补充站点专用发送按钮选择器。",
             "对 transcript_pollution 的站点新建干净会话或强制使用答案包裹标记读取。",
         ],

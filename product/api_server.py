@@ -51,6 +51,10 @@ from core.human_review import human_review_status, sign_human_review
 from core.modes import list_modes, resolve_mode
 from core.prompt_resonance import build_prompt_flow
 from core.run_trace import RunTrace, load_trace
+from core.seat_execution_policy import (
+    annotate_execution_results,
+    execution_policy_summary,
+)
 from core.seat_personas import SEAT_PERSONAS
 from core.web_jury import assemble_web_verdict_from_raw_results, run_web_jury
 
@@ -64,6 +68,8 @@ RUNS_DIR = _PROJECT_ROOT / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
 PRODUCT_DIR = _PROJECT_ROOT / "product"
 STALE_TASK_SECONDS = 90
+AUTO_REQUIRED_RECOVERY_ATTEMPTS = 2
+AUTO_REQUIRED_RECOVERY_WAIT_SECONDS = 6
 WAITING_STEP_RE = re.compile(r"(?:等待\s*(?P<labels>[^，]+)，)?剩余\s*(?P<count>\d+)\s*席，最长等待\s*(?P<seconds>\d+)s")
 RETRY_STEP_RE = re.compile(r"补跑\s*(?P<attempt>\d+)\s*/\s*(?P<total>\d+)")
 RECOVERABLE_WEB_CODES = {
@@ -359,8 +365,20 @@ def _is_supplementable_result(item: dict[str, Any]) -> bool:
 
 def _supplementable_run_seats(verdict: dict[str, Any], requested: list[str] | None = None) -> list[str]:
     requested_set = set(requested or [])
-    raw_results = (verdict.get("web_bridge") or {}).get("raw_results") or []
+    bridge = verdict.get("web_bridge") or {}
+    raw_results = bridge.get("raw_results") or []
+    policy = bridge.get("execution_policy") or execution_policy_summary(
+        raw_results,
+        requested_seats=verdict.get("seats") or [str(item.get("seat") or "") for item in raw_results],
+    )
     seats: list[str] = []
+    if not requested_set:
+        for item in policy.get("required_supplementable_seats") or []:
+            seat = str(item.get("seat") or "").lower()
+            if seat in SEAT_PERSONAS:
+                seats.append(seat)
+        if seats:
+            return list(dict.fromkeys(seats))
     for item in raw_results:
         seat = str(item.get("seat") or "").lower()
         if seat not in SEAT_PERSONAS:
@@ -401,7 +419,7 @@ def _merge_supplement_raw_results(
         seat = str(item.get("seat") or "").lower()
         replacement = supplement_by_seat.get(seat)
         if not replacement:
-            merged.append(item)
+            merged.append(dict(item))
             continue
         seen.add(seat)
         history = list(item.get("supplement_history") or [])
@@ -431,7 +449,7 @@ def _merge_supplement_raw_results(
             next_item = dict(item)
             next_item["supplemented_from_run_id"] = supplement_run_id
             merged.append(next_item)
-    return merged
+    return annotate_execution_results(merged, config=load_bridge_config())
 
 
 def _merge_trace_dicts(source: dict[str, Any] | None, supplement: dict[str, Any] | None, source_run_id: str) -> dict[str, Any]:
@@ -621,6 +639,103 @@ def _build_roster_sensitivity(verdict: dict[str, Any], chief: dict[str, Any]) ->
     return rows[:6]
 
 
+def _auto_recover_required_web_seats(
+    verdict: dict[str, Any],
+    *,
+    run_id: str,
+    question: str,
+    prompt_question: str,
+    mode: str,
+    seats: list[str],
+    external_evidence: list[dict[str, Any]],
+    evidence_options: dict[str, Any],
+    trace_event: Any,
+    update_progress: Any,
+) -> dict[str, Any]:
+    """Auto-read late fixed-tab answers for required non-Grok seats."""
+    bridge = verdict.get("web_bridge") or {}
+    raw_results = bridge.get("raw_results") or []
+    policy = bridge.get("execution_policy") or execution_policy_summary(raw_results, requested_seats=seats)
+    if policy.get("collection_complete"):
+        return verdict
+
+    recovery_seats = _supplementable_run_seats(verdict)
+    if not recovery_seats:
+        verdict.setdefault("web_bridge", {})["auto_required_recovery"] = {
+            "status": "blocked",
+            "reason": "no_required_supplementable_seats",
+            "policy": policy,
+        }
+        return verdict
+
+    current = verdict
+    for attempt in range(1, AUTO_REQUIRED_RECOVERY_ATTEMPTS + 1):
+        if attempt > 1:
+            time.sleep(AUTO_REQUIRED_RECOVERY_WAIT_SECONDS)
+        update_progress(
+            f"自动补全必需席位 {attempt}/{AUTO_REQUIRED_RECOVERY_ATTEMPTS}：{', '.join(recovery_seats)}",
+            min(0.88, 0.76 + attempt * 0.04),
+        )
+        trace_event("recovery", "required_auto_recovery_start", "非 Grok 必需席位自动回收开始", {
+            "attempt": attempt,
+            "seats": recovery_seats,
+            "policy": policy,
+        })
+        supplement_raw = recover_existing_fixed_tab_answers(
+            question=prompt_question,
+            seats=recovery_seats,
+            config=load_bridge_config(),
+            mode=mode,
+            progress=lambda step, pct: update_progress(
+                f"自动回收 {attempt}/{AUTO_REQUIRED_RECOVERY_ATTEMPTS}：{step}",
+                min(0.90, 0.78 + pct * 0.08),
+            ),
+            trace=trace_event,
+        )
+        merged_raw = _merge_supplement_raw_results(
+            (current.get("web_bridge") or {}).get("raw_results") or [],
+            supplement_raw,
+            f"{run_id}-auto-recovery-{attempt}",
+        )
+        current = assemble_web_verdict_from_raw_results(
+            question=prompt_question,
+            mode=mode,
+            seats=seats,
+            raw_results=merged_raw,
+            mentor_supplements=(current.get("web_bridge") or {}).get("mentor_supplements") or [],
+            external_evidence=external_evidence,
+            run_id=run_id,
+            display_question=question,
+            trace=trace_event,
+        )
+        if evidence_options:
+            current.setdefault("web_bridge", {})["evidence_options"] = dict(evidence_options)
+        current["question"] = question
+        current["deep_prompt"] = prompt_question
+        current["prompt_flow"] = verdict.get("prompt_flow")
+        current["execution_plan"] = verdict.get("execution_plan")
+        auto_policy = (current.get("web_bridge") or {}).get("execution_policy") or {}
+        current.setdefault("web_bridge", {})["auto_required_recovery"] = {
+            "status": "complete" if auto_policy.get("collection_complete") else "pending",
+            "attempt": attempt,
+            "recovery_seats": recovery_seats,
+            "recovered_count": sum(1 for item in supplement_raw if item.get("ok")),
+            "pending_count": sum(1 for item in supplement_raw if not item.get("ok")),
+        }
+        trace_event("recovery", "required_auto_recovery_complete", "非 Grok 必需席位自动回收完成", {
+            "attempt": attempt,
+            "collection_complete": auto_policy.get("collection_complete"),
+            "required_valid_count": auto_policy.get("required_valid_count"),
+            "required_count": auto_policy.get("required_count"),
+        })
+        if auto_policy.get("collection_complete"):
+            break
+        recovery_seats = _supplementable_run_seats(current)
+        if not recovery_seats:
+            break
+    return current
+
+
 def _start_worker(
     run_id: str,
     question: str,
@@ -772,6 +887,18 @@ def _run_worker(
                 verdict["deep_prompt"] = prompt_flow["professional_prompt"]
                 verdict["prompt_flow"] = prompt_flow
                 verdict["execution_plan"] = execution_plan
+                verdict = _auto_recover_required_web_seats(
+                    verdict,
+                    run_id=run_id,
+                    question=question,
+                    prompt_question=prompt_flow["professional_prompt"],
+                    mode=mode,
+                    seats=runnable_seats,
+                    external_evidence=external_evidence,
+                    evidence_options=evidence_options,
+                    trace_event=trace_event,
+                    update_progress=lambda step, pct: TASKS.update_progress(run_id, step, pct),
+                )
         else:
             prompt_flow = build_prompt_flow(question, mode=mode, engine=engine, seats=seats)
             execution_plan = decide_execution(engine=engine, mode=mode, requested_seats=seats)
@@ -1128,7 +1255,7 @@ def _run_supplement_worker(
 def health():
     return jsonify({
         "status": "ok",
-        "version": "3.6.2",
+        "version": "3.7.0",
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["local", "web"],
         "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
@@ -2238,6 +2365,7 @@ def _render_cross_temporal_analysis(result: dict[str, Any]) -> str:
     if not analysis:
         return ""
     closeout = analysis.get("closeout_report") or {}
+    trust_tier = analysis.get("trust_tier") or closeout.get("trust_tier") or {}
     vertical = analysis.get("vertical_trace") or {}
     horizontal = analysis.get("horizontal_comparison") or {}
     math_audit = analysis.get("math_audit") or {}
@@ -2253,7 +2381,7 @@ def _render_cross_temporal_analysis(result: dict[str, Any]) -> str:
         f"<td>{html.escape(_compact_report_text(item.get('summary', ''), 220))}</td>"
         f"<td>{html.escape(_compact_report_text(item.get('next_action', ''), 180))}</td>"
         "</tr>"
-        for item in signals[:8]
+        for item in signals[:10]
     ) or "<tr><td colspan=\"5\">暂无数学审计信号。</td></tr>"
     ranking_rows = "".join(
         "<tr>"
@@ -2276,10 +2404,11 @@ def _render_cross_temporal_analysis(result: dict[str, Any]) -> str:
         "</div></div>"
         '<section class="summary-grid compact" aria-label="横纵分析状态">'
         f"<div><span>最终判断</span><strong>{html.escape(str(closeout.get('decision_score', '-')))}</strong></div>"
-        f"<div><span>席位覆盖</span><strong>{html.escape(str(horizontal.get('ok_count', 0)))}/{html.escape(str(horizontal.get('requested_count', 0)))}</strong></div>"
+        f"<div><span>可信等级</span><strong>{html.escape(str(trust_tier.get('label', '-')))}</strong></div>"
+        f"<div><span>必需席位</span><strong>{html.escape(str(horizontal.get('required_ok_count', horizontal.get('ok_count', 0))))}/{html.escape(str(horizontal.get('required_count', horizontal.get('requested_count', 0))))}</strong></div>"
         f"<div><span>共识状态</span><strong>{html.escape(str(horizontal.get('consensus_label', '-')))}</strong></div>"
-        f"<div><span>桥接健康</span><strong>{html.escape(str(vertical.get('bridge_health', '-')))}</strong></div>"
         "</section>"
+        f"<p class=\"muted\"><strong>可信等级说明：</strong>{html.escape(str(trust_tier.get('summary', '')))}</p>"
         f'<p class="report-lead">{html.escape(str(closeout.get("executive_summary", "")))}</p>'
         '<div class="report-columns">'
         '<section class="report-column">'
@@ -2517,13 +2646,13 @@ document.addEventListener("click", (event) => {{
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="AI Judge v3.6 API Server")
+    parser = argparse.ArgumentParser(description="AI Judge v3.7 API Server")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host")
     parser.add_argument("--port", type=int, default=8501, help="Bind port")
     parser.add_argument("--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
-    print("\n  AI Judge API Server v3.6.2")
+    print("\n  AI Judge API Server v3.7.0")
     print(f"  http://{args.host}:{args.port}")
     print(f"  {len(SEAT_PERSONAS)} seats available")
     print("  POST /api/judge now runs automatically\n")
