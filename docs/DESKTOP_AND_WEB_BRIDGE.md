@@ -26,36 +26,37 @@ AI Judge meetings default to the full web-seat path:
 - mode: `strategic`
 - seat scope: all configured web seats
 
-Local AI Judge meetings are a verification and fallback layer only. They can be
-used to sanity-check a route, build a draft, or recover when web seats are
-blocked, but they must not be represented as the primary full council result.
+Local AI Judge meetings are disabled in the product run path. Verification,
+drafting, and final council collection must go through the web-seat route so a
+run never silently becomes a local synthetic answer set.
 
 ## Seat Engines
 
-AI Judge now exposes two product-side engines:
+AI Judge now exposes one product-side engine:
 
 - `web`: isolated browser bridge for live model web apps. This is the default
   full-council path. Web seats must pass calibration before deep collection.
-- `local`: deterministic local jury for verification, drafting, and fallback;
-  it is not the primary full-council result.
 
-The dashboard shows both under "席位来源". Web mode can always create a diagnosis report, but deep collection only starts when enough calibrated seats are ready.
+The dashboard only exposes the web engine. Web mode can always create a
+diagnosis report, but deep collection only starts when every selected web seat
+is calibrated and ready.
 
 ## Product Flow
 
 Every run now has two separate decisions:
 
 1. **Mode**: Flash / Standard / Strategic decides breadth and scoring depth.
-2. **Execution driver**: local synthetic, isolated web DOM, desktop Operator, or future provider API decides how answers are collected.
+2. **Execution driver**: isolated web DOM, Chrome fixed-tab/CDP, desktop Operator, or future provider API decides how answers are collected.
 
-Before a deep web run, AI Judge performs a local resonance pass:
+Before a deep web run, AI Judge performs a deterministic prompt-alignment pass:
 
 - normalize the user's question
 - expose assumptions that need checking
 - generate a stricter professional prompt for external seats
-- decide whether the selected web seats are calibrated enough to run
+- decide whether all selected web seats are calibrated enough to run
 
-If not enough seats are calibrated, the run completes as `网页深度未启动` with a bridge diagnosis instead of pretending the model answered.
+If any selected seat is not calibrated, the run completes as `网页深度未启动`
+with a bridge diagnosis instead of pretending the model answered.
 
 ## Seat to Browser / Client Matrix
 

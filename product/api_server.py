@@ -37,7 +37,7 @@ from bridges.notification_gateway import generate_secure_view_url, notify_verdic
 from bridges.chrome_fixed_tab_bridge import recover_existing_fixed_tab_answers
 from bridges.web_seat_bridge import bridge_status, calibrate_bridge, load_bridge_config, write_default_config
 from core.async_task_manager import TaskManager
-from core.auto_jury import format_verdict_markdown, run_auto_jury
+from core.auto_jury import format_verdict_markdown
 from core.blind_cross_validation import aggregate_blind_reviews, build_blind_cross_validation_packet
 from core.cross_temporal_analysis import attach_cross_temporal_analysis
 from core.evidence_broker import build_evidence_broker_report
@@ -767,7 +767,7 @@ def _attach_product_run_metadata(
             "top_seats": [item.get("seat_name", item.get("seat")) for item in (verdict.get("seat_scores") or [])[:3]],
             "agreements": [],
             "disagreements": [],
-            "limits": ["本地快答使用结构化席位画像模拟，不等同于网页模型原文收集。"],
+            "limits": ["产品运行路径已禁用本地陪审；完整结论必须来自网页模型原文收集。"],
         }
         verdict["judge_answer"] = judge
     else:
@@ -786,7 +786,7 @@ def _attach_product_run_metadata(
             "council_average_score": verdict.get("average_score"),
             "delta_vs_council": 0,
             "comparison": [
-                {"metric": "答案来源", "single_judge": chief["name"], "council": f"{len(selected)} 个本地席位"},
+                {"metric": "答案来源", "single_judge": chief["name"], "council": f"{len(selected)} 个网页席位"},
                 {"metric": "互评校验", "single_judge": "主审汇总", "council": "席位评分引擎"},
             ],
         }
@@ -1056,11 +1056,11 @@ def _run_worker(
                 "assumptions": mentor_preflight.get("assumptions"),
                 "model_routes": mentor_preflight.get("model_routes"),
             })
-        TASKS.update_progress(run_id, "受理完成，本地共振对齐", 0.06)
+        TASKS.update_progress(run_id, "受理完成，网页提示词对齐", 0.06)
         if engine == "web":
             status = bridge_status()
             prompt_flow = build_prompt_flow(question, mode=mode, engine=engine, seats=seats, bridge_summary=status)
-            trace_event("resonance", "prompt_flow_built", "本地共振已生成专业提示词", {
+            trace_event("resonance", "prompt_flow_built", "网页执行前置对齐已生成专业提示词", {
                 "intent": prompt_flow.get("intent"),
                 "trace_id": prompt_flow.get("trace_id"),
                 "required_output": prompt_flow.get("required_output"),
@@ -1139,24 +1139,7 @@ def _run_worker(
                     update_progress=lambda step, pct: TASKS.update_progress(run_id, step, pct),
                 )
         else:
-            prompt_flow = build_prompt_flow(question, mode=mode, engine=engine, seats=seats)
-            execution_plan = decide_execution(engine=engine, mode=mode, requested_seats=seats)
-            trace_event("resonance", "prompt_flow_built", "本地共振已生成专业提示词", {
-                "intent": prompt_flow.get("intent"),
-                "trace_id": prompt_flow.get("trace_id"),
-                "professional_prompt_chars": len(prompt_flow.get("professional_prompt", "")),
-            })
-            trace_event("router", "execution_plan", "本地执行驱动已确认", execution_plan)
-            total = max(1, len(seats))
-            for index, seat in enumerate(seats, 1):
-                trace_event("seat", "local_infer", f"本地席位推理：{seat}", {"seat": seat, "index": index, "total": total})
-                TASKS.update_progress(run_id, f"本地席位推理：{seat} ({index}/{total})", 0.10 + 0.55 * index / total)
-                time.sleep(0.04)
-            TASKS.update_progress(run_id, "汇总评分与异议", 0.72)
-            trace_event("jury", "local_scoring", "本地席位 claims 汇总评分", {"seat_count": len(seats)})
-            verdict = run_auto_jury(question=question, mode=mode, seats=seats, run_id=run_id)
-            verdict["prompt_flow"] = prompt_flow
-            verdict["execution_plan"] = execution_plan
+            raise ValueError("local AI Judge engine is disabled; submit with engine='web' for full web-seat collection")
 
         TASKS.update_progress(run_id, "生成判词报告", 0.90)
         if mentor_preflight:
@@ -1864,8 +1847,8 @@ def health():
         "version": PRODUCT_VERSION,
         "product": PRODUCT_NAME,
         "seats_available": len(SEAT_PERSONAS),
-        "engines": ["local", "web"],
-        "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
+        "engines": ["web"],
+        "execution_drivers": ["web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
         "grand_judge_mvp": "citation_verification",
         "evidence_os": ["evidence_broker", "blind_cross_validation", "evidence_gap_queue", "human_review", "eval_dataset"],
         "product_layers": ["stable_closeout", "lab_reliability_console", "human_gavel", "benchmark_summary"],
@@ -2027,7 +2010,9 @@ def prompt_resonate():
     data = request.get_json(silent=True) or {}
     question = str(data.get("question", "")).strip()
     mode = str(data.get("mode", "flash")).lower().strip() or "flash"
-    engine = str(data.get("engine", "local")).lower().strip() or "local"
+    engine = str(data.get("engine", DEFAULT_JUDGE_ENGINE)).lower().strip() or DEFAULT_JUDGE_ENGINE
+    if engine != "web":
+        return jsonify({"error": "local AI Judge engine is disabled; use engine='web'"}), 400
     seats = data.get("seats") or []
     if isinstance(seats, str):
         seats = [s.strip() for s in seats.split(",") if s.strip()]
@@ -2075,8 +2060,8 @@ def submit_judge():
 
     if not question:
         return jsonify({"error": "question is required"}), 400
-    if engine not in {"local", "web"}:
-        return jsonify({"error": "engine must be 'local' or 'web'"}), 400
+    if engine != "web":
+        return jsonify({"error": "local AI Judge engine is disabled; engine must be 'web'"}), 400
     if chief_judge != "auto" and chief_judge not in SEAT_PERSONAS:
         return jsonify({"error": "chief_judge must be 'auto' or a valid seat id"}), 400
 
@@ -3225,7 +3210,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     if prompt_flow:
         assumptions = "".join(f"<li>{html.escape(str(item))}</li>" for item in prompt_flow.get("assumptions_to_check", []))
         prompt_html = (
-            "<details class=\"band\"><summary><h2>本地共振与专业提示词</h2></summary>"
+            "<details class=\"band\"><summary><h2>网页提示词对齐与专业提示词</h2></summary>"
             f"<p>{html.escape(str(prompt_flow.get('quick_response', '')))}</p>"
             f"<h3>专业提示词</h3><pre>{html.escape(str(prompt_flow.get('professional_prompt', '')))}</pre>"
             f"<h3>需要核查的假设</h3><ul>{assumptions}</ul>"

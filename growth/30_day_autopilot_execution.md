@@ -52,6 +52,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Submission Council 2026 | Research/commercial venue plan ready | `growth/submission_council_2026.md` |
 | Submission abstract variants | RLEval, CLEAR, SeT-LLM, and KDD agentic-eval drafts ready | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` |
 | Submission fit-check queue | RLEval and CLEAR emails prepared, not sent | `growth/submission_fitcheck_queue.md`, `growth/email_drafts/w005_rleval_fit_check.eml`, `growth/email_drafts/w006_clear_fit_check.eml` |
+| Pre-attestation receipt schema | Ligate/Aequis-style integration note ready | `docs/PRE_ATTESTATION_RECEIPT_SCHEMA.md` |
 
 ## Rules
 
@@ -152,4 +153,5 @@ Research-first next wave:
 - Aequis and Ligate are the priority infrastructure/commercial-collaboration targets.
 - The technical wedge is claim-span/source audit: citation verification, source relevance, and exact claim support are separated so "real source" does not become "proven conclusion."
 - RAGChecker is now the active claim-level / RAG-faithfulness taxonomy route because RefChecker is archived/read-only.
+- The pre-attestation receipt schema is now ready for provenance and attestation infrastructure conversations; it packages `raw_answer_hash`, `mentor_supplement_hash`, `source_layer_hash`, `citation_audit_hash`, `claim_support_hash`, and `replay_ledger_hash` without merging the evidence layers.
 - The reusable Codex execution prompt now lives in `growth/codex_autopilot_template.md`; use it to keep future automation cycles aligned with the conditional-go strategy.

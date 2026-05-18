@@ -109,15 +109,24 @@ def decide_execution(
         return {
             "engine": engine,
             "mode": mode,
-            "driver": "local_synthetic",
-            "driver_label": DRIVER_LABELS["local_synthetic"],
+            "driver": "unconfigured",
+            "driver_label": DRIVER_LABELS["unconfigured"],
             "requested_seats": seats,
-            "runnable_seats": seats,
-            "blocked_seats": [],
-            "can_run_deep_collection": True,
-            "minimum_ready_seats": 0,
-            "decision": "run_local",
-            "message": "本地稳定引擎可立即运行；它不代表真实网页/客户端回答。",
+            "runnable_seats": [],
+            "blocked_seats": [
+                {
+                    "seat": seat,
+                    "seat_name": SEAT_PERSONAS[seat]["name"],
+                    "reason": "local_engine_disabled",
+                    "driver": "unconfigured",
+                    "calibration_status": "blocked",
+                }
+                for seat in seats
+            ],
+            "can_run_deep_collection": False,
+            "minimum_ready_seats": len(seats),
+            "decision": "block_local_engine_disabled",
+            "message": "本地 AI Judge 陪审已禁用；完整会议必须通过网页席位收集真实模型回答。",
         }
 
     bridge_status = bridge_status or {}
@@ -141,7 +150,8 @@ def decide_execution(
                 "calibration_status": (row.get("calibration") or {}).get("status", "missing"),
             })
 
-    can_run = len(runnable) >= min_web_ready
+    required_ready_count = len(seats)
+    can_run = len(runnable) == required_ready_count
     driver = _dominant_driver(runnable_drivers) or "web_dom"
     return {
         "engine": engine,
@@ -152,10 +162,10 @@ def decide_execution(
         "runnable_seats": runnable,
         "blocked_seats": blocked,
         "can_run_deep_collection": can_run,
-        "minimum_ready_seats": min_web_ready,
+        "minimum_ready_seats": required_ready_count,
         "decision": "run_web" if can_run else "block_for_calibration",
         "message": (
-            f"网页深度收集需要至少 {min_web_ready} 个校准通过席位；"
+            f"网页全量收集需要所选 {required_ready_count} 个席位全部校准通过；"
             f"当前可运行 {len(runnable)} 个。"
         ),
     }
