@@ -6,7 +6,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 
 | Asset | Status | URL or command |
 |---|---|---|
-| Hugging Face Space | Live, default demo verified | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit |
+| Hugging Face Space | Live, sample switcher prepared | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit |
 | GitHub release | Live | https://github.com/reguorier/ai-judge/releases/tag/v3.6.0 |
 | Local demo | Live | `PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html --json reports/fake-citation-audit.json` |
 | Benchmark | Live | `PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95` |

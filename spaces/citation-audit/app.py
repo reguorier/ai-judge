@@ -27,25 +27,56 @@ for proxy_key in ("NO_PROXY", "no_proxy"):
 from core.citation_audit import render_audit_html, render_audit_markdown, run_citation_audit
 
 
-DEFAULT_ANSWER = """AI citation errors are basically solved in modern LLM systems.
+EXAMPLES = {
+    "fabricated_survey": {
+        "label": "Fabricated Stanford-style citation",
+        "expected": "unverifiable",
+        "status": "Expected: citation unverifiable, not false.",
+        "question": "Does this answer provide reliable evidence?",
+        "answer": """AI citation errors are basically solved in modern LLM systems.
 The 2026 Stanford Trustworthy AI Citation Survey found that hallucinated references dropped below 1%.
-Source: https://stanford.example.edu/trustworthy-ai-citation-survey-2026"""
+Source: https://stanford.example.edu/trustworthy-ai-citation-survey-2026""",
+        "evidence": [
+            {
+                "url": "https://hai.stanford.edu/ai-index",
+                "title": "Stanford AI Index",
+                "snippet": (
+                    "The AI Index tracks AI trends and risks, but this evidence does not verify "
+                    "the named 2026 citation survey or below-1-percent claim."
+                ),
+                "status": "user_supplied",
+                "provenance": "user_supplied",
+            }
+        ],
+    },
+    "overclaimed_causation": {
+        "label": "Real source, unsupported causal claim",
+        "expected": "verified citation, contradicted claim support",
+        "status": "Expected: citation verified, claim support contradicted.",
+        "question": "Does the cited study prove that the AI review program caused lower churn?",
+        "answer": (
+            "The AI review program caused a 22% reduction in customer churn, so the company should attribute "
+            "retention gains to the program. Source: https://example.com/research/ai-review-churn-2026"
+        ),
+        "evidence": [
+            {
+                "url": "https://example.com/research/ai-review-churn-2026",
+                "title": "AI review usage and customer churn study",
+                "snippet": (
+                    "The study reports a 22% churn reduction associated with AI review usage. "
+                    "The analysis is observational and does not establish causation."
+                ),
+                "provenance": "user_supplied",
+            }
+        ],
+    },
+}
 
-DEFAULT_EVIDENCE = json.dumps(
-    [
-        {
-            "url": "https://hai.stanford.edu/ai-index",
-            "title": "Stanford AI Index",
-            "snippet": (
-                "The AI Index tracks AI trends and risks, but this evidence does not verify "
-                "the named 2026 citation survey or below-1-percent claim."
-            ),
-            "status": "user_supplied",
-            "provenance": "user_supplied",
-        }
-    ],
-    indent=2,
-)
+DEFAULT_EXAMPLE_ID = "fabricated_survey"
+DEFAULT_EXAMPLE = EXAMPLES[DEFAULT_EXAMPLE_ID]
+DEFAULT_ANSWER = DEFAULT_EXAMPLE["answer"]
+DEFAULT_EVIDENCE = json.dumps(DEFAULT_EXAMPLE["evidence"], indent=2)
+EXAMPLES_JSON = json.dumps(EXAMPLES, ensure_ascii=False).replace("</", "<\\/")
 
 PAGE = """<!doctype html>
 <html lang="en">
@@ -129,9 +160,19 @@ PAGE = """<!doctype html>
       cursor: pointer;
     }
     button:disabled { opacity: .62; cursor: progress; }
+    select {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+    }
     .summary {
       display: grid;
-      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      grid-template-columns: repeat(7, minmax(112px, 1fr));
       gap: 10px;
       margin-bottom: 12px;
     }
@@ -202,6 +243,8 @@ PAGE = """<!doctype html>
   <main>
     <section>
       <h2>Input</h2>
+      <label for="example">Example</label>
+      <select id="example"></select>
       <label for="question">Question</label>
       <textarea id="question">Does this answer provide reliable evidence?</textarea>
       <label for="answer">AI-generated answer</label>
@@ -215,7 +258,8 @@ PAGE = """<!doctype html>
     <section>
       <h2>Audit Output</h2>
       <div class="summary">
-        <div class="metric"><span>Overall</span><strong id="overall">-</strong></div>
+        <div class="metric"><span>Citation</span><strong id="overall">-</strong></div>
+        <div class="metric"><span>Claim Support</span><strong id="claimSupport">-</strong></div>
         <div class="metric"><span>Trust Gate</span><strong id="trustGate">-</strong></div>
         <div class="metric"><span>Main Gap</span><strong id="reasonCode">-</strong></div>
         <div class="metric"><span>Evidence</span><strong id="provenance">-</strong></div>
@@ -233,8 +277,30 @@ PAGE = """<!doctype html>
     </section>
   </main>
   <script>
+    const examples = __EXAMPLES_JSON__;
     const runButton = document.getElementById("runButton");
     const statusEl = document.getElementById("status");
+    const exampleSelect = document.getElementById("example");
+
+    Object.entries(examples).forEach(([id, example]) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = `${example.label} - ${example.expected}`;
+      exampleSelect.appendChild(option);
+    });
+
+    function loadExample(id) {
+      const example = examples[id] || examples.fabricated_survey;
+      document.getElementById("question").value = example.question || "";
+      document.getElementById("answer").value = example.answer || "";
+      document.getElementById("evidence").value = JSON.stringify(example.evidence || [], null, 2);
+      statusEl.textContent = example.status || "Ready.";
+    }
+
+    exampleSelect.addEventListener("change", () => {
+      loadExample(exampleSelect.value);
+      runAudit();
+    });
 
     function setPanel(id) {
       document.querySelectorAll(".tab").forEach((tab) => {
@@ -279,6 +345,7 @@ PAGE = """<!doctype html>
         document.getElementById("markdownReport").textContent = data.markdown;
         document.getElementById("jsonReport").textContent = JSON.stringify(data.summary, null, 2);
         document.getElementById("overall").textContent = data.summary.overall_status || "-";
+        document.getElementById("claimSupport").textContent = data.summary.overall_claim_support || "-";
         document.getElementById("trustGate").textContent = data.summary.trust_gate || "-";
         document.getElementById("reasonCode").textContent = firstNonZero(data.summary.unverifiable_reason_counts);
         document.getElementById("provenance").textContent = formatCounts(data.summary.evidence_provenance_counts);
@@ -293,6 +360,8 @@ PAGE = """<!doctype html>
     }
 
     runButton.addEventListener("click", runAudit);
+    exampleSelect.value = "__DEFAULT_EXAMPLE_ID__";
+    loadExample(exampleSelect.value);
     runAudit();
   </script>
 </body>
@@ -334,7 +403,12 @@ app = FastAPI(title="AI Judge Citation Audit")
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    return PAGE.replace("__DEFAULT_ANSWER__", DEFAULT_ANSWER).replace("__DEFAULT_EVIDENCE__", DEFAULT_EVIDENCE)
+    return (
+        PAGE.replace("__DEFAULT_ANSWER__", DEFAULT_ANSWER)
+        .replace("__DEFAULT_EVIDENCE__", DEFAULT_EVIDENCE)
+        .replace("__EXAMPLES_JSON__", EXAMPLES_JSON)
+        .replace("__DEFAULT_EXAMPLE_ID__", DEFAULT_EXAMPLE_ID)
+    )
 
 
 @app.get("/config")
@@ -342,6 +416,8 @@ def config() -> dict[str, Any]:
     return {
         "name": "AI Judge Citation Audit",
         "status_labels": ["verified", "weakly_verified", "irrelevant", "unverifiable", "contradicted"],
+        "claim_support_labels": ["supported", "partially_supported", "unsupported", "contradicted", "unknown"],
+        "examples": list(EXAMPLES.keys()),
         "unverifiable_reason_codes": ["no_citation", "missing_external_evidence", "candidate_not_fetched", "fetch_error", "retrieval_blocked", "weak_match"],
         "evidence_provenance": ["model_candidate", "user_supplied", "fetched", "independently_attested", "notarized"],
         "source_isolation": ["raw_answer", "external_evidence", "verification_output"],

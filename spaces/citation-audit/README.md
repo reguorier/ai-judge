@@ -8,6 +8,7 @@ This HuggingFace Space is the public self-serve demo for AI Judge Citation Audit
 - Labels citations as `verified`, `weakly_verified`, `irrelevant`, `unverifiable`, or `contradicted`.
 - Shows why an item is `unverifiable`: missing evidence, unfetched model candidate, fetch error, blocked retrieval, weak match, or no citation.
 - Shows evidence provenance: model candidate, user-supplied, fetched, independently attested, or notarized.
+- Separates citation status from claim support, including the real-source / overclaimed-causation case.
 - Preserves Certification ID, Replay Ledger hash, and Evidence Broker summary.
 - Runs without model APIs or browser bridges.
 
@@ -18,6 +19,9 @@ This HuggingFace Space is the public self-serve demo for AI Judge Citation Audit
 3. Upload this folder plus the repository `core/` package, or deploy from the full GitHub repository with this folder as the Space root.
 4. Pin the Space README to the GitHub repository: `https://github.com/reguorier/ai-judge`.
 
-## Demo prompt
+## Demo prompts
 
-The default prompt intentionally includes a suspicious citation. The expected result is `unverifiable` or `irrelevant`, not `verified`.
+The Space includes two built-in examples:
+
+- Fabricated Stanford-style citation: expected `unverifiable`, not false.
+- Real source, unsupported causal claim: expected citation `verified`, source `relevant`, claim support `contradicted`.
