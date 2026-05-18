@@ -1,6 +1,7 @@
 # Day 30 Stop / Go Decision
 
-Status: decision template
+Status: active decision template
+Last refreshed: 2026-05-18 22:04 HKT
 
 ## Inputs
 
@@ -14,10 +15,10 @@ Primary source files:
 
 | Signal | Threshold | Actual | Pass |
 |---|---:|---:|---|
-| GitHub stars | 100 | TBD | TBD |
-| Distinct users / replies / issues | 20 | TBD | TBD |
-| Pro requests | 3 | `growth/pro_interest_status.md` request count | TBD |
-| Paid users, invoice requests, or manual sponsor support | 1 | `paid + invoice_requested` in `growth/pro_interest_status.md`; `paid + payment_intent` in `growth/sponsor_status.md` | TBD |
+| GitHub stars | 100 | 3 | No |
+| Distinct users / replies / issues | 20 | 5 open repo issues + 2 substantive external replies + 2 taxonomy issues pending | Not yet |
+| Pro requests | 3 | 0 | No |
+| Paid users, invoice requests, or manual sponsor support | 1 | 0 | No |
 
 ## Pro signal interpretation
 
@@ -64,3 +65,13 @@ Next actions:
 ## Default decision
 
 If unsure, choose Pivot Demo Story. It preserves learning without pretending there is paid demand.
+
+## Current Lean
+
+As of 2026-05-18, the strongest signal is not paid demand yet. The strongest signal is research/community fit around the claim-span/source boundary:
+
+- Eval4SD organizer fit is positive.
+- Article 11 / governance feedback produced the real-source-overclaimed-causation benchmark case.
+- LegalCiteBench and RAGChecker taxonomy issues are live and awaiting replies.
+
+Keep monetization capture available, but spend the next automatable cycle on submission completion, benchmark credibility, and reply conversion before adding billing complexity.

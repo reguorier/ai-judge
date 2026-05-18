@@ -1,22 +1,23 @@
 # 30-Day Metrics Dashboard
 
-Status: active tracking template
+Status: active tracking
+Last refreshed: 2026-05-18 22:04 HKT
 
 ## Targets
 
 | Metric | Day 30 continue threshold | Current |
 |---|---:|---:|
 | GitHub stars | 100 | 3 |
-| Distinct users / replies / issues | 20 | 5 open issues + 2 substantive replies |
-| Pro feature requests | 3 | TBD |
-| Paid users or invoice requests | 1 | TBD |
+| Distinct users / replies / issues | 20 | 5 open repo issues + 2 substantive external replies + 2 taxonomy issues pending |
+| Pro feature requests | 3 | 0 |
+| Paid users or invoice requests | 1 | 0 |
 
 ## Channel tracking
 
 | Channel | URL | Status | Visits | Replies | Stars attributed | Pro asks | Notes |
 |---|---|---|---:|---:|---:|---:|---|
-| Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | deploy_auth_blocked | TBD | TBD | TBD | TBD | Sample switcher is ready in GitHub; deploy helper is prepared, but HF push needs `HF_TOKEN`. |
-| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live | TBD | 0 | TBD | TBD | Issues #2-#5 created for benchmark, labels, batch audit, and demos. |
+| Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live_http_200_checked_2026-05-18 | TBD | TBD | TBD | TBD | Space page is reachable; sample switcher remains a code/deploy follow-up if HF write access is available. |
+| GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; #2-#5 are the primary contribution funnel. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
 | X / short-form | https://x.com/liuweidi2/status/2055973517779521750 | live | TBD | TBD | TBD | TBD | First short-form post published. |
@@ -25,10 +26,10 @@ Status: active tracking template
 | Hacker News | https://news.ycombinator.com/showlim | blocked_platform_show_hn_restriction | 0 | 0 | 0 | 0 | HN returned the current Show HN restriction page for this account context. |
 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but no activation code is available for this launch cycle. |
 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
-| Outreach email | growth/outreach_status.md | batch_001_send_packet_ready_not_sent | 0 | 0 | 0 | 0 | 10 real targets researched; 4 P0 direct emails converted into mailto links and `.eml` drafts; event logger added. |
+| Outreach email | growth/outreach_status.md | sent_4_reply_1_benchmark_case_1 | 0 | 1 | TBD | 0 | O001-O004 were sent through QQ Mail; O002 produced a high-value benchmark/taxonomy signal. Wait 3-5 days before routine follow-ups unless replies arrive. |
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | open_no_reply_checked_2026-05-18 | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition; checked by `gh issue view`, no comments yet. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | open_no_reply_checked_2026-05-18 | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support; checked by `gh issue view`, no comments yet. |
-| Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | openreview_login_blocked_packet_pushed | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview form packet and PDF are ready/pushed, but Safari reached `openreview.net/login` and needs account login before upload. |
+| Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | openreview_signup_submitted_waiting_confirmation | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview packet and PDF are ready. Signup submitted successfully, but the confirmation email is still pending. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
 | Pro early access | growth/pro_interest_status.md | intent_tracking_ready | 0 | 0 | 0 | 0 | Landing page CTA now collects workflow fields; Pro requests/payments can be logged from events. |
