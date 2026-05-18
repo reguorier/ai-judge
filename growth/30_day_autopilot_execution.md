@@ -22,6 +22,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | V2EX post | Ready for confirmation | `growth/v2ex_launch_post.md` |
 | Zhihu long-form post | Live | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | X / short thread | Live | https://x.com/liuweidi2/status/2055973517779521750 |
+| X professional review wave | Ready for confirmation | `growth/x_professional_wave_001.md` |
 | Quote-card layouts | Ready | `product/social_quote_cards.html` |
 | Blog draft | Ready | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` |
 | Blog outline | Archived planning aid | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md` |

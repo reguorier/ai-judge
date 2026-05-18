@@ -20,7 +20,7 @@ Last refreshed: 2026-05-18 22:04 HKT
 | GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_with_forms | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; structured issue forms now collect benchmark cases and batch audit demand. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
-| X / short-form | https://x.com/liuweidi2/status/2055973517779521750 | live | TBD | TBD | TBD | TBD | First short-form post published. |
+| X / short-form | https://x.com/liuweidi2/status/2055973517779521750 | live_wave_001_prepared | TBD | TBD | TBD | TBD | First short-form post is live; professional review wave is prepared in `growth/x_professional_wave_001.md` and needs action-time confirmation before posting. |
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |
 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ | posted_then_removed_by_moderation | TBD | 1 | TBD | TBD | Post exists for the author but was removed from r/LocalLLaMA by moderation. |
 | Hacker News | https://news.ycombinator.com/showlim | blocked_platform_show_hn_restriction | 0 | 0 | 0 | 0 | HN returned the current Show HN restriction page for this account context. |
