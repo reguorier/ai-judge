@@ -25,7 +25,7 @@ AI Judge's next public wedge is the `claim-span + source` audit layer: citation 
 
 | ID | Priority | Target | Route | Asset | Status |
 |---|---:|---|---|---|---|
-| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` | draft_ready |
+| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` | fit_query_sent_private_log |
 | W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | sent_private_log |
 | W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_route_found |
 | W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_page_blocked |
@@ -202,7 +202,7 @@ Reguorier
 
 ## Next Automatable Step
 
-Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, prepare a public GitHub Issue draft but do not publish it without explicit public-post confirmation. For W003-004, retry the Aequis contact page from another browser/network before marking it failed.
+Continue converting W003-001 into a 4-page short / position paper while waiting for organizer feedback. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, prepare a public GitHub Issue draft but do not publish it without explicit public-post confirmation. For W003-004, retry the Aequis contact page from another browser/network before marking it failed.
 
 Detailed third-party outreach metadata is intentionally kept out of public GitHub. The private local execution ledger lives under `.ai-judge/growth/`.
 
