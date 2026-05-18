@@ -51,4 +51,4 @@
 - [x] Restart local server on port 8501 and verify `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary`.
 - [x] Full `pytest` suite: 114 passed.
 - [x] Full `ruff check .` was attempted; it still reports pre-existing repo-wide lint debt outside this change scope, while touched-file ruff passes.
-- [ ] Commit and push to GitHub.
+- [x] Commit and push to GitHub.
