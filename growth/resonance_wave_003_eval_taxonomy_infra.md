@@ -220,3 +220,4 @@ Detailed third-party outreach metadata is intentionally kept out of public GitHu
 - Eval4SD anonymous LaTeX draft: `papers/eval4sd2026/main.tex`
 - Eval4SD bibliography: `papers/eval4sd2026/references.bib`
 - Eval4SD checklist: `papers/eval4sd2026/submission_checklist.md`
+- Eval4SD pre-submit check: `tools/check_eval4sd_packet.py`

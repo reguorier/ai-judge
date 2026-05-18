@@ -46,4 +46,10 @@ cd papers/eval4sd2026
 latexmk -pdf main.tex
 ```
 
+Before any PDF build or OpenReview upload, run:
+
+```bash
+python tools/check_eval4sd_packet.py
+```
+
 Do not include GitHub, Hugging Face, author names, or private correspondence in the double-blind PDF. Public artifact links can be restored for a non-archival version, camera-ready, or appendix if the review policy allows it.
