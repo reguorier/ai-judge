@@ -1,0 +1,184 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{url}
+
+\title{Source-Isolated Citation and Claim-Support Audit for LLM Outputs in Specialized Domains}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language models increasingly produce source-heavy outputs in legal, medical, financial, and scientific workflows. In these domains, citation errors are not merely factual mistakes; they can become publication, compliance, and professional-risk events. We propose source-isolated citation audit: a lightweight protocol that keeps a model's raw answer, external evidence, and audit verdict separate. The protocol prevents model-mentioned sources from verifying themselves, labels citations as \texttt{verified}, \texttt{weakly\_verified}, \texttt{irrelevant}, \texttt{unverifiable}, or \texttt{contradicted}, and adds evidence-provenance grades plus reason codes for failed verification. We instantiate the protocol in a deterministic local-first audit system that emits human-readable reports, automation-friendly JSON, certification identifiers, and replay-ledger hashes. A benchmark of 100 deterministic cases and 11 hard cases shows how the protocol handles fabricated sources, real-but-irrelevant sources, contradicted claims, missing evidence, and a hard case where a real source reports association while the model claims causation. We argue that citation-level audit is a practical minimum boundary for deployment, but specialized-domain workflows ultimately require the smaller audit atom of \texttt{claim-span + source}.
+\end{abstract}
+
+\section{Motivation}
+
+LLM evaluation often collapses distinct questions into one trust decision:
+
+\begin{enumerate}[leftmargin=*]
+  \item Does the source exist?
+  \item Is the source related to the generated claim?
+  \item Does the source support the exact claim span?
+  \item Was the evidence independently fetched, user-supplied, attested, or merely mentioned by the model?
+  \item Should the answer be allowed into a report, memo, audit trail, or compliance record?
+\end{enumerate}
+
+This collapse is risky in specialized domains. A citation can be real and on-topic while still failing to support the model's conclusion. A compact example is association versus causation: the cited source may report a correlation and explicitly disclaim causality, while the model states that the source proves a causal effect. Calling that source simply ``verified'' overstates trust; calling it ``irrelevant'' hides that it was still related. The audit output must separate source existence, source relevance, claim support, and evidence provenance.
+
+Eval4SD explicitly invites work on benchmarking, domain research replication, and evaluation methodology for specialized-domain LLM use \cite{eval4sd2026cfp}. Citation reliability is a narrow but high-leverage instance of that larger agenda.
+
+\section{Protocol}
+
+The central rule is:
+
+\begin{quote}
+A model-mentioned source is a candidate, not evidence.
+\end{quote}
+
+The protocol keeps three layers separate:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+Layer & Description \\
+\midrule
+Raw answer & Original model text, preserved and not rewritten. \\
+External evidence & User-supplied, fetched, attested, or notarized evidence. \\
+Audit verdict & Labels, reason codes, provenance, hashes, and counts. \\
+\bottomrule
+\end{tabular}
+\caption{Source-isolation layers.}
+\label{tab:layers}
+\end{table}
+
+The method can be summarized as:
+
+\begin{quote}
+Raw LLM answer $\rightarrow$ evidence broker $\rightarrow$ citation verification $\rightarrow$ claim-support audit $\rightarrow$ replay ledger and certification identifier.
+\end{quote}
+
+This design avoids a common failure mode in council-style or judge-style systems: using one model's fluent explanation to certify another model's hallucinated source. The judge does not rewrite the answer. It emits structured audit artifacts that can be replayed.
+
+\section{Labels and Provenance}
+
+The citation-level labels are intentionally simple:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+Label & Meaning \\
+\midrule
+\texttt{verified} & Strong external evidence match and relevant context. \\
+\texttt{weakly\_verified} & Partial support or weak anchor precision. \\
+\texttt{irrelevant} & Source exists but does not support the cited context. \\
+\texttt{unverifiable} & Isolated evidence is insufficient; not false by default. \\
+\texttt{contradicted} & External evidence explicitly refutes the citation or claim. \\
+\bottomrule
+\end{tabular}
+\caption{Citation audit labels.}
+\label{tab:labels}
+\end{table}
+
+The system records reason codes for \texttt{unverifiable}: no citation, missing external evidence, candidate not fetched, fetch error, retrieval blocked, and weak match. Evidence provenance is also recorded as \texttt{model\_candidate}, \texttt{user\_supplied}, \texttt{fetched}, \texttt{independently\_attested}, or \texttt{notarized}. This distinction matters because user-supplied evidence is useful, but not equivalent to independently fetched or attested evidence.
+
+\section{Implementation}
+
+We implement a deterministic citation-audit path that requires no model API calls. The system accepts model answers and external evidence objects, extracts candidate citations, compares them against the evidence layer, and emits HTML and JSON reports. The report includes:
+
+\begin{itemize}[leftmargin=*]
+  \item citation status counts;
+  \item evidence provenance counts;
+  \item unverifiable reason-code counts;
+  \item claim-support status counts;
+  \item support-failure reason codes;
+  \item a certification identifier;
+  \item a replay-ledger hash.
+\end{itemize}
+
+The current claim-support block covers a narrow but important failure family: a real and relevant source that reports association while the model states causation. In that case, the system emits \texttt{citation\_status=verified}, \texttt{source\_relevance=relevant}, and \texttt{claim\_support=contradicted}, with \texttt{support\_failure\_code=overclaimed\_causation}.
+
+\section{Evaluation}
+
+We use two deterministic benchmarks. The default benchmark contains 100 cases balanced across the five citation labels. The hard benchmark contains 11 public launch cases designed to exercise boundary conditions.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Benchmark & Cases & Passed & Failed & Accuracy \\
+\midrule
+\texttt{citation-bench-100} & 100 & 100 & 0 & 1.00 \\
+\texttt{citation-bench-hard-11} & 11 & 11 & 0 & 1.00 \\
+\bottomrule
+\end{tabular}
+\caption{Deterministic benchmark snapshot.}
+\label{tab:benchmarks}
+\end{table}
+
+The hard benchmark covers fabricated sources, real-but-irrelevant sources, contradicted sources, weak matches, missing or blocked evidence, and the real-source overclaimed-support case.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Expected status & Passed & Total \\
+\midrule
+\texttt{verified} & 2 & 2 \\
+\texttt{weakly\_verified} & 2 & 2 \\
+\texttt{irrelevant} & 2 & 2 \\
+\texttt{unverifiable} & 2 & 2 \\
+\texttt{contradicted} & 3 & 3 \\
+\bottomrule
+\end{tabular}
+\caption{Hard benchmark category coverage.}
+\label{tab:hard}
+\end{table}
+
+The most important row is not a fabricated citation. It is a real-source / unsupported-conclusion case:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Citation & Relevance & Claim support & Failure code \\
+\midrule
+\texttt{verified} & \texttt{relevant} & \texttt{contradicted} & \texttt{overclaimed\_causation} \\
+\bottomrule
+\end{tabular}
+\caption{Real source, unsupported conclusion.}
+\label{tab:claimsupport}
+\end{table}
+
+This row is the core methodological point: a source can be real and relevant while the generated conclusion is not supported.
+
+\section{Related Work}
+
+HalluCiteChecker formalizes hallucinated citation detection and verification for AI-generated scientific writing and provides a lightweight toolkit \cite{sakai2026hallucitechecker}. LegalCiteBench focuses on citation reliability in legal language models, including citation retrieval, completion, error detection, case matching, and verification or correction \cite{chen2026legalcitebench}. AEX addresses a different layer of trust: request-output attestation and provenance at the LLM API boundary \cite{guan2026aex}. Our work is complementary. It asks whether a cited answer should pass a citation and claim-support gate before entering a report, audit trail, or attestation chain.
+
+\section{Discussion and Limitations}
+
+Citation-level audit is a practical first boundary. It is not complete factual truth certification. A single citation can support one clause, be silent on another, and contradict a third. Specialized-domain systems therefore need \texttt{claim-span + source} as the atomic unit of audit.
+
+The present implementation is deterministic and intentionally narrow. It can miss subtle semantic failures outside its encoded support rules. It also depends on the quality and provenance of the external evidence layer. Network fetching introduces access, paywall, and reproducibility issues. Finally, the benchmark is a deployment-oriented regression suite, not yet a broad community benchmark. These limitations are useful constraints: they keep the system from overclaiming what it certifies.
+
+\section{Conclusion}
+
+Specialized-domain LLM workflows need citation audits that do not let generated source claims verify themselves. Source-isolated citation audit separates raw answer, external evidence, and audit verdict; distinguishes \texttt{unverifiable} from false; and records whether a real source actually supports the generated claim. The immediate product boundary is citation-level verification. The research boundary is claim-span/source support.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

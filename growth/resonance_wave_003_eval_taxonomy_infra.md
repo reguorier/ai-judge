@@ -25,7 +25,7 @@ AI Judge's next public wedge is the `claim-span + source` audit layer: citation 
 
 | ID | Priority | Target | Route | Asset | Status |
 |---|---:|---|---|---|---|
-| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` | fit_query_sent_private_log |
+| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `papers/eval4sd2026/main.tex` | submission_packet_prepared |
 | W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | sent_private_log |
 | W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_posted |
 | W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_route_unverified |
@@ -64,9 +64,9 @@ support_failure_code = overclaimed_causation
 
 Immediate next action:
 
-1. Convert the current draft into a 4-page short/position paper.
-2. Add a compact method figure: Raw Answer -> Evidence Broker -> Citation Verification -> Claim Support Audit -> Replay Ledger.
-3. Add one table for `citation-bench-100`, one table for `citation-bench-hard-11`, and one row for overclaimed causation.
+1. Replace the generic LaTeX class in `papers/eval4sd2026/main.tex` with the official ACL template files before PDF build.
+2. Keep the paper anonymous for double-blind review.
+3. Refresh benchmark numbers immediately before PDF export.
 4. Submit only after action-time confirmation.
 
 Working title:
@@ -202,7 +202,7 @@ Reguorier
 
 ## Next Automatable Step
 
-Continue converting W003-001 into a 4-page short / position paper while waiting for organizer feedback. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, monitor the public GitHub Issue and only reply with technical taxonomy details. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
+Continue by adding the official ACL template to `papers/eval4sd2026/`, building the anonymous PDF, and refreshing benchmark numbers immediately before submission. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, monitor the public GitHub Issue and only reply with technical taxonomy details. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
 
 Detailed third-party outreach metadata is intentionally kept out of public GitHub. The private local execution ledger lives under `.ai-judge/growth/`.
 
@@ -214,3 +214,9 @@ Detailed third-party outreach metadata is intentionally kept out of public GitHu
 ## Public Links
 
 - LegalCiteBench taxonomy exchange issue: `https://github.com/Sijia711/LegalCiteBench/issues/1`
+
+## Submission Packet
+
+- Eval4SD anonymous LaTeX draft: `papers/eval4sd2026/main.tex`
+- Eval4SD bibliography: `papers/eval4sd2026/references.bib`
+- Eval4SD checklist: `papers/eval4sd2026/submission_checklist.md`
