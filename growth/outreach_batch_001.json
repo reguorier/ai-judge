@@ -39,6 +39,15 @@
       "source": "https://factlens.dev/",
       "subject": "Citation hallucination edge cases?",
       "body": "Hi Javier,\\n\\nI am building AI Judge Citation Audit, an open-source tool that checks AI-generated answers at the citation level and preserves a Replay Ledger of the original answer, supplied evidence, and verification outcome.\\n\\nI saw your work on hallucination detection and thought you might have useful instincts on failure cases. AI Judge deliberately keeps the scope narrow: citation labels are verified, weakly_verified, irrelevant, unverifiable, and contradicted.\\n\\nDemo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit\\nRepo: https://github.com/reguorier/ai-judge\\n\\nI am collecting adversarial benchmark cases. If you have one case where an answer sounds grounded but the source trail breaks, I would love to add an anonymized version or just get your critique of the taxonomy.\\n\\nBest,\\nReguorier"
+    },
+    {
+      "id": "O005",
+      "priority": "P0",
+      "target": "Eval4SD organizers",
+      "to": "eval4sd-organizers@googlegroups.com",
+      "source": "https://openreview.net/group?id=GSCL.org/KONVENS/2026/Workshop/Eval4SD",
+      "subject": "OpenReview account login/activation issue before Eval4SD submission",
+      "body": "Hi Eval4SD organizers,\\n\\nThank you again for confirming that the source-isolated citation audit topic fits the workshop.\\n\\nI have prepared the short/position paper packet, but I am currently blocked by OpenReview account access. The account confirmation link was opened and the profile registration form was completed with a public project URL, current affiliation/history, and expertise fields. The latest OpenReview confirmation email says the profile is currently under moderation. However, the Eval4SD submission route still asks me to log in. A later login attempt generated a fresh activation token and sent the account through the \\\"Complete Registration\\\" flow again; after completing it, OpenReview returned to the public venues page still showing \\\"Login.\\\"\\n\\nWould you recommend waiting for OpenReview account activation, contacting OpenReview support, or using another submission route if the account remains blocked?\\n\\nThe paper packet is ready and anonymous; I do not want to miss the workshop submission process because of account activation or moderation delay.\\n\\nBest,\\nReguorier"
     }
   ]
 }
