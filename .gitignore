@@ -16,6 +16,7 @@ rust-engine/target/
 .ruff_cache/
 .cache/
 node_modules/
+uv.lock
 .omx/
 .ai-judge/
 raw/
