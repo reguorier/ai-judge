@@ -1566,14 +1566,14 @@ function buildPublishGateChecks() {
       text: "席位覆盖率",
       hint: "网页席位不能把部分返回伪装成全模型共识",
       meta: coverage.total ? `${coverage.ok}/${coverage.total} · ${coverage.pct}%` : "等待席位",
-      state: !hasVerdict ? "block" : coverage.total && coverage.pct >= 60 ? "ok" : "warn",
+      state: !hasVerdict ? "block" : coverage.total && (coverage.pct >= 60 || state.engine !== "web") ? "ok" : "block",
     },
     {
       key: "web_recovery",
       text: "网页答案回收",
       hint: "失败、慢生成、旧页面答案必须显式标记",
       meta: supplementable ? `${supplementable} 席待回收` : hardFailures ? `${hardFailures} 席失败` : "无待回收",
-      state: supplementable ? "warn" : hardFailures ? "block" : "ok",
+      state: supplementable || hardFailures ? "block" : "ok",
     },
     {
       key: "evidence",
