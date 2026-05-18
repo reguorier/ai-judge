@@ -8,6 +8,8 @@ from bridges.chrome_fixed_tab_bridge import (
     _build_submission_check_js,
     _deepseek_prepare_verified,
     _doubao_prepare_verified,
+    _page_state_needs_reload,
+    _readiness_can_recover,
     _should_send_final_answer_nudge,
     _seat_prompt,
 )
@@ -91,7 +93,32 @@ def test_mimo_fresh_navigation_treats_hash_chat_ids_as_stale_routes():
 
     assert "hashSensitiveNavigation" in js
     assert "hash_route_mismatch" in js
-    assert "mimo_existing_chat_reused" in js
+    assert "mimo_stale_chat_route" in js
+    assert "aistudio\\.xiaomimimo\\.com" in js
+
+
+def test_mimo_provider_limit_overlay_is_recoverable_once():
+    assert _page_state_needs_reload({
+        "reason": "provider_quota_limited",
+        "url": "https://aistudio.xiaomimimo.com/#/chat/123",
+    })
+    assert _readiness_can_recover({
+        "page_blocked": True,
+        "reason": "provider_quota_limited",
+        "url": "https://aistudio.xiaomimimo.com/#/chat/123",
+    })
+    assert not _page_state_needs_reload({
+        "reason": "provider_quota_limited",
+        "url": "https://grok.com/",
+    })
+
+
+def test_mimo_clear_blocking_ui_dismisses_dialogs_and_reports_quota():
+    js = _build_clear_blocking_ui_js()
+
+    assert "mimo_blocking_ui_dismissed" in js
+    assert "mimo_blocking_icon_closed" in js
+    assert "provider_quota_limited" in js
     assert "aistudio\\.xiaomimimo\\.com" in js
 
 

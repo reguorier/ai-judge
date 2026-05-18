@@ -46,6 +46,7 @@ from core.evidence_gap_queue import build_evidence_gap_queue, resolve_gap_task
 from core.eval_dataset import build_eval_case_from_verdict, collect_eval_cases
 from core.eval_metrics import compute_evidence_quality_metrics
 from core.execution_drivers import build_bridge_blocked_verdict, decide_execution
+from core.final_report import attach_final_report, build_final_report, render_final_report_html
 from core.grand_judge import run_grand_judge_mvp
 from core.human_review import human_review_status, sign_human_review
 from core.modes import list_modes, resolve_mode
@@ -63,6 +64,8 @@ app = Flask(__name__)
 if CORS:
     CORS(app)
 
+PRODUCT_VERSION = "3.8.0"
+PRODUCT_NAME = "AI Judge Trust Workbench"
 TASKS = TaskManager()
 RUNS_DIR = _PROJECT_ROOT / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
@@ -122,6 +125,7 @@ CLEAN_SESSION_RESCUE_CODES = {
 def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
     _attach_rescue_plan(verdict)
     attach_cross_temporal_analysis(verdict)
+    attach_final_report(verdict)
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "verdict.json").write_text(json.dumps(verdict, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -136,6 +140,8 @@ def _load_run(run_id: str) -> dict[str, Any] | None:
     result = TASKS.get_result(run_id)
     if result:
         _attach_rescue_plan(result)
+        attach_cross_temporal_analysis(result)
+        attach_final_report(result)
         return result
     run_file = RUNS_DIR / run_id / "verdict.json"
     if run_file.exists():
@@ -144,6 +150,7 @@ def _load_run(run_id: str) -> dict[str, Any] | None:
             attach_cross_temporal_analysis(result)
         if isinstance(result, dict):
             _attach_rescue_plan(result)
+            attach_final_report(result)
         return result
     return None
 
@@ -729,6 +736,13 @@ def _attach_product_run_metadata(
     chief = _chief_judge_payload(chief_judge)
     selected = list(verdict.get("seats") or [])
     verdict["chief_judge"] = chief
+    verdict["product_version"] = PRODUCT_VERSION
+    verdict["product_layer"] = {
+        "name": PRODUCT_NAME,
+        "stable_mode": "5-minute trustworthy closeout",
+        "lab_mode": "bridge diagnostics, seat reliability, benchmark evidence",
+        "human_gavel": "draft_reviewed_publishable",
+    }
     verdict["seat_roster"] = {
         "selected": selected,
         "abstained": abstained,
@@ -777,6 +791,7 @@ def _attach_product_run_metadata(
         verdict["single_judge_baseline"] = baseline
     else:
         baseline["label"] = f"{chief['name']} 单模型对照"
+    attach_final_report(verdict)
 
 
 def _attach_citation_mvp(verdict: dict[str, Any], run_id: str | None = None) -> dict[str, Any] | None:
@@ -1844,14 +1859,115 @@ def _run_supplement_worker(
 def health():
     return jsonify({
         "status": "ok",
-        "version": "3.7.0",
+        "version": PRODUCT_VERSION,
+        "product": PRODUCT_NAME,
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["local", "web"],
         "execution_drivers": ["local_synthetic", "web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
         "grand_judge_mvp": "citation_verification",
         "evidence_os": ["evidence_broker", "blind_cross_validation", "evidence_gap_queue", "human_review", "eval_dataset"],
+        "product_layers": ["stable_closeout", "lab_reliability_console", "human_gavel", "benchmark_summary"],
         "web_requires_calibration": True,
         "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+@app.route("/api/product/capabilities")
+def product_capabilities():
+    return jsonify({
+        "version": PRODUCT_VERSION,
+        "name": PRODUCT_NAME,
+        "positioning": "A desktop-first decision reliability OS for turning multi-model answers into an auditable, human-confirmed decision.",
+        "stable_mode": {
+            "label": "简约版",
+            "job": "让普通用户 5 分钟内拿到可读、可执行、可复核的最终判断。",
+            "surfaces": ["请求录入", "运行状态", "最终结论", "关键风险", "人工确认"],
+            "hidden_complexity": ["CDP", "固定标签", "原始 transcript", "多轮评分矩阵"],
+        },
+        "lab_mode": {
+            "label": "专业版",
+            "job": "让高级用户诊断模型席位、桥接稳定性、评分差异和证据链可靠性。",
+            "surfaces": ["席位矩阵", "桥接监控", "评分轮次", "横纵分析", "可靠性基准", "底层日志"],
+        },
+        "human_gavel": {
+            "states": [
+                {"id": "draft", "label": "Draft", "meaning": "判词已生成，但仍有席位、证据或风险门禁待确认。"},
+                {"id": "reviewed", "label": "Reviewed", "meaning": "硬门禁通过，等待用户明确承担发布判断。"},
+                {"id": "publishable", "label": "Publishable", "meaning": "用户已确认该判断可作为当前决策依据。"},
+            ],
+            "confirmation_copy": "我确认这个判断可以作为当前决策依据",
+        },
+        "market_fit": {
+            "strengths": [
+                "多模型不是简单并列回答，而是带席位策略、回收、评分和发布门禁。",
+                "Grok/Gork 等慢席位可作为可选异议，不再阻断日常出结果。",
+                "网页桥接失败会生成可执行救援计划，而不是让用户猜卡在哪里。",
+            ],
+            "known_gaps": [
+                "仍依赖网页登录态和页面结构，稳定性弱于官方 API 产品。",
+                "专业版信息密度高，需要持续打磨文案层级和默认折叠。",
+                "benchmark 目前是本地运行统计与产品基准入口，仍需要公开数据集背书。",
+            ],
+        },
+    })
+
+
+@app.route("/api/benchmarks/summary")
+def benchmark_summary():
+    limit = max(1, min(200, int(request.args.get("limit", "80"))))
+    verdicts = list(_iter_saved_verdicts(limit=limit))
+    try:
+        bridge = bridge_status()
+    except Exception:
+        bridge = {"seats": [], "seat_browser_matrix": []}
+    scoreboard = _build_seat_scoreboard(verdicts=verdicts, bridge=bridge)
+    scored = [row for row in scoreboard.get("seats", []) if row.get("average_score") is not None]
+    ready_rows = [row for row in scoreboard.get("seats", []) if row.get("ready")]
+    failures = sum(int(row.get("failure_count") or 0) for row in scoreboard.get("seats", []))
+    successes = sum(int(row.get("success_count") or 0) for row in scoreboard.get("seats", []))
+    total_executions = successes + failures
+    recovery_rate = round(successes / total_executions, 3) if total_executions else None
+    return jsonify({
+        "version": PRODUCT_VERSION,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "runs_considered": scoreboard.get("runs_considered", 0),
+        "cards": [
+            {
+                "id": "citation",
+                "label": "Citation Benchmark",
+                "score": "Replay Ledger",
+                "status": "active",
+                "summary": "验证每条关键引用、证据缺口和人工复核状态是否可追踪。",
+            },
+            {
+                "id": "decision",
+                "label": "Decision Benchmark",
+                "score": f"{len(scored)} seats" if scored else "pending",
+                "status": "active" if scored else "empty",
+                "summary": "用历史判词和席位评分观察共识稳定性、噪声与主审偏差。",
+            },
+            {
+                "id": "web_recovery",
+                "label": "Web Seat Recovery",
+                "score": f"{round(recovery_rate * 100)}%" if recovery_rate is not None else "pending",
+                "status": "active" if total_executions else "empty",
+                "summary": "统计网页席位成功、失败、慢生成和一键回收后的执行有效率。",
+            },
+            {
+                "id": "cdp_reliability",
+                "label": "CDP Reliability",
+                "score": f"{len(ready_rows)}/{len(scoreboard.get('seats', []))}",
+                "status": "active" if ready_rows else "needs_calibration",
+                "summary": "检测固定标签、CDP/Apple Events、网页与桌面通道是否能稳定后台执行。",
+            },
+        ],
+        "scoreboard": {
+            "runs_considered": scoreboard.get("runs_considered", 0),
+            "ready_seats": len(ready_rows),
+            "total_seats": len(scoreboard.get("seats", [])),
+            "successes": successes,
+            "failures": failures,
+        },
     })
 
 
@@ -2693,6 +2809,13 @@ def _render_judge_answer(result: dict[str, Any]) -> str:
     )
 
 
+def _render_final_report(result: dict[str, Any]) -> str:
+    report = result.get("final_report") or build_final_report(result)
+    if not report:
+        return ""
+    return render_final_report_html(report)
+
+
 def _render_score_rounds(result: dict[str, Any]) -> str:
     bridge = result.get("web_bridge") or {}
     rounds = bridge.get("score_rounds") or []
@@ -3153,6 +3276,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     )
     raw_json = html.escape(json.dumps(result, ensure_ascii=False, indent=2))
     collection_html = _render_collection_summary(result)
+    final_report_html = _render_final_report(result)
     cross_temporal_html = _render_cross_temporal_analysis(result)
     judge_answer_html = _render_judge_answer(result)
     score_rounds_html = _render_score_rounds(result)
@@ -3171,6 +3295,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     citation_link = '<a href="#citation-verification">引用验证</a>' if citation_verification_html else ""
     evidence_os_link = '<a href="#evidence-os">Evidence OS</a>' if evidence_os_html else ""
     cross_temporal_link = '<a href="#cross-temporal">横纵收口</a>' if cross_temporal_html else ""
+    final_report_link = '<a href="#final-report">最终方案</a>' if final_report_html else ""
     return f"""<!doctype html>
 <html lang="zh-Hans">
 <head>
@@ -3213,6 +3338,23 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .section-head {{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }}
     .section-head p {{ margin:8px 0 0; }}
     .report-lead {{ font-size:16px; line-height:1.75; color:var(--text); background:#0f172a; border:1px solid var(--line); border-radius:8px; padding:14px; }}
+    .paper-report {{ border:1px solid var(--line); border-radius:8px; padding:22px; margin:18px 0; background:#101827; }}
+    .paper-heading h2 {{ font-size:24px; margin:6px 0; }}
+    .paper-kicker {{ margin:0; color:var(--accent); font-size:12px; font-weight:800; letter-spacing:0; }}
+    .paper-status {{ margin:0 0 14px; color:var(--muted); }}
+    .paper-meta {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:12px 0 16px; }}
+    .paper-meta div, .paper-block, .paper-postulate {{ border:1px solid var(--line); border-radius:8px; background:#0d1424; padding:13px; }}
+    .paper-meta span {{ display:block; color:var(--muted); font-size:11px; font-weight:800; margin-bottom:4px; }}
+    .paper-meta strong {{ display:block; overflow-wrap:anywhere; }}
+    .paper-block {{ margin:12px 0; }}
+    .paper-block h3, .paper-postulate h3 {{ margin-top:0; }}
+    .paper-abstract p {{ font-size:16px; line-height:1.75; }}
+    .paper-keywords {{ display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }}
+    .paper-keywords span {{ border:1px solid var(--line); border-radius:999px; padding:5px 8px; color:var(--muted); background:#0b1020; font-size:12px; }}
+    .paper-postulates {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:12px 0; }}
+    .paper-postulate span {{ display:block; color:var(--accent); font-size:11px; font-weight:800; margin-bottom:6px; }}
+    .paper-postulate small {{ display:block; color:var(--muted); line-height:1.5; }}
+    .paper-columns {{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }}
     .report-columns {{ display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.2fr); gap:12px; margin:12px 0; }}
     .report-column {{ border:1px solid var(--line); border-radius:8px; background:#101622; padding:14px; min-width:0; }}
     .report-column h3 {{ margin-top:0; }}
@@ -3239,6 +3381,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .actions a {{ color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:9px 12px; background:#101622; font-weight:700; }}
     @media (max-width: 760px) {{
       .summary-grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }}
+      .paper-meta, .paper-postulates, .paper-columns {{ grid-template-columns:1fr; }}
       .section-head {{ display:block; }}
       .report-columns {{ grid-template-columns:1fr; }}
       .mini-actions {{ justify-content:flex-start; margin-top:10px; }}
@@ -3259,9 +3402,10 @@ def _render_html_report(result: dict[str, Any]) -> str:
     <p class="badge">{html.escape(str(result.get("mode_emoji", "")))} {html.escape(str(result.get("verdict_label", "")))} · {result.get("confidence", 0)}%</p>
     <h1>{html.escape(str(result.get("one_liner", "AI Judge Verdict")))}</h1>
     <p class="question">{html.escape(str(result.get("question", "")))}</p>
-    <div class="actions"><a href="/">返回提问界面</a>{cross_temporal_link}{judge_answer_link}{score_rounds_link}{citation_link}{evidence_os_link}{seat_digest_link}{seat_answers_link}{mentor_supplements_link}{deliberation_link}</div>
+    <div class="actions"><a href="/">返回提问界面</a>{final_report_link}{cross_temporal_link}{judge_answer_link}{score_rounds_link}{citation_link}{evidence_os_link}{seat_digest_link}{seat_answers_link}{mentor_supplements_link}{deliberation_link}</div>
   </section>
   {collection_html}
+  {final_report_html}
   {cross_temporal_html}
   {judge_answer_html}
   {score_rounds_html}
@@ -3295,13 +3439,13 @@ document.addEventListener("click", (event) => {{
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="AI Judge v3.7 API Server")
+    parser = argparse.ArgumentParser(description=f"AI Judge v{PRODUCT_VERSION} API Server")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host")
     parser.add_argument("--port", type=int, default=8501, help="Bind port")
     parser.add_argument("--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
-    print("\n  AI Judge API Server v3.7.0")
+    print(f"\n  AI Judge API Server v{PRODUCT_VERSION}")
     print(f"  http://{args.host}:{args.port}")
     print(f"  {len(SEAT_PERSONAS)} seats available")
     print("  POST /api/judge now runs automatically\n")

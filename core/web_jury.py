@@ -17,6 +17,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from bridges.web_seat_bridge import run_web_seats
 from core.auto_jury import assemble_verdict
+from core.final_report import attach_final_report
 from core.modes import resolve_mode
 from core.scoring_v2 import score_claim_v2
 from core.seat_execution_policy import (
@@ -62,6 +63,7 @@ def run_web_jury(
             question=question,
             mode=mode,
             raw_results=raw_results,
+            bridge_config_overrides=bridge_config_overrides,
             progress=progress,
             trace=trace,
         )
@@ -191,6 +193,7 @@ def collect_resonance_followups(
     question: str,
     mode: str,
     raw_results: list[dict[str, Any]],
+    bridge_config_overrides: dict[str, Any] | None = None,
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> list[dict[str, Any]]:
@@ -221,10 +224,13 @@ def collect_resonance_followups(
             progress(f"二轮共振 {index}/{total}：{step}", min(0.90, mapped))
 
         try:
+            followup_overrides = dict(bridge_config_overrides or {})
+            followup_overrides["fresh_conversation_per_run"] = True
             results = run_web_seats(
                 question=str(prompt.get("prompt") or ""),
                 seats=[seat],
                 mode=mode,
+                config_overrides=followup_overrides,
                 progress=followup_progress,
                 trace=trace,
             )
@@ -490,6 +496,7 @@ def _attach_web_judge_explainability(
     bridge["seat_answer_digest"] = seat_digest
     verdict["judge_answer"] = judge_answer
     verdict["single_judge_baseline"] = single_baseline
+    attach_final_report(verdict)
 
 
 def build_score_rounds(scored_claims: list[dict[str, Any]]) -> list[dict[str, Any]]:

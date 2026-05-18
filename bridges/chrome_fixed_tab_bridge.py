@@ -954,20 +954,32 @@ def _page_state_needs_reload(result: dict[str, Any]) -> bool:
         return True
     reason = str(result.get("reason") or result.get("error") or "")
     if reason in {"provider_quota_limited", "login_required"}:
-        return False
+        return _mimo_provider_block_can_recover(result)
     return bool(result.get("page_error") or reason in RECOVERABLE_PAGE_REASONS)
 
 
 def _result_can_recover(result: dict[str, Any]) -> bool:
     reason = str((result or {}).get("error") or (result or {}).get("reason") or "")
+    if reason == "provider_quota_limited":
+        return _mimo_provider_block_can_recover(result or {})
     return reason in RECOVERABLE_PAGE_REASONS
 
 
 def _readiness_can_recover(readiness: dict[str, Any]) -> bool:
     reason = str((readiness or {}).get("reason") or "")
-    if reason in {"provider_quota_limited", "login_required", "composer_busy"}:
+    if reason == "provider_quota_limited":
+        return _mimo_provider_block_can_recover(readiness or {})
+    if reason in {"login_required", "composer_busy"}:
         return False
     return bool((readiness or {}).get("page_blocked") or not (readiness or {}).get("input_found"))
+
+
+def _mimo_provider_block_can_recover(result: dict[str, Any]) -> bool:
+    url = str((result or {}).get("url") or (result or {}).get("current_url") or "")
+    title = str((result or {}).get("title") or "")
+    body = str((result or {}).get("body_sample") or (result or {}).get("message") or "")
+    haystack = f"{url}\n{title}\n{body}"
+    return "aistudio.xiaomimimo.com" in haystack
 
 
 def _recover_fixed_tab(
@@ -1555,38 +1567,66 @@ def _build_clear_blocking_ui_js() -> str:
   const bodyText = document.body?.innerText || document.body?.textContent || "";
   const titleText = document.title || "";
   let dismissed = false;
+  const dismissedNames = [];
+  const textOf = el => (el?.innerText || el?.textContent || el?.getAttribute?.("aria-label") || el?.title || "").trim();
+  const clickDismiss = (name, el) => {
+    if (!el || !visible(el)) return false;
+    try {
+      (el.closest?.("button,[role='button'],a") || el).click();
+      dismissed = true;
+      dismissedNames.push(name);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
   const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(bodyText + "\\n" + titleText);
   const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText);
   const blankPage = (bodyText || "").trim().length < 8;
+  const isMimo = /aistudio\\.xiaomimimo\\.com/i.test(location.hostname);
+  const providerQuota = isMimo && /消息限制|使用上限|用量上限|次数已达|额度不足|usage limit|message limit|rate limit|too many requests|quota/i.test(bodyText + "\\n" + titleText);
   if (/chat\\.deepseek\\.com/i.test(location.hostname) && /已选择\\s*\\d+\\s*组对话/.test(bodyText)) {
     const cancel = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
       .find(el => visible(el) && /^(取消|Cancel)$/i.test((el.innerText || el.textContent || "").trim()));
-    if (cancel) {
-      try {
-        cancel.click();
-        dismissed = true;
-      } catch (_) {}
+    clickDismiss("deepseek_cancel_selection", cancel);
+  }
+  if (isMimo) {
+    const dialogs = Array.from(document.querySelectorAll("[role='dialog'],[aria-modal='true'],.modal,[class*='modal'],[class*='Modal'],[class*='dialog'],[class*='Dialog'],[class*='popup'],[class*='Popup'],[class*='mask'],[class*='Mask'],[class*='overlay'],[class*='Overlay']"))
+      .filter(visible);
+    const dialogText = dialogs.map(textOf).join("\\n");
+    const blockingDialog = dialogs.length && /限制|上限|额度|异常|网络|登录|遮挡|继续|知道|关闭|usage|limit|quota|error/i.test(dialogText || bodyText);
+    const closeCandidate = dialogs.flatMap(dialog => Array.from(dialog.querySelectorAll("button,[role='button'],a,span,div")))
+      .find(el => visible(el) && /^(关闭|取消|知道了|我知道了|好的|确认|稍后再说|暂不|继续使用|继续对话|Close|Cancel|OK|Got it|Later)$/i.test(textOf(el)));
+    if (clickDismiss("mimo_blocking_ui_dismissed", closeCandidate)) {
+      // A lightweight pause lets MiMo remove its mask before the next composer probe.
+    } else if (blockingDialog) {
+      const iconClose = dialogs.flatMap(dialog => Array.from(dialog.querySelectorAll("button,[role='button'],svg,i,span,div")))
+        .find(el => {
+          if (!visible(el)) return false;
+          const rect = el.getBoundingClientRect();
+          const label = [textOf(el), el.getAttribute?.("aria-label") || "", String(el.className || "")].join(" ");
+          return rect.width <= 48 && rect.height <= 48 && /(close|关闭|icon-close|modal-close|dialog-close|xmark|cross)/i.test(label);
+        });
+      clickDismiss("mimo_blocking_icon_closed", iconClose);
     }
   }
   if (pageError) {
     const retry = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
       .find(el => visible(el) && /^(再试一次|重试|Retry|Try again)$/i.test((el.innerText || el.textContent || "").trim()));
-    if (retry) {
-      try {
-        retry.click();
-        dismissed = true;
-      } catch (_) {}
-    }
+    clickDismiss("page_error_retry", retry);
   }
   return JSON.stringify({
     ok: true,
     dismissed,
+    dismissed_names: dismissedNames,
     page_error: pageError,
+    provider_quota_limited: providerQuota,
     chrome_crash: chromeCrash,
     blank_page: blankPage,
-    reason: chromeCrash ? "chrome_crash" : (pageError ? "page_error" : (blankPage ? "blank_page" : null)),
+    reason: chromeCrash ? "chrome_crash" : (providerQuota ? "provider_quota_limited" : (pageError ? "page_error" : (blankPage ? "blank_page" : null))),
     title: document.title,
-    url: location.href
+    url: location.href,
+    body_sample: bodyText.slice(0, 180)
   });
 })();
 """
@@ -1826,12 +1866,9 @@ def _build_fresh_navigation_js(fresh_url: str) -> str:
   }};
   const currentUrl = new URL(location.href);
   const targetUrl = new URL(target, location.href);
-  const mimoExistingChatRoute = /aistudio\\.xiaomimimo\\.com/i.test(targetUrl.hostname)
+  const mimoStaleChatRoute = /aistudio\\.xiaomimimo\\.com/i.test(targetUrl.hostname)
     && /^#\\/chat\\//.test(currentUrl.hash || "")
     && (targetUrl.hash || "") === "#/chat";
-  if (mimoExistingChatRoute) {{
-    return JSON.stringify({{ ok: true, navigated: false, reason: "mimo_existing_chat_reused", url: currentUrl.href, previous_url: previous }});
-  }}
   const hashSensitiveNavigation = /aistudio\\.xiaomimimo\\.com/i.test(targetUrl.hostname) || !!targetUrl.hash;
   const normalizeFull = value => String(value || "").replace(/\\/$/, "");
   const sameTarget = hashSensitiveNavigation
@@ -1844,9 +1881,9 @@ def _build_fresh_navigation_js(fresh_url: str) -> str:
     location.reload();
     return JSON.stringify({{ ok: true, navigated: false, reloaded: true, reason: "page_error", url: target, previous_url: previous }});
   }}
-  if ((hashMismatch || !sameTarget) && normalizeFull(location.href) !== normalizeFull(targetUrl.href)) {{
+  if ((mimoStaleChatRoute || hashMismatch || !sameTarget) && normalizeFull(location.href) !== normalizeFull(targetUrl.href)) {{
     location.href = targetUrl.href;
-    return JSON.stringify({{ ok: true, navigated: true, reason: hashMismatch ? "hash_route_mismatch" : "target_mismatch", url: targetUrl.href, previous_url: previous }});
+    return JSON.stringify({{ ok: true, navigated: true, reason: mimoStaleChatRoute ? "mimo_stale_chat_route" : (hashMismatch ? "hash_route_mismatch" : "target_mismatch"), url: targetUrl.href, previous_url: previous }});
   }}
   return JSON.stringify({{ ok: true, navigated: false, url: location.href }});
 }})();

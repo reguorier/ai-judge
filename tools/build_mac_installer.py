@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "3.7.0"
+VERSION = "3.8.0"
 ARCH = "arm64"
 MIN_MACOS = "13.0"
 APP_NAME = "AI Judge"

@@ -7,7 +7,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Asset | Status | URL or command |
 |---|---|---|
 | Hugging Face Space | Live, sample switcher prepared | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit |
-| GitHub release | Live signed artifact v3.6.0; source/docs v3.7.0 | https://github.com/reguorier/ai-judge/releases/tag/v3.6.0 |
+| GitHub release | Live signed artifact v3.6.0; source/docs v3.8.0 | https://github.com/reguorier/ai-judge/releases/tag/v3.6.0 |
 | Local demo | Live | `PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html --json reports/fake-citation-audit.json` |
 | Benchmark | Live | `PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95` |
 | Launch copy | Drafted | `growth/launch_posts.md` |
@@ -137,7 +137,7 @@ External launch follow-up status:
 - Hugging Face Community is logged in and email-confirmed, but discussion creation is blocked by repeated hCaptcha challenges: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new
 - Direct outreach Batch 001 is prepared with real targets and tailored drafts: `growth/outreach_batch_001.md`
 
-GitHub issues #2-#5 are live, v3.7.0 source/docs are pushed, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.
+GitHub issues #2-#5 are live, v3.8.0 source/docs are pushed, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.
 
 Research-first next wave:
 

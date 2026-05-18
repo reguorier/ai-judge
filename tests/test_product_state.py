@@ -16,6 +16,52 @@ def _load_api_server():
     return module
 
 
+def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmation_with_blockers():
+    root = Path(__file__).resolve().parents[1]
+    html = (root / "product" / "dashboard.html").read_text(encoding="utf-8")
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    assert 'id="result-view-link"' in html
+    assert "打开网站完整报告" in html
+    assert '$$("#view-link, #result-view-link")' in js
+    assert "const canConfirm = hasVerdict;" in js
+    assert 'state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block"' in js
+
+
+def test_product_capabilities_and_health_are_v38():
+    api_server = _load_api_server()
+    client = api_server.app.test_client()
+
+    health = client.get("/api/health").get_json()
+    capabilities = client.get("/api/product/capabilities").get_json()
+
+    assert health["version"] == "3.8.0"
+    assert "stable_closeout" in health["product_layers"]
+    assert capabilities["stable_mode"]["label"] == "简约版"
+    assert capabilities["lab_mode"]["label"] == "专业版"
+    assert capabilities["human_gavel"]["states"][2]["id"] == "publishable"
+
+
+def test_benchmark_summary_returns_four_reliability_cards(monkeypatch):
+    api_server = _load_api_server()
+    monkeypatch.setattr(api_server, "_iter_saved_verdicts", lambda limit=80: iter([]))
+    monkeypatch.setattr(api_server, "bridge_status", lambda: {
+        "seats": [{"id": "chatgpt", "provider": "OpenAI", "channel": "web", "ready": True}],
+        "seat_browser_matrix": [{"seat": "chatgpt", "ready": True, "target": "ChatGPT"}],
+    })
+
+    data = api_server.app.test_client().get("/api/benchmarks/summary").get_json()
+
+    assert data["version"] == "3.8.0"
+    assert [card["id"] for card in data["cards"]] == [
+        "citation",
+        "decision",
+        "web_recovery",
+        "cdp_reliability",
+    ]
+    assert data["scoreboard"]["ready_seats"] >= 1
+
+
 def test_chief_judge_metadata_attaches_to_local_verdict():
     api_server = _load_api_server()
     verdict = {
@@ -33,6 +79,8 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
 
     api_server._attach_product_run_metadata(verdict, chief_judge="deepseek", abstained_seats=["grok"])
 
+    assert verdict["product_version"] == "3.8.0"
+    assert verdict["product_layer"]["stable_mode"] == "5-minute trustworthy closeout"
     assert verdict["chief_judge"]["id"] == "deepseek"
     assert verdict["seat_roster"]["selected"] == ["chatgpt", "deepseek"]
     assert verdict["seat_roster"]["abstained"] == ["grok"]
@@ -40,6 +88,10 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
     assert "本轮主审：DeepSeek" in verdict["judge_answer"]["answer"]
     assert verdict["single_judge_baseline"]["label"] == "DeepSeek 单模型对照"
     assert verdict["roster_sensitivity"]
+    assert verdict["final_report"]["schema"] == "ai_judge.final_report.v1"
+    assert verdict["final_report"]["title"] == "AI Judge 最终方案报告"
+    assert verdict["final_report"]["postulates"]
+    assert "本轮判断成立" in verdict["final_report"]["abstract"]
 
 
 def test_progress_diagnostics_surface_page_recovery_states():

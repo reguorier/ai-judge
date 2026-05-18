@@ -164,7 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let webConfig = WKWebViewConfiguration()
         webConfig.preferences = preferences
         webView = WKWebView(frame: frame, configuration: webConfig)
-        webView.customUserAgent = "AIJudgeDesktop/3.7.0 macOS DecisionAudit"
+        webView.customUserAgent = "AIJudgeDesktop/3.8.0 macOS TrustWorkbench"
         webView.autoresizingMask = [.width, .height]
         window.contentView = webView
         window.makeKeyAndOrderFront(nil)

@@ -72,8 +72,8 @@ def main() -> int:
         "CFBundleInfoDictionaryVersion": "6.0",
         "CFBundleName": APP_NAME,
         "CFBundlePackageType": "APPL",
-        "CFBundleShortVersionString": "3.7.0",
-        "CFBundleVersion": "3.7.0",
+        "CFBundleShortVersionString": "3.8.0",
+        "CFBundleVersion": "3.8.0",
         "LSMinimumSystemVersion": deployment_target,
         "NSHighResolutionCapable": True,
     }

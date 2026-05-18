@@ -163,6 +163,62 @@ def test_report_keeps_navigation_and_full_web_answers():
     assert "全部展开" in rendered
 
 
+def test_report_renders_paper_style_final_report():
+    api_server = _load_api_server()
+    rendered = api_server._render_html_report({
+        "run_id": "paper-run-001",
+        "question": "如何把 AI Judge 的法官答案变成最终方案？",
+        "one_liner": "支持推进，但要把答案写成可审计报告。",
+        "verdict_label": "支持/推进",
+        "confidence": 81,
+        "reasons": ["多席位都要求输出结论、证据链、执行方案和风险边界。"],
+        "next_steps": ["先生成标准报告结构。", "再把客户端和 HTML 报告接到同一结构。"],
+        "judge_answer": {
+            "label": "AI Judge 法官综合答案",
+            "answer": "旧版只有一句总结。",
+            "ok_count": 2,
+            "failed_count": 1,
+            "dominant_stance": "支持/推进",
+            "top_seats": ["ChatGPT", "DeepSeek"],
+            "agreements": ["报告必须可读", "证据必须可追溯"],
+            "limits": ["仍有一个席位待回收。"],
+        },
+        "single_judge_baseline": {
+            "label": "DeepSeek 单模型对照",
+            "score": 0.66,
+            "council_average_score": 0.71,
+            "delta_vs_council": -0.05,
+        },
+        "web_bridge": {
+            "ok_count": 2,
+            "failed_count": 1,
+            "requested_count": 3,
+            "collection_complete": False,
+            "required_ok_count": 2,
+            "required_count": 3,
+            "raw_results": [
+                {"seat": "chatgpt", "seat_name": "ChatGPT", "ok": True, "response": "要给最终方案。"},
+                {"seat": "deepseek", "seat_name": "DeepSeek", "ok": True, "response": "要像报告。"},
+                {"seat": "wenxin", "seat_name": "Wenxin", "ok": False, "error": {"code": "response_timeout"}},
+            ],
+        },
+        "seat_scores": [
+            {"seat": "chatgpt", "seat_name": "ChatGPT", "mbti": "ENTP", "average_score": 0.72, "claims_count": 3},
+            {"seat": "deepseek", "seat_name": "DeepSeek", "mbti": "INTJ", "average_score": 0.70, "claims_count": 3},
+        ],
+    })
+
+    assert 'id="final-report"' in rendered
+    assert "AI Judge 最终方案报告" in rendered
+    assert "ABSTRACT" in rendered
+    assert "POSTULATE 1" in rendered
+    assert "EVIDENCE MAP" in rendered
+    assert "EXECUTION PLAN" in rendered
+    assert "VERIFICATION CONTRACT" in rendered
+    assert "席位覆盖 2/3" in rendered
+    assert "最终方案" in rendered
+
+
 def test_report_renders_cross_temporal_closeout():
     api_server = _load_api_server()
     rendered = api_server._render_html_report({

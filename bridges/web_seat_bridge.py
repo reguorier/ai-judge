@@ -188,7 +188,7 @@ def default_config() -> dict[str, Any]:
                 "execution_required": seat != "grok",
                 "best_effort": seat == "grok",
                 "exclude_from_publish_gate": seat == "grok",
-                "fragile_page": seat in {"chatgpt", "deepseek", "qwen", "wenxin"},
+                "fragile_page": seat in {"chatgpt", "deepseek", "qwen", "wenxin", "mimo"},
                 "notes": "Set enabled=true after logging into this model in its isolated profile.",
             }
             for seat in SEAT_PERSONAS

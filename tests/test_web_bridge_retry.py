@@ -138,6 +138,7 @@ def test_default_config_enables_humanized_pacing_and_fragile_seats():
     assert config["seats"]["deepseek"]["fragile_page"] is True
     assert config["seats"]["qwen"]["fragile_page"] is True
     assert config["seats"]["wenxin"]["fragile_page"] is True
+    assert config["seats"]["mimo"]["fragile_page"] is True
     assert config["seats"]["gemini"]["fragile_page"] is False
 
 

@@ -127,6 +127,7 @@ def test_run_web_jury_collects_second_round_resonance_answers(monkeypatch):
     assert len(calls) == 2
     assert calls[0]["config_overrides"] == {"fresh_conversation_per_run": True}
     assert calls[1]["seats"] == ["chatgpt"]
+    assert calls[1]["config_overrides"]["fresh_conversation_per_run"] is True
     assert "[AIJUDGE_RESONANCE_FOLLOWUP]" in calls[1]["question"]
     assert "带入用户角色" in calls[1]["question"]
     assert supplements[0]["ok"] is True

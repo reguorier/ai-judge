@@ -1,7 +1,7 @@
 {
   "schema": "citation_audit.v1",
   "product": "AI Judge Citation Audit",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "audit_id": "launch-batch-001-003",
   "title": "Open Source README Irrelevant Citation Demo",
   "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
@@ -12,7 +12,7 @@
     "phase": "citation_verification_mvp",
     "run_id": "launch-batch-001-003",
     "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
-    "certification_id": "CITE-20260518-A0649F321D",
+    "certification_id": "CITE-20260518-111F78B106",
     "citation_verification": {
       "schema": "citation_validator.summary.v1",
       "status_schema": [
@@ -50,8 +50,8 @@
       },
       "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
       "verification_hash": "7a1ded38f76741cc639fddaf7491e327e530b73337869abf63126f4b2306bd2d",
-      "certification_id": "CITE-20260518-A0649F321D",
-      "replay_ledger_hash": "70d3df49a636b108acf1a0ed0020f46cca862fc2017abc80f8e1c826f09d8ca8",
+      "certification_id": "CITE-20260518-111F78B106",
+      "replay_ledger_hash": "3883746022f063e0350941d89fd6d73edffe52735dfe6f5289972575edfdb78b",
       "external_evidence_count": 2
     },
     "replay_ledger": [
@@ -120,17 +120,17 @@
                 "evidence_hash": "1c216ee5275a1034ade15d014e51391f57a1177109f4ab4cc355abc00024915c"
               },
               "relevance_score": 0.1,
-              "verified_at": "2026-05-18T15:33:00.899600+00:00"
+              "verified_at": "2026-05-18T16:02:21.610365+00:00"
             }
           ],
           "external_evidence_used": 2,
           "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
-          "verified_at": "2026-05-18T15:33:00.899600+00:00",
-          "verification_hash": "f19cc691bac22b49ce1b570f73e5815c0156778698bd5965351e17d0c3d577f3"
+          "verified_at": "2026-05-18T16:02:21.610365+00:00",
+          "verification_hash": "e09a45c862f3f782ec90afb94d8e13e1c13314ede45ba9d4b2179fa79f2ba310"
         },
         "mentor_citation_verification": null,
         "unverifiable_reasons": [],
-        "verification_timestamp": "2026-05-18T15:33:00.899600+00:00",
+        "verification_timestamp": "2026-05-18T16:02:21.610365+00:00",
         "source_isolation": {
           "raw_answer": "replay_ledger[].raw_answer",
           "mentor_supplement": "replay_ledger[].mentor_supplement",
@@ -139,7 +139,7 @@
         }
       }
     ],
-    "replay_ledger_hash": "70d3df49a636b108acf1a0ed0020f46cca862fc2017abc80f8e1c826f09d8ca8",
+    "replay_ledger_hash": "3883746022f063e0350941d89fd6d73edffe52735dfe6f5289972575edfdb78b",
     "external_evidence_index": [
       {
         "evidence_id": "EVID-OSS-001",
@@ -199,11 +199,11 @@
       "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
       "unverifiable 不是 false，UI 必须解释清楚。"
     ],
-    "created_at": "2026-05-18T15:33:00.899600+00:00",
-    "certification_hash": "4ac63432a5f05a33df663bda7a4a5b8adc92bc1108aaf70fa2b3cabab389a4a5",
+    "created_at": "2026-05-18T16:02:21.610365+00:00",
+    "certification_hash": "d7e32608256681ecca81857d882f054b554658581c71f67dedde77d2a3d18ed8",
     "evidence_broker": {
       "schema": "evidence_broker.v1",
-      "created_at": "2026-05-18T15:33:00.899600+00:00",
+      "created_at": "2026-05-18T16:02:21.610365+00:00",
       "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
       "allow_network": false,
       "source_policy": {
@@ -293,7 +293,7 @@
           "notarized": 0
         }
       },
-      "broker_hash": "58219764cd5b43a14cef16b771f9ebc5f69e5cc3e0941a3689014ea13b4664ec"
+      "broker_hash": "d132049d1fdc7b45df55e8efcad93a70776e1bad119bbc5a15401fe0f9149105"
     },
     "claim_support_audit": {
       "schema": "claim_support.v1",
@@ -355,13 +355,13 @@
           "support_failure_code": "source_silent",
           "support_reason": "The source can be matched, but it is not relevant enough to support the cited claim.",
           "matched_evidence_hash": "1c216ee5275a1034ade15d014e51391f57a1177109f4ab4cc355abc00024915c",
-          "audited_at": "2026-05-18T15:33:00.899600+00:00"
+          "audited_at": "2026-05-18T16:02:21.610365+00:00"
         }
       ],
       "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
-      "audited_at": "2026-05-18T15:33:00.899600+00:00",
+      "audited_at": "2026-05-18T16:02:21.610365+00:00",
       "overall_claim_support": "unsupported",
-      "claim_support_hash": "1765b9da97a7b3d5e02c0d33869e4a46959575ca3cbd92f52cc87eca2b8da45a"
+      "claim_support_hash": "c74ee73ff843a31aba0fcd02dc185424b79d7d632b11f7ec00d6d7ca3c38fa60"
     },
     "evidence_gap_suggestions": {
       "schema": "evidence_gap_filler.suggestion_only.v1",
@@ -400,7 +400,7 @@
     },
     "evidence_gap_queue": {
       "schema": "evidence_gap_queue.v1",
-      "created_at": "2026-05-18T15:33:00.899600+00:00",
+      "created_at": "2026-05-18T16:02:21.610365+00:00",
       "open_count": 1,
       "tasks": [
         {
@@ -413,16 +413,16 @@
           "gap": "来源可找到，但与当前论点关系弱。",
           "suggested_action": "替换为直接支持当前断言的来源。",
           "queue_status": "open",
-          "created_at": "2026-05-18T15:33:00.899600+00:00"
+          "created_at": "2026-05-18T16:02:21.610365+00:00"
         }
       ],
       "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
-      "queue_hash": "481c0df9aa0456c1103f28666b00994637c73fabdec2a09d4d00f53721375535"
+      "queue_hash": "7ebf7a746213e538778169948511092a95c18b334fa8b78daaf2e7a9f3530bc0"
     },
     "blind_cross_validation": {
       "schema": "blind_cross_validation.v1",
       "status": "pending_model_reviews",
-      "created_at": "2026-05-18T15:33:00.899600+00:00",
+      "created_at": "2026-05-18T16:02:21.610365+00:00",
       "reviewer_count": 4,
       "threshold": 0.67,
       "anonymization": {
@@ -461,7 +461,7 @@
         }
       ],
       "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
-      "packet_hash": "59a8a591ae945f29ddcb2ee93575ec780d5554c8344654ce2187144f024e69f8"
+      "packet_hash": "93c4bb252101d9a0b813be5ef73396b906dbaef08eb8932336ab37c98acf2d0d"
     },
     "eval_case": {
       "schema": "ai_judge_eval_case.v1",
@@ -492,25 +492,25 @@
         "hard_evidence_count": 2,
         "trust_gate": "needs_more_evidence"
       },
-      "certification_id": "CITE-20260518-A0649F321D",
-      "certification_hash": "4ac63432a5f05a33df663bda7a4a5b8adc92bc1108aaf70fa2b3cabab389a4a5",
-      "replay_ledger_hash": "70d3df49a636b108acf1a0ed0020f46cca862fc2017abc80f8e1c826f09d8ca8",
+      "certification_id": "CITE-20260518-111F78B106",
+      "certification_hash": "d7e32608256681ecca81857d882f054b554658581c71f67dedde77d2a3d18ed8",
+      "replay_ledger_hash": "3883746022f063e0350941d89fd6d73edffe52735dfe6f5289972575edfdb78b",
       "human_label": null,
-      "created_at": "2026-05-18T15:33:00.900115+00:00",
-      "case_hash": "25240dc58010bef42a480170692493c6d3584e120787417d4f59d9eef9ee7ec5"
+      "created_at": "2026-05-18T16:02:21.610840+00:00",
+      "case_hash": "b2d5fa71bd672653a11539ea5dce1adb94848e982506db8b56f072c4cd3c3031"
     }
   },
   "human_review_status": {
     "status": "optional",
     "reason": "引用状态较稳，可选人工签名。"
   },
-  "created_at": "2026-05-18T15:33:00.899600+00:00",
+  "created_at": "2026-05-18T16:02:21.610365+00:00",
   "summary": {
     "overall_status": "irrelevant",
     "overall_claim_support": "unsupported",
-    "certification_id": "CITE-20260518-A0649F321D",
-    "certification_hash": "4ac63432a5f05a33df663bda7a4a5b8adc92bc1108aaf70fa2b3cabab389a4a5",
-    "replay_ledger_hash": "70d3df49a636b108acf1a0ed0020f46cca862fc2017abc80f8e1c826f09d8ca8",
+    "certification_id": "CITE-20260518-111F78B106",
+    "certification_hash": "d7e32608256681ecca81857d882f054b554658581c71f67dedde77d2a3d18ed8",
+    "replay_ledger_hash": "3883746022f063e0350941d89fd6d73edffe52735dfe6f5289972575edfdb78b",
     "item_count": 1,
     "counts": {
       "verified": 0,

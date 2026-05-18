@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI Judge — Unified CLI entry point v3.7.0.
+"""AI Judge — Unified CLI entry point v3.8.0.
 
 Usage:
     ai-judge license status
@@ -355,7 +355,7 @@ def build_parser() -> argparse.ArgumentParser:
     audit_batch.add_argument("--fail-on", default="contradicted", help="Comma-separated statuses that fail the batch")
     audit_batch.add_argument(
         "--warn-on",
-        default="unverifiable,weakly_verified,irrelevant,partially_supported,unsupported",
+        default="unverifiable,weakly_verified,irrelevant,partially_supported,unsupported,unsupported_input,unmatched_input",
         help="Comma-separated statuses that mark warnings",
     )
     audit_batch.add_argument("--batch-id", help="Stable batch ID for reproducible demos")
@@ -583,7 +583,6 @@ def cmd_score_v2(args: argparse.Namespace) -> int:
         ]
 
         from core.scoring_v2 import score_jury_full_pipeline
-        from core.consensus_v2 import diversity_alert_pipeline
 
         # Simulated seat vectors (9 seats × 5 claim dimensions)
         seat_vectors = {
@@ -638,13 +637,7 @@ def cmd_score_v2(args: argparse.Namespace) -> int:
 
 def cmd_determinism(args: argparse.Namespace) -> int:
     """Run determinism pipeline demo."""
-    from core.determinism import (
-        l1_consistency_check,
-        l2_cross_model_consensus,
-        compute_confidence_light,
-        enforce_human_tax,
-        run_determinism_pipeline,
-    )
+    from core.determinism import run_determinism_pipeline
 
     if not args.demo:
         print("Usage: ai-judge determinism --demo", file=sys.stderr)
@@ -724,8 +717,6 @@ def cmd_cold_start(args: argparse.Namespace) -> int:
     )
 
     user_id = getattr(args, "user_id", "default")
-    action = getattr(args, "action", "status")
-
     # In production, load profile from storage
     profile = ScaffoldProfile(
         user_id=user_id,
@@ -941,7 +932,7 @@ def cmd_v3_pipeline(args: argparse.Namespace) -> int:
     """Run full V3 pipeline demo."""
     from core.neuro_profiler import compute_neuro_profile
     from core.determinism import run_full_v3_pipeline
-    from core.hard_truth import generate_hard_truth_output, determine_mode
+    from core.hard_truth import generate_hard_truth_output
 
     if not args.demo:
         print("Usage: ai-judge v3-pipeline --demo", file=sys.stderr)
@@ -1117,7 +1108,6 @@ def cmd_export_html(args: argparse.Namespace) -> int:
 def cmd_council(args: argparse.Namespace) -> int:
     """Run a jury council demo for a specific model seat."""
     from core.scoring_v2 import score_jury_full_pipeline
-    from core.consensus_v2 import diversity_alert_pipeline
     from core.formula_engine import graph_value_v2
 
     if not args.demo:

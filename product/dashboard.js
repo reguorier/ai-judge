@@ -38,6 +38,8 @@ const state = {
   seats: [],
   bridge: null,
   seatScoreboard: null,
+  productCapabilities: null,
+  benchmarks: null,
   productMode: localStorage.getItem("ai_judge_product_mode") || "simple",
   selectedMode: "flash",
   engine: "local",
@@ -101,15 +103,20 @@ function bindUI() {
   $$("#product-switch .product-mode").forEach(btn => btn.addEventListener("click", () => applyProductMode(btn.dataset.productMode)));
   $("#btn-refresh").addEventListener("click", refreshAll);
   $("#btn-history-refresh").addEventListener("click", loadHistory);
+  $("#btn-benchmark-refresh")?.addEventListener("click", async () => {
+    await Promise.all([loadBenchmarks(), loadProductCapabilities()]);
+    renderBenchmarks();
+    renderProductCapabilities();
+  });
   $("#btn-submit").addEventListener("click", submitJudge);
   $("#btn-supplement-slow")?.addEventListener("click", supplementSlowSeats);
   $("#btn-recheck-stalled")?.addEventListener("click", () => recheckStalledSeats({ auto: false }));
-  $("#view-link").addEventListener("click", event => {
+  $$("#view-link, #result-view-link").forEach(link => link.addEventListener("click", event => {
     const href = event.currentTarget.getAttribute("href");
     if (!href || href === "#") return;
     event.preventDefault();
     window.location.href = href;
-  });
+  }));
   $("#question-input").addEventListener("input", () => {
     state.mentorConfirmed = false;
     updateMentorPreflight();
@@ -174,11 +181,15 @@ function applyProductMode(mode) {
   $("#app-shell").classList.toggle("pro-mode", state.productMode === "pro");
   $("#app-shell").classList.toggle("simple-mode", state.productMode !== "pro");
   $$("#product-switch .product-mode").forEach(btn => btn.classList.toggle("active", btn.dataset.productMode === state.productMode));
+  if (state.productMode !== "pro" && !$("#view-benchmarks")?.hidden) switchTab("tasks");
   if (state.currentVerdict) {
+    renderSimpleCloseout(state.currentVerdict);
     renderDecisionMemo(state.currentVerdict);
     renderCrossTemporal(state.currentVerdict);
   }
   renderArena();
+  renderBenchmarks();
+  renderProductCapabilities();
   renderSimpleSeatSummary();
   renderTaskCenter();
   renderEvidenceTree();
@@ -186,9 +197,19 @@ function applyProductMode(mode) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadModes(), loadSeats(), loadBridgeStatus(), loadHistory(), loadSeatScoreboard()]);
+  await Promise.all([
+    loadModes(),
+    loadSeats(),
+    loadBridgeStatus(),
+    loadHistory(),
+    loadSeatScoreboard(),
+    loadProductCapabilities(),
+    loadBenchmarks(),
+  ]);
   renderSeatScores();
   renderArena();
+  renderBenchmarks();
+  renderProductCapabilities();
   renderTaskCenter();
   renderEvidenceTree();
   renderCouncilCompletion();
@@ -205,15 +226,16 @@ function switchTab(tabName) {
 function updateWorkflowForTab(tabName) {
   const stepByTab = {
     tasks: "intake",
-    request: state.mentorEnabled ? "mentor" : "intake",
+    request: "intake",
     draft: "collect",
     evidence: "audit",
     council: "collect",
+    benchmarks: "audit",
     publish: "publish",
     history: "audit",
     settings: "intake",
   };
-  const order = ["intake", "mentor", "collect", "audit", "publish"];
+  const order = ["intake", "collect", "rescue", "audit", "publish"];
   const active = stepByTab[tabName] || "intake";
   const activeIndex = order.indexOf(active);
   $$("[data-workflow-step]").forEach(item => {
@@ -272,6 +294,24 @@ async function loadSeatScoreboard() {
     state.seatScoreboard = await res.json();
   } catch {
     state.seatScoreboard = { runs_considered: 0, seats: [] };
+  }
+}
+
+async function loadProductCapabilities() {
+  try {
+    const res = await fetch(`${API_BASE}/api/product/capabilities`);
+    state.productCapabilities = await res.json();
+  } catch {
+    state.productCapabilities = fallbackProductCapabilities();
+  }
+}
+
+async function loadBenchmarks() {
+  try {
+    const res = await fetch(`${API_BASE}/api/benchmarks/summary`);
+    state.benchmarks = await res.json();
+  } catch {
+    state.benchmarks = fallbackBenchmarks();
   }
 }
 
@@ -451,8 +491,10 @@ function buildTaskItems() {
     },
     {
       id: "council",
-      title: "网页桥接校准",
-      summary: "确认网页/桌面席位是否可后台收集，并查看 COUNCIL-004 人格席位",
+      title: state.productMode === "pro" ? "模型对比与桥接校准" : "模型状态摘要",
+      summary: state.productMode === "pro"
+        ? "确认网页/桌面席位是否可后台收集，并查看 COUNCIL-004 人格席位"
+        : "只显示哪些模型已返回、待回收或阻断，不展开底层矩阵",
       stage: "席位",
       risk: bridgeNeedsWork ? "warn" : "ok",
       riskLabel: bridgeNeedsWork ? "需校准" : "就绪",
@@ -463,6 +505,18 @@ function buildTaskItems() {
         ? `仍有 ${Math.max(0, counts.webTotal - counts.webReady)} 个网页席位未就绪，专业版可查看每席位原因。`
         : "网页席位和桌面席位已进入可观察状态。",
     },
+    ...(state.productMode === "pro" ? [{
+      id: "benchmarks",
+      title: "可靠性基准",
+      summary: "把引用、决策、网页回收和 CDP 可靠性压成四张基准卡",
+      stage: "基准",
+      risk: (state.benchmarks?.cards || []).some(card => card.status === "needs_calibration") ? "warn" : "ok",
+      riskLabel: `${state.benchmarks?.runs_considered || 0} 样本`,
+      seats: `${state.benchmarks?.scoreboard?.ready_seats || 0}/${state.benchmarks?.scoreboard?.total_seats || state.seats.length}`,
+      next: "看基准",
+      tab: "benchmarks",
+      detail: "专业版用于回答“这轮判断为什么值得信”：有无引用验证、席位是否稳定、网页回收是否可靠、CDP 通道是否健康。",
+    }] : []),
     {
       id: "publish",
       title: "发布门禁",
@@ -645,6 +699,28 @@ function buildPublishGateSummary() {
           ? `还有 ${warnings} 个复核提醒。`
           : "等待判词生成。";
   return { checks, blockers, warnings, nonHumanBlockers, ready, reason };
+}
+
+function humanGavelState(summary = buildPublishGateSummary()) {
+  if (summary.ready) {
+    return {
+      state: "publishable",
+      label: "Publishable",
+      description: "用户已确认这个判断可以作为当前决策依据。",
+    };
+  }
+  if (state.currentVerdict && summary.nonHumanBlockers === 0) {
+    return {
+      state: "reviewed",
+      label: "Reviewed",
+      description: "硬门禁已通过，等待人工确认是否可发布。",
+    };
+  }
+  return {
+    state: "draft",
+    label: "Draft",
+    description: "判词仍在草稿或补证状态。",
+  };
 }
 
 async function initBridgeConfig() {
@@ -1507,11 +1583,14 @@ function renderVerdict(v) {
   if ($("#final-report-title")) {
     $("#final-report-title").textContent = executionComplete ? "最终结论报告" : "执行未完成报告";
   }
-  $("#final-report-answer").textContent = finalReportText(v);
+  renderFinalReport(v, executionComplete);
   $("#reason-list").innerHTML = (v.reasons || []).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
   $("#step-list").innerHTML = (v.next_steps || []).map(step => `<li>${escapeHtml(step)}</li>`).join("");
+  renderSimpleCloseout(v);
   renderDecisionMemo(v);
-  $("#view-link").href = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
+  const reportUrl = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
+  $("#view-link").href = reportUrl;
+  if ($("#result-view-link")) $("#result-view-link").href = reportUrl;
   $("#btn-download-json").onclick = () => downloadJSON(v, `verdict-${v.run_id || "ai-judge"}.json`);
   $("#btn-download-md").onclick = () => downloadMarkdown(v);
   renderSupplementButton();
@@ -1536,7 +1615,30 @@ function renderVerdict(v) {
   renderTaskCenter();
 }
 
+function renderSimpleCloseout(v) {
+  if (!$("#simple-closeout-strip")) return;
+  const trust = trustTier(v);
+  const summary = buildPublishGateSummary();
+  const gavel = humanGavelState(summary);
+  const report = finalReportText(v);
+  const firstStep = (v?.next_steps || []).find(Boolean) || "先复核结论，再进入发布门禁做人工确认。";
+  const firstRisk = [
+    ...(v?.reasons || []),
+    v?.cross_temporal_analysis?.closeout_report?.executive_summary || "",
+    trust.summary || "",
+  ].find(item => /风险|阻断|不足|失败|不确定|复核|回收/.test(String(item || ""))) || trust.summary || "没有发现硬阻断，但仍建议保留人工确认。";
+  $("#simple-closeout-answer").textContent = v?.one_liner || excerpt(report, 120) || "AI Judge 已完成本轮判断。";
+  $("#simple-closeout-why").textContent = excerpt(report, 260);
+  $("#simple-closeout-action").textContent = excerpt(firstStep, 180);
+  $("#simple-human-gavel").classList.toggle("is-ready", gavel.state === "publishable");
+  $("#simple-human-gavel-state").textContent = gavel.label;
+  $("#simple-human-gavel-copy").textContent = excerpt(firstRisk, 150);
+  $("#simple-human-gavel-score").textContent = trust.label || "-";
+}
+
 function finalReportText(v) {
+  const structured = v?.final_report?.abstract || "";
+  if (structured) return structured;
   const closeoutReport = v?.cross_temporal_analysis?.closeout_report?.professional_report || "";
   if (closeoutReport) return closeoutReport;
   const judgeAnswer = v?.judge_answer?.answer || v?.single_judge_baseline?.answer || "";
@@ -1545,6 +1647,73 @@ function finalReportText(v) {
   const reasons = (v?.reasons || []).slice(0, 2).join("；");
   const steps = (v?.next_steps || []).slice(0, 2).join("；");
   return [line, reasons ? `关键依据：${reasons}` : "", steps ? `建议动作：${steps}` : ""].filter(Boolean).join("\n");
+}
+
+function renderFinalReport(v, executionComplete = true) {
+  const target = $("#final-report-answer");
+  if (!target) return;
+  const report = v?.final_report;
+  if (!report) {
+    target.textContent = finalReportText(v);
+    return;
+  }
+  if ($("#final-report-title")) {
+    $("#final-report-title").textContent = report.status_label || (executionComplete ? "最终结论报告" : "执行未完成报告");
+  }
+  const meta = (report.meta || []).map(item => `
+    <div><span>${escapeHtml(item.label || "")}</span><strong>${escapeHtml(item.value || "-")}</strong></div>
+  `).join("");
+  const keywords = (report.keywords || []).map(item => `<span>${escapeHtml(item)}</span>`).join("");
+  const position = report.final_position || {};
+  const postulates = (report.postulates || []).map((item, index) => `
+    <article class="paper-postulate">
+      <span>POSTULATE ${index + 1}</span>
+      <h3>${escapeHtml(item.title || "")}</h3>
+      <p>${escapeHtml(item.body || "")}</p>
+      <small>${escapeHtml(item.evidence || "")}</small>
+    </article>
+  `).join("");
+  const evidenceRows = (report.evidence_map || []).map(row => `
+    <tr>
+      <td>${escapeHtml(row.dimension || "")}</td>
+      <td>${escapeHtml(row.judgment || "")}</td>
+      <td>${escapeHtml(row.source || "")}</td>
+      <td>${escapeHtml(row.constraint || "")}</td>
+    </tr>
+  `).join("");
+  const plan = (report.implementation_plan || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  const risks = (report.risks_and_limits || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  const contract = (report.verification_contract || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  target.innerHTML = `
+    <div class="paper-heading">
+      <p class="paper-kicker">${escapeHtml(report.subtitle || "FINAL VERDICT")}</p>
+      <h3>${escapeHtml(report.title || "AI Judge 最终方案报告")}</h3>
+      <p class="paper-status">${escapeHtml(report.status_label || "-")} · ${escapeHtml(report.status_reason || "")}</p>
+    </div>
+    <div class="paper-meta">${meta}</div>
+    <section class="paper-block">
+      <h3>ABSTRACT</h3>
+      <p>${escapeHtml(report.abstract || "")}</p>
+      <div class="paper-keywords">${keywords}</div>
+    </section>
+    <section class="paper-block">
+      <h3>FINAL POSITION</h3>
+      <p>${escapeHtml(position.summary || "")}</p>
+    </section>
+    <div class="paper-postulates">${postulates}</div>
+    <section class="paper-block paper-evidence">
+      <h3>EVIDENCE MAP</h3>
+      <table><thead><tr><th>维度</th><th>本报告判断</th><th>证据来源</th><th>约束</th></tr></thead><tbody>${evidenceRows}</tbody></table>
+    </section>
+    <section class="paper-columns">
+      <div class="paper-block"><h3>EXECUTION PLAN</h3><ol>${plan}</ol></div>
+      <div class="paper-block"><h3>LIMITS</h3><ul>${risks}</ul></div>
+    </section>
+    <section class="paper-block">
+      <h3>VERIFICATION CONTRACT</h3>
+      <ul>${contract}</ul>
+    </section>
+  `;
 }
 
 function renderDecisionMemo(v) {
@@ -1681,14 +1850,6 @@ function buildPublishGateChecks() {
   ].join(" ");
   const mentor = v?.mentor_preflight || state.mentorSnapshot;
   const mentorEnabledForRun = Boolean(v?.mentor_preflight || state.mentorEnabled);
-  const nonHumanReady = hasVerdict
-    && supplementable === 0
-    && hardFailures === 0
-    && (!verdictUsesWeb || policy.collection_complete)
-    && evidence.state !== "block"
-    && coverage.total > 0
-    && (coverage.pct >= 100 || !verdictUsesWeb)
-    && (traceEvents.length > 0 || hasVerdict);
   return [
     {
       key: "verdict",
@@ -1758,7 +1919,7 @@ function buildPublishGateChecks() {
       text: "人工发布确认",
       hint: "发布按钮不会发送外部内容，只标记本轮可发布",
       meta: state.publishCleared ? "通过" : "待确认",
-      state: state.publishCleared && nonHumanReady ? "ok" : "block",
+      state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block",
     },
   ];
 }
@@ -1786,10 +1947,13 @@ function renderPublishGate(message = "") {
   $("#gateState").textContent = ready ? "可发布" : summary.nonHumanBlockers ? "不可发布" : "待确认";
   $("#gateMeter")?.classList.toggle("is-ready", ready);
   if ($("#gateReason")) $("#gateReason").textContent = summary.reason;
-  const canConfirm = hasVerdict && summary.nonHumanBlockers === 0;
+  const canConfirm = hasVerdict;
   $("#clearBlockersBtn").disabled = !canConfirm;
-  $("#clearBlockersBtn").textContent = state.publishCleared ? "已人工确认" : "人工确认发布级";
+  $("#clearBlockersBtn").textContent = state.publishCleared
+    ? (summary.nonHumanBlockers ? "已人工确认，等待补齐阻断" : "已人工确认")
+    : "我确认这个判断可以作为当前决策依据";
   $("#publishBtn").disabled = !ready;
+  if (state.currentVerdict) renderSimpleCloseout(state.currentVerdict);
   renderTaskCenter();
 }
 
@@ -1816,14 +1980,17 @@ function renderJudgeAnswer(v) {
   const panel = $("#judge-answer-panel");
   const judge = v?.judge_answer;
   const baseline = v?.single_judge_baseline;
-  if (!judge && !baseline) {
+  const report = v?.final_report;
+  if (!judge && !baseline && !report) {
     panel.hidden = true;
     return;
   }
   panel.hidden = false;
-  panel.querySelector("h3").textContent = judge?.label || baseline?.label || "AI Judge 法官答案";
-  $("#judge-answer-summary").textContent = judge?.answer || baseline?.answer || "";
+  panel.querySelector("h3").textContent = report?.title || judge?.label || baseline?.label || "AI Judge 法官答案";
+  $("#judge-answer-summary").textContent = report?.abstract || judge?.answer || baseline?.answer || "";
   const tags = [
+    report?.status_label || "",
+    report?.final_position?.trust ? `可信 ${report.final_position.trust}` : "",
     judge ? `返回 ${judge.ok_count || 0}/${(judge.ok_count || 0) + (judge.failed_count || 0)}` : "",
     judge?.dominant_stance ? `立场 ${judge.dominant_stance}` : "",
     baseline?.score !== undefined ? `单模型分 ${Number(baseline.score || 0).toFixed(3)}` : "",
@@ -2200,6 +2367,54 @@ function renderSeatScoreCards(rows) {
     ["桥接就绪", `${ready}/${state.bridge?.seats?.length || state.seats.length}`, "网页与桌面入口状态"],
   ].map(([title, value, sub]) => `
     <div class="score-card"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(title)} · ${escapeHtml(sub)}</span></div>
+  `).join("");
+}
+
+function renderBenchmarks() {
+  const target = $("#benchmark-grid");
+  if (!target) return;
+  const cards = state.benchmarks?.cards || fallbackBenchmarks().cards;
+  target.innerHTML = cards.map(card => `
+    <article class="benchmark-card ${escapeAttr(card.status || "active")}">
+      <div>
+        <strong>${escapeHtml(card.label || card.id)}</strong>
+        <p>${escapeHtml(card.summary || "")}</p>
+      </div>
+      <span class="benchmark-score">${escapeHtml(card.score || card.status || "-")}</span>
+    </article>
+  `).join("");
+}
+
+function renderProductCapabilities() {
+  const target = $("#capability-list");
+  if (!target) return;
+  const data = state.productCapabilities || fallbackProductCapabilities();
+  const stable = data.stable_mode || {};
+  const lab = data.lab_mode || {};
+  const market = data.market_fit || {};
+  $("#stable-job").textContent = stable.job || "5 分钟可信结论";
+  $("#stable-surfaces").textContent = (stable.surfaces || []).join(" / ") || "录入 / 收口 / 风险 / 发布确认";
+  $("#lab-job").textContent = lab.job || "诊断与基准";
+  $("#lab-surfaces").textContent = (lab.surfaces || []).join(" / ") || "席位 / 桥接 / 评分 / 日志 / benchmark";
+  const cards = [
+    {
+      title: "产品定位",
+      body: data.positioning || "把多模型回答收口成可审计、可确认的决策。",
+    },
+    {
+      title: "当前亮点",
+      body: (market.strengths || []).slice(0, 2).join("；") || "多席位、回收、评分、门禁在一个本地闭环里。",
+    },
+    {
+      title: "已知短板",
+      body: (market.known_gaps || []).slice(0, 2).join("；") || "网页桥接仍依赖登录态和页面结构。",
+    },
+  ];
+  target.innerHTML = cards.map(card => `
+    <article class="capability-card">
+      <h3>${escapeHtml(card.title)}</h3>
+      <p>${escapeHtml(card.body)}</p>
+    </article>
   `).join("");
 }
 
@@ -2600,6 +2815,8 @@ function resetRunUI() {
   state.currentVerdict = null;
   state.currentTrace = null;
   state.publishCleared = false;
+  if ($("#view-link")) $("#view-link").href = "#";
+  if ($("#result-view-link")) $("#result-view-link").href = "#";
   $("#mentor-result-panel") && ($("#mentor-result-panel").hidden = true);
   $("#prompt-flow-panel").hidden = true;
   $("#execution-panel").hidden = true;
@@ -2687,6 +2904,65 @@ function downloadJSON(data, filename) {
   download(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), filename);
 }
 
+function finalReportMarkdown(report) {
+  if (!report) return "";
+  const lines = [
+    `## ${report.title || "AI Judge 最终方案报告"}`,
+    "",
+    `**${report.subtitle || "FINAL VERDICT"}**`,
+    "",
+    `**状态:** ${report.status_label || "-"} · ${report.status_reason || ""}`,
+    "",
+    "### ABSTRACT",
+    "",
+    report.abstract || "",
+    "",
+    "### KEYWORDS",
+    "",
+    (report.keywords || []).join(" / "),
+    "",
+    "### FINAL POSITION",
+    "",
+    `- 结论：${report.final_position?.label || "-"}`,
+    `- 可信：${report.final_position?.trust || "-"}`,
+    `- 置信度：${report.final_position?.confidence || "-"}`,
+    `- 摘要：${report.final_position?.summary || "-"}`,
+    "",
+    "### POSTULATES",
+    "",
+    ...((report.postulates || []).flatMap((item, index) => [
+      `#### POSTULATE ${index + 1} · ${item.title || ""}`,
+      "",
+      item.body || "",
+      "",
+      `证据：${item.evidence || "-"}`,
+      "",
+    ])),
+    "### EVIDENCE MAP",
+    "",
+    "| 维度 | 本报告判断 | 证据来源 | 约束 |",
+    "|---|---|---|---|",
+    ...((report.evidence_map || []).map(row => `| ${mdCell(row.dimension)} | ${mdCell(row.judgment)} | ${mdCell(row.source)} | ${mdCell(row.constraint)} |`)),
+    "",
+    "### EXECUTION PLAN",
+    "",
+    ...((report.implementation_plan || []).map((item, index) => `${index + 1}. ${item}`)),
+    "",
+    "### LIMITS",
+    "",
+    ...((report.risks_and_limits || []).map(item => `- ${item}`)),
+    "",
+    "### VERIFICATION CONTRACT",
+    "",
+    ...((report.verification_contract || []).map(item => `- ${item}`)),
+  ];
+  return lines.join("\n").trim();
+}
+
+function mdCell(value) {
+  return String(value ?? "").replace(/\|/g, "\\|");
+}
+
 function downloadMarkdown(v) {
   const md = [
     "# AI Judge Verdict",
@@ -2697,6 +2973,8 @@ function downloadMarkdown(v) {
     "",
     "## One Liner",
     v.one_liner || "",
+    "",
+    finalReportMarkdown(v.final_report),
     "",
     v.mentor_preflight ? "## Mentor Preflight" : "",
     v.mentor_preflight?.execution_draft || "",
@@ -2769,6 +3047,39 @@ function fallbackSeats() {
     { id: "zhipu", name: "Zhipu", mbti: "ISTP", strength: "工程落地" },
     { id: "wenxin", name: "Wenxin", mbti: "ESFJ", strength: "中文合规" },
   ];
+}
+
+function fallbackProductCapabilities() {
+  return {
+    version: "3.8.0",
+    positioning: "A desktop-first decision reliability OS for auditable multi-model decisions.",
+    stable_mode: {
+      label: "简约版",
+      job: "让普通用户 5 分钟内拿到可读、可执行、可复核的最终判断。",
+      surfaces: ["请求录入", "运行状态", "最终结论", "关键风险", "人工确认"],
+    },
+    lab_mode: {
+      label: "专业版",
+      job: "让高级用户诊断模型席位、桥接稳定性、评分差异和证据链可靠性。",
+      surfaces: ["席位矩阵", "桥接监控", "评分轮次", "横纵分析", "可靠性基准", "底层日志"],
+    },
+    market_fit: {
+      strengths: ["多模型回答会被收口成门禁和报告", "慢席位可一键回收"],
+      known_gaps: ["网页桥接仍依赖登录态", "公开 benchmark 仍需持续补齐"],
+    },
+  };
+}
+
+function fallbackBenchmarks() {
+  return {
+    version: "3.8.0",
+    cards: [
+      { id: "citation", label: "Citation Benchmark", score: "Replay Ledger", status: "active", summary: "验证引用、证据缺口和人工复核状态。" },
+      { id: "decision", label: "Decision Benchmark", score: "pending", status: "empty", summary: "用历史判词观察共识稳定性和主审偏差。" },
+      { id: "web_recovery", label: "Web Seat Recovery", score: "pending", status: "empty", summary: "统计网页席位成功、失败、慢生成和回收效果。" },
+      { id: "cdp_reliability", label: "CDP Reliability", score: "0/0", status: "needs_calibration", summary: "检测固定标签、CDP/Apple Events 与桌面通道。" },
+    ],
+  };
 }
 
 function $(selector) { return document.querySelector(selector); }

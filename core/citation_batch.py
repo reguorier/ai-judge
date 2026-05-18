@@ -148,7 +148,7 @@ def run_audit_batch(
     manifest = {
         "schema": "citation_audit_batch.v1",
         "product": "AI Judge Citation Audit",
-        "version": "3.7.0",
+        "version": "3.8.0",
         "batch_id": current_batch_id,
         "generated_at": created_at,
         "input_count": len(audit_inputs) + len(skipped_inputs),

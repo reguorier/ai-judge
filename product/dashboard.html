@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Judge v3.7.0 Decision Audit Workbench</title>
+  <title>AI Judge v3.8.0 Trust Workbench</title>
   <style>
     :root {
       color-scheme: light;
@@ -665,12 +665,204 @@
       font-size: 15px;
       font-weight: 520;
     }
+    .paper-report {
+      color: var(--text);
+      display: grid;
+      gap: 12px;
+    }
+    .paper-heading h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .paper-kicker, .paper-status {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .paper-status {
+      text-transform: none;
+      font-size: 12px;
+      margin-top: 5px;
+      color: var(--text-soft);
+    }
+    .paper-meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .paper-meta div, .paper-block, .paper-postulate {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #fff;
+      padding: 11px;
+      min-width: 0;
+    }
+    .paper-meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      margin-bottom: 5px;
+    }
+    .paper-meta strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .paper-block h3, .paper-postulate h3 {
+      margin: 0 0 7px;
+      color: var(--accent-strong);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+    .paper-block p, .paper-postulate p {
+      margin: 0;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.72;
+      font-weight: 520;
+    }
+    .paper-keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .paper-keywords span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f7fbff;
+      padding: 5px 8px;
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .paper-postulates {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .paper-postulate span {
+      display: block;
+      color: var(--accent-strong);
+      font-size: 11px;
+      font-weight: 780;
+      margin-bottom: 5px;
+    }
+    .paper-postulate small {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .paper-evidence {
+      overflow-x: auto;
+    }
+    .paper-evidence table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .paper-evidence th, .paper-evidence td {
+      border-bottom: 1px solid var(--line-soft);
+      padding: 8px 7px;
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    .paper-evidence th {
+      color: var(--muted);
+      font-weight: 760;
+    }
+    .paper-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+    }
+    .paper-block ol, .paper-block ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 13px;
+    }
     .decision-memo {
       border: 1px solid #d8e3f3;
       border-radius: 8px;
       background: #fff;
       margin: 14px 0;
       overflow: hidden;
+    }
+    .closeout-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+      gap: 12px;
+      margin: 0 0 14px;
+    }
+    .closeout-card {
+      border: 1px solid #d8e3f3;
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .closeout-card.primary {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border-color: #cbdcf6;
+    }
+    .closeout-card span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+    .closeout-card strong {
+      font-size: 18px;
+      line-height: 1.36;
+      overflow-wrap: anywhere;
+    }
+    .closeout-card p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.55;
+      font-weight: 520;
+      overflow-wrap: anywhere;
+    }
+    .closeout-side {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .human-gavel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid #ffe0a3;
+      background: #fffaf0;
+      border-radius: 8px;
+      padding: 12px;
+      color: #7c4500;
+      font-weight: 760;
+    }
+    .human-gavel.is-ready {
+      border-color: #bdebd1;
+      background: #f2fbf6;
+      color: #075c37;
+    }
+    .human-gavel small {
+      color: var(--muted);
+      font-weight: 560;
+      line-height: 1.35;
     }
     .memo-top {
       display: grid;
@@ -859,6 +1051,15 @@
     .math-signal small { color: var(--muted); font-weight: 680; }
     .math-signal span { color: var(--text-soft); font-size: 12px; line-height: 1.45; }
     .mini-title { color: var(--muted); font-size: 12px; font-weight: 760; text-transform: uppercase; margin: 14px 0 8px; }
+    .mini-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 14px 0 8px;
+    }
+    .mini-title-row .mini-title { margin: 0; }
+    .mini-title-row .ghost { padding: 7px 10px; font-size: 12px; }
     ul { padding-left: 18px; margin: 0; }
     li { margin: 6px 0; }
     .trace-panel { border: 1px solid var(--line); border-radius: 9px; background: #fff; margin-top: 14px; }
@@ -1034,6 +1235,61 @@
     .mini-table th, .mini-table td { padding: 8px; }
     .action-tiles { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
     .action-tile { cursor: pointer; text-align: left; font-weight: 680; }
+    .benchmark-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .benchmark-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 15px;
+      min-height: 154px;
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+    }
+    .benchmark-card strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.3;
+      margin-bottom: 5px;
+    }
+    .benchmark-card p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+    .benchmark-score {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: #edf4ff;
+      color: #164fb5;
+      font-size: 12px;
+      font-weight: 760;
+    }
+    .benchmark-card.needs_calibration .benchmark-score,
+    .benchmark-card.empty .benchmark-score { background: #fff0ce; color: #7c4500; }
+    .capability-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .capability-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+      min-width: 0;
+    }
+    .capability-card h3 { margin: 0 0 7px; font-size: 15px; }
+    .capability-card p { margin: 0; color: var(--text-soft); line-height: 1.55; }
     .persona-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
@@ -1201,8 +1457,10 @@
 
     .simple-only { display: block; }
     .pro-only, .pro-detail { display: none; }
+    .pro-nav { display: none; }
     .app.pro-mode .simple-only { display: none; }
     .app.pro-mode .pro-only { display: block; }
+    .app.pro-mode .pro-nav { display: flex; }
     .app.pro-mode .pro-detail { display: block; }
     .app.pro-mode .pro-detail[hidden] { display: none; }
     .app.pro-mode .pro-detail.process-grid { display: grid; }
@@ -1218,7 +1476,7 @@
       .tabs { grid-row: 2; position: static; height: auto; flex-direction: row; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--line); }
       .tab { flex: 0 0 auto; }
       .workspace { grid-column: 1; grid-row: 3; padding: 16px; }
-      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid { grid-template-columns: 1fr; }
+      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid, .closeout-strip, .benchmark-grid, .capability-list, .paper-meta, .paper-postulates, .paper-columns { grid-template-columns: 1fr; }
       .composer-grid { grid-template-columns: 1fr; }
       .math-signal { grid-template-columns: 1fr; }
       .score-cards, .seat-grid, .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1257,15 +1515,15 @@
         </div>
         <div>
           <strong>AI Judge</strong>
-          <span>研究审计台</span>
+          <span>可信决策台</span>
         </div>
       </div>
       <ol class="workflow" aria-label="AI Judge workflow">
-        <li class="active" data-workflow-step="intake">录入</li>
-        <li data-workflow-step="mentor">导师</li>
-        <li data-workflow-step="collect">席位</li>
-        <li data-workflow-step="audit">审查</li>
-        <li data-workflow-step="publish">发布</li>
+        <li class="active" data-workflow-step="intake">定义问题</li>
+        <li data-workflow-step="collect">收集席位</li>
+        <li data-workflow-step="rescue">自动救援</li>
+        <li data-workflow-step="audit">可信分层</li>
+        <li data-workflow-step="publish">人工确认</li>
       </ol>
       <div class="top-actions">
         <span class="product-switch" id="product-switch">
@@ -1284,6 +1542,7 @@
       <button class="tab" data-tab="draft">草稿生成</button>
       <button class="tab" data-tab="evidence">证据审查</button>
       <button class="tab" data-tab="council">模型对比</button>
+      <button class="tab pro-nav" data-tab="benchmarks">可靠性基准</button>
       <button class="tab" data-tab="publish">发布门禁</button>
       <button class="tab secondary" data-tab="history">最近议事</button>
       <button class="tab" data-tab="settings">设置</button>
@@ -1452,6 +1711,26 @@
             <h2 class="result-title" id="verdict-title"></h2>
             <div class="report-meta" id="report-meta"></div>
           </div>
+          <section class="closeout-strip simple-only" id="simple-closeout-strip">
+            <article class="closeout-card primary">
+              <span>最终答案</span>
+              <strong id="simple-closeout-answer">等待判词</strong>
+              <p id="simple-closeout-why">完成运行后，这里会把结论压缩成可转发的决策报告。</p>
+            </article>
+            <div class="closeout-side">
+              <article class="closeout-card">
+                <span>建议行动</span>
+                <p id="simple-closeout-action">先提交议题。</p>
+              </article>
+              <article class="human-gavel" id="simple-human-gavel">
+                <div>
+                  <strong id="simple-human-gavel-state">Draft</strong>
+                  <small id="simple-human-gavel-copy">等待证据和人工确认。</small>
+                </div>
+                <span id="simple-human-gavel-score">-</span>
+              </article>
+            </div>
+          </section>
           <section class="report-question-box">
             <span>原始问题</span>
             <p id="verdict-question"></p>
@@ -1493,8 +1772,11 @@
             </div>
           </section>
           <section class="final-report-box pro-detail">
-            <div class="mini-title" id="final-report-title">最终结论报告</div>
-            <p id="final-report-answer"></p>
+            <div class="mini-title-row">
+              <div class="mini-title" id="final-report-title">最终结论报告</div>
+              <a class="ghost" id="result-view-link" href="#" rel="noreferrer">打开网站完整报告</a>
+            </div>
+            <div id="final-report-answer" class="paper-report"></div>
           </section>
           <div class="process-grid pro-detail">
             <section class="process-panel" id="mentor-result-panel" hidden>
@@ -1669,6 +1951,36 @@
         </div>
       </section>
 
+      <section class="view" id="view-benchmarks" hidden>
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Reliability Benchmark</p>
+            <h1>可靠性基准</h1>
+            <p>专业版只回答一个问题：AI Judge 这轮判断为什么值得信，哪里还不够稳。</p>
+          </div>
+          <button class="ghost" id="btn-benchmark-refresh">刷新基准</button>
+        </div>
+        <div class="benchmark-grid" id="benchmark-grid">
+          <article class="benchmark-card"><strong>读取中</strong><p>正在读取本地运行历史和桥接可靠性。</p></article>
+        </div>
+        <div class="capability-list" id="capability-list"></div>
+        <section class="panel" style="margin-top:16px;">
+          <h2>Stable / Lab 分工</h2>
+          <div class="grid-2" style="margin-top:12px;">
+            <div class="closeout-card">
+              <span>Stable 简约版</span>
+              <strong id="stable-job">5 分钟可信结论</strong>
+              <p id="stable-surfaces">录入、收口、风险、发布确认。</p>
+            </div>
+            <div class="closeout-card">
+              <span>Lab 专业版</span>
+              <strong id="lab-job">诊断与基准</strong>
+              <p id="lab-surfaces">席位、桥接、评分、日志、benchmark。</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
       <section class="view" id="view-publish" hidden>
         <div class="page-head">
           <div>
@@ -1696,7 +2008,7 @@
               <a class="ghost" id="view-link" href="#" rel="noreferrer">打开完整报告</a>
               <button class="ghost" id="btn-download-md">下载 Markdown</button>
               <button class="ghost" id="btn-download-json">下载 JSON</button>
-              <button class="primary-action" id="clearBlockersBtn">标记补证完成</button>
+              <button class="primary-action" id="clearBlockersBtn">我确认这个判断可以作为当前决策依据</button>
               <button class="primary-action" id="publishBtn" disabled>批准发布</button>
             </div>
           </section>
@@ -1762,7 +2074,7 @@
         </div>
       </section>
 
-      <footer>AI Judge v3.7.0 · Decision Audit Workbench / Recovery Cockpit / Trust Tier / Cross-Temporal Closeout</footer>
+      <footer>AI Judge v3.8.0 · Trust Workbench / Stable Closeout / Lab Reliability / Human Gavel</footer>
     </main>
   </div>
   <script src="dashboard.js"></script>

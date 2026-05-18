@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.7.0-purple" alt="v3.7.0">
+  <img src="https://img.shields.io/badge/release-3.8.0-purple" alt="v3.8.0">
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><img src="https://img.shields.io/badge/HuggingFace-Space%20live-ffcc4d" alt="Hugging Face Space"></a>
   <img src="https://img.shields.io/badge/Citation%20Audit-launch%20edition-0f766e" alt="Citation Audit launch edition">
   <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
@@ -14,7 +14,7 @@
   <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3 product overview" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.7.0</h1>
+<h1 align="center">AI Judge v3.8.0</h1>
 <p align="center"><strong>Source-available citation audit for AI-generated answers.</strong></p>
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
 
@@ -27,10 +27,12 @@
   <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
   <a href="docs/PRO_EARLY_ACCESS.md">Pro Early Access</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
+  <a href="#what-v38-adds">What v3.8 Adds</a> ·
   <a href="#what-v37-adds">What v3.7 Adds</a> ·
   <a href="#what-v33-adds">What v3.3 Adds</a> ·
   <a href="#what-v32-adds">What v3.2 Adds</a> ·
   <a href="#how-it-differs">Comparison</a> ·
+  <a href="RELEASE_V3_8.md">v3.8 Notes</a> ·
   <a href="RELEASE_V3_7.md">v3.7 Notes</a> ·
   <a href="RELEASE_V3_3.md">v3.3 Notes</a> ·
   <a href="RELEASE_V3_2.md">v3.2 Notes</a>
@@ -46,7 +48,7 @@ Download the signed local wrapper and bundled runtime:
   <a href="https://github.com/reguorier/ai-judge/releases/latest"><strong>Download the latest AI Judge macOS build</strong></a>
 </p>
 
-The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions. The current branch reports v3.7.0 from the local API and desktop workbench; use GitHub Releases for signed artifacts.
+The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions. The current branch reports v3.8.0 from the local API and desktop workbench; use GitHub Releases for signed artifacts.
 
 ## Why People Notice It
 
@@ -57,7 +59,7 @@ It separates polished language from actual thinking quality, then gives the huma
 
 ## Citation Audit in 60 Seconds
 
-Most LLM eval tools ask whether an answer is good. AI Judge v3.7 starts with a narrower publish-risk question: **which citations can actually be trusted at file or repository scale?**
+Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citation-audit wedge, then adds a narrower product question: **which citations and model-seat answers are reliable enough to become a human-confirmed decision?**
 
 Try it in the browser first:
 
@@ -166,6 +168,19 @@ flowchart LR
     H --> V
     P --> V
 ```
+
+## What v3.8 Adds
+
+AI Judge v3.8 turns the Decision Audit Workbench into a Trust Workbench. Simple mode gives a five-minute closeout surface; Pro mode exposes reliability diagnostics, benchmark cards, bridge status, and the evidence behind the final report.
+
+| Layer | What it does | User-visible output |
+|---|---|---|
+| Trust Workbench API | Reports product version, Stable/Lab capability cards, Human Gavel states, and reliability benchmark summaries | `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary` |
+| Paper-style final report | Converts verdicts into an auditable abstract, postulates, evidence map, execution plan, limits, and verification contract | `final_report`, HTML report, Markdown export |
+| Stable closeout | Shows final answer, recommended action, primary risk, and Human Gavel state without exposing bridge internals by default | Simple dashboard mode |
+| Lab reliability console | Keeps model-seat diagnostics, score rounds, bridge readiness, and benchmark cards available for expert users | Professional dashboard mode |
+| Desktop sync | Ships the macOS wrapper as `AIJudgeDesktop/3.8.0 macOS TrustWorkbench` while preserving the AJ icon and paste menu | `desktop/AIJudgeDesktop.swift` |
+| Parser guardrails | Markdown/JSON batch audit remains executable while PDF/Docx inputs are explicitly marked parser-pending instead of disappearing | `skipped_inputs`, `unsupported_input`, `unmatched_input` |
 
 ## What v3.7 Adds
 

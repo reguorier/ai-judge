@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.cross_temporal_analysis import cross_temporal_markdown
+from core.final_report import attach_final_report, build_final_report, render_final_report_markdown
 from core.modes import resolve_mode
 from core.scoring_v2 import score_jury_v2
 from core.seat_personas import SEAT_PERSONAS
@@ -116,6 +117,7 @@ def assemble_verdict(
     }
     if extra:
         result.update(extra)
+    attach_final_report(result)
     return result
 
 
@@ -201,6 +203,10 @@ def format_verdict_markdown(verdict: dict[str, Any]) -> str:
     ]
     for reason in verdict.get("reasons", []):
         lines.append(f"- {reason}")
+
+    final_report = verdict.get("final_report") or build_final_report(verdict)
+    if final_report:
+        lines.extend(["", render_final_report_markdown(final_report), ""])
 
     judge = verdict.get("judge_answer") or {}
     baseline = verdict.get("single_judge_baseline") or {}
