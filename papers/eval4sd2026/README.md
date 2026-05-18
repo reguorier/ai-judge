@@ -10,6 +10,13 @@ Confirmed from the public CFP on 2026-05-18:
 - Submission deadline: 2026-07-03, 23:59 CEST.
 - Scope fit: LLM benchmarking, domain research replication, metrics and evaluation methodology.
 
+Organizer fit reply on 2026-05-18:
+
+- The topic is a strong fit for the workshop.
+- Short / position paper is appropriate.
+- Demo paper with limited evaluation would also work.
+- No further pre-fit check is needed; proceed to submission.
+
 ## Files
 
 | File | Purpose |

@@ -6,6 +6,7 @@ Target:
 Eval4SD 2026 short / position paper
 Submission deadline: 2026-07-03 23:59 CEST
 Submission route: OpenReview
+Fit status: organizer confirmed on 2026-05-18; no further pre-fit check needed.
 ```
 
 Current paper draft:

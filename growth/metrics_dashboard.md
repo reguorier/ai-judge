@@ -7,7 +7,7 @@ Status: active tracking template
 | Metric | Day 30 continue threshold | Current |
 |---|---:|---:|
 | GitHub stars | 100 | 3 |
-| Distinct users / replies / issues | 20 | 5 open issues |
+| Distinct users / replies / issues | 20 | 5 open issues + 2 substantive replies |
 | Pro feature requests | 3 | TBD |
 | Paid users or invoice requests | 1 | TBD |
 
@@ -28,6 +28,7 @@ Status: active tracking template
 | Outreach email | growth/outreach_status.md | batch_001_send_packet_ready_not_sent | 0 | 0 | 0 | 0 | 10 real targets researched; 4 P0 direct emails converted into mailto links and `.eml` drafts; event logger added. |
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | live | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | live | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support. |
+| Eval4SD submission | `papers/eval4sd2026/main.tex` | organizer_fit_confirmed | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; proceed with short/position paper or demo paper with limited evaluation. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
 | Pro early access | growth/pro_interest_status.md | intent_tracking_ready | 0 | 0 | 0 | 0 | Landing page CTA now collects workflow fields; Pro requests/payments can be logged from events. |
