@@ -12,14 +12,14 @@ Updated: 2026-05-18
 
 ## Already done before this pass
 
-- Public demo gallery, benchmark, hard benchmark, GitHub issues, long-form post, X first post, direct outreach batch, Eval4SD packet, and OpenReview account setup are prepared or live.
+- Public demo gallery, benchmark, hard benchmark, GitHub issues, long-form post, X first post, X professional thread, direct outreach batch, Eval4SD packet, and OpenReview account setup are prepared or live.
 - OpenReview is no longer waiting for email confirmation; it is waiting for profile activation.
 
 ## External actions still gated by confirmation
 
 - Upload Eval4SD PDF and submit the OpenReview form after profile activation.
 - Send follow-up email to the governance/Article 11 reply.
-- Post the X professional review wave.
+- Delete the accidental `.` reply in the X professional review wave if the user confirms cleanup.
 - Send any new direct outreach or public replies.
 
 ## Blocked or not worth retrying now

@@ -17,6 +17,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-18 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | User confirmed no activation code is available; stop spending automation time on V2EX until activation exists. |
 | 2026-05-18 | LegalCiteBench GitHub Issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | live | Posted public taxonomy exchange because arXiv/GitHub/HF dataset expose no public email. |
 | 2026-05-18 | RAGChecker GitHub Issue | https://github.com/amazon-science/RAGChecker/issues/38 | live | RefChecker route was archived/read-only, so the claim-span/source question was reframed as RAG faithfulness and posted to active RAGChecker. |
+| 2026-05-18 | X professional wave | https://x.com/liuweidi2/status/2056387592187510933 | live_cleanup_pending | Published the professional review thread with CTAs for benchmark cases, taxonomy critique, company workflows, HF demo, and repo trial; one accidental `.` reply remains pending deletion confirmation. |
 | 2026-05-17 | Hacker News | https://news.ycombinator.com/submit | blocked_by_login | Chrome reaches submit page, but HN account is not logged in. |
 | 2026-05-17 | Reddit | https://www.reddit.com/r/LocalLLaMA/submit | blocked_by_login | Chrome is not logged into Reddit. |
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_login | Chrome is not logged into Hugging Face. |
@@ -71,6 +72,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-18 | Taxonomy issue monitoring | GitHub CLI | Checked LegalCiteBench issue #1 and RAGChecker issue #38; both remain open with no comments yet, so no follow-up reply is due. |
 | 2026-05-18 | GitHub contribution conversion | `.github/ISSUE_TEMPLATE/` | Added structured issue forms for hard citation benchmark cases and batch/PDF/Docx audit demand. |
 | 2026-05-18 | X professional wave | `growth/x_professional_wave_001.md` | Prepared a targeted X thread, standalone posts, reply templates, audience map, and GitHub issue CTAs for professional/company feedback. |
+| 2026-05-18 | X professional wave launch | https://x.com/liuweidi2/status/2056387592187510933 | Published the 7-reply professional feedback thread; monitor for replies, hard benchmark cases, company workflow comments, and repo/HF demo clicks. |
 | 2026-05-17 | GitHub metadata | Attempted to update repo description, homepage, and topics. | Blocked by GitHub API 404 from current `gh repo edit` permission path; push/issue/release permissions still work. |
 | 2026-05-17 | GitHub issue #1 | https://github.com/reguorier/ai-judge/issues/1#issuecomment-4470493105 | Added comment linking issue #1 to the new launch contribution funnel. |
 | 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |
@@ -88,6 +90,7 @@ This file records public launch links, replies, objections, and product signals 
 | LegalCiteBench taxonomy exchange | https://github.com/Sijia711/LegalCiteBench/issues/1 |
 | RAGChecker taxonomy exchange | https://github.com/amazon-science/RAGChecker/issues/38 |
 | X launch post | https://x.com/liuweidi2/status/2055973517779521750 |
+| X professional review thread | https://x.com/liuweidi2/status/2056387592187510933 |
 | Zhihu long-form launch | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | Reddit r/LocalLLaMA launch attempt | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ |
 

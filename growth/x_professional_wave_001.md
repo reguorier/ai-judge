@@ -1,6 +1,6 @@
 # X Professional Wave 001 - Citation Audit Review Funnel
 
-Status: ready_for_action_time_confirmation
+Status: posted_cleanup_pending
 Created: 2026-05-18
 
 This wave is not a broad product ad. Its job is to convert X attention into specific GitHub actions from people who understand LLM eval, RAG, legal AI, research ops, open-source maintainers, and AI product governance.
@@ -35,6 +35,21 @@ Unverifiable vs contradicted: https://github.com/reguorier/ai-judge/issues/3
 Batch/PDF/Docx demand: https://github.com/reguorier/ai-judge/issues/4
 Demo gallery examples: https://github.com/reguorier/ai-judge/issues/5
 ```
+
+## Publication Log
+
+Posted on 2026-05-18 from the logged-in X account `@liuweidi2`.
+
+| Item | URL | Status | Notes |
+|---|---|---|---|
+| Main thread root | https://x.com/liuweidi2/status/2056387592187510933 | live | Establishes the real-source / unsupported-claim problem. |
+| Accidental placeholder reply | https://x.com/liuweidi2/status/2056387955716206625 | cleanup_pending | A single `.` was posted while testing X input behavior; deletion still needs action-time confirmation. |
+| Source-isolation axes | https://x.com/liuweidi2/status/2056388203385671900 | live | Mentions citation status, source relevance, and claim support. |
+| Demo verdict list | https://x.com/liuweidi2/status/2056388674879971470 | live | Includes Hugging Face Space card. |
+| Benchmark-case CTA | https://x.com/liuweidi2/status/2056388905625399547 | live | Points to GitHub issue #2. |
+| Taxonomy-boundary CTA | https://x.com/liuweidi2/status/2056389077700935858 | live | Points to GitHub issue #3. |
+| Company workflow CTA | https://x.com/liuweidi2/status/2056390579261759998 | live | Points to GitHub issue #4. |
+| Repo / final CTA | https://x.com/liuweidi2/status/2056390712665772083 | live | Points to the GitHub repo. |
 
 ## Target Audiences
 
