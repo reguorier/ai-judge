@@ -34,6 +34,8 @@ SOURCE_RELEVANCE_STATUSES = (
 SUPPORT_FAILURE_CODES = (
     "none",
     "overclaimed_causation",
+    "overclaimed_absolute",
+    "overclaimed_quantified_effect",
     "missing_claim_evidence",
     "source_silent",
     "citation_unmatched",
@@ -61,6 +63,21 @@ _CAUSATION_DISCLAIMER_RE = re.compile(
     r"(不能证明因果|不能推出因果|不代表因果|并不证明因果|未证明因果|非因果)",
     re.IGNORECASE,
 )
+_ABSOLUTE_CLAIM_RE = re.compile(
+    r"\b(all|always|every|entirely|guarantee|guaranteed|guarantees|"
+    r"eliminate|eliminates|eliminated|never|no false negatives|no risk|"
+    r"100%|fully|complete|completely)\b|"
+    r"(所有|全部|总是|一定|保证|完全|彻底|消除|从不|零风险|百分之百)",
+    re.IGNORECASE,
+)
+_LIMITED_EVIDENCE_RE = re.compile(
+    r"\b(some|pilot|limited|partial|partially|not all|not always|not guaranteed|"
+    r"does not guarantee|cannot guarantee|residual risk|sample|subset|small study|"
+    r"not exhaustive|false negatives|varied|variable|mixed results|inconclusive)\b|"
+    r"(部分|有限|试点|样本|子集|不能保证|无法保证|仍有风险|假阴性|不完整|结果不一|尚无定论)",
+    re.IGNORECASE,
+)
+_PERCENT_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*%")
 
 
 def audit_claim_support(
@@ -128,6 +145,14 @@ def _audit_one_item(
         claim_support = "contradicted"
         failure_code = "overclaimed_causation"
         reason = "The claim uses causal language, while the matched source reports association or explicitly disclaims causation."
+    elif _overclaimed_absolute(claim_text, evidence_text):
+        claim_support = "contradicted"
+        failure_code = "overclaimed_absolute"
+        reason = "The claim uses absolute language, while the matched source is limited, partial, or explicitly caveated."
+    elif _overclaimed_quantified_effect(claim_text, evidence_text):
+        claim_support = "contradicted"
+        failure_code = "overclaimed_quantified_effect"
+        reason = "The claim states a larger quantified effect than the matched source supports."
     elif citation_status == "verified":
         claim_support = "supported"
         failure_code = "none"
@@ -273,6 +298,22 @@ def _overclaimed_causation(claim_text: str, evidence_text: str) -> bool:
     if _CAUSATION_DISCLAIMER_RE.search(evidence_text):
         return True
     return bool(_ASSOCIATION_RE.search(evidence_text) and not _CAUSAL_RE.search(evidence_text))
+
+
+def _overclaimed_absolute(claim_text: str, evidence_text: str) -> bool:
+    return bool(_ABSOLUTE_CLAIM_RE.search(claim_text) and _LIMITED_EVIDENCE_RE.search(evidence_text))
+
+
+def _overclaimed_quantified_effect(claim_text: str, evidence_text: str) -> bool:
+    claim_numbers = _percentages(claim_text)
+    evidence_numbers = _percentages(evidence_text)
+    if not claim_numbers or not evidence_numbers:
+        return False
+    return max(claim_numbers) > max(evidence_numbers) + 5.0
+
+
+def _percentages(text: str) -> list[float]:
+    return [float(match.group(1)) for match in _PERCENT_RE.finditer(str(text or ""))]
 
 
 def _counts(items: list[dict[str, Any]], key: str, schema: tuple[str, ...]) -> dict[str, int]:

@@ -1664,7 +1664,28 @@ function renderFinalReport(v, executionComplete = true) {
   if (executive) {
     const reportUrl = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
     const detailHref = `${reportUrl}${executive.detail_anchor || "#professional-report"}`;
+    const sopHref = `${reportUrl}#closeout-sop`;
     const why = (executive.why || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+    const sop = report.sop_closeout || null;
+    const sopPhases = sop ? (sop.phases || []).slice(0, 4).map(phase => `
+      <article>
+        <h4>${escapeHtml(phase.title || "")}</h4>
+        <ul>${(phase.items || []).slice(0, 3).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </article>
+    `).join("") : "";
+    const sopPreview = sop ? `
+      <div class="sop-preview">
+        <p class="paper-kicker">STANDARD CLOSEOUT SOP</p>
+        <h3>${escapeHtml(sop.title || "标准化收口 SOP")}</h3>
+        <p>${escapeHtml(sop.final_judgment || "")}</p>
+        <p>${escapeHtml(sop.one_sentence_plan || "")}</p>
+        <div class="sop-phases">${sopPhases}</div>
+        <div class="sop-template-mini">
+          <strong>Codex 执行模板</strong>
+          <span>${escapeHtml(sop.codex_template?.goal || "")}</span>
+        </div>
+      </div>
+    ` : "";
     target.innerHTML = `
       <section class="executive-report">
         <p class="paper-kicker">FINAL VERDICT · HUMAN SUMMARY</p>
@@ -1679,7 +1700,9 @@ function renderFinalReport(v, executionComplete = true) {
           <h3>为什么这样判</h3>
           <ul>${why}</ul>
         </div>
+        ${sopPreview}
         <div class="executive-actions">
+          ${sop ? `<a class="ghost" href="${escapeAttr(sopHref)}">查看标准 SOP</a>` : ""}
           <a class="ghost" href="${escapeAttr(detailHref)}">查看专业报告</a>
         </div>
       </section>
@@ -2942,6 +2965,8 @@ function downloadJSON(data, filename) {
 
 function finalReportMarkdown(report) {
   if (!report) return "";
+  const sop = report.sop_closeout || {};
+  const template = sop.codex_template || {};
   const lines = [
     `## ${report.title || "AI Judge 最终方案报告"}`,
     "",
@@ -2964,6 +2989,38 @@ function finalReportMarkdown(report) {
     `- 置信度：${report.final_position?.confidence || "-"}`,
     `- 轮值法官：${report.judge_editor?.label || "-"}`,
     `- 摘要：${report.final_position?.summary || "-"}`,
+    "",
+    "### 标准化收口 SOP",
+    "",
+    sop.final_judgment || "",
+    "",
+    sop.one_sentence_plan || "",
+    "",
+    ...((sop.phases || []).flatMap((phase) => [
+      `#### ${phase.title || ""}`,
+      "",
+      ...((phase.items || []).map(item => `- ${item}`)),
+      "",
+    ])),
+    "#### Codex 执行模板",
+    "",
+    `目标：${template.goal || "-"}`,
+    "",
+    `产品定位：${template.positioning || "-"}`,
+    "",
+    "当前优先级：",
+    "",
+    ...((template.current_priorities || []).map(item => `- ${item}`)),
+    "",
+    "执行规则：",
+    "",
+    ...((template.execution_rules || []).map(item => `- ${item}`)),
+    "",
+    "输出要求：",
+    "",
+    ...((template.output_requirements || []).map(item => `- ${item}`)),
+    "",
+    sop.final_essence || "",
     "",
     "### JUDGE CLOSEOUT",
     "",

@@ -140,7 +140,7 @@ The current deterministic benchmark has two layers:
 | Benchmark | Scope |
 |---|---|
 | `citation-bench-100` | Broad deterministic cases across the five labels. |
-| `citation-bench-hard-11` | Hard launch cases for public demos and regression checks. |
+| `citation-bench-hard-11` | Hard launch cases for public demos and regression checks; legacy filename, currently 13 cases. |
 
 The hard set includes:
 
@@ -150,29 +150,31 @@ The hard set includes:
 | Real but irrelevant source | The URL exists, but the content supports a different topic. |
 | Contradicted source | External evidence explicitly refutes the generated claim. |
 | Missing / blocked / unfetched evidence | The correct next action is retry or evidence request, not declaring falsehood. |
-| Real source, overclaimed support | The source reports correlation; the model claims causation. |
+| Real source, overclaimed support | The source supports a weaker proposition; the model claims causation, absolutes, or an inflated percentage. |
 
 Current benchmark snapshot:
 
 | Benchmark | Cases | Passed | Accuracy | Notes |
 |---|---:|---:|---:|---|
-| `citation-bench-hard-11` | 11 | 11 | 1.00 | Public hard launch set. |
+| `citation-bench-hard-11` | 13 | 13 | 1.00 | Public hard launch set. |
 
 `citation-bench-hard-11` category coverage:
 
 | Expected status | Passed | Total |
 |---|---:|---:|
-| `verified` | 2 | 2 |
+| `verified` | 5 | 5 |
 | `weakly_verified` | 2 | 2 |
 | `irrelevant` | 2 | 2 |
 | `unverifiable` | 2 | 2 |
-| `contradicted` | 3 | 3 |
+| `contradicted` | 2 | 2 |
 
 Claim-support hard row:
 
 | Citation status | Source relevance | Claim support | Failure code | Interpretation |
 |---|---|---|---|---|
 | `verified` | `relevant` | `contradicted` | `overclaimed_causation` | The source exists and is on-topic, but it reports association while the model states causation. |
+| `verified` | `relevant` | `contradicted` | `overclaimed_absolute` | The source is limited or caveated, while the model states an absolute. |
+| `verified` | `relevant` | `contradicted` | `overclaimed_quantified_effect` | The source reports a smaller effect, while the model states a much larger percentage. |
 
 Current command:
 
@@ -185,7 +187,7 @@ PYTHONPATH=. python tools/run_citation_bench.py \
 Recent result:
 
 ```text
-11 / 11 passed
+13 / 13 passed
 accuracy = 1.0
 ```
 

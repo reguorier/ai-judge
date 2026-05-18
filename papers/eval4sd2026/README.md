@@ -38,13 +38,13 @@ The paper should be submitted as a short / position paper, not a full benchmark 
 Citation existence, source relevance, and exact claim support must be audited as separate layers.
 ```
 
-The hard example is the real-source / overclaimed-causation case:
+The hard examples are the real-source / overclaimed-support cases:
 
 ```text
 citation_status = verified
 source_relevance = relevant
 claim_support = contradicted
-support_failure_code = overclaimed_causation
+support_failure_code = overclaimed_causation | overclaimed_absolute | overclaimed_quantified_effect
 ```
 
 ## Build Notes

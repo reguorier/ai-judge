@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fake Citation Audit Demo</title>
+  <title>Real Source, Overclaimed Absolute Claim</title>
   <style>
     :root { color-scheme: light; --ink:#17212b; --muted:#5c6875; --line:#dbe3ea; --bg:#f7f9fb; --panel:#ffffff; --accent:#0f766e; --bad:#b42318; --warn:#a15c07; --good:#067647; }
     * { box-sizing:border-box; }
@@ -35,36 +35,36 @@
 </head>
 <body>
   <header>
-    <h1>Fake Citation Audit Demo</h1>
+    <h1>Real Source, Overclaimed Absolute Claim</h1>
     <div class="sub">AI Judge Citation Audit checks AI-generated claims against isolated external evidence. Model-mentioned candidate sources do not verify themselves.</div>
     <div class="grid">
-      <div class="card"><div class="label">Overall</div><div class="value">unverifiable</div></div>
-      <div class="card"><div class="label">Claim Support</div><div class="value">unknown</div></div>
-      <div class="card"><div class="label">Trust Gate</div><div class="value">needs_more_evidence</div></div>
-      <div class="card"><div class="label">Certification</div><div class="value">CITE-20260518-2F628FFC46</div></div>
-      <div class="card"><div class="label">Open Gaps</div><div class="value">1</div></div>
+      <div class="card"><div class="label">Overall</div><div class="value">verified</div></div>
+      <div class="card"><div class="label">Claim Support</div><div class="value">contradicted</div></div>
+      <div class="card"><div class="label">Trust Gate</div><div class="value">pass</div></div>
+      <div class="card"><div class="label">Certification</div><div class="value">CITE-20260518-E6748DE4E0</div></div>
+      <div class="card"><div class="label">Open Gaps</div><div class="value"></div></div>
     </div>
   </header>
   <main>
     <h2>Question</h2>
-    <div class="card">Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?</div>
+    <div class="card">Does the cited pilot prove that all hallucinated citations are caught?</div>
     <h2>Submitted Answer</h2>
-    <pre>AI citation errors are basically solved in modern LLM systems. The 2026 Stanford Trustworthy AI Citation Survey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.</pre>
+    <pre>The citation audit catches all hallucinated citations with no false negatives, so it can be used as a complete publication gate. Source: https://example.com/research/citation-audit-pilot</pre>
     <h2>Citation Verification</h2>
-    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody><tr><td>CITE-001</td><td>https://stanford.example.edu/trustworthy-ai-citation-survey-2026</td><td><span class="pill status-unverifiable">unverifiable</span></td><td>该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。</td><td>candidate_not_fetched</td><td></td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody><tr><td>CITE-001</td><td>https://example.com/research/citation-audit-pilot</td><td><span class="pill status-verified">verified</span></td><td>引用与外部证据强匹配，且与当前问题/上下文相关。</td><td></td><td>0.36</td></tr></tbody></table>
     <p class="note">unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。</p>
     <h2>Claim Support</h2>
-    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Failure</th><th>Reason</th></tr></thead><tbody><tr><td>CLAIM-EB24C2111E</td><td>See .</td><td><span class="pill status-unknown">unknown</span></td><td><span class="pill status-unknown">unknown</span></td><td>missing_claim_evidence</td><td>The citation is currently unverifiable, so claim-level support cannot be upgraded.</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Failure</th><th>Reason</th></tr></thead><tbody><tr><td>CLAIM-07D9ACCA8B</td><td>The citation audit catches all hallucinated citations with no false negatives, so it can be used as a complete publication gate.</td><td><span class="pill status-relevant">relevant</span></td><td><span class="pill status-contradicted">contradicted</span></td><td>overclaimed_absolute</td><td>The claim uses absolute language, while the matched source is limited, partial, or explicitly caveated.</td></tr></tbody></table>
     <p class="note">A verified citation can still fail claim support when the source is relevant but does not prove the exact generated claim.</p>
     <h2>Evidence Broker</h2>
-    <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody><tr><td>EVID-REAL-001</td><td>user_supplied</td><td>user_supplied</td><td>provided</td><td>Stanford AI Index</td></tr><tr><td>CAND-52CC4D2405</td><td>candidate_source</td><td>model_candidate</td><td>not_fetched</td><td>https://stanford.example.edu/trustworthy-ai-citation-survey-2026.</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody><tr><td>USR-EVID-001</td><td>user_supplied</td><td>user_supplied</td><td>provided</td><td>Citation audit pilot</td></tr></tbody></table>
     <h2>Evidence Gap Queue</h2>
-    <table><thead><tr><th>ID</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>GAP-001-D91C7B</td><td>high</td><td>open</td><td>补充可复核 URL/DOI/报告页码，或标记为不可认证。</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td colspan="4">No open gaps.</td></tr></tbody></table>
     <h2>Replay Ledger</h2>
     <div class="card">
-      <div><strong>Replay Ledger Hash:</strong> dc9a9e29578e3d60b25d31a62360ae179244df8b383d3f171eb8a0013bfba575</div>
-      <div><strong>Certification Hash:</strong> c9438c6d0827cb8ac55de1e71da233193e16e8bcc625f698fd2f8ccca1c7d547</div>
-      <div><strong>Audit ID:</strong> batch-0a9ec0bbc7b8-001</div>
+      <div><strong>Replay Ledger Hash:</strong> 13e065d76ae0732e6da9001775cd9de6190859d538f09bfeb0bf2791899aebf7</div>
+      <div><strong>Certification Hash:</strong> 1a56dc51c1f0c1f36591c641de108fb25ca866ccf88dbd1df311cdb0425c4790</div>
+      <div><strong>Audit ID:</strong> audit-c2f0414ce9dc</div>
     </div>
   </main>
 </body>

@@ -18,15 +18,23 @@ This matters because a real source is not the same as a proven conclusion. A sou
 
 The key design choice is that these statuses can disagree without overwriting each other.
 
-## MVP Rule
+## MVP Rules
 
-The first implemented deterministic rule catches overclaimed causation:
+The implemented deterministic MVP catches three high-signal overclaim families:
 
 ```text
 claim span contains causal language
 + matched source contains association/correlation language
 + source disclaims or does not establish causation
 = support_failure_code: overclaimed_causation
+
+claim span contains absolute language
++ matched source is limited, partial, sampled, or caveated
+= support_failure_code: overclaimed_absolute
+
+claim span states a larger percentage effect than the matched source
++ claim percentage exceeds source percentage by more than 5 points
+= support_failure_code: overclaimed_quantified_effect
 ```
 
 Example:

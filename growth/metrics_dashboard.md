@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-19 00:57 HKT
+Last refreshed: 2026-05-19 02:30 HKT
 
 ## Targets
 
@@ -18,7 +18,7 @@ Last refreshed: 2026-05-19 00:57 HKT
 |---|---|---|---:|---:|---:|---:|---|
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live_http_200_checked_2026-05-18 | TBD | TBD | TBD | TBD | Space page is reachable; sample switcher remains a code/deploy follow-up if HF write access is available. |
 | GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_checked_2026-05-19_0026_hkt | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; #2 and #4 still have no comments; #1/#3/#5 only have maintainer progress updates. |
-| Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded | TBD | 0 | TBD | TBD | Six demos now cover unverifiable, contradicted, irrelevant, weak evidence, and real-source/unsupported-claim stories. |
+| Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded_claim_support | TBD | 0 | TBD | TBD | Eight demos now cover unverifiable, contradicted, irrelevant, weak evidence, and three real-source/unsupported-claim families: causation, absolutes, and quantified overclaiming. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
 | X / short-form | https://x.com/liuweidi2/status/2056387592187510933 | live_wave_001_posted_cleanup_pending | TBD | 7 self-replies | TBD | TBD | Professional review thread is live with CTAs for issue #2/#3/#4, HF demo, and repo trial. One accidental `.` reply needs deletion confirmation before cleanup. |
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |
@@ -29,7 +29,7 @@ Last refreshed: 2026-05-19 00:57 HKT
 | Outreach email | growth/outreach_status.md | sent_5_reply_1_benchmark_case_1 | 0 | 1 | TBD | 0 | O001-O004 were sent through QQ Mail; O005 Eval4SD support-path request was sent after user confirmation; O002 produced a high-value benchmark/taxonomy signal. Wait 3-5 days before routine follow-ups unless replies arrive. |
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition; checked by `gh issue view`, no comments yet. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support; checked by `gh issue view`, no comments yet. |
-| Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | organizer_support_request_sent_packet_verified | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview says profile is created and under moderation, usually less than 1 business day and up to 2 weeks. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance. |
+| Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | organizer_support_request_sent_packet_verified_hard13 | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview says profile is created and under moderation, usually less than 1 business day and up to 2 weeks. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance; packet check now passes with full 100/100 and hard 13/13. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
 | Pro early access | growth/pro_interest_status.md | batch_mvp_action_mode_parser_guard_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields; `ai-judge audit-batch` and GitHub Action batch mode implement the first Markdown/JSON batch value step before billing. PDF/Docx inputs now surface as parser-pending skipped inputs instead of disappearing from batch proof. |

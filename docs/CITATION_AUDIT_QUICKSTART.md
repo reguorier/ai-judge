@@ -20,6 +20,8 @@ Open `reports/fake-citation-audit.html` in a browser.
 | Legal memo contradicted | [`examples/legal-memo-contradicted.md`](../examples/legal-memo-contradicted.md) | [`reports/legal-memo-contradicted-audit.html`](../reports/legal-memo-contradicted-audit.html) / [`json`](../reports/legal-memo-contradicted-audit.json) |
 | Open-source README irrelevant | [`examples/opensource-readme-irrelevant.md`](../examples/opensource-readme-irrelevant.md) | [`reports/opensource-readme-irrelevant-audit.html`](../reports/opensource-readme-irrelevant-audit.html) / [`json`](../reports/opensource-readme-irrelevant-audit.json) |
 | Real source, overclaimed causation | [`examples/real-source-overclaimed-causation.md`](../examples/real-source-overclaimed-causation.md) | [`reports/real-source-overclaimed-causation-audit.html`](../reports/real-source-overclaimed-causation-audit.html) / [`json`](../reports/real-source-overclaimed-causation-audit.json) |
+| Real source, overclaimed absolute | [`examples/real-source-overclaimed-absolute.md`](../examples/real-source-overclaimed-absolute.md) | [`reports/real-source-overclaimed-absolute-audit.html`](../reports/real-source-overclaimed-absolute-audit.html) / [`json`](../reports/real-source-overclaimed-absolute-audit.json) |
+| Real source, overclaimed quantified effect | [`examples/real-source-overclaimed-quantified.md`](../examples/real-source-overclaimed-quantified.md) | [`reports/real-source-overclaimed-quantified-audit.html`](../reports/real-source-overclaimed-quantified-audit.html) / [`json`](../reports/real-source-overclaimed-quantified-audit.json) |
 
 ## Input format
 
@@ -72,9 +74,9 @@ PYTHONPATH=. python tools/run_citation_bench.py \
   --fail-under 0.95
 ```
 
-The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, sources that exist but do not support the claim, and real sources whose correlation findings are overclaimed as causation.
+The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, sources that exist but do not support the claim, and real sources whose limited findings are overclaimed as causation, absolutes, or inflated percentages.
 
-The overclaimed-causation demo is the key governance case: the citation can stay `verified`, the source can stay `relevant`, and the exact claim can still be `contradicted` because the source reports association while the answer states causation.
+The overclaimed-support demos are the key governance cases: the citation can stay `verified`, the source can stay `relevant`, and the exact claim can still be `contradicted` because the source supports a weaker proposition than the answer states.
 
 ## Run a batch audit
 

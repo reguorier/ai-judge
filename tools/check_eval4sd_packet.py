@@ -153,6 +153,8 @@ def main() -> int:
         "\\texttt{relevant}",
         "\\texttt{contradicted}",
         "\\texttt{overclaimed\\_causation}",
+        "\\texttt{overclaimed\\_absolute}",
+        "\\texttt{overclaimed\\_quantified\\_effect}",
     ):
         require_contains(errors, tex, token, "overclaimed-causation support row token")
 

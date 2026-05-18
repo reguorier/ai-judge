@@ -16,7 +16,7 @@ One citation can cover several claims:
 - is silent on a second clause,
 - and contradicts a third clause.
 
-A single citation verdict cannot represent that cleanly. A real and relevant source can still fail to support the model's exact claim. The hard benchmark includes this boundary: a source reports correlation, while the generated answer claims causation.
+A single citation verdict cannot represent that cleanly. A real and relevant source can still fail to support the model's exact claim. The hard benchmark includes this boundary: a source reports correlation while the generated answer claims causation, a limited pilot is rewritten as "all/no false negatives", and a 12% effect is inflated to 95%.
 
 ## Target data model
 
@@ -35,12 +35,20 @@ The source can be verified while the claim support is contradicted. AI Judge sho
 
 ## Implemented MVP
 
-AI Judge now emits a separate `claim_support_audit` block after citation verification. The first deterministic rule covers the highest-value hard case:
+AI Judge now emits a separate `claim_support_audit` block after citation verification. The deterministic MVP covers three high-value hard cases:
 
 ```text
 real/relevant source + association-only evidence + causal model claim
 = claim_support: contradicted
 = support_failure_code: overclaimed_causation
+
+real/relevant source + limited evidence + absolute model claim
+= claim_support: contradicted
+= support_failure_code: overclaimed_absolute
+
+real/relevant source + lower percentage effect + inflated model percentage
+= claim_support: contradicted
+= support_failure_code: overclaimed_quantified_effect
 ```
 
 This preserves both truths at once:

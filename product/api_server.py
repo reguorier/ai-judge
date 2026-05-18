@@ -3296,6 +3296,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     evidence_os_link = '<a href="#evidence-os">Evidence OS</a>' if evidence_os_html else ""
     cross_temporal_link = '<a href="#cross-temporal">横纵收口</a>' if cross_temporal_html else ""
     final_report_link = '<a href="#final-report">最终方案</a>' if final_report_html else ""
+    sop_link = '<a href="#closeout-sop">标准 SOP</a>' if final_report_html else ""
     return f"""<!doctype html>
 <html lang="zh-Hans">
 <head>
@@ -3346,6 +3347,17 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .executive-grid span {{ display:block; color:var(--muted); font-size:11px; font-weight:800; margin-bottom:5px; }}
     .executive-grid strong {{ display:block; line-height:1.45; overflow-wrap:anywhere; }}
     .executive-why h3 {{ margin:0 0 8px; color:var(--accent); }}
+    .sop-report {{ border:1px solid var(--line); border-radius:8px; padding:22px; margin:18px 0; background:#101827; }}
+    .sop-report h2 {{ margin:6px 0 10px; font-size:24px; }}
+    .sop-judgment {{ font-size:18px; line-height:1.75; font-weight:800; margin:8px 0; }}
+    .sop-one-line, .sop-essence {{ line-height:1.75; color:var(--text); }}
+    .sop-phases {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:12px 0; }}
+    .sop-phase, .sop-template, .sop-boundary {{ border:1px solid var(--line); border-radius:8px; background:#0d1424; padding:13px; }}
+    .sop-phase h3, .sop-template h3, .sop-boundary h3 {{ margin-top:0; color:var(--accent); }}
+    .sop-phase ul, .sop-template ul, .sop-boundary ul {{ margin:0; padding-left:18px; line-height:1.65; }}
+    .sop-template-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:10px; }}
+    .sop-template-grid div {{ border:1px solid var(--line); border-radius:8px; padding:10px; background:#101827; }}
+    .sop-template-grid h4 {{ margin:0 0 8px; color:var(--muted); }}
     .paper-report {{ border:1px solid var(--line); border-radius:8px; padding:22px; margin:18px 0; background:#101827; }}
     .paper-heading h2 {{ font-size:24px; margin:6px 0; }}
     .paper-kicker {{ margin:0; color:var(--accent); font-size:12px; font-weight:800; letter-spacing:0; }}
@@ -3389,7 +3401,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .actions a {{ color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:9px 12px; background:#101622; font-weight:700; }}
     @media (max-width: 760px) {{
       .summary-grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }}
-      .paper-meta, .paper-postulates, .paper-columns, .executive-grid {{ grid-template-columns:1fr; }}
+      .paper-meta, .paper-postulates, .paper-columns, .executive-grid, .sop-phases, .sop-template-grid {{ grid-template-columns:1fr; }}
       .section-head {{ display:block; }}
       .report-columns {{ grid-template-columns:1fr; }}
       .mini-actions {{ justify-content:flex-start; margin-top:10px; }}
@@ -3410,7 +3422,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     <p class="badge">{html.escape(str(result.get("mode_emoji", "")))} {html.escape(str(result.get("verdict_label", "")))} · {result.get("confidence", 0)}%</p>
     <h1>{html.escape(str(result.get("one_liner", "AI Judge Verdict")))}</h1>
     <p class="question">{html.escape(str(result.get("question", "")))}</p>
-    <div class="actions"><a href="/">返回提问界面</a>{final_report_link}{cross_temporal_link}{judge_answer_link}{score_rounds_link}{citation_link}{evidence_os_link}{seat_digest_link}{seat_answers_link}{mentor_supplements_link}{deliberation_link}</div>
+    <div class="actions"><a href="/">返回提问界面</a>{final_report_link}{sop_link}{cross_temporal_link}{judge_answer_link}{score_rounds_link}{citation_link}{evidence_os_link}{seat_digest_link}{seat_answers_link}{mentor_supplements_link}{deliberation_link}</div>
   </section>
   {collection_html}
   {final_report_html}

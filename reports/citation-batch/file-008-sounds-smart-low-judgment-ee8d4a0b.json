@@ -2,17 +2,17 @@
   "schema": "citation_audit.v1",
   "product": "AI Judge Citation Audit",
   "version": "3.8.0",
-  "audit_id": "batch-0a9ec0bbc7b8-001",
-  "title": "Fake Citation Audit Demo",
-  "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
-  "answer": "AI citation errors are basically solved in modern LLM systems. The 2026 Stanford Trustworthy AI Citation Survey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+  "audit_id": "batch-0a9ec0bbc7b8-008",
+  "title": "Sounds Smart Low Judgment Demo",
+  "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
+  "answer": "The company is an obvious buy because every major model agrees the moat is expanding, margin compression is temporary, and management has unlocked a new flywheel. The 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
   "allow_network": false,
   "grand_judge": {
     "schema": "grand_judge.citation_mvp.v1",
     "phase": "citation_verification_mvp",
-    "run_id": "batch-0a9ec0bbc7b8-001",
-    "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
-    "certification_id": "CITE-20260518-2F628FFC46",
+    "run_id": "batch-0a9ec0bbc7b8-008",
+    "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
+    "certification_id": "CITE-20260518-4A5334F6B8",
     "citation_verification": {
       "schema": "citation_validator.summary.v1",
       "status_schema": [
@@ -50,8 +50,8 @@
       },
       "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
       "verification_hash": "f4c9d69dcbaed50f0de02580cd6371450609c8ee5fbeef8b816b337aa897ddd1",
-      "certification_id": "CITE-20260518-2F628FFC46",
-      "replay_ledger_hash": "dc9a9e29578e3d60b25d31a62360ae179244df8b383d3f171eb8a0013bfba575",
+      "certification_id": "CITE-20260518-4A5334F6B8",
+      "replay_ledger_hash": "f9d19b350c1c51856bd057a1074cd6993f148d8e1b9b86dd8e452194c62973d7",
       "external_evidence_count": 2
     },
     "replay_ledger": [
@@ -60,8 +60,8 @@
         "seat": "submitted_answer",
         "seat_name": "Submitted AI Answer",
         "ok": true,
-        "raw_answer": "AI citation errors are basically solved in modern LLM systems. The 2026 Stanford Trustworthy AI Citation Survey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
-        "raw_answer_hash": "bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555",
+        "raw_answer": "The company is an obvious buy because every major model agrees the moat is expanding, margin compression is temporary, and management has unlocked a new flywheel. The 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
+        "raw_answer_hash": "29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c",
         "mentor_supplement": "",
         "mentor_supplement_hash": null,
         "citation_verification": {
@@ -102,43 +102,43 @@
           "items": [
             {
               "citation_id": "CITE-001",
-              "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+              "raw": "https://globalalpha.example.com/consensus-memo-2026",
               "kind": "url",
-              "normalized": "stanford.example.edu/trustworthy-ai-citation-survey-2026",
-              "context": "vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+              "normalized": "globalalpha.example.com/consensus-memo-2026",
+              "context": "he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
               "status": "unverifiable",
               "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
               "matched_evidence": {
-                "evidence_id": "CAND-52CC4D2405",
-                "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+                "evidence_id": "CAND-B9A8334825",
+                "url": "https://globalalpha.example.com/consensus-memo-2026.",
                 "title": "",
                 "snippet": "",
                 "status": "candidate_unverified",
                 "source_layer": "candidate_source",
                 "provenance": "model_candidate",
                 "match_score": 1.0,
-                "evidence_hash": "68e748076daadd4d664c99e98dfce72184fe2383f418aa1c33d599755bd46936"
+                "evidence_hash": "ae68d765f1a70e75b1facad675f22c92751133665a722df236a254b8f71eed22"
               },
               "relevance_score": 0.0,
-              "verified_at": "2026-05-18T17:15:03.169217+00:00",
+              "verified_at": "2026-05-18T17:15:03.177402+00:00",
               "unverifiable_reason_code": "candidate_not_fetched"
             }
           ],
           "external_evidence_used": 2,
           "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
-          "verified_at": "2026-05-18T17:15:03.169217+00:00",
-          "verification_hash": "dd9625520f758db4aa3a112b10653411b181a8286c6552beddc4d2003d9efb7e"
+          "verified_at": "2026-05-18T17:15:03.177402+00:00",
+          "verification_hash": "7fb4d4692d9def959bc5c9e435694895f072a56bd883b0041d568c159e05827a"
         },
         "mentor_citation_verification": null,
         "unverifiable_reasons": [
           {
             "citation_id": "CITE-001",
-            "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+            "raw": "https://globalalpha.example.com/consensus-memo-2026",
             "reason_code": "candidate_not_fetched",
             "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。"
           }
         ],
-        "verification_timestamp": "2026-05-18T17:15:03.169217+00:00",
+        "verification_timestamp": "2026-05-18T17:15:03.177402+00:00",
         "source_isolation": {
           "raw_answer": "replay_ledger[].raw_answer",
           "mentor_supplement": "replay_ledger[].mentor_supplement",
@@ -147,27 +147,27 @@
         }
       }
     ],
-    "replay_ledger_hash": "dc9a9e29578e3d60b25d31a62360ae179244df8b383d3f171eb8a0013bfba575",
+    "replay_ledger_hash": "f9d19b350c1c51856bd057a1074cd6993f148d8e1b9b86dd8e452194c62973d7",
     "external_evidence_index": [
       {
-        "evidence_id": "EVID-REAL-001",
-        "url": "https://hai.stanford.edu/ai-index",
-        "title": "Stanford AI Index",
+        "evidence_id": "EVID-MARKET-001",
+        "url": "https://www.sec.gov/edgar/search/",
+        "title": "SEC EDGAR company filings search",
         "status": "user_supplied",
         "source_layer": "user_supplied",
         "provenance": "user_supplied",
         "retrieval_state": "provided",
-        "evidence_hash": "4223b54101c2dbf71c191988e0c4dddbd853bf2ce1d1c3757d84b2457a965f6a"
+        "evidence_hash": "cbdc2c7382a72d105197216de0b2c7875df5accb04b8f7073d55679baed0df25"
       },
       {
-        "evidence_id": "CAND-52CC4D2405",
-        "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+        "evidence_id": "CAND-B9A8334825",
+        "url": "https://globalalpha.example.com/consensus-memo-2026.",
         "title": null,
         "status": "candidate_unverified",
         "source_layer": "candidate_source",
         "provenance": "model_candidate",
         "retrieval_state": "not_fetched",
-        "evidence_hash": "90addfb2ff8268f96b4767598bcb15d4c8aed3bd7cfdddfe39ca8de600800ef2"
+        "evidence_hash": "4cd01c911d70370bcaf052eb8904ba4101cd130f757770075d90ada89c5e9ef7"
       }
     ],
     "source_isolation": {
@@ -207,12 +207,12 @@
       "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
       "unverifiable 不是 false，UI 必须解释清楚。"
     ],
-    "created_at": "2026-05-18T17:15:03.169217+00:00",
-    "certification_hash": "c9438c6d0827cb8ac55de1e71da233193e16e8bcc625f698fd2f8ccca1c7d547",
+    "created_at": "2026-05-18T17:15:03.177402+00:00",
+    "certification_hash": "f2d785be87f3381547792656daba545934fae7fe3f64ea9bfa72d0f556890482",
     "evidence_broker": {
       "schema": "evidence_broker.v1",
-      "created_at": "2026-05-18T17:15:03.169217+00:00",
-      "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
+      "created_at": "2026-05-18T17:15:03.177402+00:00",
+      "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
       "allow_network": false,
       "source_policy": {
         "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
@@ -222,26 +222,26 @@
       },
       "items": [
         {
-          "id": "EVID-REAL-001",
-          "url": "https://hai.stanford.edu/ai-index",
-          "title": "Stanford AI Index",
-          "snippet": "The AI Index tracks AI trends and risks, but this supplied evidence does not contain the claimed 2026 Trustworthy AI Citation Survey or the below-1-percent claim.",
-          "text": "AI Index reports measure broad AI trends and policy topics. This evidence does not verify the specific citation survey named by the answer.",
+          "id": "EVID-MARKET-001",
+          "url": "https://www.sec.gov/edgar/search/",
+          "title": "SEC EDGAR company filings search",
+          "snippet": "SEC filings can verify company-reported financial statements and risk factors. This evidence does not verify the named Global Alpha Consensus Memo or the broad moat and flywheel claims.",
+          "text": "The supplied external evidence is a general filing search entry and does not directly support the answer's investment recommendation.",
           "status": "user_supplied",
           "trusted": true,
           "source_layer": "user_supplied",
           "retrieval_state": "provided",
           "provenance": "user_supplied",
           "provenance_rank": 1,
-          "evidence_hash": "0657e1d64d3fc4407e411933e327ee5a0ba9bddeac9b9684f51c4698bc55928d"
+          "evidence_hash": "0f963e7132e38ca1555882be28b87aaa776e3db77a5559c710f274b483544f3c"
         },
         {
-          "id": "CAND-52CC4D2405",
-          "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "id": "CAND-B9A8334825",
+          "url": "https://globalalpha.example.com/consensus-memo-2026.",
           "title": "",
           "snippet": "",
           "text": "",
-          "raw_source": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "raw_source": "https://globalalpha.example.com/consensus-memo-2026.",
           "kind": "url",
           "status": "candidate_unverified",
           "trusted": false,
@@ -251,31 +251,31 @@
           "provenance_rank": 0,
           "origin_seat": "submitted_answer",
           "origin_layer": "raw_answer",
-          "evidence_hash": "1e7f8953cec3a5b7681cc653fce93cab9833ff649141e48099ae91b1be5dc474"
+          "evidence_hash": "d5c445d516dfb942e240811021fa2305fb585cd2ae4eef1ed22d7e730c23416c"
         }
       ],
       "items_for_validation": [
         {
-          "id": "EVID-REAL-001",
-          "url": "https://hai.stanford.edu/ai-index",
-          "title": "Stanford AI Index",
-          "snippet": "The AI Index tracks AI trends and risks, but this supplied evidence does not contain the claimed 2026 Trustworthy AI Citation Survey or the below-1-percent claim.",
-          "text": "AI Index reports measure broad AI trends and policy topics. This evidence does not verify the specific citation survey named by the answer.",
+          "id": "EVID-MARKET-001",
+          "url": "https://www.sec.gov/edgar/search/",
+          "title": "SEC EDGAR company filings search",
+          "snippet": "SEC filings can verify company-reported financial statements and risk factors. This evidence does not verify the named Global Alpha Consensus Memo or the broad moat and flywheel claims.",
+          "text": "The supplied external evidence is a general filing search entry and does not directly support the answer's investment recommendation.",
           "status": "user_supplied",
           "trusted": true,
           "source_layer": "user_supplied",
           "retrieval_state": "provided",
           "provenance": "user_supplied",
           "provenance_rank": 1,
-          "evidence_hash": "0657e1d64d3fc4407e411933e327ee5a0ba9bddeac9b9684f51c4698bc55928d"
+          "evidence_hash": "0f963e7132e38ca1555882be28b87aaa776e3db77a5559c710f274b483544f3c"
         },
         {
-          "id": "CAND-52CC4D2405",
-          "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "id": "CAND-B9A8334825",
+          "url": "https://globalalpha.example.com/consensus-memo-2026.",
           "title": "",
           "snippet": "",
           "text": "",
-          "raw_source": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "raw_source": "https://globalalpha.example.com/consensus-memo-2026.",
           "kind": "url",
           "status": "candidate_unverified",
           "trusted": false,
@@ -285,7 +285,7 @@
           "provenance_rank": 0,
           "origin_seat": "submitted_answer",
           "origin_layer": "raw_answer",
-          "evidence_hash": "1e7f8953cec3a5b7681cc653fce93cab9833ff649141e48099ae91b1be5dc474"
+          "evidence_hash": "d5c445d516dfb942e240811021fa2305fb585cd2ae4eef1ed22d7e730c23416c"
         }
       ],
       "counts": {
@@ -301,7 +301,7 @@
           "notarized": 0
         }
       },
-      "broker_hash": "d9713299f988390cd73c313d4b9834d68fc38b6cbf0bdabc0b7719a7ed2ad9bf"
+      "broker_hash": "e6a81978bcc4dba5c354c89a42b7dd9fa477744c870d636518a8c857d3711c1e"
     },
     "claim_support_audit": {
       "schema": "claim_support.v1",
@@ -354,26 +354,26 @@
       },
       "items": [
         {
-          "claim_id": "CLAIM-EB24C2111E",
+          "claim_id": "CLAIM-58B6298C1A",
           "citation_id": "CITE-001",
           "citation_status": "unverifiable",
-          "raw_citation": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "raw_citation": "https://globalalpha.example.com/consensus-memo-2026",
           "claim_span": "See .",
-          "source_id": "CAND-52CC4D2405",
-          "source_url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "source_id": "CAND-B9A8334825",
+          "source_url": "https://globalalpha.example.com/consensus-memo-2026.",
           "source_title": "",
           "source_relevance": "unknown",
           "claim_support": "unknown",
           "support_failure_code": "missing_claim_evidence",
           "support_reason": "The citation is currently unverifiable, so claim-level support cannot be upgraded.",
-          "matched_evidence_hash": "68e748076daadd4d664c99e98dfce72184fe2383f418aa1c33d599755bd46936",
-          "audited_at": "2026-05-18T17:15:03.169217+00:00"
+          "matched_evidence_hash": "ae68d765f1a70e75b1facad675f22c92751133665a722df236a254b8f71eed22",
+          "audited_at": "2026-05-18T17:15:03.177402+00:00"
         }
       ],
       "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
-      "audited_at": "2026-05-18T17:15:03.169217+00:00",
+      "audited_at": "2026-05-18T17:15:03.177402+00:00",
       "overall_claim_support": "unknown",
-      "claim_support_hash": "dacd58a6cfe666afb83736ab35aa770ab788308115dd5249a13ad08774760380"
+      "claim_support_hash": "5cfe7979f71121f8b8ad6106ffc8328480d15228b3041fc7c81303e5e846f188"
     },
     "evidence_gap_suggestions": {
       "schema": "evidence_gap_filler.suggestion_only.v1",
@@ -387,7 +387,7 @@
       "suggestions": [
         {
           "citation_id": "CITE-001",
-          "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "raw": "https://globalalpha.example.com/consensus-memo-2026",
           "status": "unverifiable",
           "mentor_level": "L1",
           "mentor_feedback": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
@@ -412,29 +412,29 @@
     },
     "evidence_gap_queue": {
       "schema": "evidence_gap_queue.v1",
-      "created_at": "2026-05-18T17:15:03.169217+00:00",
+      "created_at": "2026-05-18T17:15:03.177402+00:00",
       "open_count": 1,
       "tasks": [
         {
-          "task_id": "GAP-001-D91C7B",
+          "task_id": "GAP-001-9B7C4B",
           "citation_id": "CITE-001",
-          "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "raw": "https://globalalpha.example.com/consensus-memo-2026",
           "status": "unverifiable",
           "priority": "high",
           "mentor_level": "L1",
           "gap": "缺少可匹配的外部证据。",
           "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
           "queue_status": "open",
-          "created_at": "2026-05-18T17:15:03.169217+00:00"
+          "created_at": "2026-05-18T17:15:03.177402+00:00"
         }
       ],
       "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
-      "queue_hash": "95e9d54a194f933e6f7a369a6c744feb6d817865352ad9bd0ba56839958f6f98"
+      "queue_hash": "4360b2eb0f8d3816ebe6c96466e2a7784354fd1e254c9106674d01f3fa6b6f48"
     },
     "blind_cross_validation": {
       "schema": "blind_cross_validation.v1",
       "status": "pending_model_reviews",
-      "created_at": "2026-05-18T17:15:03.169217+00:00",
+      "created_at": "2026-05-18T17:15:03.177402+00:00",
       "reviewer_count": 4,
       "threshold": 0.67,
       "anonymization": {
@@ -447,39 +447,39 @@
           "answer_id": "ANSWER-001",
           "layer": "raw_answer",
           "citation_id": "CITE-001",
-          "citation": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "citation": "https://globalalpha.example.com/consensus-memo-2026",
           "status": "unverifiable",
           "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
-          "context_preview": "vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
-          "answer_hash": "bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555"
+          "context_preview": "he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
+          "answer_hash": "29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c"
         }
       ],
       "review_prompts": [
         {
           "reviewer": "gemini",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
         },
         {
           "reviewer": "chatgpt",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
         },
         {
           "reviewer": "deepseek",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
         },
         {
           "reviewer": "qwen",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
         }
       ],
       "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
-      "packet_hash": "ec7af93af277288bb4a6388a1a75d8d0ee40fe527f46a33acb13c25496ca8e5c"
+      "packet_hash": "6dbe772fc2dd6b52d9feaf61f8ce5a67072c71310ad0290decfb973cb92997c5"
     },
     "eval_case": {
       "schema": "ai_judge_eval_case.v1",
-      "case_id": "EVAL-A8B92C646430",
-      "run_id": "batch-0a9ec0bbc7b8-001",
-      "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
+      "case_id": "EVAL-7867500C867F",
+      "run_id": "batch-0a9ec0bbc7b8-008",
+      "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
       "mode": null,
       "engine": null,
       "verdict": null,
@@ -504,25 +504,25 @@
         "hard_evidence_count": 2,
         "trust_gate": "needs_more_evidence"
       },
-      "certification_id": "CITE-20260518-2F628FFC46",
-      "certification_hash": "c9438c6d0827cb8ac55de1e71da233193e16e8bcc625f698fd2f8ccca1c7d547",
-      "replay_ledger_hash": "dc9a9e29578e3d60b25d31a62360ae179244df8b383d3f171eb8a0013bfba575",
+      "certification_id": "CITE-20260518-4A5334F6B8",
+      "certification_hash": "f2d785be87f3381547792656daba545934fae7fe3f64ea9bfa72d0f556890482",
+      "replay_ledger_hash": "f9d19b350c1c51856bd057a1074cd6993f148d8e1b9b86dd8e452194c62973d7",
       "human_label": null,
-      "created_at": "2026-05-18T17:15:03.169980+00:00",
-      "case_hash": "767368daf33a1067ca3328a98fa58f6bc93154429bd33a1fd032aed1d6a6124a"
+      "created_at": "2026-05-18T17:15:03.177939+00:00",
+      "case_hash": "9c0340b6271a20e029d17088f16f01bed6751dd954676ac75bd7a995ef3c2bd6"
     }
   },
   "human_review_status": {
     "status": "required",
     "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。"
   },
-  "created_at": "2026-05-18T17:15:03.169217+00:00",
+  "created_at": "2026-05-18T17:15:03.177402+00:00",
   "summary": {
     "overall_status": "unverifiable",
     "overall_claim_support": "unknown",
-    "certification_id": "CITE-20260518-2F628FFC46",
-    "certification_hash": "c9438c6d0827cb8ac55de1e71da233193e16e8bcc625f698fd2f8ccca1c7d547",
-    "replay_ledger_hash": "dc9a9e29578e3d60b25d31a62360ae179244df8b383d3f171eb8a0013bfba575",
+    "certification_id": "CITE-20260518-4A5334F6B8",
+    "certification_hash": "f2d785be87f3381547792656daba545934fae7fe3f64ea9bfa72d0f556890482",
+    "replay_ledger_hash": "f9d19b350c1c51856bd057a1074cd6993f148d8e1b9b86dd8e452194c62973d7",
     "item_count": 1,
     "counts": {
       "verified": 0,

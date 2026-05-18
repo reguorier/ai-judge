@@ -15,7 +15,7 @@
 - [ ] Run `PYTHONPATH=. python tools/check_eval4sd_packet.py`.
 - [ ] Run `PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95`.
 - [ ] Run `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95`.
-- [ ] Regenerate the overclaimed-causation JSON report if the claim-support code changes.
+- [ ] Regenerate the overclaimed-support JSON reports if the claim-support code changes.
 - [ ] Confirm the paper's benchmark numbers match the latest command output.
 
 ## Submission Metadata

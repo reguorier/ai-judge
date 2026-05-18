@@ -1,7 +1,7 @@
 # 30-Day Remaining Task Audit
 
 Status: refreshed
-Last refreshed: 2026-05-19 00:57 HKT
+Last refreshed: 2026-05-19 02:30 HKT
 
 ## Current Evidence
 
@@ -45,6 +45,8 @@ Last refreshed: 2026-05-19 00:57 HKT
 - Refreshed metrics and Day 30 stop/go notes.
 - Continued the non-gated product branch: final reports now read as a rotating-judge closeout with thesis, recommendation, key findings, and stronger Markdown/HTML rendering.
 - Converted the 81/100 conditional-go answer into a public growth playbook and reusable Codex autopilot prompt.
+- Expanded the hard benchmark from 11 to 13 cases with deterministic claim-support expectations for overclaimed causation, overclaimed absolutes, and overclaimed quantified effects.
+- Regenerated the eight-example citation batch gallery and the two new public demo reports.
 
 ## Next Non-Gated Move
 

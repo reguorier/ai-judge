@@ -125,7 +125,7 @@ If none are true, pause monetization and improve the demo story before adding mo
 Automated and reversible work is complete through Day 30:
 
 - Public copy is drafted for Hugging Face, Show HN, Reddit, V2EX, Zhihu, short-form posts, replies, and follow-ups.
-- The demo package includes six reproducible reports, the default 100-case benchmark, and a hard 11-case launch benchmark.
+- The demo package includes eight reproducible reports, the default 100-case benchmark, and a hard 13-case launch benchmark.
 - Pro demand capture is ready through `product/pro_early_access.html`, `docs/PRO_EARLY_ACCESS.md`, `docs/GITHUB_SPONSORS.md`, and `.github/FUNDING.yml`.
 - Paid-feature scope is constrained to Markdown/JSON batch audit, GitHub Action batch mode, history ledger, network-backed Evidence Broker, and the PDF/Docx parser roadmap.
 - Stop/go evaluation is centralized in `growth/metrics_dashboard.md` and `growth/day30_decision.md`.

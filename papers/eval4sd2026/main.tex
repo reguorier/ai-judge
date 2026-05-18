@@ -104,11 +104,11 @@ We implement a deterministic citation-audit path that requires no model API call
   \item a replay-ledger hash.
 \end{itemize}
 
-The current claim-support block covers a narrow but important failure family: a real and relevant source that reports association while the model states causation. In that case, the system reports verified citation status, relevant source status, contradicted claim support, and the failure code \texttt{overclaimed\_causation}.
+The current claim-support block covers a narrow but important failure family: a real and relevant source that supports a weaker proposition than the model states. The deterministic MVP catches association upgraded into causation, absolute claims contradicted by limited evidence, and inflated percentage claims. In those cases, the system can report verified citation status, relevant source status, contradicted claim support, and a concrete failure code such as \texttt{overclaimed\_causation}, \texttt{overclaimed\_absolute}, or \texttt{overclaimed\_quantified\_effect}.
 
 \section{Evaluation}
 
-We use two deterministic benchmarks. The default benchmark contains 100 cases balanced across the five citation labels. The hard benchmark contains 11 public launch cases designed to exercise boundary conditions.
+We use two deterministic benchmarks. The default benchmark contains 100 cases balanced across the five citation labels. The hard benchmark contains 13 public launch cases designed to exercise boundary conditions, including three cases where citation status is verified while claim support is contradicted.
 
 \begin{table}[h]
 \centering
@@ -118,14 +118,14 @@ We use two deterministic benchmarks. The default benchmark contains 100 cases ba
 Benchmark & Cases & Passed & Failed & Accuracy \\
 \midrule
 \texttt{bench-100} & 100 & 100 & 0 & 1.00 \\
-\texttt{hard-11} & 11 & 11 & 0 & 1.00 \\
+\texttt{hard-11} & 13 & 13 & 0 & 1.00 \\
 \bottomrule
 \end{tabularx}
 \caption{Deterministic benchmark snapshot.}
 \label{tab:benchmarks}
 \end{table}
 
-The hard benchmark covers fabricated sources, real-but-irrelevant sources, contradicted sources, weak matches, missing or blocked evidence, and the real-source overclaimed-support case.
+The hard benchmark covers fabricated sources, real-but-irrelevant sources, contradicted sources, weak matches, missing or blocked evidence, and real-source overclaimed-support cases.
 
 \begin{table}[h]
 \centering
@@ -134,18 +134,18 @@ The hard benchmark covers fabricated sources, real-but-irrelevant sources, contr
 \toprule
 Expected status & Passed & Total \\
 \midrule
-\texttt{verified} & 2 & 2 \\
+\texttt{verified} & 5 & 5 \\
 \texttt{weakly\_verified} & 2 & 2 \\
 \texttt{irrelevant} & 2 & 2 \\
 \texttt{unverifiable} & 2 & 2 \\
-\texttt{contradicted} & 3 & 3 \\
+\texttt{contradicted} & 2 & 2 \\
 \bottomrule
 \end{tabular}
 \caption{Hard benchmark category coverage.}
 \label{tab:hard}
 \end{table}
 
-The most important row is not a fabricated citation. It is a real-source / unsupported-conclusion case:
+The most important rows are not fabricated citations. They are real-source / unsupported-conclusion cases:
 
 \begin{table}[h]
 \centering
@@ -157,14 +157,14 @@ Field & Value \\
 Citation status & \texttt{verified} \\
 Source relevance & \texttt{relevant} \\
 Claim support & \texttt{contradicted} \\
-Failure code & \texttt{overclaimed\_causation} \\
+Failure codes & \texttt{overclaimed\_causation}, \texttt{overclaimed\_absolute}, \texttt{overclaimed\_quantified\_effect} \\
 \bottomrule
 \end{tabularx}
 \caption{Real source, unsupported conclusion.}
 \label{tab:claimsupport}
 \end{table}
 
-This row is the core methodological point: a source can be real and relevant while the generated conclusion is not supported.
+These rows are the core methodological point: a source can be real and relevant while the generated conclusion is not supported.
 
 \section{Related Work}
 

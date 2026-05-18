@@ -38,14 +38,39 @@ def run_benchmark(path: str | Path) -> dict:
             run_id=f"bench-{case['id'].lower()}",
             generated_at="2026-05-16T00:00:00+00:00",
         )
-        actual = verdict["summary"]["overall_status"]
+        summary = verdict["summary"]
+        actual = summary["overall_status"]
         expected = case["expected_status"]
+        claim_support = summary.get("overall_claim_support")
+        expected_claim_support = case.get("expected_claim_support")
+        claim_items = (
+            verdict.get("grand_judge", {})
+            .get("claim_support_audit", {})
+            .get("items", [])
+        )
+        failure_codes = sorted(
+            {
+                str(item.get("support_failure_code"))
+                for item in claim_items
+                if item.get("support_failure_code") and item.get("support_failure_code") != "none"
+            }
+        )
+        expected_failure_code = case.get("expected_failure_code")
+        passed = actual == expected
+        if expected_claim_support is not None:
+            passed = passed and claim_support == expected_claim_support
+        if expected_failure_code is not None:
+            passed = passed and expected_failure_code in failure_codes
         rows.append({
             "id": case["id"],
             "category": case["category"],
             "expected": expected,
             "actual": actual,
-            "passed": actual == expected,
+            "expected_claim_support": expected_claim_support,
+            "actual_claim_support": claim_support,
+            "expected_failure_code": expected_failure_code,
+            "actual_failure_codes": failure_codes,
+            "passed": passed,
         })
     total = len(rows)
     passed = sum(1 for row in rows if row["passed"])

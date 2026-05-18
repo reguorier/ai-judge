@@ -88,6 +88,63 @@ def test_claim_support_catches_real_source_overclaimed_causation():
     assert "Claim Support" in render_audit_html(verdict)
 
 
+def test_claim_support_catches_absolute_claim_from_limited_source():
+    verdict = run_citation_audit(
+        title="Absolute claim is not supported by limited source",
+        question="Does the source prove all hallucinated citations are caught?",
+        answer=(
+            "The audit catches all hallucinated citations with no false negatives. "
+            "Source: https://example.com/research/citation-audit-pilot"
+        ),
+        external_evidence=[
+            {
+                "url": "https://example.com/research/citation-audit-pilot",
+                "title": "Citation audit pilot",
+                "snippet": (
+                    "The pilot detected 71% of seeded hallucinated citations in a small sample. "
+                    "The study was limited and reported false negatives, so the result is not exhaustive."
+                ),
+            }
+        ],
+        run_id="audit-test-claim-support-absolute",
+        generated_at="2026-05-19T00:00:00+00:00",
+    )
+
+    claim_item = verdict["grand_judge"]["claim_support_audit"]["items"][0]
+
+    assert verdict["summary"]["overall_status"] == "verified"
+    assert claim_item["claim_support"] == "contradicted"
+    assert claim_item["support_failure_code"] == "overclaimed_absolute"
+    assert verdict["summary"]["overall_claim_support"] == "contradicted"
+
+
+def test_claim_support_catches_quantified_effect_overclaim():
+    verdict = run_citation_audit(
+        title="Quantified effect is overclaimed",
+        question="Does the source support a 95% hallucination reduction?",
+        answer=(
+            "The release reduced hallucinated citations by 95%. "
+            "Source: https://example.com/research/citation-audit-release"
+        ),
+        external_evidence=[
+            {
+                "url": "https://example.com/research/citation-audit-release",
+                "title": "Citation audit release evaluation",
+                "snippet": "The evaluation observed a 12% reduction in hallucinated citations on the sampled documents.",
+            }
+        ],
+        run_id="audit-test-claim-support-quantified",
+        generated_at="2026-05-19T00:00:00+00:00",
+    )
+
+    claim_item = verdict["grand_judge"]["claim_support_audit"]["items"][0]
+
+    assert verdict["summary"]["overall_status"] == "verified"
+    assert claim_item["claim_support"] == "contradicted"
+    assert claim_item["support_failure_code"] == "overclaimed_quantified_effect"
+    assert verdict["summary"]["claim_support_failure_counts"]["overclaimed_quantified_effect"] == 1
+
+
 def test_markdown_loader_and_renderers(tmp_path):
     path = tmp_path / "audit.md"
     path.write_text(

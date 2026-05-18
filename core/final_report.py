@@ -7,6 +7,8 @@ import html
 from datetime import datetime, timezone
 from typing import Any
 
+from core.closeout_sop import build_closeout_sop
+
 
 FINAL_REPORT_SCHEMA = "ai_judge.final_report.v1"
 
@@ -66,6 +68,19 @@ def build_final_report(verdict: dict[str, Any]) -> dict[str, Any]:
     )
     plan = _implementation_plan(steps, complete=complete, coverage=coverage, verdict_label=verdict_label, recommendation=recommendation)
     risks = _risks_and_limits(limits, disagreements, coverage, verdict, trust)
+    closeout_sop = build_closeout_sop(
+        verdict,
+        verdict_label=verdict_label,
+        confidence=confidence,
+        trust=trust,
+        coverage_label=coverage["label"],
+        recommendation=recommendation,
+        risk_line=risk_line,
+        next_action=next_action,
+        findings=findings,
+        plan=plan,
+        risks=risks,
+    )
     postulates = _postulates(
         judge_editor=judge_editor,
         verdict_label=verdict_label,
@@ -89,6 +104,7 @@ def build_final_report(verdict: dict[str, Any]) -> dict[str, Any]:
         "abstract": abstract,
         "thesis": thesis,
         "recommendation": recommendation,
+        "sop_closeout": closeout_sop,
         "key_findings": findings,
         "keywords": keywords,
         "meta": [
@@ -122,6 +138,7 @@ def render_final_report_markdown(report: dict[str, Any]) -> str:
     if not report:
         return ""
     executive = report.get("executive_summary") or {}
+    sop = report.get("sop_closeout") or {}
     lines: list[str] = [
         f"## {report.get('title') or 'AI Judge 最终方案报告'}",
         "",
@@ -138,11 +155,47 @@ def render_final_report_markdown(report: dict[str, Any]) -> str:
         f"- 风险：{executive.get('risk', '-')}",
         f"- 下一步：{executive.get('next_action', '-')}",
         "",
+        "### 标准化收口 SOP",
+        "",
+        str(sop.get("final_judgment") or ""),
+        "",
+        str(sop.get("one_sentence_plan") or ""),
+        "",
+    ]
+    for phase in sop.get("phases") or []:
+        lines.extend([f"#### {phase.get('title', '')}", ""])
+        for item in phase.get("items") or []:
+            lines.append(f"- {item}")
+        lines.append("")
+    template = sop.get("codex_template") or {}
+    if template:
+        lines.extend([
+            "#### Codex 执行模板",
+            "",
+            f"目标：{template.get('goal', '-')}",
+            "",
+            f"产品定位：{template.get('positioning', '-')}",
+            "",
+            "当前优先级：",
+            "",
+        ])
+        for item in template.get("current_priorities") or []:
+            lines.append(f"- {item}")
+        lines.extend(["", "执行规则：", ""])
+        for item in template.get("execution_rules") or []:
+            lines.append(f"- {item}")
+        lines.extend(["", "输出要求：", ""])
+        for item in template.get("output_requirements") or []:
+            lines.append(f"- {item}")
+        lines.append("")
+    if sop.get("final_essence"):
+        lines.extend([str(sop.get("final_essence")), ""])
+    lines.extend([
         "### ABSTRACT",
         "",
         str(report.get("abstract") or ""),
         "",
-    ]
+    ])
     keywords = report.get("keywords") or []
     if keywords:
         lines.extend(["### KEYWORDS", "", " / ".join(str(item) for item in keywords), ""])
@@ -215,6 +268,7 @@ def render_final_report_html(report: dict[str, Any]) -> str:
     if not report:
         return ""
     executive = report.get("executive_summary") or {}
+    sop = report.get("sop_closeout") or {}
     meta = "".join(
         "<div>"
         f"<span>{html.escape(str(item.get('label', '')))}</span>"
@@ -248,6 +302,41 @@ def render_final_report_html(report: dict[str, Any]) -> str:
     findings = "".join(f"<li>{html.escape(str(item))}</li>" for item in report.get("key_findings", []))
     judge_editor = report.get("judge_editor") or {}
     executive_why = "".join(f"<li>{html.escape(str(item))}</li>" for item in executive.get("why", [])[:4])
+    sop_phases = "".join(
+        '<article class="sop-phase">'
+        f"<h3>{html.escape(str(phase.get('title', '')))}</h3>"
+        f"<ul>{''.join(f'<li>{html.escape(str(item))}</li>' for item in phase.get('items', []))}</ul>"
+        "</article>"
+        for phase in sop.get("phases", [])
+    )
+    template = sop.get("codex_template") or {}
+    priority_items = "".join(f"<li>{html.escape(str(item))}</li>" for item in template.get("current_priorities", []))
+    rule_items = "".join(f"<li>{html.escape(str(item))}</li>" for item in template.get("execution_rules", []))
+    output_items = "".join(f"<li>{html.escape(str(item))}</li>" for item in template.get("output_requirements", []))
+    evidence_boundary = "".join(f"<li>{html.escape(str(item))}</li>" for item in sop.get("evidence_boundary", []))
+    sop_html = ""
+    if sop:
+        sop_html = (
+            '<section class="sop-report" id="closeout-sop">'
+            '<p class="paper-kicker">STANDARD CLOSEOUT SOP</p>'
+            f'<h2>{html.escape(str(sop.get("title", "标准化收口 SOP")))}</h2>'
+            f'<p class="sop-judgment">{html.escape(str(sop.get("final_judgment", "")))}</p>'
+            f'<p class="sop-one-line">{html.escape(str(sop.get("one_sentence_plan", "")))}</p>'
+            f'<div class="sop-phases">{sop_phases}</div>'
+            '<section class="sop-template">'
+            f'<h3>{html.escape(str(template.get("label", "Codex 执行模板")))}</h3>'
+            f'<p><strong>目标：</strong>{html.escape(str(template.get("goal", "-")))}</p>'
+            f'<p><strong>产品定位：</strong>{html.escape(str(template.get("positioning", "-")))}</p>'
+            '<div class="sop-template-grid">'
+            f'<div><h4>当前优先级</h4><ul>{priority_items}</ul></div>'
+            f'<div><h4>执行规则</h4><ul>{rule_items}</ul></div>'
+            f'<div><h4>输出要求</h4><ul>{output_items}</ul></div>'
+            "</div>"
+            "</section>"
+            f'<section class="sop-boundary"><h3>证据边界</h3><ul>{evidence_boundary}</ul></section>'
+            f'<p class="sop-essence">{html.escape(str(sop.get("final_essence", "")))}</p>'
+            "</section>"
+        )
     return (
         '<section class="executive-report" id="final-report">'
         '<p class="paper-kicker">FINAL VERDICT · HUMAN SUMMARY</p>'
@@ -261,8 +350,9 @@ def render_final_report_html(report: dict[str, Any]) -> str:
         "</div>"
         '<section class="executive-why"><h3>为什么这样判</h3>'
         f'<ul class="compact-list">{executive_why}</ul></section>'
-        '<div class="actions"><a href="#professional-report">查看专业报告</a></div>'
+        '<div class="actions"><a href="#closeout-sop">查看标准 SOP</a><a href="#professional-report">查看专业报告</a></div>'
         "</section>"
+        f"{sop_html}"
         '<section class="paper-report" id="professional-report">'
         '<div class="paper-heading">'
         f'<p class="paper-kicker">{html.escape(str(report.get("subtitle", "")))}</p>'

@@ -24,7 +24,10 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert 'id="result-view-link"' in html
     assert "打开网站完整报告" in html
     assert ".executive-report" in html
+    assert ".sop-preview" in html
     assert "查看专业报告" in js
+    assert "查看标准 SOP" in js
+    assert "Codex 执行模板" in js
     assert '$$("#view-link, #result-view-link")' in js
     assert "const canConfirm = hasVerdict;" in js
     assert 'state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block"' in js
@@ -94,6 +97,7 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
     assert verdict["final_report"]["title"] == "AI Judge 轮值法官最终报告"
     assert verdict["final_report"]["judge_editor"]["label"] == "DeepSeek 轮值法官"
     assert verdict["final_report"]["recommendation"]
+    assert verdict["final_report"]["sop_closeout"]["schema"] == "ai_judge.closeout_sop.v1"
     assert verdict["final_report"]["key_findings"]
     assert verdict["final_report"]["postulates"]
     assert "本轮判断成立" in verdict["final_report"]["abstract"]

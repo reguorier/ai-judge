@@ -728,6 +728,54 @@
       flex-wrap: wrap;
       gap: 8px;
     }
+    .sop-preview {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .sop-preview > h3,
+    .sop-preview > p {
+      margin: 0;
+    }
+    .sop-preview > p {
+      line-height: 1.6;
+    }
+    .sop-phases {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .sop-phases article {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #f8fbff;
+      padding: 10px;
+      min-width: 0;
+    }
+    .sop-phases h4 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: var(--accent-strong);
+    }
+    .sop-phases ul {
+      margin: 0;
+      padding-left: 17px;
+      line-height: 1.55;
+      font-size: 12px;
+    }
+    .sop-template-mini {
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+      display: grid;
+      gap: 4px;
+      line-height: 1.55;
+    }
+    .sop-template-mini span {
+      color: var(--muted);
+    }
     .paper-heading h3 {
       margin: 0;
       font-size: 20px;
@@ -1534,7 +1582,7 @@
       .tabs { grid-row: 2; position: static; height: auto; flex-direction: row; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--line); }
       .tab { flex: 0 0 auto; }
       .workspace { grid-column: 1; grid-row: 3; padding: 16px; }
-      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid, .closeout-strip, .benchmark-grid, .capability-list, .paper-meta, .paper-postulates, .paper-columns, .executive-grid { grid-template-columns: 1fr; }
+      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid, .closeout-strip, .benchmark-grid, .capability-list, .paper-meta, .paper-postulates, .paper-columns, .executive-grid, .sop-phases { grid-template-columns: 1fr; }
       .composer-grid { grid-template-columns: 1fr; }
       .math-signal { grid-template-columns: 1fr; }
       .score-cards, .seat-grid, .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

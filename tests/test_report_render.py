@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+from core.final_report import render_final_report_markdown
+
 
 def _load_api_server():
     module_path = Path(__file__).resolve().parents[1] / "product" / "api_server.py"
@@ -211,6 +213,12 @@ def test_report_renders_paper_style_final_report():
     assert 'id="final-report"' in rendered
     assert "AI Judge 轮值法官最终报告" in rendered
     assert "FINAL VERDICT · HUMAN SUMMARY" in rendered
+    assert "STANDARD CLOSEOUT SOP" in rendered
+    assert "Codex 执行模板" in rendered
+    assert "Phase 1: 收口体验基线" in rendered
+    assert "输出要求" in rendered
+    assert "source exists" in rendered
+    assert "查看标准 SOP" in rendered
     assert "查看专业报告" in rendered
     assert 'id="professional-report"' in rendered
     assert "ABSTRACT" in rendered
@@ -278,6 +286,10 @@ def test_final_report_executive_summary_filters_generic_model_steps():
     assert "Treat the result" not in report["executive_summary"]["recommendation"]
     assert "一眼结论" not in report["executive_summary"]["headline"]
     assert report["executive_summary"]["detail_anchor"] == "#professional-report"
+    assert report["sop_closeout"]["schema"] == "ai_judge.closeout_sop.v1"
+    assert report["sop_closeout"]["codex_template"]["label"] == "Codex 执行模板"
+    assert report["sop_closeout"]["phases"][0]["title"] == "Phase 1: 收口体验基线"
+    assert "输出要求" in render_final_report_markdown(report)
     assert report["key_findings"][0] == "当前页的职责是帮助用户快速决策，不应承载完整证据堆栈。"
 
 

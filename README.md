@@ -109,10 +109,12 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/f
 PYTHONPATH=. python cli/main.py audit examples/product-no-evidence.md --html reports/product-no-evidence-audit.html
 PYTHONPATH=. python cli/main.py audit examples/sounds-smart-low-judgment.md --html reports/sounds-smart-low-judgment-audit.html
 PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-causation.md --html reports/real-source-overclaimed-causation-audit.html
+PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-absolute.md --html reports/real-source-overclaimed-absolute-audit.html
+PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-quantified.md --html reports/real-source-overclaimed-quantified-audit.html
 PYTHONPATH=. python tools/run_citation_bench.py
 ```
 
-Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html), [`legal memo contradicted`](reports/legal-memo-contradicted-audit.html), [`open-source README irrelevant`](reports/opensource-readme-irrelevant-audit.html), [`real source, overclaimed causation`](reports/real-source-overclaimed-causation-audit.html).
+Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html), [`legal memo contradicted`](reports/legal-memo-contradicted-audit.html), [`open-source README irrelevant`](reports/opensource-readme-irrelevant-audit.html), [`real source, overclaimed causation`](reports/real-source-overclaimed-causation-audit.html), [`real source, overclaimed absolute`](reports/real-source-overclaimed-absolute-audit.html), [`real source, overclaimed quantified effect`](reports/real-source-overclaimed-quantified-audit.html).
 
 `contradicted` audits intentionally return a non-zero CLI status because they should block publication; the generated HTML/JSON report is still written.
 
@@ -126,7 +128,7 @@ PYTHONPATH=. python tools/run_citation_bench.py \
   --fail-under 0.95
 ```
 
-The hard set includes a governance benchmark where a real, relevant source reports correlation while the generated answer overclaims causation. That is the boundary AI Judge should make visible: a source can be real without verifying the model's claim.
+The hard set includes governance benchmarks where a real, relevant source supports a weaker proposition than the generated answer: correlation overclaimed as causation, limited pilot evidence overclaimed as "all/no false negatives", and a 12% effect overclaimed as 95%. That is the boundary AI Judge should make visible: a source can be real without verifying the model's claim.
 
 For legal and audit workflows, the next atom is not just a citation. It is `claim-span + source`; see [`docs/CLAIM_SPAN_ROADMAP.md`](docs/CLAIM_SPAN_ROADMAP.md).
 
@@ -302,7 +304,7 @@ No. The Replay Ledger preserves the raw answer. The judge adds verification, has
 No. A model can hallucinate a source and then cite it confidently. Candidate sources must be checked against supplied or fetched external evidence.
 
 **Does a real source prove the model's conclusion?**
-No. AI Judge now separates citation matching from claim support. In the overclaimed-causation demo, the citation is `verified` and the source is `relevant`, but the exact claim is still `contradicted` because the source reports association while the answer states causation.
+No. AI Judge now separates citation matching from claim support. In the overclaimed-support demos, the citation is `verified` and the source is `relevant`, but the exact claim is still `contradicted` when the answer upgrades association into causation, limited evidence into an absolute, or a smaller measured effect into an inflated percentage.
 
 **Why start with citation audit instead of full Grand Judge?**
 Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
