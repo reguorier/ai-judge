@@ -1,7 +1,8 @@
 # Resonance Wave 003 - Eval4SD, Taxonomy Exchange, and Trust Infrastructure
 
-Status: prepared, not_sent
+Status: partially_sent
 Created: 2026-05-18
+Last updated: 2026-05-18
 
 This wave is research-first and infrastructure-first. It is not a commercial ad campaign.
 
@@ -25,10 +26,10 @@ AI Judge's next public wedge is the `claim-span + source` audit layer: citation 
 | ID | Priority | Target | Route | Asset | Status |
 |---|---:|---|---|---|---|
 | W003-001 | P0 | Eval4SD 2026 | Workshop submission | `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` | draft_ready |
-| W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | ready_for_confirmation |
-| W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | needs_contact |
-| W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | ready_for_confirmation |
-| W003-005 | P1 | Ligate | Attestation payload integration | Email draft below | ready_for_confirmation |
+| W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | sent_private_log |
+| W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_route_found |
+| W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_page_blocked |
+| W003-005 | P1 | Ligate | Attestation payload integration | Email draft below | sent_private_log |
 
 ## Technical Anchor
 
@@ -201,4 +202,11 @@ Reguorier
 
 ## Next Automatable Step
 
-Generate `.eml` drafts for W003-002, W003-004, and W003-005, then ask for action-time confirmation before sending. For W003-003, first find a reliable public contact route or wait until the authors publish one.
+Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. For W003-003, prepare a public GitHub Issue draft but do not publish it without explicit public-post confirmation. For W003-004, retry the Aequis contact page from another browser/network before marking it failed.
+
+Detailed third-party outreach metadata is intentionally kept out of public GitHub. The private local execution ledger lives under `.ai-judge/growth/`.
+
+## Channel Findings
+
+- W003-003 LegalCiteBench: the arXiv PDF and GitHub repository expose a GitHub repository (`Sijia711/LegalCiteBench`) and Hugging Face dataset (`legalcitebench/LegalCiteBench`), but no public email. GitHub Issues are enabled, so the next contact route is a public taxonomy-exchange issue.
+- W003-004 Aequis: the public site confirms the fit around provenance, jurisdiction, time, and reproducible legal AI benchmarks. Safari could not open `https://aequis.io/contact` because of a secure-connection failure; no public email was found in web search.
