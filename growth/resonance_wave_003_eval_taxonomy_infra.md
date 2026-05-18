@@ -25,7 +25,7 @@ AI Judge's next public wedge is the `claim-span + source` audit layer: citation 
 
 | ID | Priority | Target | Route | Asset | Status |
 |---|---:|---|---|---|---|
-| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `papers/eval4sd2026/openreview_submission.md` | openreview_signup_submitted_waiting_confirmation |
+| W003-001 | P0 | Eval4SD 2026 | Workshop submission | `papers/eval4sd2026/openreview_submission.md` | openreview_profile_activation_pending |
 | W003-002 | P0 | HalluCiteChecker | Research taxonomy exchange | Email draft below | sent_private_log |
 | W003-003 | P0 | LegalCiteBench | Legal citation taxonomy exchange | Email draft below | public_issue_posted |
 | W003-004 | P1 | Aequis | Legal AI provenance / benchmark collaboration | Email draft below | contact_route_unverified |
@@ -202,7 +202,7 @@ Reguorier
 
 ## Next Automatable Step
 
-Continue by checking for the OpenReview signup confirmation email, then upload `papers/eval4sd2026/main.pdf` and use `papers/eval4sd2026/openreview_submission.md` for form fields after login. The OpenReview signup form was submitted successfully, but the confirmation email has not arrived yet; do not repeat signup unless OpenReview reports that the account is missing. Eval4SD fit is confirmed by organizer reply: short/position paper is a good fit, and a demo paper with limited evaluation would also work; no further pre-fit check is needed. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. W003-003 and RAGChecker were checked by `gh issue view` on 2026-05-18 and have no comments yet, so do not post a no-op follow-up. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
+Continue by checking OpenReview profile activation, then upload `papers/eval4sd2026/main.pdf` and use `papers/eval4sd2026/openreview_submission.md` for form fields after login. The OpenReview signup form was submitted successfully; both the QQ account email and company email are confirmed, and OpenReview now reports profile activation pending. Do not repeat signup unless OpenReview reports that the account is missing. Eval4SD fit is confirmed by organizer reply: short/position paper is a good fit, and a demo paper with limited evaluation would also work; no further pre-fit check is needed. Follow up on sent W003-002 and W003-005 only after 3-5 days or if a reply arrives. W003-003 and RAGChecker were checked by `gh issue view` on 2026-05-18 and have no comments yet, so do not post a no-op follow-up. For W003-004, do not guess an unverified email address; retry from a clean DNS/network path or a verified public channel before sending.
 
 Detailed third-party outreach metadata is intentionally kept out of public GitHub. The private local execution ledger lives under `.ai-judge/growth/`.
 
@@ -211,7 +211,7 @@ Detailed third-party outreach metadata is intentionally kept out of public GitHu
 - W003-003 LegalCiteBench: the arXiv PDF and GitHub repository expose a GitHub repository (`Sijia711/LegalCiteBench`) and Hugging Face dataset (`legalcitebench/LegalCiteBench`), but no public email. GitHub Issues are enabled; a public taxonomy-exchange issue was posted at `https://github.com/Sijia711/LegalCiteBench/issues/1`.
 - W003-004 Aequis: the public site confirms the fit around provenance, jurisdiction, time, and reproducible legal AI benchmarks. The site exposes collaboration/contact links, but they route through Cloudflare email protection. Local DNS resolves `aequis.io` to `198.18.1.23`, and direct HTTPS attempts fail with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`; Jina Reader cannot resolve the host. No verified public email or working GitHub organization route has been found, so this remains blocked rather than guessed.
 - W003-001 Eval4SD: organizer reply confirmed the topic is a strong workshop fit for research/legal specialized-domain LLM reliability. Recommended path is short/position paper; demo paper with limited evaluation is also acceptable. A concise thank-you reply was sent via QQ Mail on 2026-05-18.
-- W003-001 OpenReview: the submission route is live and points to OpenReview. Signup has been submitted successfully and is waiting on the OpenReview confirmation email; use the pushed packet and PDF after login. Final submit still needs action-time confirmation.
+- W003-001 OpenReview: the submission route is live and points to OpenReview. Signup has been submitted successfully, QQ + company email are confirmed, and profile activation is pending; use the pushed packet and PDF after login. Final submit still needs action-time confirmation.
 - W003-003 / W004-002 monitoring: LegalCiteBench issue #1 and RAGChecker issue #38 remain open with no comments as of the latest `gh issue view` check on 2026-05-18.
 
 ## Public Links

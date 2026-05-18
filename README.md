@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.6.1-purple" alt="v3.6.1">
+  <img src="https://img.shields.io/badge/release-3.7.0-purple" alt="v3.7.0">
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><img src="https://img.shields.io/badge/HuggingFace-Space%20live-ffcc4d" alt="Hugging Face Space"></a>
   <img src="https://img.shields.io/badge/Citation%20Audit-launch%20edition-0f766e" alt="Citation Audit launch edition">
   <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
@@ -11,25 +11,27 @@
 </p>
 
 <p align="center">
-  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3.3 product overview" width="960">
+  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3 product overview" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.6.1</h1>
+<h1 align="center">AI Judge v3.7.0</h1>
 <p align="center"><strong>Source-available citation audit for AI-generated answers.</strong></p>
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
 
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
-  <a href="https://github.com/reguorier/ai-judge/releases/download/v3.6.1/AI-Judge-v3.6.1-macOS-arm64.dmg">macOS App</a> ·
+  <a href="https://github.com/reguorier/ai-judge/releases/latest">macOS App</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#demo-result">Demo Result</a> ·
   <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
   <a href="docs/PRO_EARLY_ACCESS.md">Pro Early Access</a> ·
   <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
+  <a href="#what-v37-adds">What v3.7 Adds</a> ·
   <a href="#what-v33-adds">What v3.3 Adds</a> ·
   <a href="#what-v32-adds">What v3.2 Adds</a> ·
   <a href="#how-it-differs">Comparison</a> ·
+  <a href="RELEASE_V3_7.md">v3.7 Notes</a> ·
   <a href="RELEASE_V3_3.md">v3.3 Notes</a> ·
   <a href="RELEASE_V3_2.md">v3.2 Notes</a>
 </p>
@@ -41,15 +43,15 @@
 Download the signed local wrapper and bundled runtime:
 
 <p>
-  <a href="https://github.com/reguorier/ai-judge/releases/download/v3.6.1/AI-Judge-v3.6.1-macOS-arm64.dmg"><strong>Download AI Judge v3.6.1 for macOS arm64</strong></a>
+  <a href="https://github.com/reguorier/ai-judge/releases/latest"><strong>Download the latest AI Judge macOS build</strong></a>
 </p>
 
-The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions.
+The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions. The current branch reports v3.7.0 from the local API and desktop workbench; use GitHub Releases for signed artifacts.
 
 ## Why People Notice It
 
 Most AI comparison tools answer: **which model sounded best?**
-AI Judge v3.3 asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment without nine models quietly copying the same source?**
+AI Judge asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment without models quietly copying the same source?**
 
 It separates polished language from actual thinking quality, then gives the human a compact evidence package instead of another black-box synthesis.
 
@@ -154,6 +156,19 @@ flowchart LR
     H --> V
     P --> V
 ```
+
+## What v3.7 Adds
+
+AI Judge v3.7 turns the Command Center into a desktop Decision Audit Workbench. It keeps the local-first citation audit core, then adds execution gates for multi-model web seats, recovery, evidence review, and publish readiness.
+
+| Layer | What it does | User-visible output |
+|---|---|---|
+| Decision Audit Workbench | Runs the request, mentor gate, draft, evidence review, model comparison, and publish gate from one desktop surface | `product/dashboard.html`, `product/api_server.py` |
+| 13-seat web bridge | Tracks fixed visible Chrome tabs and per-seat readiness without using the system clipboard, keyboard, or mouse | `/api/bridge/status`, 13/13 configured seats |
+| Required-seat policy | Treats Grok as best-effort and keeps the other web seats execution-required for publish confidence | `core/seat_execution_policy.py` |
+| Recovery Cockpit | Rechecks slow or supplementable seats instead of turning a timing delay into a final model failure | `/api/rescue`, supplement history |
+| Reasoning Tree + evidence trace | Shows claim, evidence, dissent/blocker, and action nodes before a publish decision | Evidence review and final report panels |
+| Publish hard gate | Blocks external publish state until required seats, trace, risk disclosure, and human confirmation are present | Publish Gate panel |
 
 ## What v3.3 Adds
 

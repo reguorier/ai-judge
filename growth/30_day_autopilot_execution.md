@@ -43,7 +43,7 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Follow-up queue | Ready for confirmation | `growth/followup_queue.md` |
 | Resonance Wave 002 | Prepared, not sent | `growth/resonance_wave_002.md`, `docs/PAPER_SEED_SOURCE_ISOLATED_CITATION_AUDIT.md`, `docs/EVAL4SD_2026_SOURCE_ISOLATED_CITATION_AUDIT_DRAFT.md` |
 | Claim-support audit | Implemented MVP | `core/claim_support.py`, `docs/CLAIM_SUPPORT_AUDIT_SPEC.md` |
-| Resonance Wave 003 | Eval4SD OpenReview packet pushed / signup submitted / waiting confirmation / taxonomy issues posted | `growth/resonance_wave_003_eval_taxonomy_infra.md`, `papers/eval4sd2026/openreview_submission.md` |
+| Resonance Wave 003 | Eval4SD OpenReview packet pushed / profile activation pending / taxonomy issues posted | `growth/resonance_wave_003_eval_taxonomy_infra.md`, `papers/eval4sd2026/openreview_submission.md` |
 | Resonance Wave 004 | RAGChecker taxonomy issue posted | `growth/resonance_wave_004_refchecker_claim_audit.md` |
 
 ## Rules
@@ -139,7 +139,7 @@ GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next a
 
 Research-first next wave:
 
-- Eval4SD short/position paper path is the priority venue; the anonymous LaTeX/PDF packet and OpenReview form packet now live in `papers/eval4sd2026/`, and the actual upload is blocked only by the pending OpenReview confirmation email.
+- Eval4SD short/position paper path is the priority venue; the anonymous LaTeX/PDF packet and OpenReview form packet now live in `papers/eval4sd2026/`, and the actual upload is blocked only by pending OpenReview profile activation.
 - HalluCiteChecker and LegalCiteBench are the priority taxonomy-exchange targets.
 - Aequis and Ligate are the priority infrastructure/commercial-collaboration targets.
 - The technical wedge is claim-span/source audit: citation verification, source relevance, and exact claim support are separated so "real source" does not become "proven conclusion."
