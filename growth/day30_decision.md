@@ -1,6 +1,6 @@
 # Day 30 Stop / Go Decision
 
-Status: active decision template
+Status: compressed execution in progress
 Last refreshed: 2026-05-18 22:04 HKT
 
 ## Inputs
@@ -36,7 +36,7 @@ Choose this if at least one threshold is met.
 
 Next actions:
 
-- build batch Markdown audit
+- build batch Markdown audit - done as `ai-judge audit-batch`
 - wire Pro license checks
 - connect Lemon Squeezy or Stripe Payment Links
 - publish PDF/Docx parser roadmap
@@ -75,3 +75,7 @@ As of 2026-05-18, the strongest signal is not paid demand yet. The strongest sig
 - LegalCiteBench and RAGChecker taxonomy issues are live and awaiting replies.
 
 Keep monetization capture available, but spend the next automatable cycle on submission completion, benchmark credibility, and reply conversion before adding billing complexity.
+
+## Compressed execution update
+
+2026-05-18: the next automatable Pro value step was pulled forward instead of waiting for Day 30. `ai-judge audit-batch` now runs Markdown/JSON citation audits across files, directories, or glob patterns and writes per-file reports, `manifest.json`, and `index.html`.

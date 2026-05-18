@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Judge Citation Batch Audit</title>
+  <style>
+    body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f7f9fb; color:#17212b; }
+    header { background:#10212c; color:white; padding:28px clamp(20px,5vw,64px); }
+    main { max-width:1120px; margin:0 auto; padding:24px; }
+    h1 { margin:0 0 8px; font-size:34px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-top:18px; }
+    .card { background:white; color:#17212b; border:1px solid #dbe3ea; border-radius:8px; padding:14px; }
+    .label { color:#5c6875; font-size:12px; text-transform:uppercase; }
+    .value { font-size:22px; font-weight:750; }
+    table { width:100%; border-collapse:collapse; background:white; border:1px solid #dbe3ea; border-radius:8px; overflow:hidden; }
+    th,td { padding:10px 12px; border-bottom:1px solid #dbe3ea; text-align:left; vertical-align:top; }
+    th { background:#eef3f6; font-size:12px; color:#45515f; text-transform:uppercase; }
+    tr:last-child td { border-bottom:0; }
+    a { color:#0f766e; font-weight:700; }
+    .pill { display:inline-flex; padding:2px 8px; border-radius:999px; font-weight:750; font-size:12px; background:#edf2f7; }
+    .pill.ok { color:#067647; background:#dcfae6; }
+    .pill.warning { color:#a15c07; background:#fff3d6; }
+    .pill.failed { color:#b42318; background:#fee4e2; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Judge Citation Batch Audit</h1>
+    <div>Batch ID: launch-batch-001</div>
+    <div class="summary">
+      <div class="card"><div class="label">Inputs</div><div class="value">6</div></div>
+      <div class="card"><div class="label">Failed</div><div class="value">2</div></div>
+      <div class="card"><div class="label">Warnings</div><div class="value">4</div></div>
+      <div class="card"><div class="label">Network</div><div class="value"></div></div>
+    </div>
+  </header>
+  <main>
+    <table>
+      <thead><tr><th>File</th><th>Status</th><th>Claim Support</th><th>Trust Gate</th><th>Certification</th><th>Gaps</th></tr></thead>
+      <tbody><tr><td><a href="file-001-fake-citation-a29526f6.html">Fake Citation Audit Demo</a></td><td><span class="pill warning">unverifiable</span></td><td>unknown</td><td>needs_more_evidence</td><td>CITE-20260518-D8E3FD86C6</td><td>1</td></tr><tr><td><a href="file-002-legal-memo-contradicted-bf94aa6d.html">Legal Memo Contradicted Citation Demo</a></td><td><span class="pill failed">contradicted</span></td><td>contradicted</td><td>blocked_contradiction</td><td>CITE-20260518-138438D487</td><td>1</td></tr><tr><td><a href="file-003-opensource-readme-irrelevant-34136f57.html">Open Source README Irrelevant Citation Demo</a></td><td><span class="pill warning">irrelevant</span></td><td>unsupported</td><td>needs_more_evidence</td><td>CITE-20260518-466C9A6261</td><td>1</td></tr><tr><td><a href="file-004-product-no-evidence-c2b517cd.html">Product Plan Evidence Audit Demo</a></td><td><span class="pill warning">unverifiable</span></td><td>unknown</td><td>needs_more_evidence</td><td>CITE-20260518-4A0F27725C</td><td>1</td></tr><tr><td><a href="file-005-real-source-overclaimed-causation-e9cd8fd9.html">Real Source, Unsupported Causal Claim</a></td><td><span class="pill failed">verified</span></td><td>contradicted</td><td>pass</td><td>CITE-20260518-E0275389F0</td><td></td></tr><tr><td><a href="file-006-sounds-smart-low-judgment-ee8d4a0b.html">Sounds Smart Low Judgment Demo</a></td><td><span class="pill warning">unverifiable</span></td><td>unknown</td><td>needs_more_evidence</td><td>CITE-20260518-5D7FB91716</td><td>1</td></tr></tbody>
+    </table>
+  </main>
+</body>
+</html>

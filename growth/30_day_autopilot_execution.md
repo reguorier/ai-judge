@@ -7,19 +7,19 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Asset | Status | URL or command |
 |---|---|---|
 | Hugging Face Space | Live, sample switcher prepared | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit |
-| GitHub release | Live | https://github.com/reguorier/ai-judge/releases/tag/v3.6.0 |
+| GitHub release | Live signed artifact v3.6.0; source/docs v3.7.0 | https://github.com/reguorier/ai-judge/releases/tag/v3.6.0 |
 | Local demo | Live | `PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html --json reports/fake-citation-audit.json` |
 | Benchmark | Live | `PYTHONPATH=. python tools/run_citation_bench.py --fail-under 0.95` |
 | Launch copy | Drafted | `growth/launch_posts.md` |
-| Hugging Face post | Ready for confirmation | `growth/huggingface_community_post.md` |
-| Show HN post | Ready for confirmation | `growth/show_hn_launch_post.md` |
-| Reddit r/LocalLLaMA post | Ready for confirmation | `growth/reddit_localllama_launch_post.md` |
+| Hugging Face post | Blocked by hCaptcha, draft retained | `growth/huggingface_community_post.md` |
+| Show HN post | Blocked by current account restriction, draft retained | `growth/show_hn_launch_post.md` |
+| Reddit r/LocalLLaMA post | Posted, then removed by moderation | `growth/reddit_localllama_launch_post.md` |
 | Feedback log | Started | `growth/feedback_log.md` |
 | Reply bank | Drafted | `growth/reply_bank.md` |
 | Email sequence | Drafted | `growth/email_sequence.md` |
 | Demo report gallery | Live | `docs/CITATION_AUDIT_QUICKSTART.md`, `docs/LAUNCH_CITATION_AUDIT.md` |
 | GitHub issue queue | Live | https://github.com/reguorier/ai-judge/issues/2 |
-| V2EX post | Ready for confirmation | `growth/v2ex_launch_post.md` |
+| V2EX post | Abandoned until invite/activation exists | `growth/v2ex_launch_post.md` |
 | Zhihu long-form post | Live | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | X / short thread | Live | https://x.com/liuweidi2/status/2055973517779521750 |
 | X professional review wave | Ready for confirmation | `growth/x_professional_wave_001.md` |
@@ -27,10 +27,10 @@ This is the execution track for turning the Citation Audit launch into public pr
 | Blog draft | Ready | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` |
 | Blog outline | Archived planning aid | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md` |
 | Hard benchmark | Added | `PYTHONPATH=. python tools/run_citation_bench.py --bench citation-bench/citation-bench-hard-11.jsonl --fail-under 0.95` |
-| Batch audit spec | Ready | `docs/BATCH_AUDIT_SPEC.md` |
+| Batch audit MVP | Implemented | `ai-judge audit-batch`, `core/citation_batch.py`, `docs/BATCH_AUDIT_SPEC.md` |
 | GitHub Action guide | Ready | `docs/GITHUB_ACTION_CITATION_AUDIT.md` |
 | AI Decision Audit sample | Ready | `docs/AI_DECISION_AUDIT_SAMPLE.md` |
-| Outreach queue | Batch 001 send packet ready, not sent | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md`, `growth/outreach_status.md` |
+| Outreach queue | Batch 001 partly sent, follow-ups gated | `growth/outreach_batch_001.md`, `growth/outreach_mailto_links.md`, `growth/outreach_status.md` |
 | Free audit offer | Ready | `growth/free_audit_offer.md` |
 | Free audit slots | Ready | `growth/free_audit_slots.json`, `growth/free_audit_status.md` |
 | Anonymized audit permission | Ready | `growth/anonymized_audit_permission_request.md` |
@@ -135,7 +135,7 @@ External launch follow-up status:
 - Hugging Face Community is logged in and email-confirmed, but discussion creation is blocked by repeated hCaptcha challenges: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new
 - Direct outreach Batch 001 is prepared with real targets and tailored drafts: `growth/outreach_batch_001.md`
 
-GitHub issues #2-#5 are live, the v3.6.0 release page is updated, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.
+GitHub issues #2-#5 are live, v3.7.0 source/docs are pushed, and the next automated public action should favor replies to relevant conversations, low-friction GitHub improvements, and direct outreach rather than repeated reposting of the same launch copy.
 
 Research-first next wave:
 

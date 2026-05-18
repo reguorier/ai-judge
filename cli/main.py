@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI Judge — Unified CLI entry point v3.3.0.
+"""AI Judge — Unified CLI entry point v3.7.0.
 
 Usage:
     ai-judge license status
@@ -37,6 +37,7 @@ Usage:
 
     # V3.6 Citation Audit:
     ai-judge audit examples/fake-citation.md --html reports/fake-citation-audit.html
+    ai-judge audit-batch "docs/**/*.md" --out reports/citation-batch
 """
 
 from __future__ import annotations
@@ -345,6 +346,21 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--run-id", help="Stable audit ID for reproducible demos")
     audit.set_defaults(func=cmd_audit)
 
+    audit_batch = sub.add_parser("audit-batch", help="Run citation audits across Markdown/JSON files")
+    audit_batch.add_argument("inputs", nargs="+", help="Files, directories, or glob patterns")
+    audit_batch.add_argument("--out", default="reports/citation-batch", help="Output directory")
+    audit_batch.add_argument("--manifest", help="Manifest JSON path (default: <out>/manifest.json)")
+    audit_batch.add_argument("--allow-network", action="store_true", help="Allow Evidence Broker to fetch cited URLs")
+    audit_batch.add_argument("--reviewers", default="gemini,chatgpt,deepseek,qwen", help="Comma-separated blind-reviewer labels")
+    audit_batch.add_argument("--fail-on", default="contradicted", help="Comma-separated statuses that fail the batch")
+    audit_batch.add_argument(
+        "--warn-on",
+        default="unverifiable,weakly_verified,irrelevant,partially_supported,unsupported",
+        help="Comma-separated statuses that mark warnings",
+    )
+    audit_batch.add_argument("--batch-id", help="Stable batch ID for reproducible demos")
+    audit_batch.set_defaults(func=cmd_audit_batch)
+
     # council — fixed jury seat demo
     coun = sub.add_parser("council", help="Run a full jury council demo for a specific model seat")
     coun.add_argument("--model", default="mimo", help="Jury seat model (e.g. mimo, gemini, chatgpt)")
@@ -380,6 +396,35 @@ def cmd_audit(args: argparse.Namespace) -> int:
         for path in written:
             print(f"  {path}")
     return 0 if summary.get("overall_status") not in {"contradicted"} else 1
+
+
+def cmd_audit_batch(args: argparse.Namespace) -> int:
+    """Run citation audit across many input files."""
+    from core.citation_batch import run_audit_batch
+
+    reviewers = [item.strip() for item in str(args.reviewers or "").split(",") if item.strip()]
+    fail_on = [item.strip() for item in str(args.fail_on or "").split(",") if item.strip()]
+    warn_on = [item.strip() for item in str(args.warn_on or "").split(",") if item.strip()]
+    manifest = run_audit_batch(
+        args.inputs,
+        out_dir=args.out,
+        manifest_path=args.manifest,
+        allow_network=bool(args.allow_network),
+        reviewers=reviewers,
+        fail_on=fail_on,
+        warn_on=warn_on,
+        batch_id=args.batch_id,
+    )
+    print(json.dumps({
+        "batch_id": manifest["batch_id"],
+        "input_count": manifest["input_count"],
+        "failed_count": manifest["failed_count"],
+        "warning_count": manifest["warning_count"],
+        "manifest": manifest["manifest_path"],
+        "index_html": manifest["index_html"],
+        "exit_code": manifest["exit_code"],
+    }, ensure_ascii=False, indent=2))
+    return int(manifest["exit_code"])
 
 
 # ── Personal Cognitive Command Handlers ──

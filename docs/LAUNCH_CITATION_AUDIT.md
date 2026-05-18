@@ -68,6 +68,7 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 | [`docs/PRO_EARLY_ACCESS.md`](PRO_EARLY_ACCESS.md) | $49 lifetime early-access offer and manual purchase path |
 | [`product/pro_early_access.html`](../product/pro_early_access.html) | Static Pro page for self-serve interest |
 | [`docs/BATCH_AUDIT_SPEC.md`](BATCH_AUDIT_SPEC.md) | Paid feature scope: batch Markdown first, PDF/Docx later |
+| [`reports/citation-batch/index.html`](../reports/citation-batch/index.html) | Batch audit proof across six launch examples |
 | [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](GITHUB_ACTION_CITATION_AUDIT.md) | CI integration story for docs and PRs |
 | [`docs/AI_DECISION_AUDIT_SAMPLE.md`](AI_DECISION_AUDIT_SAMPLE.md) | Sample report for the audit-service offer |
 | [`growth/free_audit_offer.md`](../growth/free_audit_offer.md) | Free audit offer for testimonial collection |

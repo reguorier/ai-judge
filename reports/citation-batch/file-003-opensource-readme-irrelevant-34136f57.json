@@ -1,0 +1,557 @@
+{
+  "schema": "citation_audit.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.7.0",
+  "audit_id": "launch-batch-001-003",
+  "title": "Open Source README Irrelevant Citation Demo",
+  "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
+  "answer": "The package now exposes `audit_all_pdfs()` for batch citation checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.",
+  "allow_network": false,
+  "grand_judge": {
+    "schema": "grand_judge.citation_mvp.v1",
+    "phase": "citation_verification_mvp",
+    "run_id": "launch-batch-001-003",
+    "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
+    "certification_id": "CITE-20260518-466C9A6261",
+    "citation_verification": {
+      "schema": "citation_validator.summary.v1",
+      "status_schema": [
+        "verified",
+        "weakly_verified",
+        "irrelevant",
+        "unverifiable",
+        "contradicted"
+      ],
+      "overall_status": "irrelevant",
+      "citation_count": 1,
+      "item_count": 1,
+      "counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 1,
+        "unverifiable": 0,
+        "contradicted": 0
+      },
+      "unverifiable_reason_schema": [
+        "no_citation",
+        "missing_external_evidence",
+        "candidate_not_fetched",
+        "fetch_error",
+        "retrieval_blocked",
+        "weak_match"
+      ],
+      "unverifiable_reason_counts": {
+        "no_citation": 0,
+        "missing_external_evidence": 0,
+        "candidate_not_fetched": 0,
+        "fetch_error": 0,
+        "retrieval_blocked": 0,
+        "weak_match": 0
+      },
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+      "verification_hash": "7a1ded38f76741cc639fddaf7491e327e530b73337869abf63126f4b2306bd2d",
+      "certification_id": "CITE-20260518-466C9A6261",
+      "replay_ledger_hash": "074099bc7a4e44c5553f94ac0ae4906d6f76031893f588269a58309ac1b08e61",
+      "external_evidence_count": 2
+    },
+    "replay_ledger": [
+      {
+        "ledger_id": "LEDGER-001",
+        "seat": "submitted_answer",
+        "seat_name": "Submitted AI Answer",
+        "ok": true,
+        "raw_answer": "The package now exposes `audit_all_pdfs()` for batch citation checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.",
+        "raw_answer_hash": "bdf8c2e530215ab53696d94c8d3459a4b4d7a468117f7fc967f82bb0ab3cbb0c",
+        "mentor_supplement": "",
+        "mentor_supplement_hash": null,
+        "citation_verification": {
+          "schema": "citation_validator.v1",
+          "status_schema": [
+            "verified",
+            "weakly_verified",
+            "irrelevant",
+            "unverifiable",
+            "contradicted"
+          ],
+          "overall_status": "irrelevant",
+          "citation_count": 1,
+          "item_count": 1,
+          "counts": {
+            "verified": 0,
+            "weakly_verified": 0,
+            "irrelevant": 1,
+            "unverifiable": 0,
+            "contradicted": 0
+          },
+          "unverifiable_reason_schema": [
+            "no_citation",
+            "missing_external_evidence",
+            "candidate_not_fetched",
+            "fetch_error",
+            "retrieval_blocked",
+            "weak_match"
+          ],
+          "unverifiable_reason_counts": {
+            "no_citation": 0,
+            "missing_external_evidence": 0,
+            "candidate_not_fetched": 0,
+            "fetch_error": 0,
+            "retrieval_blocked": 0,
+            "weak_match": 0
+          },
+          "items": [
+            {
+              "citation_id": "CITE-001",
+              "raw": "https://example.com/docs/project-keyboard-shortcuts",
+              "kind": "url",
+              "normalized": "example.com/docs/project-keyboard-shortcuts",
+              "context": "checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.",
+              "status": "irrelevant",
+              "reason": "引用来源可以匹配，但与当前问题或上下文相关性不足。",
+              "matched_evidence": {
+                "evidence_id": "EVID-OSS-001",
+                "url": "https://example.com/docs/project-keyboard-shortcuts",
+                "title": "Editor key map",
+                "snippet": "Command-S saves drafts, Command-K opens search, and Command-Shift-T changes the color theme.",
+                "status": "user_supplied",
+                "source_layer": "user_supplied",
+                "provenance": "user_supplied",
+                "match_score": 1.0,
+                "evidence_hash": "1c216ee5275a1034ade15d014e51391f57a1177109f4ab4cc355abc00024915c"
+              },
+              "relevance_score": 0.1,
+              "verified_at": "2026-05-18T15:05:22.869918+00:00"
+            }
+          ],
+          "external_evidence_used": 2,
+          "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+          "verified_at": "2026-05-18T15:05:22.869918+00:00",
+          "verification_hash": "4ad8c9c5dca9d029732bb4ad77351fe119428307b626b00c608b3991f3d5d472"
+        },
+        "mentor_citation_verification": null,
+        "unverifiable_reasons": [],
+        "verification_timestamp": "2026-05-18T15:05:22.869918+00:00",
+        "source_isolation": {
+          "raw_answer": "replay_ledger[].raw_answer",
+          "mentor_supplement": "replay_ledger[].mentor_supplement",
+          "external_evidence": "external_evidence_index",
+          "rule": "Grand Judge 只汇总、统计、打分；不得改写模型原文。"
+        }
+      }
+    ],
+    "replay_ledger_hash": "074099bc7a4e44c5553f94ac0ae4906d6f76031893f588269a58309ac1b08e61",
+    "external_evidence_index": [
+      {
+        "evidence_id": "EVID-OSS-001",
+        "url": "https://example.com/docs/project-keyboard-shortcuts",
+        "title": "Editor key map",
+        "status": "user_supplied",
+        "source_layer": "user_supplied",
+        "provenance": "user_supplied",
+        "retrieval_state": "provided",
+        "evidence_hash": "4d02069223c425fc158fe3db867f222d66ece44ffa210ea16b96b8db2bdbfdbf"
+      },
+      {
+        "evidence_id": "CAND-5A03F094C7",
+        "url": "https://example.com/docs/project-keyboard-shortcuts.",
+        "title": null,
+        "status": "candidate_unverified",
+        "source_layer": "candidate_source",
+        "provenance": "model_candidate",
+        "retrieval_state": "not_fetched",
+        "evidence_hash": "50d103c55d128c913a38bca44e77958168f67dbf2ef6a8a4d307a02cde574a45"
+      }
+    ],
+    "source_isolation": {
+      "raw_model_answers": "replay_ledger[].raw_answer",
+      "mentor_supplements": "replay_ledger[].mentor_supplement",
+      "external_evidence": "external_evidence_index",
+      "principle": "原文、导师补充、外部证据三者隔离；引用升级只能来自外部证据层。"
+    },
+    "judge_contract": {
+      "role": "summarize_stat_score_only",
+      "does_not_rewrite_model_originals": true,
+      "anti_hallucination_rule": "不要用模型共识直接验证模型引用；只用隔离外部证据升级引用状态。",
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+    },
+    "roadmap": [
+      {
+        "phase": "Phase 1",
+        "name": "引用真实性 + 相关性验证",
+        "status": "implemented_mvp",
+        "scope": "verified / weakly_verified / irrelevant / unverifiable / contradicted"
+      },
+      {
+        "phase": "Phase 2",
+        "name": "证据缺口建议 + L1/L2/L3 导师反馈",
+        "status": "suggestion_only",
+        "scope": "evidence_gap_filler.py 只输出建议，不代写正文。"
+      },
+      {
+        "phase": "Phase 3",
+        "name": "Agent Graph Arena 对接",
+        "status": "contract_recorded",
+        "scope": "Graph Lab 印章、AgentFi 认证资产、Arena Casino 对抗验证、Forecast Market 可结算预测。"
+      }
+    ],
+    "known_bottom_limits": [
+      "Grok provider quota 不能由桥接层绕过。",
+      "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
+      "unverifiable 不是 false，UI 必须解释清楚。"
+    ],
+    "created_at": "2026-05-18T15:05:22.869918+00:00",
+    "certification_hash": "f3c8e7eac238027d43813589932f1cfdaeafc3e5e101e50ee28a07c1fc98b7be",
+    "evidence_broker": {
+      "schema": "evidence_broker.v1",
+      "created_at": "2026-05-18T15:05:22.869918+00:00",
+      "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
+      "allow_network": false,
+      "source_policy": {
+        "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
+        "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
+        "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+        "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。"
+      },
+      "items": [
+        {
+          "id": "EVID-OSS-001",
+          "url": "https://example.com/docs/project-keyboard-shortcuts",
+          "title": "Editor key map",
+          "snippet": "Command-S saves drafts, Command-K opens search, and Command-Shift-T changes the color theme.",
+          "text": "Reference table for editor navigation and visual settings.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "cc34836358cc7cec3f28db05a11f1a60f807fe8881cf32a9c7ca8cbd994e8310"
+        },
+        {
+          "id": "CAND-5A03F094C7",
+          "url": "https://example.com/docs/project-keyboard-shortcuts.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://example.com/docs/project-keyboard-shortcuts.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "56c122db23eaf7580f0f0169ef4c163dc7392996649a5a791a536ab40943980d"
+        }
+      ],
+      "items_for_validation": [
+        {
+          "id": "EVID-OSS-001",
+          "url": "https://example.com/docs/project-keyboard-shortcuts",
+          "title": "Editor key map",
+          "snippet": "Command-S saves drafts, Command-K opens search, and Command-Shift-T changes the color theme.",
+          "text": "Reference table for editor navigation and visual settings.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "cc34836358cc7cec3f28db05a11f1a60f807fe8881cf32a9c7ca8cbd994e8310"
+        },
+        {
+          "id": "CAND-5A03F094C7",
+          "url": "https://example.com/docs/project-keyboard-shortcuts.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://example.com/docs/project-keyboard-shortcuts.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "56c122db23eaf7580f0f0169ef4c163dc7392996649a5a791a536ab40943980d"
+        }
+      ],
+      "counts": {
+        "user_supplied": 1,
+        "network_fetch": 0,
+        "candidate_source": 1,
+        "fetch_error": 0,
+        "provenance": {
+          "model_candidate": 1,
+          "user_supplied": 1,
+          "fetched": 0,
+          "independently_attested": 0,
+          "notarized": 0
+        }
+      },
+      "broker_hash": "e2e9a94824841555cec41edc790d9ce621455a7cae7f4f53af8fc8d832c34fbd"
+    },
+    "claim_support_audit": {
+      "schema": "claim_support.v1",
+      "status_schema": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "contradicted",
+        "unknown"
+      ],
+      "source_relevance_schema": [
+        "relevant",
+        "weakly_relevant",
+        "irrelevant",
+        "unknown"
+      ],
+      "failure_code_schema": [
+        "none",
+        "overclaimed_causation",
+        "missing_claim_evidence",
+        "source_silent",
+        "citation_unmatched",
+        "source_contradicts_claim"
+      ],
+      "item_count": 1,
+      "claim_support_counts": {
+        "supported": 0,
+        "partially_supported": 0,
+        "unsupported": 1,
+        "contradicted": 0,
+        "unknown": 0
+      },
+      "source_relevance_counts": {
+        "relevant": 0,
+        "weakly_relevant": 0,
+        "irrelevant": 1,
+        "unknown": 0
+      },
+      "support_failure_counts": {
+        "none": 0,
+        "overclaimed_causation": 0,
+        "missing_claim_evidence": 0,
+        "source_silent": 1,
+        "citation_unmatched": 0,
+        "source_contradicts_claim": 0
+      },
+      "items": [
+        {
+          "claim_id": "CLAIM-C930494E55",
+          "citation_id": "CITE-001",
+          "citation_status": "irrelevant",
+          "raw_citation": "https://example.com/docs/project-keyboard-shortcuts",
+          "claim_span": "Source: .",
+          "source_id": "EVID-OSS-001",
+          "source_url": "https://example.com/docs/project-keyboard-shortcuts",
+          "source_title": "Editor key map",
+          "source_relevance": "irrelevant",
+          "claim_support": "unsupported",
+          "support_failure_code": "source_silent",
+          "support_reason": "The source can be matched, but it is not relevant enough to support the cited claim.",
+          "matched_evidence_hash": "1c216ee5275a1034ade15d014e51391f57a1177109f4ab4cc355abc00024915c",
+          "audited_at": "2026-05-18T15:05:22.869918+00:00"
+        }
+      ],
+      "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
+      "audited_at": "2026-05-18T15:05:22.869918+00:00",
+      "overall_claim_support": "unsupported",
+      "claim_support_hash": "bde91b43f3e14d6642298ce8198fb359a7953c5e941f6f0ccbc5c8f12ea03ea2"
+    },
+    "evidence_gap_suggestions": {
+      "schema": "evidence_gap_filler.suggestion_only.v1",
+      "will_rewrite_body": false,
+      "policy": "只输出证据缺口建议；不得替用户补正文或把模型补充混入原文。",
+      "mentor_levels": {
+        "L1": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+        "L2": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+        "L3": "无引用缺口：该段目前只能作为模型推理，不能作为事实认证依据。"
+      },
+      "suggestions": [
+        {
+          "citation_id": "CITE-001",
+          "raw": "https://example.com/docs/project-keyboard-shortcuts",
+          "status": "irrelevant",
+          "mentor_level": "L1",
+          "mentor_feedback": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+          "gap": "来源可找到，但与当前论点关系弱。",
+          "suggested_action": "替换为直接支持当前断言的来源。",
+          "will_rewrite_body": false,
+          "action": "suggest_evidence_gap"
+        }
+      ],
+      "suggestion_count": 1
+    },
+    "evidence_quality_metrics": {
+      "schema": "evidence_quality_metrics.v1",
+      "groundedness_proxy": 0.0,
+      "verified_ratio": 0.0,
+      "weakly_verified_ratio": 0.0,
+      "unverifiable_rate": 0.0,
+      "contradiction_rate": 0.0,
+      "irrelevant_rate": 1.0,
+      "hard_evidence_count": 2,
+      "trust_gate": "needs_more_evidence"
+    },
+    "evidence_gap_queue": {
+      "schema": "evidence_gap_queue.v1",
+      "created_at": "2026-05-18T15:05:22.869918+00:00",
+      "open_count": 1,
+      "tasks": [
+        {
+          "task_id": "GAP-001-32FA28",
+          "citation_id": "CITE-001",
+          "raw": "https://example.com/docs/project-keyboard-shortcuts",
+          "status": "irrelevant",
+          "priority": "medium",
+          "mentor_level": "L1",
+          "gap": "来源可找到，但与当前论点关系弱。",
+          "suggested_action": "替换为直接支持当前断言的来源。",
+          "queue_status": "open",
+          "created_at": "2026-05-18T15:05:22.869918+00:00"
+        }
+      ],
+      "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
+      "queue_hash": "cfffbabba6343ad214d60596549aabb92aa732e6fc210ed25a0d39e49912e5b1"
+    },
+    "blind_cross_validation": {
+      "schema": "blind_cross_validation.v1",
+      "status": "pending_model_reviews",
+      "created_at": "2026-05-18T15:05:22.869918+00:00",
+      "reviewer_count": 4,
+      "threshold": 0.67,
+      "anonymization": {
+        "seat_names_removed": true,
+        "raw_text_truncated": true,
+        "source_hashes_preserved": true
+      },
+      "anonymized_claims": [
+        {
+          "answer_id": "ANSWER-001",
+          "layer": "raw_answer",
+          "citation_id": "CITE-001",
+          "citation": "https://example.com/docs/project-keyboard-shortcuts",
+          "status": "irrelevant",
+          "reason": "引用来源可以匹配，但与当前问题或上下文相关性不足。",
+          "context_preview": "checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.",
+          "answer_hash": "bdf8c2e530215ab53696d94c8d3459a4b4d7a468117f7fc967f82bb0ab3cbb0c"
+        }
+      ],
+      "review_prompts": [
+        {
+          "reviewer": "gemini",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does the cited documentation support the README claim that the package exposes a batch PDF audit function?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/docs/project-keyboard-shortcuts\",\n    \"status\": \"irrelevant\",\n    \"reason\": \"引用来源可以匹配，但与当前问题或上下文相关性不足。\",\n    \"context_preview\": \"checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.\",\n    \"answer_hash\": \"bdf8c2e530215ab53696d94c8d3459a4b4d7a468117f7fc967f82bb0ab3cbb0c\"\n  }\n]"
+        },
+        {
+          "reviewer": "chatgpt",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does the cited documentation support the README claim that the package exposes a batch PDF audit function?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/docs/project-keyboard-shortcuts\",\n    \"status\": \"irrelevant\",\n    \"reason\": \"引用来源可以匹配，但与当前问题或上下文相关性不足。\",\n    \"context_preview\": \"checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.\",\n    \"answer_hash\": \"bdf8c2e530215ab53696d94c8d3459a4b4d7a468117f7fc967f82bb0ab3cbb0c\"\n  }\n]"
+        },
+        {
+          "reviewer": "deepseek",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does the cited documentation support the README claim that the package exposes a batch PDF audit function?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/docs/project-keyboard-shortcuts\",\n    \"status\": \"irrelevant\",\n    \"reason\": \"引用来源可以匹配，但与当前问题或上下文相关性不足。\",\n    \"context_preview\": \"checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.\",\n    \"answer_hash\": \"bdf8c2e530215ab53696d94c8d3459a4b4d7a468117f7fc967f82bb0ab3cbb0c\"\n  }\n]"
+        },
+        {
+          "reviewer": "qwen",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does the cited documentation support the README claim that the package exposes a batch PDF audit function?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/docs/project-keyboard-shortcuts\",\n    \"status\": \"irrelevant\",\n    \"reason\": \"引用来源可以匹配，但与当前问题或上下文相关性不足。\",\n    \"context_preview\": \"checks across PDF folders. The official docs describe this API and show that it is production-ready. Source: https://example.com/docs/project-keyboard-shortcuts.\",\n    \"answer_hash\": \"bdf8c2e530215ab53696d94c8d3459a4b4d7a468117f7fc967f82bb0ab3cbb0c\"\n  }\n]"
+        }
+      ],
+      "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
+      "packet_hash": "1f16bd89c44819ad04898a654ffd85b9213e3573756e9a3b661555b9522deaba"
+    },
+    "eval_case": {
+      "schema": "ai_judge_eval_case.v1",
+      "case_id": "EVAL-6B015C451733",
+      "run_id": "launch-batch-001-003",
+      "question": "Does the cited documentation support the README claim that the package exposes a batch PDF audit function?",
+      "mode": null,
+      "engine": null,
+      "verdict": null,
+      "confidence": null,
+      "average_score": null,
+      "citation_overall_status": "irrelevant",
+      "citation_counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 1,
+        "unverifiable": 0,
+        "contradicted": 0
+      },
+      "evidence_quality_metrics": {
+        "schema": "evidence_quality_metrics.v1",
+        "groundedness_proxy": 0.0,
+        "verified_ratio": 0.0,
+        "weakly_verified_ratio": 0.0,
+        "unverifiable_rate": 0.0,
+        "contradiction_rate": 0.0,
+        "irrelevant_rate": 1.0,
+        "hard_evidence_count": 2,
+        "trust_gate": "needs_more_evidence"
+      },
+      "certification_id": "CITE-20260518-466C9A6261",
+      "certification_hash": "f3c8e7eac238027d43813589932f1cfdaeafc3e5e101e50ee28a07c1fc98b7be",
+      "replay_ledger_hash": "074099bc7a4e44c5553f94ac0ae4906d6f76031893f588269a58309ac1b08e61",
+      "human_label": null,
+      "created_at": "2026-05-18T15:05:22.870403+00:00",
+      "case_hash": "fb3a8c7f0926ab2a4cca0d7b5d733c465d3f52b1dee072025001aca4b6c83a48"
+    }
+  },
+  "human_review_status": {
+    "status": "optional",
+    "reason": "引用状态较稳，可选人工签名。"
+  },
+  "created_at": "2026-05-18T15:05:22.869918+00:00",
+  "summary": {
+    "overall_status": "irrelevant",
+    "overall_claim_support": "unsupported",
+    "certification_id": "CITE-20260518-466C9A6261",
+    "certification_hash": "f3c8e7eac238027d43813589932f1cfdaeafc3e5e101e50ee28a07c1fc98b7be",
+    "replay_ledger_hash": "074099bc7a4e44c5553f94ac0ae4906d6f76031893f588269a58309ac1b08e61",
+    "item_count": 1,
+    "counts": {
+      "verified": 0,
+      "weakly_verified": 0,
+      "irrelevant": 1,
+      "unverifiable": 0,
+      "contradicted": 0
+    },
+    "claim_support_counts": {
+      "supported": 0,
+      "partially_supported": 0,
+      "unsupported": 1,
+      "contradicted": 0,
+      "unknown": 0
+    },
+    "claim_support_failure_counts": {
+      "none": 0,
+      "overclaimed_causation": 0,
+      "missing_claim_evidence": 0,
+      "source_silent": 1,
+      "citation_unmatched": 0,
+      "source_contradicts_claim": 0
+    },
+    "unverifiable_reason_counts": {
+      "no_citation": 0,
+      "missing_external_evidence": 0,
+      "candidate_not_fetched": 0,
+      "fetch_error": 0,
+      "retrieval_blocked": 0,
+      "weak_match": 0
+    },
+    "evidence_provenance_counts": {
+      "model_candidate": 1,
+      "user_supplied": 1,
+      "fetched": 0,
+      "independently_attested": 0,
+      "notarized": 0
+    },
+    "trust_gate": "needs_more_evidence",
+    "groundedness_proxy": 0.0,
+    "gap_count": 1,
+    "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+  }
+}

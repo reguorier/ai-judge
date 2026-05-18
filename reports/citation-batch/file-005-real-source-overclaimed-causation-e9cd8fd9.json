@@ -1,0 +1,486 @@
+{
+  "schema": "citation_audit.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.7.0",
+  "audit_id": "launch-batch-001-005",
+  "title": "Real Source, Unsupported Causal Claim",
+  "question": "Does the cited study prove that the AI review program caused lower churn?",
+  "answer": "The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
+  "allow_network": false,
+  "grand_judge": {
+    "schema": "grand_judge.citation_mvp.v1",
+    "phase": "citation_verification_mvp",
+    "run_id": "launch-batch-001-005",
+    "question": "Does the cited study prove that the AI review program caused lower churn?",
+    "certification_id": "CITE-20260518-E0275389F0",
+    "citation_verification": {
+      "schema": "citation_validator.summary.v1",
+      "status_schema": [
+        "verified",
+        "weakly_verified",
+        "irrelevant",
+        "unverifiable",
+        "contradicted"
+      ],
+      "overall_status": "verified",
+      "citation_count": 1,
+      "item_count": 1,
+      "counts": {
+        "verified": 1,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 0,
+        "contradicted": 0
+      },
+      "unverifiable_reason_schema": [
+        "no_citation",
+        "missing_external_evidence",
+        "candidate_not_fetched",
+        "fetch_error",
+        "retrieval_blocked",
+        "weak_match"
+      ],
+      "unverifiable_reason_counts": {
+        "no_citation": 0,
+        "missing_external_evidence": 0,
+        "candidate_not_fetched": 0,
+        "fetch_error": 0,
+        "retrieval_blocked": 0,
+        "weak_match": 0
+      },
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+      "verification_hash": "c1255e4b420a2810ada1d48320067307be7c930c919ab2b475cee0e8bea7cdcb",
+      "certification_id": "CITE-20260518-E0275389F0",
+      "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+      "external_evidence_count": 1
+    },
+    "replay_ledger": [
+      {
+        "ledger_id": "LEDGER-001",
+        "seat": "submitted_answer",
+        "seat_name": "Submitted AI Answer",
+        "ok": true,
+        "raw_answer": "The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
+        "raw_answer_hash": "1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403",
+        "mentor_supplement": "",
+        "mentor_supplement_hash": null,
+        "citation_verification": {
+          "schema": "citation_validator.v1",
+          "status_schema": [
+            "verified",
+            "weakly_verified",
+            "irrelevant",
+            "unverifiable",
+            "contradicted"
+          ],
+          "overall_status": "verified",
+          "citation_count": 1,
+          "item_count": 1,
+          "counts": {
+            "verified": 1,
+            "weakly_verified": 0,
+            "irrelevant": 0,
+            "unverifiable": 0,
+            "contradicted": 0
+          },
+          "unverifiable_reason_schema": [
+            "no_citation",
+            "missing_external_evidence",
+            "candidate_not_fetched",
+            "fetch_error",
+            "retrieval_blocked",
+            "weak_match"
+          ],
+          "unverifiable_reason_counts": {
+            "no_citation": 0,
+            "missing_external_evidence": 0,
+            "candidate_not_fetched": 0,
+            "fetch_error": 0,
+            "retrieval_blocked": 0,
+            "weak_match": 0
+          },
+          "items": [
+            {
+              "citation_id": "CITE-001",
+              "raw": "https://example.com/research/ai-review-churn-2026",
+              "kind": "url",
+              "normalized": "example.com/research/ai-review-churn-2026",
+              "context": "ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
+              "status": "verified",
+              "reason": "引用与外部证据强匹配，且与当前问题/上下文相关。",
+              "matched_evidence": {
+                "evidence_id": "USR-EVID-001",
+                "url": "https://example.com/research/ai-review-churn-2026",
+                "title": "AI review usage and customer churn study",
+                "snippet": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+                "status": "user_supplied",
+                "source_layer": "user_supplied",
+                "provenance": "user_supplied",
+                "match_score": 1.0,
+                "evidence_hash": "3f79930bca8bc3c57f9af4151cbaa69a27267bee29849957bdd87c38d3be5e3e"
+              },
+              "relevance_score": 0.45,
+              "verified_at": "2026-05-18T15:05:22.872378+00:00"
+            }
+          ],
+          "external_evidence_used": 1,
+          "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+          "verified_at": "2026-05-18T15:05:22.872378+00:00",
+          "verification_hash": "6ff8a992dee9a2794beb809df1950c1521c87f3c7aff56ac1c9f2c7f13ed1aaa"
+        },
+        "mentor_citation_verification": null,
+        "unverifiable_reasons": [],
+        "verification_timestamp": "2026-05-18T15:05:22.872378+00:00",
+        "source_isolation": {
+          "raw_answer": "replay_ledger[].raw_answer",
+          "mentor_supplement": "replay_ledger[].mentor_supplement",
+          "external_evidence": "external_evidence_index",
+          "rule": "Grand Judge 只汇总、统计、打分；不得改写模型原文。"
+        }
+      }
+    ],
+    "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+    "external_evidence_index": [
+      {
+        "evidence_id": "USR-EVID-001",
+        "url": "https://example.com/research/ai-review-churn-2026",
+        "title": "AI review usage and customer churn study",
+        "status": "user_supplied",
+        "source_layer": "user_supplied",
+        "provenance": "user_supplied",
+        "retrieval_state": "provided",
+        "evidence_hash": "6c0a5cf3d078a9adbd02358fee54cf70195ed594fb083b00c3f6008e18e4b6f0"
+      }
+    ],
+    "source_isolation": {
+      "raw_model_answers": "replay_ledger[].raw_answer",
+      "mentor_supplements": "replay_ledger[].mentor_supplement",
+      "external_evidence": "external_evidence_index",
+      "principle": "原文、导师补充、外部证据三者隔离；引用升级只能来自外部证据层。"
+    },
+    "judge_contract": {
+      "role": "summarize_stat_score_only",
+      "does_not_rewrite_model_originals": true,
+      "anti_hallucination_rule": "不要用模型共识直接验证模型引用；只用隔离外部证据升级引用状态。",
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+    },
+    "roadmap": [
+      {
+        "phase": "Phase 1",
+        "name": "引用真实性 + 相关性验证",
+        "status": "implemented_mvp",
+        "scope": "verified / weakly_verified / irrelevant / unverifiable / contradicted"
+      },
+      {
+        "phase": "Phase 2",
+        "name": "证据缺口建议 + L1/L2/L3 导师反馈",
+        "status": "suggestion_only",
+        "scope": "evidence_gap_filler.py 只输出建议，不代写正文。"
+      },
+      {
+        "phase": "Phase 3",
+        "name": "Agent Graph Arena 对接",
+        "status": "contract_recorded",
+        "scope": "Graph Lab 印章、AgentFi 认证资产、Arena Casino 对抗验证、Forecast Market 可结算预测。"
+      }
+    ],
+    "known_bottom_limits": [
+      "Grok provider quota 不能由桥接层绕过。",
+      "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
+      "unverifiable 不是 false，UI 必须解释清楚。"
+    ],
+    "created_at": "2026-05-18T15:05:22.872378+00:00",
+    "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
+    "evidence_broker": {
+      "schema": "evidence_broker.v1",
+      "created_at": "2026-05-18T15:05:22.872378+00:00",
+      "question": "Does the cited study prove that the AI review program caused lower churn?",
+      "allow_network": false,
+      "source_policy": {
+        "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
+        "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
+        "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+        "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。"
+      },
+      "items": [
+        {
+          "url": "https://example.com/research/ai-review-churn-2026",
+          "title": "AI review usage and customer churn study",
+          "snippet": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "provenance": "user_supplied",
+          "id": "USR-EVID-001",
+          "text": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance_rank": 1,
+          "evidence_hash": "371804f87876c1ff0c400a4556daf731c99b1f0fcc9a5db9a2ef24eb12f8d263"
+        }
+      ],
+      "items_for_validation": [
+        {
+          "url": "https://example.com/research/ai-review-churn-2026",
+          "title": "AI review usage and customer churn study",
+          "snippet": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "provenance": "user_supplied",
+          "id": "USR-EVID-001",
+          "text": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance_rank": 1,
+          "evidence_hash": "371804f87876c1ff0c400a4556daf731c99b1f0fcc9a5db9a2ef24eb12f8d263"
+        }
+      ],
+      "counts": {
+        "user_supplied": 1,
+        "network_fetch": 0,
+        "candidate_source": 0,
+        "fetch_error": 0,
+        "provenance": {
+          "model_candidate": 0,
+          "user_supplied": 1,
+          "fetched": 0,
+          "independently_attested": 0,
+          "notarized": 0
+        }
+      },
+      "broker_hash": "644b3730fdfb81de0f2aae431fb21fb41a8a5f16176865df51efbd826c50781f"
+    },
+    "claim_support_audit": {
+      "schema": "claim_support.v1",
+      "status_schema": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "contradicted",
+        "unknown"
+      ],
+      "source_relevance_schema": [
+        "relevant",
+        "weakly_relevant",
+        "irrelevant",
+        "unknown"
+      ],
+      "failure_code_schema": [
+        "none",
+        "overclaimed_causation",
+        "missing_claim_evidence",
+        "source_silent",
+        "citation_unmatched",
+        "source_contradicts_claim"
+      ],
+      "item_count": 1,
+      "claim_support_counts": {
+        "supported": 0,
+        "partially_supported": 0,
+        "unsupported": 0,
+        "contradicted": 1,
+        "unknown": 0
+      },
+      "source_relevance_counts": {
+        "relevant": 1,
+        "weakly_relevant": 0,
+        "irrelevant": 0,
+        "unknown": 0
+      },
+      "support_failure_counts": {
+        "none": 0,
+        "overclaimed_causation": 1,
+        "missing_claim_evidence": 0,
+        "source_silent": 0,
+        "citation_unmatched": 0,
+        "source_contradicts_claim": 0
+      },
+      "items": [
+        {
+          "claim_id": "CLAIM-C64ED23F9D",
+          "citation_id": "CITE-001",
+          "citation_status": "verified",
+          "raw_citation": "https://example.com/research/ai-review-churn-2026",
+          "claim_span": "The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program.",
+          "source_id": "USR-EVID-001",
+          "source_url": "https://example.com/research/ai-review-churn-2026",
+          "source_title": "AI review usage and customer churn study",
+          "source_relevance": "relevant",
+          "claim_support": "contradicted",
+          "support_failure_code": "overclaimed_causation",
+          "support_reason": "The claim uses causal language, while the matched source reports association or explicitly disclaims causation.",
+          "matched_evidence_hash": "3f79930bca8bc3c57f9af4151cbaa69a27267bee29849957bdd87c38d3be5e3e",
+          "audited_at": "2026-05-18T15:05:22.872378+00:00"
+        }
+      ],
+      "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
+      "audited_at": "2026-05-18T15:05:22.872378+00:00",
+      "overall_claim_support": "contradicted",
+      "claim_support_hash": "6c2d5f780379188820b4a0aac200f167a19c9baf82a61ecb1bbfcce50f0d389e"
+    },
+    "evidence_gap_suggestions": {
+      "schema": "evidence_gap_filler.suggestion_only.v1",
+      "will_rewrite_body": false,
+      "policy": "只输出证据缺口建议；不得替用户补正文或把模型补充混入原文。",
+      "mentor_levels": {
+        "L1": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+        "L2": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+        "L3": "无引用缺口：该段目前只能作为模型推理，不能作为事实认证依据。"
+      },
+      "suggestions": [],
+      "suggestion_count": 0
+    },
+    "evidence_quality_metrics": {
+      "schema": "evidence_quality_metrics.v1",
+      "groundedness_proxy": 1.0,
+      "verified_ratio": 1.0,
+      "weakly_verified_ratio": 0.0,
+      "unverifiable_rate": 0.0,
+      "contradiction_rate": 0.0,
+      "irrelevant_rate": 0.0,
+      "hard_evidence_count": 1,
+      "trust_gate": "pass"
+    },
+    "evidence_gap_queue": {
+      "schema": "evidence_gap_queue.v1",
+      "created_at": "2026-05-18T15:05:22.872378+00:00",
+      "open_count": 0,
+      "tasks": [],
+      "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
+      "queue_hash": "2279a333cc9bc557aa502093a40b3911271d144675b5db759eca60c4cd76c574"
+    },
+    "blind_cross_validation": {
+      "schema": "blind_cross_validation.v1",
+      "status": "pending_model_reviews",
+      "created_at": "2026-05-18T15:05:22.872378+00:00",
+      "reviewer_count": 4,
+      "threshold": 0.67,
+      "anonymization": {
+        "seat_names_removed": true,
+        "raw_text_truncated": true,
+        "source_hashes_preserved": true
+      },
+      "anonymized_claims": [
+        {
+          "answer_id": "ANSWER-001",
+          "layer": "raw_answer",
+          "citation_id": "CITE-001",
+          "citation": "https://example.com/research/ai-review-churn-2026",
+          "status": "verified",
+          "reason": "引用与外部证据强匹配，且与当前问题/上下文相关。",
+          "context_preview": "ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
+          "answer_hash": "1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403"
+        }
+      ],
+      "review_prompts": [
+        {
+          "reviewer": "gemini",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+        },
+        {
+          "reviewer": "chatgpt",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+        },
+        {
+          "reviewer": "deepseek",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+        },
+        {
+          "reviewer": "qwen",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+        }
+      ],
+      "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
+      "packet_hash": "1b7e369b947b615b4a8d4edc4e4db1d625d40f8370a8bec598114743cd1d2817"
+    },
+    "eval_case": {
+      "schema": "ai_judge_eval_case.v1",
+      "case_id": "EVAL-BF42C3D1B6BE",
+      "run_id": "launch-batch-001-005",
+      "question": "Does the cited study prove that the AI review program caused lower churn?",
+      "mode": null,
+      "engine": null,
+      "verdict": null,
+      "confidence": null,
+      "average_score": null,
+      "citation_overall_status": "verified",
+      "citation_counts": {
+        "verified": 1,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 0,
+        "contradicted": 0
+      },
+      "evidence_quality_metrics": {
+        "schema": "evidence_quality_metrics.v1",
+        "groundedness_proxy": 1.0,
+        "verified_ratio": 1.0,
+        "weakly_verified_ratio": 0.0,
+        "unverifiable_rate": 0.0,
+        "contradiction_rate": 0.0,
+        "irrelevant_rate": 0.0,
+        "hard_evidence_count": 1,
+        "trust_gate": "pass"
+      },
+      "certification_id": "CITE-20260518-E0275389F0",
+      "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
+      "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+      "human_label": null,
+      "created_at": "2026-05-18T15:05:22.872873+00:00",
+      "case_hash": "87d7b22183847b9e533f0efd86a2d3c7a239d496c74b89905469f437d8660be4"
+    }
+  },
+  "human_review_status": {
+    "status": "optional",
+    "reason": "引用状态较稳，可选人工签名。"
+  },
+  "created_at": "2026-05-18T15:05:22.872378+00:00",
+  "summary": {
+    "overall_status": "verified",
+    "overall_claim_support": "contradicted",
+    "certification_id": "CITE-20260518-E0275389F0",
+    "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
+    "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+    "item_count": 1,
+    "counts": {
+      "verified": 1,
+      "weakly_verified": 0,
+      "irrelevant": 0,
+      "unverifiable": 0,
+      "contradicted": 0
+    },
+    "claim_support_counts": {
+      "supported": 0,
+      "partially_supported": 0,
+      "unsupported": 0,
+      "contradicted": 1,
+      "unknown": 0
+    },
+    "claim_support_failure_counts": {
+      "none": 0,
+      "overclaimed_causation": 1,
+      "missing_claim_evidence": 0,
+      "source_silent": 0,
+      "citation_unmatched": 0,
+      "source_contradicts_claim": 0
+    },
+    "unverifiable_reason_counts": {
+      "no_citation": 0,
+      "missing_external_evidence": 0,
+      "candidate_not_fetched": 0,
+      "fetch_error": 0,
+      "retrieval_blocked": 0,
+      "weak_match": 0
+    },
+    "evidence_provenance_counts": {
+      "model_candidate": 0,
+      "user_supplied": 1,
+      "fetched": 0,
+      "independently_attested": 0,
+      "notarized": 0
+    },
+    "trust_gate": "pass",
+    "groundedness_proxy": 1.0,
+    "gap_count": 0,
+    "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+  }
+}

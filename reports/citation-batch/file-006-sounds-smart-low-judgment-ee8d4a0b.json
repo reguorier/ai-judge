@@ -1,0 +1,565 @@
+{
+  "schema": "citation_audit.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.7.0",
+  "audit_id": "launch-batch-001-006",
+  "title": "Sounds Smart Low Judgment Demo",
+  "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
+  "answer": "The company is an obvious buy because every major model agrees the moat is expanding, margin compression is temporary, and management has unlocked a new flywheel. The 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
+  "allow_network": false,
+  "grand_judge": {
+    "schema": "grand_judge.citation_mvp.v1",
+    "phase": "citation_verification_mvp",
+    "run_id": "launch-batch-001-006",
+    "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
+    "certification_id": "CITE-20260518-5D7FB91716",
+    "citation_verification": {
+      "schema": "citation_validator.summary.v1",
+      "status_schema": [
+        "verified",
+        "weakly_verified",
+        "irrelevant",
+        "unverifiable",
+        "contradicted"
+      ],
+      "overall_status": "unverifiable",
+      "citation_count": 1,
+      "item_count": 1,
+      "counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 1,
+        "contradicted": 0
+      },
+      "unverifiable_reason_schema": [
+        "no_citation",
+        "missing_external_evidence",
+        "candidate_not_fetched",
+        "fetch_error",
+        "retrieval_blocked",
+        "weak_match"
+      ],
+      "unverifiable_reason_counts": {
+        "no_citation": 0,
+        "missing_external_evidence": 0,
+        "candidate_not_fetched": 1,
+        "fetch_error": 0,
+        "retrieval_blocked": 0,
+        "weak_match": 0
+      },
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+      "verification_hash": "f4c9d69dcbaed50f0de02580cd6371450609c8ee5fbeef8b816b337aa897ddd1",
+      "certification_id": "CITE-20260518-5D7FB91716",
+      "replay_ledger_hash": "47874274155913e0848f6219ed65085a46caebfbc0aa1d630b0e3717ebfb6033",
+      "external_evidence_count": 2
+    },
+    "replay_ledger": [
+      {
+        "ledger_id": "LEDGER-001",
+        "seat": "submitted_answer",
+        "seat_name": "Submitted AI Answer",
+        "ok": true,
+        "raw_answer": "The company is an obvious buy because every major model agrees the moat is expanding, margin compression is temporary, and management has unlocked a new flywheel. The 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
+        "raw_answer_hash": "29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c",
+        "mentor_supplement": "",
+        "mentor_supplement_hash": null,
+        "citation_verification": {
+          "schema": "citation_validator.v1",
+          "status_schema": [
+            "verified",
+            "weakly_verified",
+            "irrelevant",
+            "unverifiable",
+            "contradicted"
+          ],
+          "overall_status": "unverifiable",
+          "citation_count": 1,
+          "item_count": 1,
+          "counts": {
+            "verified": 0,
+            "weakly_verified": 0,
+            "irrelevant": 0,
+            "unverifiable": 1,
+            "contradicted": 0
+          },
+          "unverifiable_reason_schema": [
+            "no_citation",
+            "missing_external_evidence",
+            "candidate_not_fetched",
+            "fetch_error",
+            "retrieval_blocked",
+            "weak_match"
+          ],
+          "unverifiable_reason_counts": {
+            "no_citation": 0,
+            "missing_external_evidence": 0,
+            "candidate_not_fetched": 1,
+            "fetch_error": 0,
+            "retrieval_blocked": 0,
+            "weak_match": 0
+          },
+          "items": [
+            {
+              "citation_id": "CITE-001",
+              "raw": "https://globalalpha.example.com/consensus-memo-2026",
+              "kind": "url",
+              "normalized": "globalalpha.example.com/consensus-memo-2026",
+              "context": "he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
+              "status": "unverifiable",
+              "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+              "matched_evidence": {
+                "evidence_id": "CAND-B9A8334825",
+                "url": "https://globalalpha.example.com/consensus-memo-2026.",
+                "title": "",
+                "snippet": "",
+                "status": "candidate_unverified",
+                "source_layer": "candidate_source",
+                "provenance": "model_candidate",
+                "match_score": 1.0,
+                "evidence_hash": "ae68d765f1a70e75b1facad675f22c92751133665a722df236a254b8f71eed22"
+              },
+              "relevance_score": 0.0,
+              "verified_at": "2026-05-18T15:05:22.873719+00:00",
+              "unverifiable_reason_code": "candidate_not_fetched"
+            }
+          ],
+          "external_evidence_used": 2,
+          "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+          "verified_at": "2026-05-18T15:05:22.873719+00:00",
+          "verification_hash": "f86c27052b49eb61e784198555e44b3b960bfa1f4d356acd3d00498ed1d687d3"
+        },
+        "mentor_citation_verification": null,
+        "unverifiable_reasons": [
+          {
+            "citation_id": "CITE-001",
+            "raw": "https://globalalpha.example.com/consensus-memo-2026",
+            "reason_code": "candidate_not_fetched",
+            "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。"
+          }
+        ],
+        "verification_timestamp": "2026-05-18T15:05:22.873719+00:00",
+        "source_isolation": {
+          "raw_answer": "replay_ledger[].raw_answer",
+          "mentor_supplement": "replay_ledger[].mentor_supplement",
+          "external_evidence": "external_evidence_index",
+          "rule": "Grand Judge 只汇总、统计、打分；不得改写模型原文。"
+        }
+      }
+    ],
+    "replay_ledger_hash": "47874274155913e0848f6219ed65085a46caebfbc0aa1d630b0e3717ebfb6033",
+    "external_evidence_index": [
+      {
+        "evidence_id": "EVID-MARKET-001",
+        "url": "https://www.sec.gov/edgar/search/",
+        "title": "SEC EDGAR company filings search",
+        "status": "user_supplied",
+        "source_layer": "user_supplied",
+        "provenance": "user_supplied",
+        "retrieval_state": "provided",
+        "evidence_hash": "cbdc2c7382a72d105197216de0b2c7875df5accb04b8f7073d55679baed0df25"
+      },
+      {
+        "evidence_id": "CAND-B9A8334825",
+        "url": "https://globalalpha.example.com/consensus-memo-2026.",
+        "title": null,
+        "status": "candidate_unverified",
+        "source_layer": "candidate_source",
+        "provenance": "model_candidate",
+        "retrieval_state": "not_fetched",
+        "evidence_hash": "4cd01c911d70370bcaf052eb8904ba4101cd130f757770075d90ada89c5e9ef7"
+      }
+    ],
+    "source_isolation": {
+      "raw_model_answers": "replay_ledger[].raw_answer",
+      "mentor_supplements": "replay_ledger[].mentor_supplement",
+      "external_evidence": "external_evidence_index",
+      "principle": "原文、导师补充、外部证据三者隔离；引用升级只能来自外部证据层。"
+    },
+    "judge_contract": {
+      "role": "summarize_stat_score_only",
+      "does_not_rewrite_model_originals": true,
+      "anti_hallucination_rule": "不要用模型共识直接验证模型引用；只用隔离外部证据升级引用状态。",
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+    },
+    "roadmap": [
+      {
+        "phase": "Phase 1",
+        "name": "引用真实性 + 相关性验证",
+        "status": "implemented_mvp",
+        "scope": "verified / weakly_verified / irrelevant / unverifiable / contradicted"
+      },
+      {
+        "phase": "Phase 2",
+        "name": "证据缺口建议 + L1/L2/L3 导师反馈",
+        "status": "suggestion_only",
+        "scope": "evidence_gap_filler.py 只输出建议，不代写正文。"
+      },
+      {
+        "phase": "Phase 3",
+        "name": "Agent Graph Arena 对接",
+        "status": "contract_recorded",
+        "scope": "Graph Lab 印章、AgentFi 认证资产、Arena Casino 对抗验证、Forecast Market 可结算预测。"
+      }
+    ],
+    "known_bottom_limits": [
+      "Grok provider quota 不能由桥接层绕过。",
+      "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
+      "unverifiable 不是 false，UI 必须解释清楚。"
+    ],
+    "created_at": "2026-05-18T15:05:22.873719+00:00",
+    "certification_hash": "a8dfcb43e04ee60ffa79c647c92e361ab9c6bb70580da69ad503326c37f75401",
+    "evidence_broker": {
+      "schema": "evidence_broker.v1",
+      "created_at": "2026-05-18T15:05:22.873719+00:00",
+      "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
+      "allow_network": false,
+      "source_policy": {
+        "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
+        "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
+        "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+        "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。"
+      },
+      "items": [
+        {
+          "id": "EVID-MARKET-001",
+          "url": "https://www.sec.gov/edgar/search/",
+          "title": "SEC EDGAR company filings search",
+          "snippet": "SEC filings can verify company-reported financial statements and risk factors. This evidence does not verify the named Global Alpha Consensus Memo or the broad moat and flywheel claims.",
+          "text": "The supplied external evidence is a general filing search entry and does not directly support the answer's investment recommendation.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "0f963e7132e38ca1555882be28b87aaa776e3db77a5559c710f274b483544f3c"
+        },
+        {
+          "id": "CAND-B9A8334825",
+          "url": "https://globalalpha.example.com/consensus-memo-2026.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://globalalpha.example.com/consensus-memo-2026.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "d5c445d516dfb942e240811021fa2305fb585cd2ae4eef1ed22d7e730c23416c"
+        }
+      ],
+      "items_for_validation": [
+        {
+          "id": "EVID-MARKET-001",
+          "url": "https://www.sec.gov/edgar/search/",
+          "title": "SEC EDGAR company filings search",
+          "snippet": "SEC filings can verify company-reported financial statements and risk factors. This evidence does not verify the named Global Alpha Consensus Memo or the broad moat and flywheel claims.",
+          "text": "The supplied external evidence is a general filing search entry and does not directly support the answer's investment recommendation.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "0f963e7132e38ca1555882be28b87aaa776e3db77a5559c710f274b483544f3c"
+        },
+        {
+          "id": "CAND-B9A8334825",
+          "url": "https://globalalpha.example.com/consensus-memo-2026.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://globalalpha.example.com/consensus-memo-2026.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "d5c445d516dfb942e240811021fa2305fb585cd2ae4eef1ed22d7e730c23416c"
+        }
+      ],
+      "counts": {
+        "user_supplied": 1,
+        "network_fetch": 0,
+        "candidate_source": 1,
+        "fetch_error": 0,
+        "provenance": {
+          "model_candidate": 1,
+          "user_supplied": 1,
+          "fetched": 0,
+          "independently_attested": 0,
+          "notarized": 0
+        }
+      },
+      "broker_hash": "cc2d18686d5580b018146d203f9f239b7b67728fe74141e1b0f96dfd7a3fd465"
+    },
+    "claim_support_audit": {
+      "schema": "claim_support.v1",
+      "status_schema": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "contradicted",
+        "unknown"
+      ],
+      "source_relevance_schema": [
+        "relevant",
+        "weakly_relevant",
+        "irrelevant",
+        "unknown"
+      ],
+      "failure_code_schema": [
+        "none",
+        "overclaimed_causation",
+        "missing_claim_evidence",
+        "source_silent",
+        "citation_unmatched",
+        "source_contradicts_claim"
+      ],
+      "item_count": 1,
+      "claim_support_counts": {
+        "supported": 0,
+        "partially_supported": 0,
+        "unsupported": 0,
+        "contradicted": 0,
+        "unknown": 1
+      },
+      "source_relevance_counts": {
+        "relevant": 0,
+        "weakly_relevant": 0,
+        "irrelevant": 0,
+        "unknown": 1
+      },
+      "support_failure_counts": {
+        "none": 0,
+        "overclaimed_causation": 0,
+        "missing_claim_evidence": 1,
+        "source_silent": 0,
+        "citation_unmatched": 0,
+        "source_contradicts_claim": 0
+      },
+      "items": [
+        {
+          "claim_id": "CLAIM-58B6298C1A",
+          "citation_id": "CITE-001",
+          "citation_status": "unverifiable",
+          "raw_citation": "https://globalalpha.example.com/consensus-memo-2026",
+          "claim_span": "See .",
+          "source_id": "CAND-B9A8334825",
+          "source_url": "https://globalalpha.example.com/consensus-memo-2026.",
+          "source_title": "",
+          "source_relevance": "unknown",
+          "claim_support": "unknown",
+          "support_failure_code": "missing_claim_evidence",
+          "support_reason": "The citation is currently unverifiable, so claim-level support cannot be upgraded.",
+          "matched_evidence_hash": "ae68d765f1a70e75b1facad675f22c92751133665a722df236a254b8f71eed22",
+          "audited_at": "2026-05-18T15:05:22.873719+00:00"
+        }
+      ],
+      "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
+      "audited_at": "2026-05-18T15:05:22.873719+00:00",
+      "overall_claim_support": "unknown",
+      "claim_support_hash": "4cc624669e8d4a963136841a25ce8490ccd5cb968802d9cb27ee7e58b6fc8f47"
+    },
+    "evidence_gap_suggestions": {
+      "schema": "evidence_gap_filler.suggestion_only.v1",
+      "will_rewrite_body": false,
+      "policy": "只输出证据缺口建议；不得替用户补正文或把模型补充混入原文。",
+      "mentor_levels": {
+        "L1": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+        "L2": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+        "L3": "无引用缺口：该段目前只能作为模型推理，不能作为事实认证依据。"
+      },
+      "suggestions": [
+        {
+          "citation_id": "CITE-001",
+          "raw": "https://globalalpha.example.com/consensus-memo-2026",
+          "status": "unverifiable",
+          "mentor_level": "L1",
+          "mentor_feedback": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+          "gap": "缺少可匹配的外部证据。",
+          "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
+          "will_rewrite_body": false,
+          "action": "suggest_evidence_gap"
+        }
+      ],
+      "suggestion_count": 1
+    },
+    "evidence_quality_metrics": {
+      "schema": "evidence_quality_metrics.v1",
+      "groundedness_proxy": 0.0,
+      "verified_ratio": 0.0,
+      "weakly_verified_ratio": 0.0,
+      "unverifiable_rate": 1.0,
+      "contradiction_rate": 0.0,
+      "irrelevant_rate": 0.0,
+      "hard_evidence_count": 2,
+      "trust_gate": "needs_more_evidence"
+    },
+    "evidence_gap_queue": {
+      "schema": "evidence_gap_queue.v1",
+      "created_at": "2026-05-18T15:05:22.873719+00:00",
+      "open_count": 1,
+      "tasks": [
+        {
+          "task_id": "GAP-001-9B7C4B",
+          "citation_id": "CITE-001",
+          "raw": "https://globalalpha.example.com/consensus-memo-2026",
+          "status": "unverifiable",
+          "priority": "high",
+          "mentor_level": "L1",
+          "gap": "缺少可匹配的外部证据。",
+          "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
+          "queue_status": "open",
+          "created_at": "2026-05-18T15:05:22.873719+00:00"
+        }
+      ],
+      "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
+      "queue_hash": "41b57e7e45897c32a26c2a3f9b078aa8a8664422d92d1fd1507ab0017c1032d4"
+    },
+    "blind_cross_validation": {
+      "schema": "blind_cross_validation.v1",
+      "status": "pending_model_reviews",
+      "created_at": "2026-05-18T15:05:22.873719+00:00",
+      "reviewer_count": 4,
+      "threshold": 0.67,
+      "anonymization": {
+        "seat_names_removed": true,
+        "raw_text_truncated": true,
+        "source_hashes_preserved": true
+      },
+      "anonymized_claims": [
+        {
+          "answer_id": "ANSWER-001",
+          "layer": "raw_answer",
+          "citation_id": "CITE-001",
+          "citation": "https://globalalpha.example.com/consensus-memo-2026",
+          "status": "unverifiable",
+          "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+          "context_preview": "he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.",
+          "answer_hash": "29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c"
+        }
+      ],
+      "review_prompts": [
+        {
+          "reviewer": "gemini",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
+        },
+        {
+          "reviewer": "chatgpt",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
+        },
+        {
+          "reviewer": "deepseek",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
+        },
+        {
+          "reviewer": "qwen",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does this AI-generated investment-style answer provide evidence strong enough for a decision?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://globalalpha.example.com/consensus-memo-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"he 2026 Global Alpha Consensus Memo confirms that consensus estimates underprice this compounding effect. See https://globalalpha.example.com/consensus-memo-2026.\",\n    \"answer_hash\": \"29e270a0f0fe0f77448676b27167b4c3a35072c0f90277ffa401ba8168bdd75c\"\n  }\n]"
+        }
+      ],
+      "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
+      "packet_hash": "e30feed58c381dacfc0e7dbe13c58f75f23dd774810620e81a2e12f77df2d0a2"
+    },
+    "eval_case": {
+      "schema": "ai_judge_eval_case.v1",
+      "case_id": "EVAL-C1D1466E536D",
+      "run_id": "launch-batch-001-006",
+      "question": "Does this AI-generated investment-style answer provide evidence strong enough for a decision?",
+      "mode": null,
+      "engine": null,
+      "verdict": null,
+      "confidence": null,
+      "average_score": null,
+      "citation_overall_status": "unverifiable",
+      "citation_counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 1,
+        "contradicted": 0
+      },
+      "evidence_quality_metrics": {
+        "schema": "evidence_quality_metrics.v1",
+        "groundedness_proxy": 0.0,
+        "verified_ratio": 0.0,
+        "weakly_verified_ratio": 0.0,
+        "unverifiable_rate": 1.0,
+        "contradiction_rate": 0.0,
+        "irrelevant_rate": 0.0,
+        "hard_evidence_count": 2,
+        "trust_gate": "needs_more_evidence"
+      },
+      "certification_id": "CITE-20260518-5D7FB91716",
+      "certification_hash": "a8dfcb43e04ee60ffa79c647c92e361ab9c6bb70580da69ad503326c37f75401",
+      "replay_ledger_hash": "47874274155913e0848f6219ed65085a46caebfbc0aa1d630b0e3717ebfb6033",
+      "human_label": null,
+      "created_at": "2026-05-18T15:05:22.874293+00:00",
+      "case_hash": "68f64af2a0c4c5f1d2ddc011bff1cae30fac4de0db3d66de1dbc4bde66d152c1"
+    }
+  },
+  "human_review_status": {
+    "status": "required",
+    "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。"
+  },
+  "created_at": "2026-05-18T15:05:22.873719+00:00",
+  "summary": {
+    "overall_status": "unverifiable",
+    "overall_claim_support": "unknown",
+    "certification_id": "CITE-20260518-5D7FB91716",
+    "certification_hash": "a8dfcb43e04ee60ffa79c647c92e361ab9c6bb70580da69ad503326c37f75401",
+    "replay_ledger_hash": "47874274155913e0848f6219ed65085a46caebfbc0aa1d630b0e3717ebfb6033",
+    "item_count": 1,
+    "counts": {
+      "verified": 0,
+      "weakly_verified": 0,
+      "irrelevant": 0,
+      "unverifiable": 1,
+      "contradicted": 0
+    },
+    "claim_support_counts": {
+      "supported": 0,
+      "partially_supported": 0,
+      "unsupported": 0,
+      "contradicted": 0,
+      "unknown": 1
+    },
+    "claim_support_failure_counts": {
+      "none": 0,
+      "overclaimed_causation": 0,
+      "missing_claim_evidence": 1,
+      "source_silent": 0,
+      "citation_unmatched": 0,
+      "source_contradicts_claim": 0
+    },
+    "unverifiable_reason_counts": {
+      "no_citation": 0,
+      "missing_external_evidence": 0,
+      "candidate_not_fetched": 1,
+      "fetch_error": 0,
+      "retrieval_blocked": 0,
+      "weak_match": 0
+    },
+    "evidence_provenance_counts": {
+      "model_candidate": 1,
+      "user_supplied": 1,
+      "fetched": 0,
+      "independently_attested": 0,
+      "notarized": 0
+    },
+    "trust_gate": "needs_more_evidence",
+    "groundedness_proxy": 0.0,
+    "gap_count": 1,
+    "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+  }
+}

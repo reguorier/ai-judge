@@ -57,7 +57,7 @@ It separates polished language from actual thinking quality, then gives the huma
 
 ## Citation Audit in 60 Seconds
 
-Most LLM eval tools ask whether an answer is good. AI Judge v3.6 starts with a narrower publish-risk question: **which citations can actually be trusted?**
+Most LLM eval tools ask whether an answer is good. AI Judge v3.7 starts with a narrower publish-risk question: **which citations can actually be trusted at file or repository scale?**
 
 Try it in the browser first:
 
@@ -74,6 +74,16 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
   --html reports/fake-citation-audit.html \
   --json reports/fake-citation-audit.json
 ```
+
+Batch Markdown/JSON audit is also available for repository-scale checks:
+
+```bash
+PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" \
+  --out reports/citation-batch \
+  --manifest reports/citation-batch/manifest.json
+```
+
+The launch batch demo intentionally returns non-zero when contradicted claims are present. Inspect the generated index at [`reports/citation-batch/index.html`](reports/citation-batch/index.html) and the machine-readable manifest at [`reports/citation-batch/manifest.json`](reports/citation-batch/manifest.json).
 
 The audit returns:
 
@@ -232,9 +242,10 @@ The current monetization path is intentionally narrow: prove citation audit valu
 | [`docs/CITATION_AUDIT_QUICKSTART.md`](docs/CITATION_AUDIT_QUICKSTART.md) | Reproducible local demo, report gallery, and benchmark command |
 | [`docs/LAUNCH_CITATION_AUDIT.md`](docs/LAUNCH_CITATION_AUDIT.md) | 30-day launch plan, public demos, and stop/go thresholds |
 | [`docs/UNVERIFIABLE_IS_NOT_FALSE.md`](docs/UNVERIFIABLE_IS_NOT_FALSE.md) | Public explainer for the most important trust-boundary concept |
-| [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Pro batch-audit scope without building billing too early |
+| [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Implemented Markdown/JSON batch-audit scope without building billing too early |
 | [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration example for Markdown/document PRs |
 | [`docs/AI_DECISION_AUDIT_SAMPLE.md`](docs/AI_DECISION_AUDIT_SAMPLE.md) | Concrete sample deliverable for audit-service conversations |
+| [`reports/citation-batch/index.html`](reports/citation-batch/index.html) | Six-example batch audit proof with manifest and per-file reports |
 | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) | Publish-ready long-form launch essay |
 | [`docs/PRO_EARLY_ACCESS.md`](docs/PRO_EARLY_ACCESS.md) | First paid-signal offer and manual purchase flow |
 | [`product/pro_early_access.html`](product/pro_early_access.html) | Static early-access page for the $49 lifetime test |
@@ -278,7 +289,7 @@ No. AI Judge now separates citation matching from claim support. In the overclai
 Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
 
 **What becomes Pro?**
-Batch audit, GitHub Action advanced mode, history ledger, network-backed Evidence Broker, and document parsing. Single-file local audit stays free.
+The first Pro surface is repository-scale batch audit, with advanced GitHub Action mode, history ledger, network-backed Evidence Broker, and document parsing on the roadmap. Single-file local audit stays free.
 
 ## v3.1 Foundation
 

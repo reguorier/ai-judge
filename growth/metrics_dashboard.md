@@ -32,7 +32,7 @@ Last refreshed: 2026-05-18 22:04 HKT
 | Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | openreview_profile_activation_pending | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview packet and PDF are ready. Signup is submitted, QQ + company email are confirmed, and profile activation is pending before upload. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |
-| Pro early access | growth/pro_interest_status.md | intent_tracking_ready | 0 | 0 | 0 | 0 | Landing page CTA now collects workflow fields; Pro requests/payments can be logged from events. |
+| Pro early access | growth/pro_interest_status.md | batch_mvp_implemented | 0 | 0 | 0 | 0 | Landing page CTA collects workflow fields, and `ai-judge audit-batch` now implements the first Markdown/JSON batch value step before billing. |
 | Sponsors | growth/sponsor_status.md | manual_sponsor_path_ready | 0 | 0 | 0 | 0 | GitHub Sponsors copy is ready; manual sponsor intent can be tracked until Sponsors is enabled. |
 
 ## Manual update cadence

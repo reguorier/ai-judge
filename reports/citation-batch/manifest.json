@@ -1,0 +1,181 @@
+{
+  "schema": "citation_audit_batch.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.7.0",
+  "batch_id": "launch-batch-001",
+  "generated_at": "2026-05-18T15:05:22.865602+00:00",
+  "input_count": 6,
+  "failed_count": 2,
+  "warning_count": 4,
+  "certification_ids": [
+    "CITE-20260518-D8E3FD86C6",
+    "CITE-20260518-138438D487",
+    "CITE-20260518-466C9A6261",
+    "CITE-20260518-4A0F27725C",
+    "CITE-20260518-E0275389F0",
+    "CITE-20260518-5D7FB91716"
+  ],
+  "replay_ledger_hashes": [
+    "8706ee04a913d86b92439c7b4eacb35e43ed351fdd1532c833b0a9210f71b680",
+    "e9be13d76efdd493466c2b52094766d4982dedfaedaf7bd639616f614cec3e7b",
+    "074099bc7a4e44c5553f94ac0ae4906d6f76031893f588269a58309ac1b08e61",
+    "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+    "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+    "47874274155913e0848f6219ed65085a46caebfbc0aa1d630b0e3717ebfb6033"
+  ],
+  "policy": {
+    "fail_on": [
+      "contradicted"
+    ],
+    "warn_on": [
+      "irrelevant",
+      "partially_supported",
+      "unsupported",
+      "unverifiable",
+      "weakly_verified"
+    ],
+    "allow_network": false,
+    "reviewers": [
+      "gemini",
+      "chatgpt",
+      "deepseek",
+      "qwen"
+    ]
+  },
+  "results": [
+    {
+      "input": "examples/fake-citation.md",
+      "title": "Fake Citation Audit Demo",
+      "audit_id": "launch-batch-001-001",
+      "html": "reports/citation-batch/file-001-fake-citation-a29526f6.html",
+      "json": "reports/citation-batch/file-001-fake-citation-a29526f6.json",
+      "overall_status": "unverifiable",
+      "overall_claim_support": "unknown",
+      "trust_gate": "needs_more_evidence",
+      "certification_id": "CITE-20260518-D8E3FD86C6",
+      "certification_hash": "c0ddfe447ab1fa893c44ec8d1018c371f080089151fc6c4e171d67278ca213a5",
+      "replay_ledger_hash": "8706ee04a913d86b92439c7b4eacb35e43ed351fdd1532c833b0a9210f71b680",
+      "item_count": 1,
+      "gap_count": 1,
+      "policy_statuses": [
+        "needs_more_evidence",
+        "unknown",
+        "unverifiable"
+      ],
+      "failed": false,
+      "warning": true
+    },
+    {
+      "input": "examples/legal-memo-contradicted.md",
+      "title": "Legal Memo Contradicted Citation Demo",
+      "audit_id": "launch-batch-001-002",
+      "html": "reports/citation-batch/file-002-legal-memo-contradicted-bf94aa6d.html",
+      "json": "reports/citation-batch/file-002-legal-memo-contradicted-bf94aa6d.json",
+      "overall_status": "contradicted",
+      "overall_claim_support": "contradicted",
+      "trust_gate": "blocked_contradiction",
+      "certification_id": "CITE-20260518-138438D487",
+      "certification_hash": "fe6cbb3a8b7a06f30097bbfc2acb932d97abf59417af24b812125da32ea6e6b3",
+      "replay_ledger_hash": "e9be13d76efdd493466c2b52094766d4982dedfaedaf7bd639616f614cec3e7b",
+      "item_count": 1,
+      "gap_count": 1,
+      "policy_statuses": [
+        "blocked_contradiction",
+        "contradicted"
+      ],
+      "failed": true,
+      "warning": false
+    },
+    {
+      "input": "examples/opensource-readme-irrelevant.md",
+      "title": "Open Source README Irrelevant Citation Demo",
+      "audit_id": "launch-batch-001-003",
+      "html": "reports/citation-batch/file-003-opensource-readme-irrelevant-34136f57.html",
+      "json": "reports/citation-batch/file-003-opensource-readme-irrelevant-34136f57.json",
+      "overall_status": "irrelevant",
+      "overall_claim_support": "unsupported",
+      "trust_gate": "needs_more_evidence",
+      "certification_id": "CITE-20260518-466C9A6261",
+      "certification_hash": "f3c8e7eac238027d43813589932f1cfdaeafc3e5e101e50ee28a07c1fc98b7be",
+      "replay_ledger_hash": "074099bc7a4e44c5553f94ac0ae4906d6f76031893f588269a58309ac1b08e61",
+      "item_count": 1,
+      "gap_count": 1,
+      "policy_statuses": [
+        "irrelevant",
+        "needs_more_evidence",
+        "unsupported"
+      ],
+      "failed": false,
+      "warning": true
+    },
+    {
+      "input": "examples/product-no-evidence.md",
+      "title": "Product Plan Evidence Audit Demo",
+      "audit_id": "launch-batch-001-004",
+      "html": "reports/citation-batch/file-004-product-no-evidence-c2b517cd.html",
+      "json": "reports/citation-batch/file-004-product-no-evidence-c2b517cd.json",
+      "overall_status": "unverifiable",
+      "overall_claim_support": "unknown",
+      "trust_gate": "needs_more_evidence",
+      "certification_id": "CITE-20260518-4A0F27725C",
+      "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
+      "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+      "item_count": 1,
+      "gap_count": 1,
+      "policy_statuses": [
+        "needs_more_evidence",
+        "unknown",
+        "unverifiable"
+      ],
+      "failed": false,
+      "warning": true
+    },
+    {
+      "input": "examples/real-source-overclaimed-causation.md",
+      "title": "Real Source, Unsupported Causal Claim",
+      "audit_id": "launch-batch-001-005",
+      "html": "reports/citation-batch/file-005-real-source-overclaimed-causation-e9cd8fd9.html",
+      "json": "reports/citation-batch/file-005-real-source-overclaimed-causation-e9cd8fd9.json",
+      "overall_status": "verified",
+      "overall_claim_support": "contradicted",
+      "trust_gate": "pass",
+      "certification_id": "CITE-20260518-E0275389F0",
+      "certification_hash": "13a5f342727b33c8fdb5857c3274a314fc81de64784f6f4db9555eb3bb2a6fd7",
+      "replay_ledger_hash": "b22c2c62bdd6c635437b7615ff8bd5023be286fdcf8a19dc2434ddb61ac2c777",
+      "item_count": 1,
+      "gap_count": 0,
+      "policy_statuses": [
+        "contradicted",
+        "pass",
+        "verified"
+      ],
+      "failed": true,
+      "warning": false
+    },
+    {
+      "input": "examples/sounds-smart-low-judgment.md",
+      "title": "Sounds Smart Low Judgment Demo",
+      "audit_id": "launch-batch-001-006",
+      "html": "reports/citation-batch/file-006-sounds-smart-low-judgment-ee8d4a0b.html",
+      "json": "reports/citation-batch/file-006-sounds-smart-low-judgment-ee8d4a0b.json",
+      "overall_status": "unverifiable",
+      "overall_claim_support": "unknown",
+      "trust_gate": "needs_more_evidence",
+      "certification_id": "CITE-20260518-5D7FB91716",
+      "certification_hash": "a8dfcb43e04ee60ffa79c647c92e361ab9c6bb70580da69ad503326c37f75401",
+      "replay_ledger_hash": "47874274155913e0848f6219ed65085a46caebfbc0aa1d630b0e3717ebfb6033",
+      "item_count": 1,
+      "gap_count": 1,
+      "policy_statuses": [
+        "needs_more_evidence",
+        "unknown",
+        "unverifiable"
+      ],
+      "failed": false,
+      "warning": true
+    }
+  ],
+  "index_html": "reports/citation-batch/index.html",
+  "manifest_path": "reports/citation-batch/manifest.json",
+  "exit_code": 1
+}

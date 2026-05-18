@@ -26,6 +26,21 @@ ai-judge audit-batch docs/**/*.md \
   --warn-on unverifiable
 ```
 
+Implemented MVP:
+
+```bash
+PYTHONPATH=. python cli/main.py audit-batch examples/*.md \
+  --out reports/citation-batch \
+  --manifest reports/citation-batch/manifest.json
+```
+
+The command accepts files, directories, or glob patterns. It writes one HTML and JSON report per supported input, plus `manifest.json` and `index.html`.
+
+Launch proof artifact:
+
+- Batch index: `reports/citation-batch/index.html`
+- Manifest: `reports/citation-batch/manifest.json`
+
 ## Output
 
 ```text
@@ -48,6 +63,7 @@ Manifest fields:
 - `certification_ids`
 - `replay_ledger_hashes`
 - `policy`
+- `results[]` with per-file status, claim support, trust gate, report paths, hashes, and policy result
 
 ## Trust rules
 

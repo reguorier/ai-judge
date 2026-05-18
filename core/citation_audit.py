@@ -102,7 +102,7 @@ def run_citation_audit(
     verdict = {
         "schema": "citation_audit.v1",
         "product": "AI Judge Citation Audit",
-        "version": "3.6.0",
+        "version": "3.7.0",
         "audit_id": audit_id,
         "title": title,
         "question": question,

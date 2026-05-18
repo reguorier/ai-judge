@@ -8,7 +8,7 @@ It is for people who need to audit more than one answer or document at a time.
 
 ## Included
 
-- batch Markdown audit
+- batch Markdown/JSON audit via `ai-judge audit-batch`
 - Evidence Broker network fetch mode
 - historical Replay Ledger
 - GitHub Action advanced mode
@@ -37,6 +37,12 @@ growth/pro_interest_events.jsonl
 growth/pro_interest_status.md
 tools/record_pro_interest.py
 growth/pro_interest_intake.md
+```
+
+Current batch command:
+
+```bash
+PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" --out reports/citation-batch
 ```
 
 Record inbound interest:

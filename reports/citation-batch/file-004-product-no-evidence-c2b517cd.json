@@ -1,0 +1,565 @@
+{
+  "schema": "citation_audit.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.7.0",
+  "audit_id": "launch-batch-001-004",
+  "title": "Product Plan Evidence Audit Demo",
+  "question": "Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?",
+  "answer": "The team should rewrite the payment system immediately. Rewrites reliably reduce checkout defects by 40% within one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.",
+  "allow_network": false,
+  "grand_judge": {
+    "schema": "grand_judge.citation_mvp.v1",
+    "phase": "citation_verification_mvp",
+    "run_id": "launch-batch-001-004",
+    "question": "Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?",
+    "certification_id": "CITE-20260518-4A0F27725C",
+    "citation_verification": {
+      "schema": "citation_validator.summary.v1",
+      "status_schema": [
+        "verified",
+        "weakly_verified",
+        "irrelevant",
+        "unverifiable",
+        "contradicted"
+      ],
+      "overall_status": "unverifiable",
+      "citation_count": 1,
+      "item_count": 1,
+      "counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 1,
+        "contradicted": 0
+      },
+      "unverifiable_reason_schema": [
+        "no_citation",
+        "missing_external_evidence",
+        "candidate_not_fetched",
+        "fetch_error",
+        "retrieval_blocked",
+        "weak_match"
+      ],
+      "unverifiable_reason_counts": {
+        "no_citation": 0,
+        "missing_external_evidence": 0,
+        "candidate_not_fetched": 1,
+        "fetch_error": 0,
+        "retrieval_blocked": 0,
+        "weak_match": 0
+      },
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+      "verification_hash": "f4c9d69dcbaed50f0de02580cd6371450609c8ee5fbeef8b816b337aa897ddd1",
+      "certification_id": "CITE-20260518-4A0F27725C",
+      "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+      "external_evidence_count": 2
+    },
+    "replay_ledger": [
+      {
+        "ledger_id": "LEDGER-001",
+        "seat": "submitted_answer",
+        "seat_name": "Submitted AI Answer",
+        "ok": true,
+        "raw_answer": "The team should rewrite the payment system immediately. Rewrites reliably reduce checkout defects by 40% within one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.",
+        "raw_answer_hash": "1f2e51e71b6f59b33fa5771610d6b7efcb9d35e5880640242433d450e871b893",
+        "mentor_supplement": "",
+        "mentor_supplement_hash": null,
+        "citation_verification": {
+          "schema": "citation_validator.v1",
+          "status_schema": [
+            "verified",
+            "weakly_verified",
+            "irrelevant",
+            "unverifiable",
+            "contradicted"
+          ],
+          "overall_status": "unverifiable",
+          "citation_count": 1,
+          "item_count": 1,
+          "counts": {
+            "verified": 0,
+            "weakly_verified": 0,
+            "irrelevant": 0,
+            "unverifiable": 1,
+            "contradicted": 0
+          },
+          "unverifiable_reason_schema": [
+            "no_citation",
+            "missing_external_evidence",
+            "candidate_not_fetched",
+            "fetch_error",
+            "retrieval_blocked",
+            "weak_match"
+          ],
+          "unverifiable_reason_counts": {
+            "no_citation": 0,
+            "missing_external_evidence": 0,
+            "candidate_not_fetched": 1,
+            "fetch_error": 0,
+            "retrieval_blocked": 0,
+            "weak_match": 0
+          },
+          "items": [
+            {
+              "citation_id": "CITE-001",
+              "raw": "https://stripe.example.com/reports/checkout-reliability-2025",
+              "kind": "url",
+              "normalized": "stripe.example.com/reports/checkout-reliability-2025",
+              "context": "ithin one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.",
+              "status": "unverifiable",
+              "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+              "matched_evidence": {
+                "evidence_id": "CAND-25CB679445",
+                "url": "https://stripe.example.com/reports/checkout-reliability-2025.",
+                "title": "",
+                "snippet": "",
+                "status": "candidate_unverified",
+                "source_layer": "candidate_source",
+                "provenance": "model_candidate",
+                "match_score": 1.0,
+                "evidence_hash": "6aef513293ffe683068832fb511cec9b84f5afeb84f223bb24bf2b817842b24e"
+              },
+              "relevance_score": 0.0,
+              "verified_at": "2026-05-18T15:05:22.871050+00:00",
+              "unverifiable_reason_code": "candidate_not_fetched"
+            }
+          ],
+          "external_evidence_used": 2,
+          "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+          "verified_at": "2026-05-18T15:05:22.871050+00:00",
+          "verification_hash": "eab51f22a85573818552d5d6764ccdeb2b9823703bf4b3e0a7bc8f6cd363574c"
+        },
+        "mentor_citation_verification": null,
+        "unverifiable_reasons": [
+          {
+            "citation_id": "CITE-001",
+            "raw": "https://stripe.example.com/reports/checkout-reliability-2025",
+            "reason_code": "candidate_not_fetched",
+            "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。"
+          }
+        ],
+        "verification_timestamp": "2026-05-18T15:05:22.871050+00:00",
+        "source_isolation": {
+          "raw_answer": "replay_ledger[].raw_answer",
+          "mentor_supplement": "replay_ledger[].mentor_supplement",
+          "external_evidence": "external_evidence_index",
+          "rule": "Grand Judge 只汇总、统计、打分；不得改写模型原文。"
+        }
+      }
+    ],
+    "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+    "external_evidence_index": [
+      {
+        "evidence_id": "EVID-PRODUCT-001",
+        "url": "https://stripe.com/docs/payments",
+        "title": "Stripe payments documentation",
+        "status": "user_supplied",
+        "source_layer": "user_supplied",
+        "provenance": "user_supplied",
+        "retrieval_state": "provided",
+        "evidence_hash": "2af564deae11ea1edd2ccbf1b8cae040e608cfc1dfde49a8d3d009aeedb60c0b"
+      },
+      {
+        "evidence_id": "CAND-25CB679445",
+        "url": "https://stripe.example.com/reports/checkout-reliability-2025.",
+        "title": null,
+        "status": "candidate_unverified",
+        "source_layer": "candidate_source",
+        "provenance": "model_candidate",
+        "retrieval_state": "not_fetched",
+        "evidence_hash": "7f0dd842994be2a3b40b647d4a588bd55ced584a819cdd51e16ae8cbd73448a2"
+      }
+    ],
+    "source_isolation": {
+      "raw_model_answers": "replay_ledger[].raw_answer",
+      "mentor_supplements": "replay_ledger[].mentor_supplement",
+      "external_evidence": "external_evidence_index",
+      "principle": "原文、导师补充、外部证据三者隔离；引用升级只能来自外部证据层。"
+    },
+    "judge_contract": {
+      "role": "summarize_stat_score_only",
+      "does_not_rewrite_model_originals": true,
+      "anti_hallucination_rule": "不要用模型共识直接验证模型引用；只用隔离外部证据升级引用状态。",
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+    },
+    "roadmap": [
+      {
+        "phase": "Phase 1",
+        "name": "引用真实性 + 相关性验证",
+        "status": "implemented_mvp",
+        "scope": "verified / weakly_verified / irrelevant / unverifiable / contradicted"
+      },
+      {
+        "phase": "Phase 2",
+        "name": "证据缺口建议 + L1/L2/L3 导师反馈",
+        "status": "suggestion_only",
+        "scope": "evidence_gap_filler.py 只输出建议，不代写正文。"
+      },
+      {
+        "phase": "Phase 3",
+        "name": "Agent Graph Arena 对接",
+        "status": "contract_recorded",
+        "scope": "Graph Lab 印章、AgentFi 认证资产、Arena Casino 对抗验证、Forecast Market 可结算预测。"
+      }
+    ],
+    "known_bottom_limits": [
+      "Grok provider quota 不能由桥接层绕过。",
+      "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
+      "unverifiable 不是 false，UI 必须解释清楚。"
+    ],
+    "created_at": "2026-05-18T15:05:22.871050+00:00",
+    "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
+    "evidence_broker": {
+      "schema": "evidence_broker.v1",
+      "created_at": "2026-05-18T15:05:22.871050+00:00",
+      "question": "Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?",
+      "allow_network": false,
+      "source_policy": {
+        "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
+        "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
+        "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+        "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。"
+      },
+      "items": [
+        {
+          "id": "EVID-PRODUCT-001",
+          "url": "https://stripe.com/docs/payments",
+          "title": "Stripe payments documentation",
+          "snippet": "Stripe documentation explains payment integration patterns and reliability practices. It does not state that rewrites reduce checkout defects by 40% within one quarter.",
+          "text": "Payment documentation can support implementation choices, but it does not verify the claimed rewrite outcome benchmark.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "71291456e1c81a3aeaf7fa3ee12ead797cff57557b8f82f750d86de54bba3584"
+        },
+        {
+          "id": "CAND-25CB679445",
+          "url": "https://stripe.example.com/reports/checkout-reliability-2025.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://stripe.example.com/reports/checkout-reliability-2025.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "afbfb2b64b6ccf65f625425de59494ce35d6f1b11cd7340315643ca5c8187c2d"
+        }
+      ],
+      "items_for_validation": [
+        {
+          "id": "EVID-PRODUCT-001",
+          "url": "https://stripe.com/docs/payments",
+          "title": "Stripe payments documentation",
+          "snippet": "Stripe documentation explains payment integration patterns and reliability practices. It does not state that rewrites reduce checkout defects by 40% within one quarter.",
+          "text": "Payment documentation can support implementation choices, but it does not verify the claimed rewrite outcome benchmark.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "71291456e1c81a3aeaf7fa3ee12ead797cff57557b8f82f750d86de54bba3584"
+        },
+        {
+          "id": "CAND-25CB679445",
+          "url": "https://stripe.example.com/reports/checkout-reliability-2025.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://stripe.example.com/reports/checkout-reliability-2025.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "afbfb2b64b6ccf65f625425de59494ce35d6f1b11cd7340315643ca5c8187c2d"
+        }
+      ],
+      "counts": {
+        "user_supplied": 1,
+        "network_fetch": 0,
+        "candidate_source": 1,
+        "fetch_error": 0,
+        "provenance": {
+          "model_candidate": 1,
+          "user_supplied": 1,
+          "fetched": 0,
+          "independently_attested": 0,
+          "notarized": 0
+        }
+      },
+      "broker_hash": "28c05fe07d00537045f7c829117c1c85fb370f8df0db1ddbd80bbdb38f81b2e1"
+    },
+    "claim_support_audit": {
+      "schema": "claim_support.v1",
+      "status_schema": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "contradicted",
+        "unknown"
+      ],
+      "source_relevance_schema": [
+        "relevant",
+        "weakly_relevant",
+        "irrelevant",
+        "unknown"
+      ],
+      "failure_code_schema": [
+        "none",
+        "overclaimed_causation",
+        "missing_claim_evidence",
+        "source_silent",
+        "citation_unmatched",
+        "source_contradicts_claim"
+      ],
+      "item_count": 1,
+      "claim_support_counts": {
+        "supported": 0,
+        "partially_supported": 0,
+        "unsupported": 0,
+        "contradicted": 0,
+        "unknown": 1
+      },
+      "source_relevance_counts": {
+        "relevant": 0,
+        "weakly_relevant": 0,
+        "irrelevant": 0,
+        "unknown": 1
+      },
+      "support_failure_counts": {
+        "none": 0,
+        "overclaimed_causation": 0,
+        "missing_claim_evidence": 1,
+        "source_silent": 0,
+        "citation_unmatched": 0,
+        "source_contradicts_claim": 0
+      },
+      "items": [
+        {
+          "claim_id": "CLAIM-935EC52AD0",
+          "citation_id": "CITE-001",
+          "citation_status": "unverifiable",
+          "raw_citation": "https://stripe.example.com/reports/checkout-reliability-2025",
+          "claim_span": "Source: .",
+          "source_id": "CAND-25CB679445",
+          "source_url": "https://stripe.example.com/reports/checkout-reliability-2025.",
+          "source_title": "",
+          "source_relevance": "unknown",
+          "claim_support": "unknown",
+          "support_failure_code": "missing_claim_evidence",
+          "support_reason": "The citation is currently unverifiable, so claim-level support cannot be upgraded.",
+          "matched_evidence_hash": "6aef513293ffe683068832fb511cec9b84f5afeb84f223bb24bf2b817842b24e",
+          "audited_at": "2026-05-18T15:05:22.871050+00:00"
+        }
+      ],
+      "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
+      "audited_at": "2026-05-18T15:05:22.871050+00:00",
+      "overall_claim_support": "unknown",
+      "claim_support_hash": "ce8d45c801db91ed91e2ea104bde72550baa667954e7c30a60ac17ee96821ac3"
+    },
+    "evidence_gap_suggestions": {
+      "schema": "evidence_gap_filler.suggestion_only.v1",
+      "will_rewrite_body": false,
+      "policy": "只输出证据缺口建议；不得替用户补正文或把模型补充混入原文。",
+      "mentor_levels": {
+        "L1": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+        "L2": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+        "L3": "无引用缺口：该段目前只能作为模型推理，不能作为事实认证依据。"
+      },
+      "suggestions": [
+        {
+          "citation_id": "CITE-001",
+          "raw": "https://stripe.example.com/reports/checkout-reliability-2025",
+          "status": "unverifiable",
+          "mentor_level": "L1",
+          "mentor_feedback": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+          "gap": "缺少可匹配的外部证据。",
+          "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
+          "will_rewrite_body": false,
+          "action": "suggest_evidence_gap"
+        }
+      ],
+      "suggestion_count": 1
+    },
+    "evidence_quality_metrics": {
+      "schema": "evidence_quality_metrics.v1",
+      "groundedness_proxy": 0.0,
+      "verified_ratio": 0.0,
+      "weakly_verified_ratio": 0.0,
+      "unverifiable_rate": 1.0,
+      "contradiction_rate": 0.0,
+      "irrelevant_rate": 0.0,
+      "hard_evidence_count": 2,
+      "trust_gate": "needs_more_evidence"
+    },
+    "evidence_gap_queue": {
+      "schema": "evidence_gap_queue.v1",
+      "created_at": "2026-05-18T15:05:22.871050+00:00",
+      "open_count": 1,
+      "tasks": [
+        {
+          "task_id": "GAP-001-EB2975",
+          "citation_id": "CITE-001",
+          "raw": "https://stripe.example.com/reports/checkout-reliability-2025",
+          "status": "unverifiable",
+          "priority": "high",
+          "mentor_level": "L1",
+          "gap": "缺少可匹配的外部证据。",
+          "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
+          "queue_status": "open",
+          "created_at": "2026-05-18T15:05:22.871050+00:00"
+        }
+      ],
+      "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
+      "queue_hash": "fcf7c16be1ebc4a17477c26318400a0a6d7f76bbe499f6ffbe3e17049146d5e3"
+    },
+    "blind_cross_validation": {
+      "schema": "blind_cross_validation.v1",
+      "status": "pending_model_reviews",
+      "created_at": "2026-05-18T15:05:22.871050+00:00",
+      "reviewer_count": 4,
+      "threshold": 0.67,
+      "anonymization": {
+        "seat_names_removed": true,
+        "raw_text_truncated": true,
+        "source_hashes_preserved": true
+      },
+      "anonymized_claims": [
+        {
+          "answer_id": "ANSWER-001",
+          "layer": "raw_answer",
+          "citation_id": "CITE-001",
+          "citation": "https://stripe.example.com/reports/checkout-reliability-2025",
+          "status": "unverifiable",
+          "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+          "context_preview": "ithin one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.",
+          "answer_hash": "1f2e51e71b6f59b33fa5771610d6b7efcb9d35e5880640242433d450e871b893"
+        }
+      ],
+      "review_prompts": [
+        {
+          "reviewer": "gemini",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stripe.example.com/reports/checkout-reliability-2025\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"ithin one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.\",\n    \"answer_hash\": \"1f2e51e71b6f59b33fa5771610d6b7efcb9d35e5880640242433d450e871b893\"\n  }\n]"
+        },
+        {
+          "reviewer": "chatgpt",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stripe.example.com/reports/checkout-reliability-2025\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"ithin one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.\",\n    \"answer_hash\": \"1f2e51e71b6f59b33fa5771610d6b7efcb9d35e5880640242433d450e871b893\"\n  }\n]"
+        },
+        {
+          "reviewer": "deepseek",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stripe.example.com/reports/checkout-reliability-2025\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"ithin one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.\",\n    \"answer_hash\": \"1f2e51e71b6f59b33fa5771610d6b7efcb9d35e5880640242433d450e871b893\"\n  }\n]"
+        },
+        {
+          "reviewer": "qwen",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stripe.example.com/reports/checkout-reliability-2025\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"ithin one quarter, and the Stripe Engineering 2025 Checkout Reliability Report proves this benchmark. Source: https://stripe.example.com/reports/checkout-reliability-2025.\",\n    \"answer_hash\": \"1f2e51e71b6f59b33fa5771610d6b7efcb9d35e5880640242433d450e871b893\"\n  }\n]"
+        }
+      ],
+      "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
+      "packet_hash": "df7c533f83381ddf116c93e429dd1f7e40fae840a6a7aca53ee7bb4ea5470e12"
+    },
+    "eval_case": {
+      "schema": "ai_judge_eval_case.v1",
+      "case_id": "EVAL-E55D3DB6DD0B",
+      "run_id": "launch-batch-001-004",
+      "question": "Does this AI-generated product recommendation cite evidence that supports a three-month rewrite?",
+      "mode": null,
+      "engine": null,
+      "verdict": null,
+      "confidence": null,
+      "average_score": null,
+      "citation_overall_status": "unverifiable",
+      "citation_counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 1,
+        "contradicted": 0
+      },
+      "evidence_quality_metrics": {
+        "schema": "evidence_quality_metrics.v1",
+        "groundedness_proxy": 0.0,
+        "verified_ratio": 0.0,
+        "weakly_verified_ratio": 0.0,
+        "unverifiable_rate": 1.0,
+        "contradiction_rate": 0.0,
+        "irrelevant_rate": 0.0,
+        "hard_evidence_count": 2,
+        "trust_gate": "needs_more_evidence"
+      },
+      "certification_id": "CITE-20260518-4A0F27725C",
+      "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
+      "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+      "human_label": null,
+      "created_at": "2026-05-18T15:05:22.871685+00:00",
+      "case_hash": "019f8229c99c1c16dad17656fb15c484d2cf5c33c3a8ca5b88cfd5edbec80af4"
+    }
+  },
+  "human_review_status": {
+    "status": "required",
+    "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。"
+  },
+  "created_at": "2026-05-18T15:05:22.871050+00:00",
+  "summary": {
+    "overall_status": "unverifiable",
+    "overall_claim_support": "unknown",
+    "certification_id": "CITE-20260518-4A0F27725C",
+    "certification_hash": "17ad7c6a49d89fe7d3f883789b2f343d76a26db4ec49566b13eca45d813a87e5",
+    "replay_ledger_hash": "dbc885918eef50871bf60b4aed4b559bf187e3e5cf755ee06d6336f9ac3613d4",
+    "item_count": 1,
+    "counts": {
+      "verified": 0,
+      "weakly_verified": 0,
+      "irrelevant": 0,
+      "unverifiable": 1,
+      "contradicted": 0
+    },
+    "claim_support_counts": {
+      "supported": 0,
+      "partially_supported": 0,
+      "unsupported": 0,
+      "contradicted": 0,
+      "unknown": 1
+    },
+    "claim_support_failure_counts": {
+      "none": 0,
+      "overclaimed_causation": 0,
+      "missing_claim_evidence": 1,
+      "source_silent": 0,
+      "citation_unmatched": 0,
+      "source_contradicts_claim": 0
+    },
+    "unverifiable_reason_counts": {
+      "no_citation": 0,
+      "missing_external_evidence": 0,
+      "candidate_not_fetched": 1,
+      "fetch_error": 0,
+      "retrieval_blocked": 0,
+      "weak_match": 0
+    },
+    "evidence_provenance_counts": {
+      "model_candidate": 1,
+      "user_supplied": 1,
+      "fetched": 0,
+      "independently_attested": 0,
+      "notarized": 0
+    },
+    "trust_gate": "needs_more_evidence",
+    "groundedness_proxy": 0.0,
+    "gap_count": 1,
+    "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+  }
+}

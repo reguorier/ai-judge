@@ -1,0 +1,565 @@
+{
+  "schema": "citation_audit.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.7.0",
+  "audit_id": "launch-batch-001-001",
+  "title": "Fake Citation Audit Demo",
+  "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
+  "answer": "AI citation errors are basically solved in modern LLM systems. The 2026 Stanford Trustworthy AI Citation Survey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+  "allow_network": false,
+  "grand_judge": {
+    "schema": "grand_judge.citation_mvp.v1",
+    "phase": "citation_verification_mvp",
+    "run_id": "launch-batch-001-001",
+    "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
+    "certification_id": "CITE-20260518-D8E3FD86C6",
+    "citation_verification": {
+      "schema": "citation_validator.summary.v1",
+      "status_schema": [
+        "verified",
+        "weakly_verified",
+        "irrelevant",
+        "unverifiable",
+        "contradicted"
+      ],
+      "overall_status": "unverifiable",
+      "citation_count": 1,
+      "item_count": 1,
+      "counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 1,
+        "contradicted": 0
+      },
+      "unverifiable_reason_schema": [
+        "no_citation",
+        "missing_external_evidence",
+        "candidate_not_fetched",
+        "fetch_error",
+        "retrieval_blocked",
+        "weak_match"
+      ],
+      "unverifiable_reason_counts": {
+        "no_citation": 0,
+        "missing_external_evidence": 0,
+        "candidate_not_fetched": 1,
+        "fetch_error": 0,
+        "retrieval_blocked": 0,
+        "weak_match": 0
+      },
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+      "verification_hash": "f4c9d69dcbaed50f0de02580cd6371450609c8ee5fbeef8b816b337aa897ddd1",
+      "certification_id": "CITE-20260518-D8E3FD86C6",
+      "replay_ledger_hash": "8706ee04a913d86b92439c7b4eacb35e43ed351fdd1532c833b0a9210f71b680",
+      "external_evidence_count": 2
+    },
+    "replay_ledger": [
+      {
+        "ledger_id": "LEDGER-001",
+        "seat": "submitted_answer",
+        "seat_name": "Submitted AI Answer",
+        "ok": true,
+        "raw_answer": "AI citation errors are basically solved in modern LLM systems. The 2026 Stanford Trustworthy AI Citation Survey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+        "raw_answer_hash": "bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555",
+        "mentor_supplement": "",
+        "mentor_supplement_hash": null,
+        "citation_verification": {
+          "schema": "citation_validator.v1",
+          "status_schema": [
+            "verified",
+            "weakly_verified",
+            "irrelevant",
+            "unverifiable",
+            "contradicted"
+          ],
+          "overall_status": "unverifiable",
+          "citation_count": 1,
+          "item_count": 1,
+          "counts": {
+            "verified": 0,
+            "weakly_verified": 0,
+            "irrelevant": 0,
+            "unverifiable": 1,
+            "contradicted": 0
+          },
+          "unverifiable_reason_schema": [
+            "no_citation",
+            "missing_external_evidence",
+            "candidate_not_fetched",
+            "fetch_error",
+            "retrieval_blocked",
+            "weak_match"
+          ],
+          "unverifiable_reason_counts": {
+            "no_citation": 0,
+            "missing_external_evidence": 0,
+            "candidate_not_fetched": 1,
+            "fetch_error": 0,
+            "retrieval_blocked": 0,
+            "weak_match": 0
+          },
+          "items": [
+            {
+              "citation_id": "CITE-001",
+              "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+              "kind": "url",
+              "normalized": "stanford.example.edu/trustworthy-ai-citation-survey-2026",
+              "context": "vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+              "status": "unverifiable",
+              "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+              "matched_evidence": {
+                "evidence_id": "CAND-52CC4D2405",
+                "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+                "title": "",
+                "snippet": "",
+                "status": "candidate_unverified",
+                "source_layer": "candidate_source",
+                "provenance": "model_candidate",
+                "match_score": 1.0,
+                "evidence_hash": "68e748076daadd4d664c99e98dfce72184fe2383f418aa1c33d599755bd46936"
+              },
+              "relevance_score": 0.0,
+              "verified_at": "2026-05-18T15:05:22.866957+00:00",
+              "unverifiable_reason_code": "candidate_not_fetched"
+            }
+          ],
+          "external_evidence_used": 2,
+          "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+          "verified_at": "2026-05-18T15:05:22.866957+00:00",
+          "verification_hash": "0cce26695565a0bb0d8b489814b0c175b82899a9c48da39389ecc57fbd2b6029"
+        },
+        "mentor_citation_verification": null,
+        "unverifiable_reasons": [
+          {
+            "citation_id": "CITE-001",
+            "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+            "reason_code": "candidate_not_fetched",
+            "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。"
+          }
+        ],
+        "verification_timestamp": "2026-05-18T15:05:22.866957+00:00",
+        "source_isolation": {
+          "raw_answer": "replay_ledger[].raw_answer",
+          "mentor_supplement": "replay_ledger[].mentor_supplement",
+          "external_evidence": "external_evidence_index",
+          "rule": "Grand Judge 只汇总、统计、打分；不得改写模型原文。"
+        }
+      }
+    ],
+    "replay_ledger_hash": "8706ee04a913d86b92439c7b4eacb35e43ed351fdd1532c833b0a9210f71b680",
+    "external_evidence_index": [
+      {
+        "evidence_id": "EVID-REAL-001",
+        "url": "https://hai.stanford.edu/ai-index",
+        "title": "Stanford AI Index",
+        "status": "user_supplied",
+        "source_layer": "user_supplied",
+        "provenance": "user_supplied",
+        "retrieval_state": "provided",
+        "evidence_hash": "4223b54101c2dbf71c191988e0c4dddbd853bf2ce1d1c3757d84b2457a965f6a"
+      },
+      {
+        "evidence_id": "CAND-52CC4D2405",
+        "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+        "title": null,
+        "status": "candidate_unverified",
+        "source_layer": "candidate_source",
+        "provenance": "model_candidate",
+        "retrieval_state": "not_fetched",
+        "evidence_hash": "90addfb2ff8268f96b4767598bcb15d4c8aed3bd7cfdddfe39ca8de600800ef2"
+      }
+    ],
+    "source_isolation": {
+      "raw_model_answers": "replay_ledger[].raw_answer",
+      "mentor_supplements": "replay_ledger[].mentor_supplement",
+      "external_evidence": "external_evidence_index",
+      "principle": "原文、导师补充、外部证据三者隔离；引用升级只能来自外部证据层。"
+    },
+    "judge_contract": {
+      "role": "summarize_stat_score_only",
+      "does_not_rewrite_model_originals": true,
+      "anti_hallucination_rule": "不要用模型共识直接验证模型引用；只用隔离外部证据升级引用状态。",
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+    },
+    "roadmap": [
+      {
+        "phase": "Phase 1",
+        "name": "引用真实性 + 相关性验证",
+        "status": "implemented_mvp",
+        "scope": "verified / weakly_verified / irrelevant / unverifiable / contradicted"
+      },
+      {
+        "phase": "Phase 2",
+        "name": "证据缺口建议 + L1/L2/L3 导师反馈",
+        "status": "suggestion_only",
+        "scope": "evidence_gap_filler.py 只输出建议，不代写正文。"
+      },
+      {
+        "phase": "Phase 3",
+        "name": "Agent Graph Arena 对接",
+        "status": "contract_recorded",
+        "scope": "Graph Lab 印章、AgentFi 认证资产、Arena Casino 对抗验证、Forecast Market 可结算预测。"
+      }
+    ],
+    "known_bottom_limits": [
+      "Grok provider quota 不能由桥接层绕过。",
+      "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
+      "unverifiable 不是 false，UI 必须解释清楚。"
+    ],
+    "created_at": "2026-05-18T15:05:22.866957+00:00",
+    "certification_hash": "c0ddfe447ab1fa893c44ec8d1018c371f080089151fc6c4e171d67278ca213a5",
+    "evidence_broker": {
+      "schema": "evidence_broker.v1",
+      "created_at": "2026-05-18T15:05:22.866957+00:00",
+      "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
+      "allow_network": false,
+      "source_policy": {
+        "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
+        "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
+        "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+        "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。"
+      },
+      "items": [
+        {
+          "id": "EVID-REAL-001",
+          "url": "https://hai.stanford.edu/ai-index",
+          "title": "Stanford AI Index",
+          "snippet": "The AI Index tracks AI trends and risks, but this supplied evidence does not contain the claimed 2026 Trustworthy AI Citation Survey or the below-1-percent claim.",
+          "text": "AI Index reports measure broad AI trends and policy topics. This evidence does not verify the specific citation survey named by the answer.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "0657e1d64d3fc4407e411933e327ee5a0ba9bddeac9b9684f51c4698bc55928d"
+        },
+        {
+          "id": "CAND-52CC4D2405",
+          "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "1e7f8953cec3a5b7681cc653fce93cab9833ff649141e48099ae91b1be5dc474"
+        }
+      ],
+      "items_for_validation": [
+        {
+          "id": "EVID-REAL-001",
+          "url": "https://hai.stanford.edu/ai-index",
+          "title": "Stanford AI Index",
+          "snippet": "The AI Index tracks AI trends and risks, but this supplied evidence does not contain the claimed 2026 Trustworthy AI Citation Survey or the below-1-percent claim.",
+          "text": "AI Index reports measure broad AI trends and policy topics. This evidence does not verify the specific citation survey named by the answer.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance": "user_supplied",
+          "provenance_rank": 1,
+          "evidence_hash": "0657e1d64d3fc4407e411933e327ee5a0ba9bddeac9b9684f51c4698bc55928d"
+        },
+        {
+          "id": "CAND-52CC4D2405",
+          "url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "title": "",
+          "snippet": "",
+          "text": "",
+          "raw_source": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "kind": "url",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "1e7f8953cec3a5b7681cc653fce93cab9833ff649141e48099ae91b1be5dc474"
+        }
+      ],
+      "counts": {
+        "user_supplied": 1,
+        "network_fetch": 0,
+        "candidate_source": 1,
+        "fetch_error": 0,
+        "provenance": {
+          "model_candidate": 1,
+          "user_supplied": 1,
+          "fetched": 0,
+          "independently_attested": 0,
+          "notarized": 0
+        }
+      },
+      "broker_hash": "98fe9985303c7df93e4537828790b34865beb308e443b0cd177481abb17dad05"
+    },
+    "claim_support_audit": {
+      "schema": "claim_support.v1",
+      "status_schema": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "contradicted",
+        "unknown"
+      ],
+      "source_relevance_schema": [
+        "relevant",
+        "weakly_relevant",
+        "irrelevant",
+        "unknown"
+      ],
+      "failure_code_schema": [
+        "none",
+        "overclaimed_causation",
+        "missing_claim_evidence",
+        "source_silent",
+        "citation_unmatched",
+        "source_contradicts_claim"
+      ],
+      "item_count": 1,
+      "claim_support_counts": {
+        "supported": 0,
+        "partially_supported": 0,
+        "unsupported": 0,
+        "contradicted": 0,
+        "unknown": 1
+      },
+      "source_relevance_counts": {
+        "relevant": 0,
+        "weakly_relevant": 0,
+        "irrelevant": 0,
+        "unknown": 1
+      },
+      "support_failure_counts": {
+        "none": 0,
+        "overclaimed_causation": 0,
+        "missing_claim_evidence": 1,
+        "source_silent": 0,
+        "citation_unmatched": 0,
+        "source_contradicts_claim": 0
+      },
+      "items": [
+        {
+          "claim_id": "CLAIM-EB24C2111E",
+          "citation_id": "CITE-001",
+          "citation_status": "unverifiable",
+          "raw_citation": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "claim_span": "See .",
+          "source_id": "CAND-52CC4D2405",
+          "source_url": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "source_title": "",
+          "source_relevance": "unknown",
+          "claim_support": "unknown",
+          "support_failure_code": "missing_claim_evidence",
+          "support_reason": "The citation is currently unverifiable, so claim-level support cannot be upgraded.",
+          "matched_evidence_hash": "68e748076daadd4d664c99e98dfce72184fe2383f418aa1c33d599755bd46936",
+          "audited_at": "2026-05-18T15:05:22.866957+00:00"
+        }
+      ],
+      "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
+      "audited_at": "2026-05-18T15:05:22.866957+00:00",
+      "overall_claim_support": "unknown",
+      "claim_support_hash": "cf68c6e92ad0ed0c7d7f9ccb75b474ada9752f61f4cc8edb16e88ef8a2195e90"
+    },
+    "evidence_gap_suggestions": {
+      "schema": "evidence_gap_filler.suggestion_only.v1",
+      "will_rewrite_body": false,
+      "policy": "只输出证据缺口建议；不得替用户补正文或把模型补充混入原文。",
+      "mentor_levels": {
+        "L1": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+        "L2": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+        "L3": "无引用缺口：该段目前只能作为模型推理，不能作为事实认证依据。"
+      },
+      "suggestions": [
+        {
+          "citation_id": "CITE-001",
+          "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "status": "unverifiable",
+          "mentor_level": "L1",
+          "mentor_feedback": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+          "gap": "缺少可匹配的外部证据。",
+          "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
+          "will_rewrite_body": false,
+          "action": "suggest_evidence_gap"
+        }
+      ],
+      "suggestion_count": 1
+    },
+    "evidence_quality_metrics": {
+      "schema": "evidence_quality_metrics.v1",
+      "groundedness_proxy": 0.0,
+      "verified_ratio": 0.0,
+      "weakly_verified_ratio": 0.0,
+      "unverifiable_rate": 1.0,
+      "contradiction_rate": 0.0,
+      "irrelevant_rate": 0.0,
+      "hard_evidence_count": 2,
+      "trust_gate": "needs_more_evidence"
+    },
+    "evidence_gap_queue": {
+      "schema": "evidence_gap_queue.v1",
+      "created_at": "2026-05-18T15:05:22.866957+00:00",
+      "open_count": 1,
+      "tasks": [
+        {
+          "task_id": "GAP-001-D91C7B",
+          "citation_id": "CITE-001",
+          "raw": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "status": "unverifiable",
+          "priority": "high",
+          "mentor_level": "L1",
+          "gap": "缺少可匹配的外部证据。",
+          "suggested_action": "补充可复核 URL/DOI/报告页码，或标记为不可认证。",
+          "queue_status": "open",
+          "created_at": "2026-05-18T15:05:22.866957+00:00"
+        }
+      ],
+      "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
+      "queue_hash": "e714d016f6e215b3c9504fc776a50133ae5a80e15fd20555fefaac600b056c0b"
+    },
+    "blind_cross_validation": {
+      "schema": "blind_cross_validation.v1",
+      "status": "pending_model_reviews",
+      "created_at": "2026-05-18T15:05:22.866957+00:00",
+      "reviewer_count": 4,
+      "threshold": 0.67,
+      "anonymization": {
+        "seat_names_removed": true,
+        "raw_text_truncated": true,
+        "source_hashes_preserved": true
+      },
+      "anonymized_claims": [
+        {
+          "answer_id": "ANSWER-001",
+          "layer": "raw_answer",
+          "citation_id": "CITE-001",
+          "citation": "https://stanford.example.edu/trustworthy-ai-citation-survey-2026",
+          "status": "unverifiable",
+          "reason": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+          "context_preview": "vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.",
+          "answer_hash": "bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555"
+        }
+      ],
+      "review_prompts": [
+        {
+          "reviewer": "gemini",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+        },
+        {
+          "reviewer": "chatgpt",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+        },
+        {
+          "reviewer": "deepseek",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+        },
+        {
+          "reviewer": "qwen",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://stanford.example.edu/trustworthy-ai-citation-survey-2026\",\n    \"status\": \"unverifiable\",\n    \"reason\": \"该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。\",\n    \"context_preview\": \"vey found that hallucinated references dropped below 1% across legal, academic, and consulting use cases. See https://stanford.example.edu/trustworthy-ai-citation-survey-2026.\",\n    \"answer_hash\": \"bd5061d996f13e6645a67e44c287e6e73b8d427aad3f7c35a97b0a9921feb555\"\n  }\n]"
+        }
+      ],
+      "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
+      "packet_hash": "48e92681c1f377636fbb3a37c43bf8b230c32205ad85bd07100a28f28ed66de9"
+    },
+    "eval_case": {
+      "schema": "ai_judge_eval_case.v1",
+      "case_id": "EVAL-C2286B5B96B9",
+      "run_id": "launch-batch-001-001",
+      "question": "Does this AI-generated answer provide reliable evidence for the claim that AI citation errors are mostly solved?",
+      "mode": null,
+      "engine": null,
+      "verdict": null,
+      "confidence": null,
+      "average_score": null,
+      "citation_overall_status": "unverifiable",
+      "citation_counts": {
+        "verified": 0,
+        "weakly_verified": 0,
+        "irrelevant": 0,
+        "unverifiable": 1,
+        "contradicted": 0
+      },
+      "evidence_quality_metrics": {
+        "schema": "evidence_quality_metrics.v1",
+        "groundedness_proxy": 0.0,
+        "verified_ratio": 0.0,
+        "weakly_verified_ratio": 0.0,
+        "unverifiable_rate": 1.0,
+        "contradiction_rate": 0.0,
+        "irrelevant_rate": 0.0,
+        "hard_evidence_count": 2,
+        "trust_gate": "needs_more_evidence"
+      },
+      "certification_id": "CITE-20260518-D8E3FD86C6",
+      "certification_hash": "c0ddfe447ab1fa893c44ec8d1018c371f080089151fc6c4e171d67278ca213a5",
+      "replay_ledger_hash": "8706ee04a913d86b92439c7b4eacb35e43ed351fdd1532c833b0a9210f71b680",
+      "human_label": null,
+      "created_at": "2026-05-18T15:05:22.867924+00:00",
+      "case_hash": "615f562e0ffe82922fcabc36b0552f8c3ba38e88fc8031552884fc0582db0012"
+    }
+  },
+  "human_review_status": {
+    "status": "required",
+    "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。"
+  },
+  "created_at": "2026-05-18T15:05:22.866957+00:00",
+  "summary": {
+    "overall_status": "unverifiable",
+    "overall_claim_support": "unknown",
+    "certification_id": "CITE-20260518-D8E3FD86C6",
+    "certification_hash": "c0ddfe447ab1fa893c44ec8d1018c371f080089151fc6c4e171d67278ca213a5",
+    "replay_ledger_hash": "8706ee04a913d86b92439c7b4eacb35e43ed351fdd1532c833b0a9210f71b680",
+    "item_count": 1,
+    "counts": {
+      "verified": 0,
+      "weakly_verified": 0,
+      "irrelevant": 0,
+      "unverifiable": 1,
+      "contradicted": 0
+    },
+    "claim_support_counts": {
+      "supported": 0,
+      "partially_supported": 0,
+      "unsupported": 0,
+      "contradicted": 0,
+      "unknown": 1
+    },
+    "claim_support_failure_counts": {
+      "none": 0,
+      "overclaimed_causation": 0,
+      "missing_claim_evidence": 1,
+      "source_silent": 0,
+      "citation_unmatched": 0,
+      "source_contradicts_claim": 0
+    },
+    "unverifiable_reason_counts": {
+      "no_citation": 0,
+      "missing_external_evidence": 0,
+      "candidate_not_fetched": 1,
+      "fetch_error": 0,
+      "retrieval_blocked": 0,
+      "weak_match": 0
+    },
+    "evidence_provenance_counts": {
+      "model_candidate": 1,
+      "user_supplied": 1,
+      "fetched": 0,
+      "independently_attested": 0,
+      "notarized": 0
+    },
+    "trust_gate": "needs_more_evidence",
+    "groundedness_proxy": 0.0,
+    "gap_count": 1,
+    "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+  }
+}
