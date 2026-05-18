@@ -67,7 +67,7 @@ DEFAULT_URLS = {
     "grok": "https://grok.com/",
     "yuanbao": "https://yuanbao.tencent.com/chat/",
     "doubao": "https://www.doubao.com/chat/",
-    "minimax": "https://agent.minimaxi.com/chat",
+    "minimax": "https://agent.minimax.io/chat",
     "zhipu": "https://bigmodel.cn/trialcenter/modeltrial/text",
     "wenxin": "https://wenxin.baidu.com/new-chat",
     "mimo": "https://aistudio.xiaomimimo.com/#/chat",
@@ -83,7 +83,12 @@ DEFAULT_TARGETS = {
     "grok": {"provider": "Grok", "channel": "web", "browser_label": "Grok / grok.com"},
     "yuanbao": {"provider": "Yuanbao", "channel": "web", "browser_label": "腾讯元宝 / yuanbao.tencent.com"},
     "mimo": {"provider": "MiMo", "channel": "web", "browser_label": "MiMo / custom"},
-    "minimax": {"provider": "MiniMax", "channel": "web", "browser_label": "MiniMax Agent / minimax.io"},
+    "minimax": {
+        "provider": "MiniMax",
+        "channel": "web",
+        "browser_label": "MiniMax Agent / minimax.io",
+        "fallback_url": "https://agent.minimaxi.com/chat",
+    },
     "zhipu": {"provider": "智谱 AI", "channel": "web", "browser_label": "智谱AI开放平台 / bigmodel.cn"},
     "wenxin": {"provider": "Wenxin", "channel": "web", "browser_label": "文心一言 / wenxin.baidu.com"},
     "doubao": {
@@ -152,6 +157,7 @@ def default_config() -> dict[str, Any]:
                 "enabled": False,
                 "url": DEFAULT_URLS.get(seat, ""),
                 "fresh_url": DEFAULT_URLS.get(seat, ""),
+                "fallback_url": DEFAULT_TARGETS.get(seat, {}).get("fallback_url", ""),
                 "match_domains": [_domain(DEFAULT_URLS.get(seat, ""))] if DEFAULT_URLS.get(seat) else [],
                 "channel": DEFAULT_TARGETS.get(seat, {}).get("channel", "web"),
                 "provider": DEFAULT_TARGETS.get(seat, {}).get("provider", SEAT_PERSONAS[seat]["name"]),
@@ -206,6 +212,25 @@ def load_bridge_config(path: str | Path | None = None) -> dict[str, Any]:
     config["_config_path"] = str(target)
     config["_config_exists"] = True
     return config
+
+
+def merge_bridge_config_overrides(config: dict[str, Any], overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Return config with a shallow/deep merge suitable for rescue runs."""
+    if not overrides:
+        return config
+    merged = dict(config)
+    for key, value in overrides.items():
+        if key == "seats" and isinstance(value, dict):
+            merged_seats = {seat: dict(seat_config) for seat, seat_config in (merged.get("seats") or {}).items()}
+            for seat, seat_overrides in value.items():
+                if not isinstance(seat_overrides, dict):
+                    continue
+                merged_seats.setdefault(seat, {})
+                merged_seats[seat].update(seat_overrides)
+            merged["seats"] = merged_seats
+        else:
+            merged[key] = value
+    return merged
 
 
 def load_calibration(path: str | Path | None = None) -> dict[str, Any]:
@@ -572,6 +597,7 @@ def run_web_seats(
     seats: list[str],
     mode: str = "flash",
     config_path: str | Path | None = None,
+    config_overrides: dict[str, Any] | None = None,
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> list[dict[str, Any]]:
@@ -581,7 +607,7 @@ def run_web_seats(
     enabled. Per-seat webpage/login/selector failures are returned as structured
     failed results so the verdict can make the failure visible.
     """
-    config = load_bridge_config(config_path)
+    config = merge_bridge_config_overrides(load_bridge_config(config_path), config_overrides)
     requested = [seat.lower() for seat in seats if seat.lower() in SEAT_PERSONAS]
     if trace:
         trace("bridge", "load_config", "读取网页席位配置", {

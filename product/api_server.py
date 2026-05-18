@@ -77,16 +77,41 @@ RECOVERABLE_WEB_CODES = {
     "response_timeout",
     "send_button_not_found",
     "submit_unconfirmed",
+    "chrome_submit_unconfirmed",
     "composer_busy",
     "response_not_relevant",
     "long_prompt_still_in_input",
     "existing_answer_not_found",
     "existing_answer_placeholder",
     "existing_answer_prompt_echo",
+    "fixed_tab_not_found",
+    "input_not_found",
+    "transcript_pollution",
+}
+READ_ONLY_RECOVERY_CODES = {
+    "slow_response_pending",
+    "response_timeout",
+    "composer_busy",
+    "existing_answer_not_found",
+    "existing_answer_placeholder",
+    "existing_answer_prompt_echo",
+    "response_not_relevant",
+}
+FRESH_RESCUE_CODES = {
+    "send_button_not_found",
+    "submit_unconfirmed",
+    "chrome_submit_unconfirmed",
+    "long_prompt_still_in_input",
+    "input_not_found",
+    "fixed_tab_not_found",
+}
+CLEAN_SESSION_RESCUE_CODES = {
+    "transcript_pollution",
 }
 
 
 def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
+    _attach_rescue_plan(verdict)
     attach_cross_temporal_analysis(verdict)
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -101,12 +126,15 @@ def _trace_path(run_id: str) -> Path:
 def _load_run(run_id: str) -> dict[str, Any] | None:
     result = TASKS.get_result(run_id)
     if result:
+        _attach_rescue_plan(result)
         return result
     run_file = RUNS_DIR / run_id / "verdict.json"
     if run_file.exists():
         result = json.loads(run_file.read_text(encoding="utf-8"))
         if isinstance(result, dict) and "cross_temporal_analysis" not in result:
             attach_cross_temporal_analysis(result)
+        if isinstance(result, dict):
+            _attach_rescue_plan(result)
         return result
     return None
 
@@ -141,6 +169,7 @@ def _progress_diagnostics(status: dict[str, Any]) -> dict[str, Any]:
         seats.sort(key=lambda item: (label_order.get(str(item.get("name", "")).lower(), 99), item.get("state") != "waiting"))
     else:
         seats.sort(key=lambda item: {"waiting": 0, "submitting": 1, "nudge": 2, "blocked": 3, "done": 4}.get(str(item.get("state")), 9))
+    diagnostic_rescue_plan = _diagnostic_rescue_plan(seats)
     return {
         "schema": "ai_judge.progress_diagnostics.v1",
         "run_id": run_id,
@@ -153,9 +182,36 @@ def _progress_diagnostics(status: dict[str, Any]) -> dict[str, Any]:
         },
         "waiting": waiting,
         "seats": seats[:8],
+        "rescue_plan": diagnostic_rescue_plan,
         "seconds_since_update": seconds_since_update,
         "stale": bool(status.get("status") == "running" and seconds_since_update is not None and seconds_since_update > STALE_TASK_SECONDS),
         "stale_after_seconds": STALE_TASK_SECONDS,
+    }
+
+
+def _diagnostic_rescue_plan(seats: list[dict[str, Any]]) -> dict[str, Any]:
+    failures = []
+    for item in seats:
+        if item.get("state") not in {"waiting", "nudge", "blocked"}:
+            continue
+        code = str(item.get("code") or "slow_response_pending")
+        failures.append({
+            "seat": item.get("seat"),
+            "seat_name": item.get("name"),
+            "supplementable": code in RECOVERABLE_WEB_CODES or item.get("state") in {"waiting", "nudge"},
+            "error": {"code": code, "message": item.get("reason")},
+            "execution_validity": {"reason": code},
+        })
+    actions = [_rescue_action_for_failure(item) for item in failures if str(item.get("seat") or "") in SEAT_PERSONAS]
+    actions = [item for item in actions if item["method"] != "manual_check"]
+    return {
+        "schema": "ai_judge.diagnostic_rescue_plan.v1",
+        "status": "ready" if actions else "none",
+        "button_label": "一键修复并回收答案" if any(item["sends_prompt"] for item in actions) else "一键回收已有答案",
+        "actions": actions,
+        "seats": [item["seat"] for item in actions],
+        "sends_prompt": any(item["sends_prompt"] for item in actions),
+        "summary": _rescue_plan_summary(actions, {"collection_complete": False}),
     }
 
 
@@ -212,6 +268,7 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
         "state": (previous or {}).get("state", "waiting"),
         "status": (previous or {}).get("status", "等待"),
         "reason": (previous or {}).get("reason", "等待模型输出可采集回答"),
+        "code": (previous or {}).get("code", "slow_response_pending"),
         "detail": detail,
         "updated_at": event.get("at"),
     }
@@ -227,10 +284,10 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
         base.update({"state": "done", "status": "旧页已回收", "reason": f"已从旧页面读取 {data.get('response_chars', 0)} 字"})
     elif action == "existing_answer_rejected":
         code = str(data.get("code") or "existing_answer_not_found")
-        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
+        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code), "code": code})
     elif action in {"chrome_response_timeout", "chrome_response_rejected"}:
         code = str(data.get("code") or "slow_response_pending")
-        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
+        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code), "code": code})
     elif action in {
         "chrome_submit_unconfirmed",
         "chrome_submit_failed",
@@ -241,8 +298,15 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
         "fixed_tab_not_found",
         "chrome_response_page_error",
     }:
-        code = str(((data.get("submit") or {}).get("error")) or ((data.get("known_error") or {}).get("code")) or action)
-        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code)})
+        submit = data.get("submit") or {}
+        verification = submit.get("verification") or {}
+        code = str(
+            submit.get("error")
+            or verification.get("reason")
+            or ((data.get("known_error") or {}).get("code"))
+            or action
+        )
+        base.update({"state": "blocked", "status": _seat_error_label(code), "reason": _seat_error_reason(code), "code": code})
     return base
 
 
@@ -252,6 +316,7 @@ def _seat_error_label(code: str) -> str:
         "response_timeout": "超时",
         "response_not_relevant": "疑似旧回答",
         "send_button_not_found": "发送未确认",
+        "input_not_found": "输入框缺失",
         "submit_unconfirmed": "提交未确认",
         "chrome_submit_unconfirmed": "提交未确认",
         "long_prompt_still_in_input": "提交未确认",
@@ -272,6 +337,7 @@ def _seat_error_reason(code: str) -> str:
         "response_timeout": "等待窗口内没有读到可用回答",
         "response_not_relevant": "捕获内容没有匹配本轮问题，已避免把旧页面内容当作答案",
         "send_button_not_found": "提示词写入了页面，但没有找到明确可用的发送按钮",
+        "input_not_found": "模型页面没有暴露可写入的输入框，系统会尝试重新定位或打开干净会话",
         "submit_unconfirmed": "提示词写入后，桥接层无法确认模型已接收为新一轮提问",
         "chrome_submit_unconfirmed": "提示词写入后，桥接层无法确认模型已接收为新一轮提问",
         "long_prompt_still_in_input": "长提示仍停留在输入框里，模型页面没有确认接收本轮任务",
@@ -390,6 +456,133 @@ def _supplementable_run_seats(verdict: dict[str, Any], requested: list[str] | No
     return list(dict.fromkeys(seats))
 
 
+def _failure_error_code(item: dict[str, Any]) -> str:
+    error = item.get("error") or {}
+    validity = item.get("execution_validity") or {}
+    return str(error.get("code") or validity.get("reason") or item.get("reason") or "")
+
+
+def _rescue_action_for_failure(item: dict[str, Any]) -> dict[str, Any]:
+    seat = str(item.get("seat") or "").lower()
+    code = _failure_error_code(item)
+    if code in FRESH_RESCUE_CODES:
+        action = "selector_resubmit"
+        method = "fresh_web_submission"
+        label = "修复发送并重试"
+        sends_prompt = True
+        reason = "提示词未被模型页面确认接收；系统会用站点专用发送选择器重新提交该席位。"
+    elif code in CLEAN_SESSION_RESCUE_CODES:
+        action = "clean_session_resubmit"
+        method = "clean_session_resubmit"
+        label = "清理串流并回收"
+        sends_prompt = True
+        reason = "页面混入旧 AI Judge 标记；系统会优先读取旧页，必要时进入干净会话重试。"
+    elif code in READ_ONLY_RECOVERY_CODES or item.get("supplementable"):
+        action = "existing_page_recovery"
+        method = "existing_page_recovery"
+        label = "读取旧页面答案"
+        sends_prompt = False
+        reason = "模型可能已在原页面完成回答；系统只读取已有答案，不重新发送问题。"
+    else:
+        action = "manual_check"
+        method = "manual_check"
+        label = "需要人工检查"
+        sends_prompt = False
+        reason = "该席位失败类型暂不适合自动重试，建议打开模型页面查看登录、额度或阻断状态。"
+    return {
+        "seat": seat,
+        "seat_name": item.get("seat_name") or SEAT_PERSONAS.get(seat, {}).get("name", seat),
+        "code": code or "execution_invalid",
+        "action": action,
+        "method": method,
+        "label": label,
+        "sends_prompt": sends_prompt,
+        "supplementable": bool(item.get("supplementable")) or code in RECOVERABLE_WEB_CODES,
+        "reason": reason,
+    }
+
+
+def _build_rescue_plan(verdict: dict[str, Any], requested: list[str] | None = None) -> dict[str, Any]:
+    bridge = verdict.get("web_bridge") or {}
+    raw_results = bridge.get("raw_results") or []
+    requested_set = set(requested or [])
+    policy = bridge.get("execution_policy") or execution_policy_summary(
+        raw_results,
+        requested_seats=verdict.get("seats") or [str(item.get("seat") or "") for item in raw_results],
+    )
+    failures = policy.get("required_failures") or []
+    if requested_set:
+        raw_by_seat = {str(item.get("seat") or "").lower(): item for item in raw_results}
+        failures = [raw_by_seat.get(seat, {"seat": seat, "error": {"code": "missing_result"}}) for seat in requested_set]
+    actions = [
+        _rescue_action_for_failure(item)
+        for item in failures
+        if str(item.get("seat") or "").lower() in SEAT_PERSONAS
+    ]
+    actions = [item for item in actions if item["supplementable"] or item["method"] != "manual_check"]
+    seats = [item["seat"] for item in actions]
+    fresh_seats = [item["seat"] for item in actions if item["method"] in {"fresh_web_submission", "clean_session_resubmit"}]
+    read_only_seats = [item["seat"] for item in actions if item["method"] == "existing_page_recovery"]
+    hard_seats = [item["seat"] for item in actions if item["method"] == "manual_check"]
+    if not actions:
+        status = "complete" if policy.get("collection_complete") else "blocked"
+        label = "必需席位已补齐" if policy.get("collection_complete") else "暂无可自动修复席位"
+    elif fresh_seats:
+        status = "ready"
+        label = "一键修复并回收答案"
+    else:
+        status = "ready"
+        label = "一键回收已有答案"
+    return {
+        "schema": "ai_judge.rescue_plan.v1",
+        "status": status,
+        "button_label": label,
+        "summary": _rescue_plan_summary(actions, policy),
+        "seats": seats,
+        "read_only_seats": read_only_seats,
+        "fresh_seats": fresh_seats,
+        "manual_check_seats": hard_seats,
+        "actions": actions,
+        "required_count": policy.get("required_count", 0),
+        "required_valid_count": policy.get("required_valid_count", 0),
+        "collection_complete": bool(policy.get("collection_complete")),
+        "sends_prompt": bool(fresh_seats),
+        "strategy": "read_existing_first_then_targeted_clean_resubmit" if fresh_seats else "read_existing_pages_only",
+    }
+
+
+def _rescue_plan_summary(actions: list[dict[str, Any]], policy: dict[str, Any]) -> str:
+    if not actions:
+        if policy.get("collection_complete"):
+            return "所有非 Grok 必需席位已经回收完成。"
+        return "当前没有可自动修复的席位，请检查登录、额度或固定标签配置。"
+    read_count = sum(1 for item in actions if item["method"] == "existing_page_recovery")
+    fresh_count = sum(1 for item in actions if item["method"] in {"fresh_web_submission", "clean_session_resubmit"})
+    parts = []
+    if read_count:
+        parts.append(f"{read_count} 席先读取旧页面")
+    if fresh_count:
+        parts.append(f"{fresh_count} 席必要时干净会话重试")
+    return "；".join(parts) + "。Grok/Gork 仍作为可选异议席位，不阻断发布。"
+
+
+def _attach_rescue_plan(verdict: dict[str, Any]) -> dict[str, Any]:
+    bridge = verdict.get("web_bridge")
+    if isinstance(bridge, dict):
+        bridge["rescue_plan"] = _build_rescue_plan(verdict)
+    return verdict
+
+
+def _rescue_bridge_overrides() -> dict[str, Any]:
+    return {
+        "fresh_conversation_per_run": True,
+        "auto_open_missing_tabs": True,
+        "fresh_load_seconds": 4,
+        "retry_failed_seats": True,
+        "retry_attempts": 1,
+    }
+
+
 def _diagnostic_recheck_seats(status: dict[str, Any], requested: list[str] | None = None) -> list[str]:
     requested_set = set(requested or [])
     diagnostics = status.get("progress_diagnostics") or {}
@@ -402,7 +595,7 @@ def _diagnostic_recheck_seats(status: dict[str, Any], requested: list[str] | Non
             continue
         state = str(item.get("state") or "")
         status_label = str(item.get("status") or "")
-        if state in {"waiting", "nudge"} or status_label in {"慢生成", "超时", "发送未确认", "提交未确认", "疑似旧回答"}:
+        if state in {"waiting", "nudge"} or status_label in {"慢生成", "超时", "发送未确认", "提交未确认", "疑似旧回答", "历史串流", "标签缺失"}:
             seats.append(seat)
     return list(dict.fromkeys(seats))
 
@@ -982,13 +1175,361 @@ def _start_recheck_worker(
     task: dict[str, Any],
     seats: list[str],
     notify_config: dict[str, Any],
+    fresh_recheck: bool = False,
 ) -> None:
     thread = threading.Thread(
         target=_run_recheck_worker,
-        args=(recheck_run_id, source_run_id, task, seats, notify_config),
+        args=(recheck_run_id, source_run_id, task, seats, notify_config, fresh_recheck),
         daemon=True,
     )
     thread.start()
+
+
+def _start_fresh_recheck_worker(
+    recheck_run_id: str,
+    source_run_id: str,
+    seats: list[str],
+    notify_config: dict[str, Any],
+) -> None:
+    thread = threading.Thread(
+        target=_run_fresh_recheck_worker,
+        args=(recheck_run_id, source_run_id, seats, notify_config),
+        daemon=True,
+    )
+    thread.start()
+
+
+def _start_rescue_worker(
+    rescue_run_id: str,
+    source_run_id: str,
+    seats: list[str],
+    notify_config: dict[str, Any],
+) -> None:
+    thread = threading.Thread(
+        target=_run_rescue_worker,
+        args=(rescue_run_id, source_run_id, seats, notify_config),
+        daemon=True,
+    )
+    thread.start()
+
+
+def _run_rescue_worker(
+    rescue_run_id: str,
+    source_run_id: str,
+    seats: list[str],
+    notify_config: dict[str, Any],
+) -> None:
+    trace = RunTrace(rescue_run_id)
+
+    def trace_event(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
+        trace.add(phase=phase, action=action, detail=detail, data=data)
+        trace.write(_trace_path(rescue_run_id))
+
+    try:
+        source = _load_run(source_run_id)
+        if not source:
+            raise ValueError(f"source run not found: {source_run_id}")
+        mode = str(source.get("mode") or "standard")
+        display_question = str(source.get("question") or "")
+        deep_question = str(source.get("deep_prompt") or display_question)
+        source_bridge = source.get("web_bridge") or {}
+        source_raw = source_bridge.get("raw_results") or []
+        plan = _build_rescue_plan(source, requested=seats or None)
+        rescue_seats = [seat for seat in (seats or plan.get("seats") or []) if seat in SEAT_PERSONAS]
+        all_seats = [
+            str(seat)
+            for seat in (source.get("seats") or [])
+            if str(seat) in SEAT_PERSONAS
+        ] or [
+            str(item.get("seat"))
+            for item in source_raw
+            if str(item.get("seat")) in SEAT_PERSONAS
+        ] or rescue_seats
+        if not rescue_seats:
+            raise ValueError("no rescueable seats")
+
+        trace_event("rescue", "accepted", "一键修复并回收答案已启动", {
+            "source_run_id": source_run_id,
+            "rescue_run_id": rescue_run_id,
+            "seats": rescue_seats,
+            "plan": plan,
+            "method": "read_existing_first_then_targeted_clean_resubmit",
+        })
+        TASKS.update_progress(rescue_run_id, f"一键救援：读取旧页面 {', '.join(rescue_seats)}", 0.08)
+
+        def recovery_progress(step: str, progress: float) -> None:
+            TASKS.update_progress(rescue_run_id, f"一键救援旧页回收：{step}", min(0.46, 0.08 + progress * 0.38))
+            trace_event("progress", "rescue_existing_progress", step, {"progress": progress})
+
+        supplement_raw = recover_existing_fixed_tab_answers(
+            question=deep_question,
+            mode=mode,
+            seats=rescue_seats,
+            config=load_bridge_config(),
+            progress=recovery_progress,
+            trace=trace_event,
+        )
+        merged_raw = _merge_supplement_raw_results(source_raw, supplement_raw, f"{rescue_run_id}-existing")
+        interim = assemble_web_verdict_from_raw_results(
+            question=deep_question,
+            mode=mode,
+            seats=all_seats,
+            raw_results=merged_raw,
+            mentor_supplements=source_bridge.get("mentor_supplements") or [],
+            external_evidence=source_bridge.get("external_evidence") or [],
+            run_id=source_run_id,
+            display_question=display_question,
+            trace=trace_event,
+        )
+        remaining = _supplementable_run_seats(interim, requested=rescue_seats)
+        action_by_seat = {item["seat"]: item for item in plan.get("actions") or []}
+        fresh_seats = [
+            seat for seat in remaining
+            if (action_by_seat.get(seat) or {}).get("method") in {"fresh_web_submission", "clean_session_resubmit"}
+        ]
+        fresh_raw: list[dict[str, Any]] = []
+        if fresh_seats:
+            TASKS.update_progress(rescue_run_id, f"一键救援：干净会话重试 {', '.join(fresh_seats)}", 0.52)
+            trace_event("rescue", "fresh_resubmit_start", "旧页未能回收的席位进入干净会话重试", {
+                "seats": fresh_seats,
+                "reason": "selector_or_transcript_rescue",
+            })
+
+            def fresh_progress(step: str, progress: float) -> None:
+                TASKS.update_progress(rescue_run_id, f"干净会话重试：{step}", min(0.84, 0.52 + progress * 0.32))
+                trace_event("progress", "rescue_fresh_progress", step, {"progress": progress})
+
+            fresh_verdict = run_web_jury(
+                question=deep_question,
+                mode=mode,
+                seats=fresh_seats,
+                display_question=display_question,
+                bridge_config_overrides=_rescue_bridge_overrides(),
+                progress=fresh_progress,
+                trace=trace_event,
+            )
+            fresh_raw = (fresh_verdict.get("web_bridge") or {}).get("raw_results") or []
+            merged_raw = _merge_supplement_raw_results(merged_raw, fresh_raw, f"{rescue_run_id}-fresh")
+
+        TASKS.update_progress(rescue_run_id, "一键救援：合并答案并重新评分", 0.88)
+        merged = assemble_web_verdict_from_raw_results(
+            question=deep_question,
+            mode=mode,
+            seats=all_seats,
+            raw_results=merged_raw,
+            mentor_supplements=source_bridge.get("mentor_supplements") or [],
+            external_evidence=source_bridge.get("external_evidence") or [],
+            run_id=source_run_id,
+            display_question=display_question,
+            trace=trace_event,
+        )
+        if source_bridge.get("evidence_options"):
+            merged.setdefault("web_bridge", {})["evidence_options"] = source_bridge.get("evidence_options")
+        merged["question"] = display_question
+        merged["deep_prompt"] = deep_question
+        if source.get("prompt_flow"):
+            merged["prompt_flow"] = source.get("prompt_flow")
+        if source.get("execution_plan"):
+            merged["execution_plan"] = source.get("execution_plan")
+        merged["rescue"] = {
+            "source_run_id": source_run_id,
+            "rescue_run_id": rescue_run_id,
+            "requested_seats": rescue_seats,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "read_existing_first_then_targeted_clean_resubmit",
+            "sends_prompt": bool(fresh_seats),
+            "existing_recovered_count": sum(1 for item in supplement_raw if item.get("ok")),
+            "fresh_recovered_count": sum(1 for item in fresh_raw if item.get("ok")),
+            "pending_count": sum(1 for item in merged_raw if str(item.get("seat") or "") in rescue_seats and not item.get("ok")),
+            "plan": plan,
+        }
+        chief_id = str((source.get("chief_judge") or {}).get("id") or "auto")
+        abstained = list((source.get("seat_roster") or {}).get("abstained") or [])
+        _attach_product_run_metadata(merged, chief_judge=chief_id, abstained_seats=abstained)
+        citation_report = _attach_citation_mvp(merged, run_id=source_run_id)
+        if citation_report:
+            trace_event("grand_judge", "citation_mvp_resealed", "一键救援后已重新生成引用验证 MVP", {
+                "certification_id": citation_report.get("certification_id"),
+                "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
+            })
+        view_url = generate_secure_view_url(source_run_id)
+        merged["view_url"] = view_url
+        combined_trace = _merge_trace_dicts(
+            load_trace(_trace_path(source_run_id)) or source.get("execution_trace"),
+            trace.to_dict(),
+            source_run_id,
+        )
+        merged["execution_trace"] = combined_trace
+        (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
+        _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
+        _save_run(source_run_id, merged)
+        TASKS.complete(source_run_id, merged)
+        TASKS.complete(rescue_run_id, merged)
+        trace_event("rescue", "complete", "一键修复并回收答案已完成并写回原 run", {
+            "source_run_id": source_run_id,
+            "view_url": view_url,
+            "ok_count": (merged.get("web_bridge") or {}).get("ok_count"),
+            "failed_count": (merged.get("web_bridge") or {}).get("failed_count"),
+            "fresh_seats": fresh_seats,
+        })
+
+        channels = notify_config.get("channels") or []
+        if channels:
+            notify_verdict_ready(
+                run_id=source_run_id,
+                mode=mode,
+                verdict=merged.get("verdict", "conditional"),
+                score=float(merged.get("average_score", 0.0) or 0.0),
+                channels=channels,
+                summary=merged.get("one_liner", ""),
+                view_url=view_url,
+                to=notify_config.get("email"),
+                webhook_url=notify_config.get("webhook_url"),
+                feishu_webhook=notify_config.get("feishu_webhook"),
+                wecom_webhook=notify_config.get("wecom_webhook"),
+            )
+    except Exception as exc:
+        trace_event("rescue", "failed", "一键修复并回收答案失败", {"error": str(exc)})
+        TASKS.fail(rescue_run_id, str(exc))
+
+
+def _run_fresh_recheck_worker(
+    recheck_run_id: str,
+    source_run_id: str,
+    seats: list[str],
+    notify_config: dict[str, Any],
+) -> None:
+    trace = RunTrace(recheck_run_id)
+
+    def trace_event(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
+        trace.add(phase=phase, action=action, detail=detail, data=data)
+        trace.write(_trace_path(recheck_run_id))
+
+    try:
+        source = _load_run(source_run_id)
+        if not source:
+            raise ValueError(f"source run not found: {source_run_id}")
+        mode = str(source.get("mode") or "standard")
+        display_question = str(source.get("question") or "")
+        deep_question = str(source.get("deep_prompt") or display_question)
+        source_bridge = source.get("web_bridge") or {}
+        source_raw = source_bridge.get("raw_results") or []
+        all_seats = [
+            str(seat)
+            for seat in (source.get("seats") or [])
+            if str(seat) in SEAT_PERSONAS
+        ] or [
+            str(item.get("seat"))
+            for item in source_raw
+            if str(item.get("seat")) in SEAT_PERSONAS
+        ] or seats
+
+        trace_event("recheck", "accepted", "必需席位重新提交已启动", {
+            "source_run_id": source_run_id,
+            "recheck_run_id": recheck_run_id,
+            "requested_seats": seats,
+            "mode": mode,
+            "method": "fresh_web_submission",
+            "sends_prompt": True,
+        })
+        TASKS.update_progress(recheck_run_id, f"重新提交席位：{', '.join(seats)}", 0.08)
+
+        def fresh_progress(step: str, progress: float) -> None:
+            TASKS.update_progress(recheck_run_id, f"重新提交：{step}", min(0.84, 0.08 + progress * 0.76))
+            trace_event("progress", "fresh_recheck_progress", step, {"progress": progress})
+
+        fresh_verdict = run_web_jury(
+            question=deep_question,
+            mode=mode,
+            seats=seats,
+            display_question=display_question,
+            bridge_config_overrides=_rescue_bridge_overrides(),
+            progress=fresh_progress,
+            trace=trace_event,
+        )
+        fresh_raw = (fresh_verdict.get("web_bridge") or {}).get("raw_results") or []
+
+        TASKS.update_progress(recheck_run_id, "合并重新提交结果并重新评分", 0.88)
+        merged_raw = _merge_supplement_raw_results(source_raw, fresh_raw, recheck_run_id)
+        merged = assemble_web_verdict_from_raw_results(
+            question=deep_question,
+            mode=mode,
+            seats=all_seats,
+            raw_results=merged_raw,
+            mentor_supplements=source_bridge.get("mentor_supplements") or [],
+            external_evidence=source_bridge.get("external_evidence") or [],
+            run_id=source_run_id,
+            display_question=display_question,
+            trace=trace_event,
+        )
+        if source_bridge.get("evidence_options"):
+            merged.setdefault("web_bridge", {})["evidence_options"] = source_bridge.get("evidence_options")
+        merged["question"] = display_question
+        merged["deep_prompt"] = deep_question
+        if source.get("prompt_flow"):
+            merged["prompt_flow"] = source.get("prompt_flow")
+        if source.get("execution_plan"):
+            merged["execution_plan"] = source.get("execution_plan")
+        merged["recheck"] = {
+            "source_run_id": source_run_id,
+            "recheck_run_id": recheck_run_id,
+            "requested_seats": seats,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "reason": "required_seat_fresh_resubmit",
+            "method": "fresh_web_submission",
+            "sends_prompt": True,
+            "recovered_count": sum(1 for item in fresh_raw if item.get("ok")),
+            "pending_count": sum(1 for item in fresh_raw if not item.get("ok")),
+        }
+        chief_id = str((source.get("chief_judge") or {}).get("id") or "auto")
+        abstained = list((source.get("seat_roster") or {}).get("abstained") or [])
+        _attach_product_run_metadata(merged, chief_judge=chief_id, abstained_seats=abstained)
+        citation_report = _attach_citation_mvp(merged, run_id=source_run_id)
+        if citation_report:
+            trace_event("grand_judge", "citation_mvp_resealed", "重新提交后已生成引用验证 MVP", {
+                "certification_id": citation_report.get("certification_id"),
+                "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
+                "replay_ledger_hash": citation_report.get("replay_ledger_hash"),
+            })
+        view_url = generate_secure_view_url(source_run_id)
+        merged["view_url"] = view_url
+
+        combined_trace = _merge_trace_dicts(
+            load_trace(_trace_path(source_run_id)) or source.get("execution_trace"),
+            trace.to_dict(),
+            source_run_id,
+        )
+        merged["execution_trace"] = combined_trace
+        (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
+        _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
+        _save_run(source_run_id, merged)
+        TASKS.complete(source_run_id, merged)
+        TASKS.complete(recheck_run_id, merged)
+        trace_event("recheck", "complete", "必需席位重新提交已完成并写回原 run", {
+            "source_run_id": source_run_id,
+            "view_url": view_url,
+            "ok_count": (merged.get("web_bridge") or {}).get("ok_count"),
+            "failed_count": (merged.get("web_bridge") or {}).get("failed_count"),
+        })
+
+        channels = notify_config.get("channels") or []
+        if channels:
+            notify_verdict_ready(
+                run_id=source_run_id,
+                mode=mode,
+                verdict=merged.get("verdict", "conditional"),
+                score=float(merged.get("average_score", 0.0) or 0.0),
+                channels=channels,
+                summary=merged.get("one_liner", ""),
+                view_url=view_url,
+                to=notify_config.get("email"),
+                webhook_url=notify_config.get("webhook_url"),
+                feishu_webhook=notify_config.get("feishu_webhook"),
+                wecom_webhook=notify_config.get("wecom_webhook"),
+            )
+    except Exception as exc:
+        trace_event("recheck", "failed", "必需席位重新提交失败", {"error": str(exc)})
+        TASKS.fail(recheck_run_id, str(exc))
 
 
 def _run_recheck_worker(
@@ -997,6 +1538,7 @@ def _run_recheck_worker(
     task: dict[str, Any],
     seats: list[str],
     notify_config: dict[str, Any],
+    fresh_recheck: bool = False,
 ) -> None:
     trace = RunTrace(recheck_run_id)
 
@@ -1015,30 +1557,48 @@ def _run_recheck_worker(
         prompt_flow = build_prompt_flow(question, mode=mode, engine="web", seats=all_seats)
         deep_question = str(prompt_flow.get("professional_prompt") or question)
         recovery_seats = [str(seat) for seat in (seats or []) if str(seat) in SEAT_PERSONAS] or all_seats
-        trace_event("recheck", "accepted", "旧页面答案回收已启动", {
+        method = "fresh_web_submission" if fresh_recheck else "existing_page_recovery"
+        trace_event("recheck", "accepted", "席位回收已启动", {
             "source_run_id": source_run_id,
             "recheck_run_id": recheck_run_id,
             "requested_seats": seats,
             "recovery_seats": recovery_seats,
             "mode": mode,
-            "method": "existing_page_recovery",
-            "sends_prompt": False,
+            "method": method,
+            "sends_prompt": bool(fresh_recheck),
         })
-        TASKS.update_progress(recheck_run_id, f"读取旧页面答案：{', '.join(recovery_seats)}", 0.08)
+        TASKS.update_progress(
+            recheck_run_id,
+            f"{'重新提交席位' if fresh_recheck else '读取旧页面答案'}：{', '.join(recovery_seats)}",
+            0.08,
+        )
 
         def recovery_progress(step: str, progress: float) -> None:
-            TASKS.update_progress(recheck_run_id, f"旧页面回收：{step}", min(0.84, 0.08 + progress * 0.76))
-            trace_event("progress", "existing_answer_recovery_progress", step, {"progress": progress})
+            label = "重新提交" if fresh_recheck else "旧页面回收"
+            TASKS.update_progress(recheck_run_id, f"{label}：{step}", min(0.84, 0.08 + progress * 0.76))
+            trace_event("progress", "existing_answer_recovery_progress" if not fresh_recheck else "fresh_recheck_progress", step, {"progress": progress})
 
-        raw_results = recover_existing_fixed_tab_answers(
-            question=deep_question,
-            mode=mode,
-            seats=recovery_seats,
-            config=load_bridge_config(),
-            progress=recovery_progress,
-            trace=trace_event,
-        )
-        TASKS.update_progress(recheck_run_id, "合并旧页面答案并生成报告", 0.88)
+        if fresh_recheck:
+            fresh_verdict = run_web_jury(
+                question=deep_question,
+                mode=mode,
+                seats=recovery_seats,
+                display_question=question,
+                bridge_config_overrides=_rescue_bridge_overrides(),
+                progress=recovery_progress,
+                trace=trace_event,
+            )
+            raw_results = (fresh_verdict.get("web_bridge") or {}).get("raw_results") or []
+        else:
+            raw_results = recover_existing_fixed_tab_answers(
+                question=deep_question,
+                mode=mode,
+                seats=recovery_seats,
+                config=load_bridge_config(),
+                progress=recovery_progress,
+                trace=trace_event,
+            )
+        TASKS.update_progress(recheck_run_id, "合并席位答案并生成报告", 0.88)
         verdict = assemble_web_verdict_from_raw_results(
             question=deep_question,
             mode=mode,
@@ -1058,8 +1618,8 @@ def _run_recheck_worker(
             "recovery_seats": recovery_seats,
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "reason": "stale_running_task_recovery",
-            "method": "existing_page_recovery",
-            "sends_prompt": False,
+            "method": method,
+            "sends_prompt": bool(fresh_recheck),
             "recovered_count": sum(1 for item in raw_results if item.get("ok")),
             "pending_count": sum(1 for item in raw_results if not item.get("ok")),
         }
@@ -1069,7 +1629,7 @@ def _run_recheck_worker(
         _attach_product_run_metadata(verdict, chief_judge="auto", abstained_seats=[seat for seat in all_seats if seat not in seats])
         citation_report = _attach_citation_mvp(verdict, run_id=source_run_id)
         if citation_report:
-            trace_event("grand_judge", "citation_mvp_resealed", "旧页面答案回收后已生成引用验证 MVP", {
+            trace_event("grand_judge", "citation_mvp_resealed", "席位回收后已生成引用验证 MVP", {
                 "certification_id": citation_report.get("certification_id"),
                 "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
             })
@@ -1087,7 +1647,7 @@ def _run_recheck_worker(
         _save_run(source_run_id, verdict)
         TASKS.complete(source_run_id, verdict)
         TASKS.complete(recheck_run_id, verdict)
-        trace_event("recheck", "complete", "旧页面答案回收已完成并写回原 run", {
+        trace_event("recheck", "complete", "席位回收已完成并写回原 run", {
             "source_run_id": source_run_id,
             "view_url": view_url,
             "ok_count": (verdict.get("web_bridge") or {}).get("ok_count"),
@@ -1455,11 +2015,59 @@ def supplement_judge(run_id: str):
     }), 202
 
 
+@app.route("/api/judge/<run_id>/rescue", methods=["POST"])
+def rescue_judge(run_id: str):
+    source = _load_run(run_id)
+    if not source:
+        status = TASKS.get_status(run_id)
+        if status:
+            return jsonify({"error": "source verdict is not ready", "status": status}), 409
+        return jsonify({"error": "run not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    requested = _normalize_seat_list(data.get("seats"))
+    plan = _build_rescue_plan(source, requested=requested or None)
+    seats = [seat for seat in (requested or plan.get("seats") or []) if seat in SEAT_PERSONAS]
+    if not seats:
+        return jsonify({
+            "error": "no rescueable seats",
+            "source_run_id": run_id,
+            "requested": requested,
+            "rescue_plan": plan,
+        }), 400
+
+    mode = str(source.get("mode") or "standard")
+    question = str(source.get("question") or "一键修复并回收答案")
+    rescue_run_id = TASKS.submit(question=f"一键修复并回收答案：{question}", mode=mode, seats=seats)
+    notify_config = _notification_config(data)
+    _start_rescue_worker(rescue_run_id, run_id, seats, notify_config)
+    return jsonify({
+        "run_id": rescue_run_id,
+        "source_run_id": run_id,
+        "status": "queued",
+        "mode": mode,
+        "seats": seats,
+        "seat_count": len(seats),
+        "method": "read_existing_first_then_targeted_clean_resubmit",
+        "sends_prompt": bool(plan.get("sends_prompt")),
+        "rescue_plan": plan,
+        "progress_url": f"/api/judge/{rescue_run_id}/progress",
+        "source_verdict_url": f"/api/judge/{run_id}/verdict",
+    }), 202
+
+
 @app.route("/api/judge/<run_id>/recheck", methods=["POST"])
 def recheck_judge(run_id: str):
     data = request.get_json(silent=True) or {}
     requested = _normalize_seat_list(data.get("seats"))
     notify_config = _notification_config(data)
+    method = str(data.get("method") or "").strip().lower()
+    fresh_recheck = bool(data.get("send_prompt")) or method in {
+        "fresh",
+        "fresh_web_submission",
+        "resubmit",
+        "submit",
+    }
 
     source = _load_run(run_id)
     if source:
@@ -1473,8 +2081,12 @@ def recheck_judge(run_id: str):
             }), 400
         mode = str(source.get("mode") or "standard")
         question = str(source.get("question") or "回收旧页面答案")
-        recheck_run_id = TASKS.submit(question=f"回收旧页面答案：{question}", mode=mode, seats=seats)
-        _start_supplement_worker(recheck_run_id, run_id, seats, notify_config)
+        recheck_question = f"重新提交席位：{question}" if fresh_recheck else f"回收旧页面答案：{question}"
+        recheck_run_id = TASKS.submit(question=recheck_question, mode=mode, seats=seats)
+        if fresh_recheck:
+            _start_fresh_recheck_worker(recheck_run_id, run_id, seats, notify_config)
+        else:
+            _start_supplement_worker(recheck_run_id, run_id, seats, notify_config)
         return jsonify({
             "run_id": recheck_run_id,
             "source_run_id": run_id,
@@ -1482,6 +2094,8 @@ def recheck_judge(run_id: str):
             "mode": mode,
             "seats": seats,
             "seat_count": len(seats),
+            "method": "fresh_web_submission" if fresh_recheck else "existing_page_recovery",
+            "sends_prompt": bool(fresh_recheck),
             "progress_url": f"/api/judge/{recheck_run_id}/progress",
             "source_verdict_url": f"/api/judge/{run_id}/verdict",
         }), 202
@@ -1503,8 +2117,12 @@ def recheck_judge(run_id: str):
 
     mode = str(task.get("mode") or "standard")
     question = str(task.get("question") or "回收旧页面答案")
-    recheck_run_id = TASKS.submit(question=f"回收旧页面答案：{question}", mode=mode, seats=seats)
-    _start_recheck_worker(recheck_run_id, run_id, task, seats, notify_config)
+    task_question = f"重新提交席位：{question}" if fresh_recheck else f"回收旧页面答案：{question}"
+    recheck_run_id = TASKS.submit(question=task_question, mode=mode, seats=seats)
+    if fresh_recheck:
+        _start_recheck_worker(recheck_run_id, run_id, task, seats, notify_config, fresh_recheck=True)
+    else:
+        _start_recheck_worker(recheck_run_id, run_id, task, seats, notify_config)
     return jsonify({
         "run_id": recheck_run_id,
         "source_run_id": run_id,
@@ -1512,6 +2130,8 @@ def recheck_judge(run_id: str):
         "mode": mode,
         "seats": seats,
         "seat_count": len(seats),
+        "method": "fresh_web_submission" if fresh_recheck else "existing_page_recovery",
+        "sends_prompt": bool(fresh_recheck),
         "progress_url": f"/api/judge/{recheck_run_id}/progress",
         "source_verdict_url": f"/api/judge/{run_id}/verdict",
     }), 202

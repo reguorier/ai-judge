@@ -169,6 +169,69 @@ def test_send_button_failures_are_recoverable():
     })
 
 
+def test_rescue_plan_prefers_read_only_then_targeted_clean_resubmit():
+    api_server = _load_api_server()
+    verdict = {
+        "seats": ["chatgpt", "minimax", "qwen", "grok"],
+        "web_bridge": {
+            "raw_results": [
+                {"seat": "chatgpt", "ok": True, "response": "done"},
+                {
+                    "seat": "minimax",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "send_button_not_found", "message": "no button"},
+                },
+                {
+                    "seat": "qwen",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "slow_response_pending", "message": "still thinking"},
+                },
+                {
+                    "seat": "grok",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "slow_response_pending", "message": "optional"},
+                },
+            ],
+        },
+    }
+
+    plan = api_server._build_rescue_plan(verdict)
+
+    assert plan["status"] == "ready"
+    assert plan["button_label"] == "一键修复并回收答案"
+    assert plan["read_only_seats"] == ["qwen"]
+    assert plan["fresh_seats"] == ["minimax"]
+    assert plan["sends_prompt"] is True
+    assert [item["seat"] for item in plan["actions"]] == ["minimax", "qwen"]
+    assert "Grok/Gork" in plan["summary"]
+
+
+def test_rescue_plan_marks_transcript_pollution_as_clean_session_resubmit():
+    api_server = _load_api_server()
+    verdict = {
+        "seats": ["chatgpt"],
+        "web_bridge": {
+            "raw_results": [
+                {
+                    "seat": "chatgpt",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "transcript_pollution", "message": "old markers"},
+                },
+            ],
+        },
+    }
+
+    plan = api_server._build_rescue_plan(verdict)
+
+    assert plan["fresh_seats"] == ["chatgpt"]
+    assert plan["actions"][0]["method"] == "clean_session_resubmit"
+    assert plan["actions"][0]["label"] == "清理串流并回收"
+
+
 def test_supplementable_run_seats_prefers_required_non_grok_seats():
     api_server = _load_api_server()
     verdict = {
@@ -329,6 +392,9 @@ def test_progress_diagnostics_names_waiting_and_stale_seats():
     assert diagnostics["seats"][0]["state"] == "waiting"
     assert diagnostics["seats"][1]["seat"] == "minimax"
     assert diagnostics["seats"][1]["status"] == "发送未确认"
+    assert diagnostics["rescue_plan"]["sends_prompt"] is True
+    assert diagnostics["rescue_plan"]["actions"][0]["seat"] == "chatgpt"
+    assert diagnostics["rescue_plan"]["actions"][1]["seat"] == "minimax"
 
 
 def test_progress_diagnostics_label_unconfirmed_submit_without_nested_error():
@@ -366,6 +432,7 @@ def test_progress_diagnostics_label_unconfirmed_submit_without_nested_error():
 
     assert diagnostics["seats"][0]["seat"] == "minimax"
     assert diagnostics["seats"][0]["status"] == "提交未确认"
+    assert diagnostics["rescue_plan"]["actions"][0]["method"] == "fresh_web_submission"
 
 
 def test_recheck_endpoint_accepts_stale_running_task():
@@ -431,6 +498,215 @@ def test_recheck_endpoint_accepts_stale_running_task():
     assert captured["task"]["question"] == "需要二次回收的网页任务"
 
 
+def test_recheck_endpoint_can_resubmit_saved_required_seat():
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    old_start_fresh = api_server._start_fresh_recheck_worker
+    old_start_supplement = api_server._start_supplement_worker
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+        run_dir = tmp_path / "run-fresh"
+        run_dir.mkdir(parents=True)
+        (run_dir / "verdict.json").write_text(json.dumps({
+            "run_id": "run-fresh",
+            "question": "需要 Qwen 重新执行",
+            "mode": "strategic",
+            "seats": ["chatgpt", "qwen"],
+            "web_bridge": {
+                "raw_results": [
+                    {"seat": "chatgpt", "ok": True, "response": "done"},
+                    {
+                        "seat": "qwen",
+                        "ok": False,
+                        "supplementable": True,
+                        "error": {"code": "response_not_relevant"},
+                    },
+                ],
+            },
+        }), encoding="utf-8")
+
+        def fake_start_fresh(recheck_run_id, source_run_id, seats, notify_config):
+            captured.update({
+                "recheck_run_id": recheck_run_id,
+                "source_run_id": source_run_id,
+                "seats": seats,
+                "notify_config": notify_config,
+            })
+
+        def fail_supplement(*args, **kwargs):  # pragma: no cover - should not be called
+            raise AssertionError("fresh recheck must not use read-only supplement worker")
+
+        api_server._start_fresh_recheck_worker = fake_start_fresh
+        api_server._start_supplement_worker = fail_supplement
+        try:
+            response = api_server.app.test_client().post(
+                "/api/judge/run-fresh/recheck",
+                json={"seats": ["qwen"], "method": "fresh"},
+            )
+        finally:
+            api_server._start_fresh_recheck_worker = old_start_fresh
+            api_server._start_supplement_worker = old_start_supplement
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    data = response.get_json()
+    assert response.status_code == 202
+    assert data["method"] == "fresh_web_submission"
+    assert data["sends_prompt"] is True
+    assert captured["source_run_id"] == "run-fresh"
+    assert captured["seats"] == ["qwen"]
+
+
+def test_rescue_endpoint_starts_one_click_rescue_for_saved_required_seats():
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    old_start_rescue = api_server._start_rescue_worker
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+        run_dir = tmp_path / "run-rescue"
+        run_dir.mkdir(parents=True)
+        (run_dir / "verdict.json").write_text(json.dumps({
+            "run_id": "run-rescue",
+            "question": "需要 MiniMax 修复发送",
+            "mode": "strategic",
+            "seats": ["chatgpt", "minimax"],
+            "web_bridge": {
+                "raw_results": [
+                    {"seat": "chatgpt", "ok": True, "response": "done"},
+                    {
+                        "seat": "minimax",
+                        "ok": False,
+                        "supplementable": True,
+                        "error": {"code": "send_button_not_found"},
+                    },
+                ],
+            },
+        }), encoding="utf-8")
+
+        def fake_start_rescue(rescue_run_id, source_run_id, seats, notify_config):
+            captured.update({
+                "rescue_run_id": rescue_run_id,
+                "source_run_id": source_run_id,
+                "seats": seats,
+                "notify_config": notify_config,
+            })
+
+        api_server._start_rescue_worker = fake_start_rescue
+        try:
+            response = api_server.app.test_client().post("/api/judge/run-rescue/rescue")
+        finally:
+            api_server._start_rescue_worker = old_start_rescue
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    data = response.get_json()
+    assert response.status_code == 202
+    assert data["method"] == "read_existing_first_then_targeted_clean_resubmit"
+    assert data["sends_prompt"] is True
+    assert data["rescue_plan"]["fresh_seats"] == ["minimax"]
+    assert captured["source_run_id"] == "run-rescue"
+    assert captured["seats"] == ["minimax"]
+
+
+def test_rescue_worker_reads_existing_first_then_fresh_resubmits_only_remaining(monkeypatch):
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+        source_run_id = "run-rescue-worker"
+        run_dir = tmp_path / source_run_id
+        run_dir.mkdir(parents=True)
+        (run_dir / "verdict.json").write_text(json.dumps({
+            "run_id": source_run_id,
+            "question": "需要一键救援",
+            "deep_prompt": "专业版 prompt",
+            "mode": "strategic",
+            "seats": ["chatgpt", "qwen", "minimax"],
+            "web_bridge": {
+                "raw_results": [
+                    {"seat": "chatgpt", "ok": True, "response": "ChatGPT done"},
+                    {
+                        "seat": "qwen",
+                        "ok": False,
+                        "supplementable": True,
+                        "error": {"code": "slow_response_pending"},
+                    },
+                    {
+                        "seat": "minimax",
+                        "ok": False,
+                        "supplementable": True,
+                        "error": {"code": "send_button_not_found"},
+                    },
+                ],
+                "mentor_supplements": [],
+                "external_evidence": [],
+            },
+        }), encoding="utf-8")
+        rescue_run_id = api_server.TASKS.submit("一键救援", mode="strategic", seats=["qwen", "minimax"])
+
+        def fake_recover_existing_fixed_tab_answers(**kwargs):
+            captured["existing_seats"] = kwargs["seats"]
+            return [
+                {"seat": "qwen", "ok": True, "response": "Qwen late answer", "error": None},
+                {
+                    "seat": "minimax",
+                    "ok": False,
+                    "supplementable": True,
+                    "error": {"code": "existing_answer_not_found"},
+                },
+            ]
+
+        def fake_run_web_jury(**kwargs):
+            captured["fresh_seats"] = kwargs["seats"]
+            captured["bridge_config_overrides"] = kwargs.get("bridge_config_overrides")
+            return {
+                "web_bridge": {
+                    "raw_results": [
+                        {"seat": "minimax", "ok": True, "response": "MiniMax fresh answer", "error": None}
+                    ]
+                }
+            }
+
+        monkeypatch.setattr(api_server, "recover_existing_fixed_tab_answers", fake_recover_existing_fixed_tab_answers)
+        monkeypatch.setattr(api_server, "run_web_jury", fake_run_web_jury)
+        monkeypatch.setattr(api_server, "_attach_citation_mvp", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "generate_secure_view_url", lambda run_id: f"/view/{run_id}")
+        try:
+            api_server._run_rescue_worker(
+                rescue_run_id,
+                source_run_id,
+                ["qwen", "minimax"],
+                {},
+            )
+            saved = api_server._load_run(source_run_id)
+        finally:
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert captured["existing_seats"] == ["qwen", "minimax"]
+    assert captured["fresh_seats"] == ["minimax"]
+    assert captured["bridge_config_overrides"]["fresh_conversation_per_run"] is True
+    assert saved is not None
+    assert saved["rescue"]["existing_recovered_count"] == 1
+    assert saved["rescue"]["fresh_recovered_count"] == 1
+    assert saved["rescue"]["sends_prompt"] is True
+    raw_by_seat = {item["seat"]: item for item in saved["web_bridge"]["raw_results"]}
+    assert raw_by_seat["qwen"]["ok"] is True
+    assert raw_by_seat["minimax"]["ok"] is True
+
+
 def test_recheck_worker_reads_only_requested_recovery_seats(monkeypatch):
     api_server = _load_api_server()
     old_tasks = api_server.TASKS
@@ -488,6 +764,97 @@ def test_recheck_worker_reads_only_requested_recovery_seats(monkeypatch):
     assert captured["recovery_seats"] == ["qwen"]
     assert captured["assembled_seats"] == ["chatgpt", "qwen", "deepseek"]
     assert [item["seat"] for item in captured["raw_results"]] == ["qwen"]
+
+
+def test_fresh_recheck_worker_resubmits_and_merges_requested_seat(monkeypatch):
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+        source_run_id = "run-fresh-worker"
+        run_dir = tmp_path / source_run_id
+        run_dir.mkdir(parents=True)
+        (run_dir / "verdict.json").write_text(json.dumps({
+            "run_id": source_run_id,
+            "question": "需要 Qwen 重新执行",
+            "deep_prompt": "专业版 prompt",
+            "mode": "strategic",
+            "seats": ["chatgpt", "qwen"],
+            "web_bridge": {
+                "raw_results": [
+                    {"seat": "chatgpt", "ok": True, "response": "ChatGPT done"},
+                    {
+                        "seat": "qwen",
+                        "ok": False,
+                        "supplementable": True,
+                        "error": {"code": "response_not_relevant"},
+                    },
+                ],
+                "mentor_supplements": [],
+                "external_evidence": [],
+            },
+        }), encoding="utf-8")
+        recheck_run_id = api_server.TASKS.submit("重新提交席位", mode="strategic", seats=["qwen"])
+
+        def fake_run_web_jury(**kwargs):
+            captured["fresh_question"] = kwargs["question"]
+            captured["fresh_seats"] = kwargs["seats"]
+            captured["bridge_config_overrides"] = kwargs.get("bridge_config_overrides")
+            return {
+                "web_bridge": {
+                    "raw_results": [
+                        {"seat": "qwen", "ok": True, "response": "Qwen fresh answer", "error": None}
+                    ]
+                }
+            }
+
+        def fake_assemble_web_verdict_from_raw_results(**kwargs):
+            captured["assembled_seats"] = kwargs["seats"]
+            captured["raw_results"] = kwargs["raw_results"]
+            return {
+                "run_id": kwargs["run_id"],
+                "question": kwargs["display_question"],
+                "mode": kwargs["mode"],
+                "seats": kwargs["seats"],
+                "web_bridge": {"raw_results": kwargs["raw_results"], "ok_count": 2, "failed_count": 0},
+                "average_score": 0.7,
+                "verdict": "conditional",
+                "verdict_label": "条件成立",
+                "one_liner": "Qwen 已重新执行。",
+            }
+
+        monkeypatch.setattr(api_server, "run_web_jury", fake_run_web_jury)
+        monkeypatch.setattr(api_server, "assemble_web_verdict_from_raw_results", fake_assemble_web_verdict_from_raw_results)
+        monkeypatch.setattr(api_server, "_attach_product_run_metadata", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "_attach_citation_mvp", lambda *args, **kwargs: None)
+        monkeypatch.setattr(api_server, "generate_secure_view_url", lambda run_id: f"/view/{run_id}")
+        try:
+            api_server._run_fresh_recheck_worker(
+                recheck_run_id,
+                source_run_id,
+                ["qwen"],
+                {},
+            )
+            saved = api_server._load_run(source_run_id)
+        finally:
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    assert captured["fresh_question"] == "专业版 prompt"
+    assert captured["fresh_seats"] == ["qwen"]
+    assert captured["bridge_config_overrides"]["fresh_conversation_per_run"] is True
+    assert captured["assembled_seats"] == ["chatgpt", "qwen"]
+    assert [item["seat"] for item in captured["raw_results"]] == ["chatgpt", "qwen"]
+    qwen = captured["raw_results"][1]
+    assert qwen["ok"] is True
+    assert qwen["recovered_by_supplement"] is True
+    assert saved is not None
+    assert saved["recheck"]["method"] == "fresh_web_submission"
+    assert saved["recheck"]["sends_prompt"] is True
 
 
 def test_attach_citation_mvp_adds_replay_ledger_and_gap_suggestions():

@@ -21,6 +21,7 @@ RECOVERABLE_EXECUTION_CODES = {
     "response_timeout",
     "send_button_not_found",
     "submit_unconfirmed",
+    "chrome_submit_unconfirmed",
     "composer_busy",
     "response_not_relevant",
     "long_prompt_still_in_input",
@@ -28,6 +29,7 @@ RECOVERABLE_EXECUTION_CODES = {
     "existing_answer_placeholder",
     "existing_answer_prompt_echo",
     "fixed_tab_not_found",
+    "input_not_found",
     "transcript_pollution",
 }
 

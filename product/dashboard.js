@@ -10,6 +10,9 @@ const RECOVERABLE_WEB_CODES = new Set([
   "existing_answer_not_found",
   "existing_answer_placeholder",
   "existing_answer_prompt_echo",
+  "fixed_tab_not_found",
+  "input_not_found",
+  "transcript_pollution",
 ]);
 const OPTIONAL_EXECUTION_SEATS = new Set(["grok", "gork"]);
 
@@ -1271,6 +1274,10 @@ function supplementableRawResults() {
   return raw.filter(item => resultExecutionRequired(item) && isSupplementableResult(item));
 }
 
+function currentRescuePlan() {
+  return state.currentVerdict?.web_bridge?.rescue_plan || null;
+}
+
 function renderSupplementButton() {
   const btn = $("#btn-supplement-slow");
   const panel = $("#recovery-panel");
@@ -1279,13 +1286,17 @@ function renderSupplementButton() {
     return;
   }
   const seats = supplementableRawResults();
+  const plan = currentRescuePlan();
   const visible = Boolean(state.currentVerdict?.run_id && seats.length);
   btn.hidden = !visible;
   if (panel) panel.hidden = !visible;
   btn.disabled = false;
+  const label = plan?.button_label || "一键修复并回收答案";
   btn.textContent = seats.length
-    ? `补全必需席位 (${seats.map(item => item.seat_name || item.seat).join("、")})`
-    : "补全必需席位";
+    ? `${label} (${seats.map(item => item.seat_name || item.seat).join("、")})`
+    : label;
+  const summary = $("#recovery-summary");
+  if (summary) summary.textContent = plan?.summary || "先读取已打开模型页；只有发送失败或串流污染时才进入干净会话重试。";
 }
 
 async function supplementSlowSeats() {
@@ -1296,9 +1307,9 @@ async function supplementSlowSeats() {
   const btn = $("#btn-supplement-slow");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "补全必需席位中...";
+    btn.textContent = "一键救援中...";
   }
-  setProgress(4, `补全必需席位：${seats.join(", ")}`);
+  setProgress(4, `一键修复并回收答案：${seats.join(", ")}`);
   const notify = {
     email: $("#notify-email").value.trim(),
     webhook_url: $("#notify-webhook").value.trim(),
@@ -1315,7 +1326,7 @@ async function supplementSlowSeats() {
   }).filter(([, value]) => Boolean(value)).map(([key]) => key);
 
   try {
-    const res = await fetch(`${API_BASE}/api/judge/${sourceRunId}/supplement`, {
+    const res = await fetch(`${API_BASE}/api/judge/${sourceRunId}/rescue`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ seats, notify }),
@@ -1324,11 +1335,11 @@ async function supplementSlowSeats() {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     state.currentRunId = data.run_id;
     $("#run-id").textContent = data.run_id;
-    $("#run-meta").textContent = `必需席位补全 ${data.seat_count} 席 · 合并回 ${sourceRunId}`;
+    $("#run-meta").textContent = `一键救援 ${data.seat_count} 席 · 写回 ${sourceRunId}`;
     startProgress(data.run_id);
     await loadHistory();
   } catch (err) {
-    setProgress(0, `必需席位补全失败：${err.message}`);
+    setProgress(0, `一键救援失败：${err.message}`);
     renderSupplementButton();
   }
 }
@@ -1340,10 +1351,16 @@ function recheckableDiagnosticSeats(diag) {
       const stateName = seat.state || "";
       const statusName = seat.status || "";
       return ["waiting", "nudge"].includes(stateName)
-        || ["慢生成", "超时", "发送未确认", "提交未确认", "疑似旧回答"].includes(statusName);
+        || ["慢生成", "超时", "发送未确认", "提交未确认", "疑似旧回答", "历史串流", "标签缺失", "输入框缺失"].includes(statusName);
     })
     .map(seat => seat.seat)
     .filter(Boolean);
+}
+
+function diagnosticRescueMethod(diag) {
+  const plan = diag?.rescue_plan || {};
+  if (plan.sends_prompt) return "fresh";
+  return "existing";
 }
 
 async function recheckStalledSeats({ auto = false } = {}) {
@@ -1351,14 +1368,15 @@ async function recheckStalledSeats({ auto = false } = {}) {
   const sourceRunId = task?.run_id || state.currentRunId;
   const seats = recheckableDiagnosticSeats(task?.progress_diagnostics);
   if (!sourceRunId || !seats.length || state.recheckInFlight) return;
+  const method = diagnosticRescueMethod(task?.progress_diagnostics);
   state.recheckInFlight = true;
   clearAutoRecheck();
   const btn = $("#btn-recheck-stalled");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = auto ? "自动读取旧页面..." : "读取旧页面...";
+    btn.textContent = auto ? "自动救援中..." : "一键救援中...";
   }
-  setProgress(4, `${auto ? "自动" : "手动"}读取旧页面答案：${seats.join(", ")}`);
+  setProgress(4, `${auto ? "自动" : "手动"}一键修复并回收答案：${seats.join(", ")}`);
   const notify = {
     email: $("#notify-email").value.trim(),
     webhook_url: $("#notify-webhook").value.trim(),
@@ -1378,13 +1396,13 @@ async function recheckStalledSeats({ auto = false } = {}) {
     const res = await fetch(`${API_BASE}/api/judge/${sourceRunId}/recheck`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seats, notify }),
+      body: JSON.stringify({ seats, notify, method }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     state.currentRunId = data.run_id;
     $("#run-id").textContent = data.run_id;
-    $("#run-meta").textContent = `旧页面回收 ${data.seat_count} 席 · 写回 ${sourceRunId}`;
+    $("#run-meta").textContent = `${data.sends_prompt ? "干净会话重试" : "旧页面回收"} ${data.seat_count} 席 · 写回 ${sourceRunId}`;
     startProgress(data.run_id);
     await loadHistory();
   } catch (err) {
@@ -2459,9 +2477,10 @@ function renderRunDiagnostics(task) {
   if (recheckBtn) {
     recheckBtn.hidden = !recheckSeats.length;
     recheckBtn.disabled = state.recheckInFlight;
+    const rescueLabel = diag.rescue_plan?.button_label || "一键修复并回收答案";
     recheckBtn.textContent = recheckSeats.length
-      ? `只读回收 (${recheckSeats.map(seatName).join("、")})`
-      : "回收旧页面答案";
+      ? `${rescueLabel} (${recheckSeats.map(seatName).join("、")})`
+      : rescueLabel;
   }
   const watch = $("#seat-watch");
   if (!seats.length) {
@@ -2474,12 +2493,19 @@ function renderRunDiagnostics(task) {
         <span class="watch-detail">
           <span class="watch-status">${escapeHtml(seat.status || "等待")}</span>
           <span class="watch-reason">${escapeHtml(seat.reason || seat.detail || "")}</span>
+          ${seatRescueHint(seat, diag.rescue_plan)}
         </span>
       </div>
     `).join("");
   }
   box.hidden = false;
   scheduleAutoRecheck(task, diag);
+}
+
+function seatRescueHint(seat, plan) {
+  const action = (plan?.actions || []).find(item => item.seat === seat.seat);
+  if (!action) return "";
+  return `<span class="watch-rescue">${escapeHtml(action.label)} · ${escapeHtml(action.sends_prompt ? "必要时干净会话重试" : "只读旧页面")}</span>`;
 }
 
 function scheduleAutoRecheck(task, diag) {

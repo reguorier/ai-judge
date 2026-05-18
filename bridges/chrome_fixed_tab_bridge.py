@@ -1811,7 +1811,7 @@ def _build_click_send_js(prompt_id: str) -> str:
       }});
     sendButton = doubaoButtons[doubaoButtons.length - 1] || null;
   }}
-  if (!sendButton && /agent\\.minimaxi\\.com/i.test(location.hostname)) {{
+  if (!sendButton && /agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
     const miniMaxButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],svg,i,span,div")).map(clickTarget))
       .filter(el => visible(el) && !hasDisabledAncestor(el))
@@ -2249,7 +2249,7 @@ def _build_retry_submit_js(prompt_id: str) -> str:
       }});
     button = doubaoButtons[doubaoButtons.length - 1] || null;
   }}
-  if (!button && /agent\\.minimaxi\\.com/i.test(location.hostname)) {{
+  if (!button && /agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
     const miniMaxButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],svg,i,span,div")).map(clickTarget))
       .filter(el => visible(el) && !hasDisabledAncestor(el))

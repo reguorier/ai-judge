@@ -569,6 +569,7 @@
     .watch-detail { min-width: 0; }
     .watch-status { font-size: 12px; font-weight: 760; }
     .watch-reason { display: block; color: var(--muted); font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
+    .watch-rescue { display: block; margin-top: 3px; color: #8a4f00; font-size: 11px; font-weight: 720; line-height: 1.35; }
     .run-diagnostics.stale { border-color: #fecdd3; background: #fff7f8; }
     .run-diagnostics.stale .diagnostic-title { color: #9f1239; }
     .recovery-panel {
@@ -1421,10 +1422,10 @@
             </div>
             <div class="recovery-panel" id="recovery-panel" hidden>
               <div>
-                <strong>旧页面答案回收</strong>
-                <span>只读取已打开模型页，不重发问题。</span>
+                <strong>一键修复并回收答案</strong>
+                <span id="recovery-summary">先读取已打开模型页；只有发送失败或串流污染时才进入干净会话重试。</span>
               </div>
-              <button class="diagnostic-action" id="btn-supplement-slow" hidden>回收旧页面答案</button>
+              <button class="diagnostic-action" id="btn-supplement-slow" hidden>一键修复并回收答案</button>
             </div>
             <ul class="timeline" id="timeline-list"></ul>
             <div class="mentor-gate-box">

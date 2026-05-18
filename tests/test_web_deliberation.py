@@ -119,11 +119,13 @@ def test_run_web_jury_collects_second_round_resonance_answers(monkeypatch):
         mode="flash",
         seats=["chatgpt"],
         run_id="run-followup-test",
+        bridge_config_overrides={"fresh_conversation_per_run": True},
         collect_followups=True,
     )
 
     supplements = verdict["web_bridge"]["mentor_supplements"]
     assert len(calls) == 2
+    assert calls[0]["config_overrides"] == {"fresh_conversation_per_run": True}
     assert calls[1]["seats"] == ["chatgpt"]
     assert "[AIJUDGE_RESONANCE_FOLLOWUP]" in calls[1]["question"]
     assert "带入用户角色" in calls[1]["question"]

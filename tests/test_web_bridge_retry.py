@@ -8,6 +8,8 @@ from bridges.web_seat_bridge import (
     _readiness_reason,
     _run_driver_with_retries,
     _should_retry_result,
+    default_config,
+    merge_bridge_config_overrides,
 )
 
 
@@ -103,6 +105,21 @@ def test_retry_wrapper_reruns_only_retryable_failed_seats():
     assert results[1]["ok"]
     assert results[1]["recovered_by_retry"]
     assert not results[2]["ok"]
+
+
+def test_rescue_config_overrides_enable_clean_conversation_without_losing_seat_settings():
+    config = default_config()
+    config["seats"]["minimax"]["enabled"] = True
+    merged = merge_bridge_config_overrides(config, {
+        "fresh_conversation_per_run": True,
+        "seats": {"minimax": {"timeout_seconds": 900}},
+    })
+
+    assert merged["fresh_conversation_per_run"] is True
+    assert merged["seats"]["minimax"]["enabled"] is True
+    assert merged["seats"]["minimax"]["timeout_seconds"] == 900
+    assert merged["seats"]["minimax"]["url"] == "https://agent.minimax.io/chat"
+    assert merged["seats"]["minimax"]["fallback_url"] == "https://agent.minimaxi.com/chat"
 
 
 def test_fixed_tab_timeout_prefers_per_seat_retry_timeout():

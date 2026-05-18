@@ -34,6 +34,7 @@ def run_web_jury(
     display_question: str | None = None,
     external_evidence: list[dict[str, Any]] | None = None,
     evidence_options: dict[str, Any] | None = None,
+    bridge_config_overrides: dict[str, Any] | None = None,
     collect_followups: bool = False,
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
@@ -47,7 +48,14 @@ def run_web_jury(
     resolved_seats = [seat for seat in config["seats"] if seat in SEAT_PERSONAS]
     if trace:
         trace("jury", "web_jury_start", "进入网页陪审收集", {"mode": mode, "seats": resolved_seats})
-    raw_results = run_web_seats(question=question, seats=resolved_seats, mode=mode, progress=progress, trace=trace)
+    raw_results = run_web_seats(
+        question=question,
+        seats=resolved_seats,
+        mode=mode,
+        config_overrides=bridge_config_overrides,
+        progress=progress,
+        trace=trace,
+    )
     mentor_supplements: list[dict[str, Any]] = []
     if collect_followups:
         mentor_supplements = collect_resonance_followups(
