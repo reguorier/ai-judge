@@ -27,6 +27,9 @@ def test_citation_audit_verifies_user_supplied_evidence():
     assert summary["trust_gate"] == "pass"
     assert summary["certification_id"].startswith("CITE-")
     assert verdict["grand_judge"]["evidence_broker"]["counts"]["user_supplied"] == 1
+    assert verdict["grand_judge"]["evidence_broker"]["counts"]["provenance"]["user_supplied"] == 1
+    item = verdict["grand_judge"]["replay_ledger"][0]["citation_verification"]["items"][0]
+    assert item["matched_evidence"]["provenance"] == "user_supplied"
 
 
 def test_citation_audit_does_not_self_verify_candidate_source():
@@ -42,6 +45,7 @@ def test_citation_audit_does_not_self_verify_candidate_source():
     assert summary["overall_status"] == "unverifiable"
     assert summary["trust_gate"] == "needs_more_evidence"
     assert summary["counts"]["unverifiable"] == 1
+    assert summary["unverifiable_reason_counts"]["candidate_not_fetched"] == 1
     assert verdict["grand_judge"]["evidence_broker"]["counts"]["candidate_source"] == 1
 
 

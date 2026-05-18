@@ -70,6 +70,7 @@ def build_evidence_broker_report(
             "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
             "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
             "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+            "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。",
         },
         "items": items,
         "items_for_validation": validation_items,
@@ -78,6 +79,7 @@ def build_evidence_broker_report(
             "network_fetch": sum(1 for item in items if item.get("source_layer") == "network_fetch"),
             "candidate_source": sum(1 for item in items if item.get("source_layer") == "candidate_source"),
             "fetch_error": sum(1 for item in items if item.get("retrieval_state") == "fetch_error"),
+            "provenance": _provenance_counts(items),
         },
     }
     report["broker_hash"] = _hash_payload(report)
@@ -110,6 +112,8 @@ def _normalize_user_evidence(user_evidence: list[dict[str, Any]] | dict[str, Any
             "source_layer": "user_supplied",
             "retrieval_state": "provided",
         }
+        item["provenance"] = _normalize_provenance(raw, source_layer="user_supplied")
+        item["provenance_rank"] = _provenance_rank(item["provenance"])
         item["evidence_hash"] = _hash_payload(item)
         items.append(item)
     return items
@@ -147,6 +151,8 @@ def _candidate_item(*, raw: str, kind: str, url: str, seat: str, layer: str) -> 
         "trusted": False,
         "source_layer": "candidate_source",
         "retrieval_state": "not_fetched",
+        "provenance": "model_candidate",
+        "provenance_rank": _provenance_rank("model_candidate"),
         "origin_seat": seat,
         "origin_layer": layer,
     }
@@ -174,6 +180,8 @@ def _fetch_url_evidence(candidate: dict[str, Any], fetched_at: str) -> dict[str,
             "trusted": True,
             "source_layer": "network_fetch",
             "retrieval_state": "fetched",
+            "provenance": "fetched",
+            "provenance_rank": _provenance_rank("fetched"),
             "content_type": content_type,
             "fetched_at": fetched_at,
         }
@@ -184,6 +192,8 @@ def _fetch_url_evidence(candidate: dict[str, Any], fetched_at: str) -> dict[str,
             "trusted": False,
             "source_layer": "candidate_source",
             "retrieval_state": "fetch_error",
+            "provenance": "model_candidate",
+            "provenance_rank": _provenance_rank("model_candidate"),
             "fetch_error": str(exc)[:240],
         }
     item["evidence_hash"] = _hash_payload(item)
@@ -204,7 +214,59 @@ def _dedupe_evidence(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _rank(item: dict[str, Any]) -> int:
-    return {"user_supplied": 3, "network_fetch": 2, "candidate_source": 1}.get(str(item.get("source_layer")), 0)
+    provenance_rank = int(item.get("provenance_rank") or 0)
+    layer_rank = {"user_supplied": 3, "network_fetch": 2, "candidate_source": 1}.get(str(item.get("source_layer")), 0)
+    return max(provenance_rank, layer_rank)
+
+
+def _normalize_provenance(item: dict[str, Any], *, source_layer: str) -> str:
+    value = str(item.get("provenance") or "").strip().lower()
+    aliases = {
+        "network_fetch": "fetched",
+        "network_fetched": "fetched",
+        "candidate_source": "model_candidate",
+        "candidate": "model_candidate",
+        "attested": "independently_attested",
+        "independent": "independently_attested",
+    }
+    value = aliases.get(value, value)
+    if value in {"user_supplied", "fetched", "independently_attested", "notarized", "model_candidate"}:
+        return value
+    if item.get("notarized") or item.get("witness_hash") or item.get("ledger_hash"):
+        return "notarized"
+    if item.get("attested") or item.get("attestation_id") or item.get("witness_id"):
+        return "independently_attested"
+    if source_layer == "network_fetch":
+        return "fetched"
+    if source_layer == "candidate_source":
+        return "model_candidate"
+    return "user_supplied"
+
+
+def _provenance_rank(provenance: str) -> int:
+    return {
+        "model_candidate": 0,
+        "user_supplied": 1,
+        "fetched": 2,
+        "independently_attested": 3,
+        "notarized": 4,
+    }.get(str(provenance), 0)
+
+
+def _provenance_counts(items: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {
+        "model_candidate": 0,
+        "user_supplied": 0,
+        "fetched": 0,
+        "independently_attested": 0,
+        "notarized": 0,
+    }
+    for item in items:
+        provenance = str(item.get("provenance") or "user_supplied")
+        if provenance not in counts:
+            counts[provenance] = 0
+        counts[provenance] += 1
+    return counts
 
 
 def _evidence_key(item: dict[str, Any]) -> str:

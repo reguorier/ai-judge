@@ -147,6 +147,7 @@ def build_audit_summary(verdict: dict[str, Any]) -> dict[str, Any]:
         "replay_ledger_hash": grand.get("replay_ledger_hash"),
         "item_count": citation.get("item_count", 0),
         "counts": counts,
+        "unverifiable_reason_counts": citation.get("unverifiable_reason_counts") or {},
         "trust_gate": metrics.get("trust_gate", "needs_external_evidence"),
         "groundedness_proxy": metrics.get("groundedness_proxy", 0.0),
         "gap_count": (grand.get("evidence_gap_queue") or {}).get("open_count", 0),
@@ -189,7 +190,7 @@ def render_audit_markdown(verdict: dict[str, Any]) -> str:
                     id=_md(item.get("citation_id")),
                     raw=_md(item.get("raw")),
                     status=_md(item.get("status")),
-                    reason=_md(item.get("reason")),
+                    reason=_md(_reason_with_code(item)),
                 )
             )
     lines.extend([
@@ -216,6 +217,7 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
                 f"<td>{_e(item.get('raw'))}</td>"
                 f"<td><span class=\"pill status-{_slug(item.get('status'))}\">{_e(item.get('status'))}</span></td>"
                 f"<td>{_e(item.get('reason'))}</td>"
+                f"<td>{_e(item.get('unverifiable_reason_code'))}</td>"
                 f"<td>{_e(item.get('relevance_score'))}</td>"
                 "</tr>"
             )
@@ -225,6 +227,7 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
             "<tr>"
             f"<td>{_e(item.get('id') or item.get('evidence_id'))}</td>"
             f"<td>{_e(item.get('source_layer'))}</td>"
+            f"<td>{_e(item.get('provenance'))}</td>"
             f"<td>{_e(item.get('retrieval_state'))}</td>"
             f"<td>{_e(item.get('title') or item.get('url') or item.get('raw_source'))}</td>"
             "</tr>"
@@ -288,10 +291,10 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     <h2>Submitted Answer</h2>
     <pre>{_e(verdict.get('answer'))}</pre>
     <h2>Citation Verification</h2>
-    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Relevance</th></tr></thead><tbody>{''.join(citation_rows) or '<tr><td colspan="5">No citation items.</td></tr>'}</tbody></table>
+    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody>{''.join(citation_rows) or '<tr><td colspan="6">No citation items.</td></tr>'}</tbody></table>
     <p class="note">{_e(summary.get('unverifiable_explanation'))}</p>
     <h2>Evidence Broker</h2>
-    <table><thead><tr><th>ID</th><th>Layer</th><th>Retrieval</th><th>Source</th></tr></thead><tbody>{''.join(evidence_rows) or '<tr><td colspan="4">No evidence items.</td></tr>'}</tbody></table>
+    <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody>{''.join(evidence_rows) or '<tr><td colspan="5">No evidence items.</td></tr>'}</tbody></table>
     <h2>Evidence Gap Queue</h2>
     <table><thead><tr><th>ID</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody>{''.join(gap_rows) or '<tr><td colspan="4">No open gaps.</td></tr>'}</tbody></table>
     <h2>Replay Ledger</h2>
@@ -374,6 +377,12 @@ def _first_heading(text: str) -> str:
 
 def _md(value: Any) -> str:
     return str(value or "").replace("|", "\\|").replace("\n", " ").strip()
+
+
+def _reason_with_code(item: dict[str, Any]) -> str:
+    reason = str(item.get("reason") or "")
+    code = str(item.get("unverifiable_reason_code") or "")
+    return f"{reason} ({code})" if code else reason
 
 
 def _e(value: Any) -> str:

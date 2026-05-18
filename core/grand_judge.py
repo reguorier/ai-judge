@@ -195,6 +195,7 @@ def _unverifiable_reasons(*reports: dict[str, Any] | None) -> list[dict[str, str
                 reasons.append({
                     "citation_id": str(item.get("citation_id") or ""),
                     "raw": str(item.get("raw") or ""),
+                    "reason_code": str(item.get("unverifiable_reason_code") or ""),
                     "reason": str(item.get("reason") or UNVERIFIABLE_EXPLANATION),
                 })
     return reasons
@@ -213,6 +214,9 @@ def _external_evidence_index(external_evidence: list[dict[str, Any]] | dict[str,
             "url": item.get("url") or item.get("source_url"),
             "title": item.get("title") or item.get("source") or item.get("name"),
             "status": item.get("status") or item.get("verification_status"),
+            "source_layer": item.get("source_layer"),
+            "provenance": item.get("provenance"),
+            "retrieval_state": item.get("retrieval_state"),
         }
         public["evidence_hash"] = _hash_payload(item)
         result.append(public)

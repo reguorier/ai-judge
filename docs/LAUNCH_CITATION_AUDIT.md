@@ -2,13 +2,15 @@
 
 ## Positioning
 
-AI Judge Citation Audit is an open-source, local-first auditor for AI-generated citations. It catches fabricated, weak, irrelevant, unverifiable, and contradicted citations before a report, paper, README, or client deliverable is published.
+AI Judge Citation Audit is a source-available, local-first auditor for AI-generated citations. It catches fabricated, weak, irrelevant, unverifiable, and contradicted citations before a report, paper, README, or client deliverable is published.
 
 ## User promise
 
 Paste one AI-generated answer, optionally add external evidence, and get:
 
 - citation-level status: `verified`, `weakly_verified`, `irrelevant`, `unverifiable`, `contradicted`
+- `unverifiable` reason codes for missing evidence, fetch failures, blocked retrieval, and unfetched model candidates
+- evidence provenance grades: `model_candidate`, `user_supplied`, `fetched`, `independently_attested`, `notarized`
 - Certification ID
 - Replay Ledger hash
 - Evidence Broker source separation

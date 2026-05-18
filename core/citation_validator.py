@@ -26,6 +26,15 @@ CITATION_STATUSES = (
     "contradicted",
 )
 
+UNVERIFIABLE_REASON_CODES = (
+    "no_citation",
+    "missing_external_evidence",
+    "candidate_not_fetched",
+    "fetch_error",
+    "retrieval_blocked",
+    "weak_match",
+)
+
 UNVERIFIABLE_EXPLANATION = (
     "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；"
     "它不是 false，也不等于 contradicted。"
@@ -65,6 +74,7 @@ def validate_citations(
             "normalized": "",
             "context": _compact(answer_text, 240),
             "status": "unverifiable",
+            "unverifiable_reason_code": "no_citation",
             "reason": "该回答未提供可核查引用；需要外部证据或明确来源后才能升级。",
             "matched_evidence": None,
             "relevance_score": 0.0,
@@ -92,6 +102,8 @@ def validate_citations(
         "citation_count": len(citations),
         "item_count": len(items),
         "counts": counts,
+        "unverifiable_reason_schema": list(UNVERIFIABLE_REASON_CODES),
+        "unverifiable_reason_counts": _unverifiable_reason_counts(items),
         "items": items,
         "external_evidence_used": len(evidence_items),
         "unverifiable_explanation": UNVERIFIABLE_EXPLANATION,
@@ -104,6 +116,7 @@ def validate_citations(
 def summarize_citation_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
     """Aggregate several validator reports into one citation-level summary."""
     counts = {status: 0 for status in CITATION_STATUSES}
+    reason_counts = {code: 0 for code in UNVERIFIABLE_REASON_CODES}
     item_count = 0
     citation_count = 0
     for report in reports:
@@ -112,6 +125,10 @@ def summarize_citation_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
         for status, value in (report.get("counts") or {}).items():
             if status in counts:
                 counts[status] += int(value or 0)
+        for code, value in (report.get("unverifiable_reason_counts") or {}).items():
+            if code not in reason_counts:
+                reason_counts[code] = 0
+            reason_counts[code] += int(value or 0)
     return {
         "schema": "citation_validator.summary.v1",
         "status_schema": list(CITATION_STATUSES),
@@ -119,8 +136,15 @@ def summarize_citation_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
         "citation_count": citation_count,
         "item_count": item_count,
         "counts": counts,
+        "unverifiable_reason_schema": list(UNVERIFIABLE_REASON_CODES),
+        "unverifiable_reason_counts": reason_counts,
         "unverifiable_explanation": UNVERIFIABLE_EXPLANATION,
-        "verification_hash": _hash_payload({"counts": counts, "item_count": item_count, "citation_count": citation_count}),
+        "verification_hash": _hash_payload({
+            "counts": counts,
+            "unverifiable_reason_counts": reason_counts,
+            "item_count": item_count,
+            "citation_count": citation_count,
+        }),
     }
 
 
@@ -176,6 +200,7 @@ def _validate_one_citation(
             "citation_id": citation_id,
             **citation,
             "status": "unverifiable",
+            "unverifiable_reason_code": "missing_external_evidence",
             "reason": "未在隔离的外部证据层找到可匹配来源；这不是 false，只是当前不可验证。",
             "matched_evidence": None,
             "relevance_score": 0.0,
@@ -190,12 +215,14 @@ def _validate_one_citation(
     evidence_status = str(evidence.get("status") or evidence.get("verification_status") or "").lower()
     retrieval_state = str(evidence.get("retrieval_state") or "").lower()
     contradicted = bool(evidence.get("contradicts")) or evidence_status in {"contradicted", "contradicts", "refuted", "false"}
+    unverifiable_reason_code = ""
     if contradicted:
         status = "contradicted"
         reason = "外部证据层明确标记该引用或相关断言被反驳。"
     elif evidence_status in {"candidate_unverified", "retrieval_required", "not_fetched", "fetch_error"} or retrieval_state in {"not_fetched", "fetch_error", "blocked"}:
         status = "unverifiable"
-        reason = "该来源只是模型答案中的候选来源，尚未进入隔离外部证据层；当前不可验证，不代表为假。"
+        unverifiable_reason_code = _unverifiable_reason_code(evidence_status, retrieval_state)
+        reason = _unverifiable_reason(unverifiable_reason_code)
     elif relevance < 0.24 and question:
         status = "irrelevant"
         reason = "引用来源可以匹配，但与当前问题或上下文相关性不足。"
@@ -210,9 +237,10 @@ def _validate_one_citation(
         reason = "引用与外部证据存在部分匹配，但仍需要更强证据或更精确来源。"
     else:
         status = "unverifiable"
+        unverifiable_reason_code = "weak_match"
         reason = "外部证据匹配强度不足；当前不可验证，不代表引用为假。"
 
-    return {
+    result = {
         "citation_id": citation_id,
         **citation,
         "status": status,
@@ -221,6 +249,9 @@ def _validate_one_citation(
         "relevance_score": round(relevance, 4),
         "verified_at": verified_at,
     }
+    if status == "unverifiable":
+        result["unverifiable_reason_code"] = unverifiable_reason_code or "weak_match"
+    return result
 
 
 def _normalize_external_evidence(external_evidence: list[dict[str, Any]] | dict[str, Any] | None) -> list[dict[str, Any]]:
@@ -250,6 +281,8 @@ def _normalize_external_evidence(external_evidence: list[dict[str, Any]] | dict[
             "title": title,
             "snippet": snippet,
             "text": text,
+            "source_layer": item.get("source_layer"),
+            "provenance": _normalize_provenance(item),
             "_combined": combined,
             "_combined_norm": _normalize_text(combined),
         })
@@ -290,6 +323,8 @@ def _public_evidence(evidence: dict[str, Any], match_score: float) -> dict[str, 
         "title": evidence.get("title"),
         "snippet": _compact(evidence.get("snippet") or evidence.get("text"), 220),
         "status": evidence.get("status") or evidence.get("verification_status"),
+        "source_layer": evidence.get("source_layer"),
+        "provenance": evidence.get("provenance") or _normalize_provenance(evidence),
         "match_score": round(float(match_score), 4),
         "evidence_hash": _hash_payload({
             "url": evidence.get("url"),
@@ -297,6 +332,8 @@ def _public_evidence(evidence: dict[str, Any], match_score: float) -> dict[str, 
             "snippet": evidence.get("snippet"),
             "text": evidence.get("text"),
             "status": evidence.get("status") or evidence.get("verification_status"),
+            "source_layer": evidence.get("source_layer"),
+            "provenance": evidence.get("provenance"),
         }),
     }
 
@@ -308,6 +345,63 @@ def _status_counts(items: list[dict[str, Any]]) -> dict[str, int]:
         if status in counts:
             counts[status] += 1
     return counts
+
+
+def _unverifiable_reason_counts(items: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {code: 0 for code in UNVERIFIABLE_REASON_CODES}
+    for item in items:
+        if item.get("status") != "unverifiable":
+            continue
+        code = str(item.get("unverifiable_reason_code") or "missing_external_evidence")
+        if code not in counts:
+            counts[code] = 0
+        counts[code] += 1
+    return counts
+
+
+def _unverifiable_reason_code(evidence_status: str, retrieval_state: str) -> str:
+    if evidence_status == "fetch_error" or retrieval_state == "fetch_error":
+        return "fetch_error"
+    if retrieval_state == "blocked":
+        return "retrieval_blocked"
+    if evidence_status in {"candidate_unverified", "retrieval_required", "not_fetched"} or retrieval_state == "not_fetched":
+        return "candidate_not_fetched"
+    return "missing_external_evidence"
+
+
+def _unverifiable_reason(code: str) -> str:
+    return {
+        "candidate_not_fetched": "该来源仍是候选来源，尚未被独立抓取或提供为外部证据；当前不可验证，不代表为假。",
+        "fetch_error": "证据抓取失败，无法确认来源内容；这是检索失败，不等同于来源不存在或断言为假。",
+        "retrieval_blocked": "证据检索被阻止或需要权限；这是访问限制，不等同于来源不存在或断言为假。",
+        "weak_match": "外部证据匹配强度不足；当前不可验证，不代表引用为假。",
+        "no_citation": "该回答未提供可核查引用；需要外部证据或明确来源后才能升级。",
+    }.get(code, "未在隔离的外部证据层找到可匹配来源；这不是 false，只是当前不可验证。")
+
+
+def _normalize_provenance(item: dict[str, Any]) -> str:
+    value = str(item.get("provenance") or "").strip().lower()
+    aliases = {
+        "network_fetch": "fetched",
+        "network_fetched": "fetched",
+        "candidate_source": "model_candidate",
+        "candidate": "model_candidate",
+        "attested": "independently_attested",
+        "independent": "independently_attested",
+    }
+    value = aliases.get(value, value)
+    if value in {"user_supplied", "fetched", "independently_attested", "notarized", "model_candidate"}:
+        return value
+    if item.get("notarized") or item.get("witness_hash") or item.get("ledger_hash"):
+        return "notarized"
+    if item.get("attested") or item.get("attestation_id") or item.get("witness_id"):
+        return "independently_attested"
+    source_layer = str(item.get("source_layer") or "").strip().lower()
+    if source_layer == "network_fetch":
+        return "fetched"
+    if source_layer == "candidate_source":
+        return "model_candidate"
+    return "user_supplied"
 
 
 def _overall_status(counts: dict[str, int], item_count: int) -> str:

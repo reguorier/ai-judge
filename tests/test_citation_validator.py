@@ -51,6 +51,8 @@ def test_citation_validator_outputs_weak_irrelevant_unverifiable_and_contradicte
     assert weak["items"][0]["status"] == "weakly_verified"
     assert irrelevant["items"][0]["status"] == "irrelevant"
     assert unverifiable["items"][0]["status"] == "unverifiable"
+    assert unverifiable["items"][0]["unverifiable_reason_code"] == "missing_external_evidence"
+    assert unverifiable["unverifiable_reason_counts"]["missing_external_evidence"] == 1
     assert UNVERIFIABLE_EXPLANATION in unverifiable["unverifiable_explanation"]
     assert contradicted["overall_status"] == "contradicted"
 
@@ -60,4 +62,29 @@ def test_no_citation_is_unverifiable_not_false():
 
     assert report["citation_count"] == 0
     assert report["overall_status"] == "unverifiable"
+    assert report["items"][0]["unverifiable_reason_code"] == "no_citation"
     assert "不是 false" in report["unverifiable_explanation"]
+
+
+def test_unverifiable_reason_code_distinguishes_fetch_error_from_missing_evidence():
+    report = validate_citations(
+        "Source: https://example.com/paywalled-report",
+        question="Does the cited report support the claim?",
+        external_evidence=[
+            {
+                "url": "https://example.com/paywalled-report",
+                "title": "Paywalled report",
+                "status": "fetch_error",
+                "retrieval_state": "fetch_error",
+                "source_layer": "candidate_source",
+                "provenance": "model_candidate",
+            }
+        ],
+        generated_at="2026-05-16T00:00:00+00:00",
+    )
+
+    item = report["items"][0]
+    assert item["status"] == "unverifiable"
+    assert item["unverifiable_reason_code"] == "fetch_error"
+    assert report["unverifiable_reason_counts"]["fetch_error"] == 1
+    assert item["matched_evidence"]["provenance"] == "model_candidate"

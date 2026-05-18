@@ -3,7 +3,7 @@
 ## Short description
 
 ```text
-Support AI Judge, an open-source citation auditor that catches fabricated, weak, irrelevant, unverifiable, and contradicted citations in AI-generated answers.
+Support AI Judge, a source-available citation auditor that catches fabricated, weak, irrelevant, unverifiable, and contradicted citations in AI-generated answers.
 ```
 
 ## Sponsor tiers
@@ -25,7 +25,7 @@ Funds real-world citation audit examples, anonymized reports, and documentation 
 ```markdown
 ## Support
 
-AI Judge Citation Audit is open source. Sponsorship helps maintain benchmark cases, demo reports, and CI integrations for citation-quality review.
+AI Judge Citation Audit is source-available under BSL 1.1. Sponsorship helps maintain benchmark cases, demo reports, and CI integrations for citation-quality review.
 
 Sponsor or request Pro early access:
 
