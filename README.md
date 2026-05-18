@@ -20,6 +20,7 @@
 
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
+  <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
   <a href="https://github.com/reguorier/ai-judge/releases/latest">macOS App</a> ·
   <a href="#quick-start">Quick Start</a> ·
@@ -63,6 +64,8 @@ It separates polished language from actual thinking quality, then gives the huma
 Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citation-audit wedge, then adds a narrower product question: **which citations and model-seat answers are reliable enough to become a human-confirmed decision?**
 
 The current growth strategy is intentionally constrained: prove the citation and claim-support protocol first, collect hard benchmark cases from professional users, and delay full SaaS monetization until there is visible demand. See [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](docs/AI_JUDGE_GROWTH_PLAYBOOK.md).
+
+For the shortest reproducible path, start with [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). It links the live Space, one local audit, the eight-report gallery, the 100-case benchmark, the hard 13-case benchmark, and the public contribution issues.
 
 Try it in the browser first:
 

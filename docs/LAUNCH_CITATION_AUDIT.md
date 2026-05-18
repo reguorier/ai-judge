@@ -59,6 +59,7 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
 | Quote cards | [`product/social_quote_cards.html`](../product/social_quote_cards.html) |
 | Blog draft | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) |
 | Blog outline | [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md`](AI_COLLECTIVE_BLIND_SPOTS_BLOG_OUTLINE.md) |
+| 3-minute proof kit | [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](TRY_AI_JUDGE_IN_3_MINUTES.md) |
 | Growth playbook | [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](AI_JUDGE_GROWTH_PLAYBOOK.md) |
 | Follow-up queue | [`growth/followup_queue.md`](../growth/followup_queue.md) |
 

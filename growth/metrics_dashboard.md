@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-19 02:30 HKT
+Last refreshed: 2026-05-19 02:55 HKT
 
 ## Targets
 
@@ -19,6 +19,7 @@ Last refreshed: 2026-05-19 02:30 HKT
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live_http_200_checked_2026-05-18 | TBD | TBD | TBD | TBD | Space page is reachable; sample switcher remains a code/deploy follow-up if HF write access is available. |
 | GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_checked_2026-05-19_0026_hkt | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; #2 and #4 still have no comments; #1/#3/#5 only have maintainer progress updates. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded_claim_support | TBD | 0 | TBD | TBD | Eight demos now cover unverifiable, contradicted, irrelevant, weak evidence, and three real-source/unsupported-claim families: causation, absolutes, and quantified overclaiming. |
+| 3-minute proof kit | docs/TRY_AI_JUDGE_IN_3_MINUTES.md | ready | TBD | 0 | TBD | TBD | Single low-friction link for live Space, local audit, eight-report gallery, full benchmark, hard benchmark, and contribution issues. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission | 0 | 0 | 0 | 0 | `gh repo edit` returned API 404 for description/homepage/topics. |
 | X / short-form | https://x.com/liuweidi2/status/2056387592187510933 | live_wave_001_posted_cleanup_pending | TBD | 7 self-replies | TBD | TBD | Professional review thread is live with CTAs for issue #2/#3/#4, HF demo, and repo trial. One accidental `.` reply needs deletion confirmation before cleanup. |
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |

@@ -1,7 +1,7 @@
 # 30-Day Remaining Task Audit
 
 Status: refreshed
-Last refreshed: 2026-05-19 02:30 HKT
+Last refreshed: 2026-05-19 02:55 HKT
 
 ## Current Evidence
 
@@ -47,6 +47,7 @@ Last refreshed: 2026-05-19 02:30 HKT
 - Converted the 81/100 conditional-go answer into a public growth playbook and reusable Codex autopilot prompt.
 - Expanded the hard benchmark from 11 to 13 cases with deterministic claim-support expectations for overclaimed causation, overclaimed absolutes, and overclaimed quantified effects.
 - Regenerated the eight-example citation batch gallery and the two new public demo reports.
+- Added a 3-minute proof kit so external readers can try the live Space, one local audit, the eight-report gallery, both benchmarks, and the contribution funnel from one page.
 
 ## Next Non-Gated Move
 
