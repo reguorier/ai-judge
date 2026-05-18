@@ -25,11 +25,34 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert "打开网站完整报告" in html
     assert ".executive-report" in html
     assert ".sop-preview" in html
+    assert 'id="simple-autopilot-page"' in html
+    assert 'id="autopilot-queue-list"' in html
+    assert 'id="autopilot-synthesis-details"' in html
+    assert "人类裁决必需" in html
+    assert "证据完整度" in html
+    assert "优先增长动作" in html
+    assert "过夜预计" in html
+    assert "今日任务" in html
+    assert "新建自动任务" in html
+    assert "运行中" in html
+    assert "结果收件箱" in html
+    assert "人类确认与产物" in html
+    assert "任务队列" in html
+    assert "当前没有运行任务" in html
+    assert "最小交付：阶段报告" in html
     assert "查看专业报告" in js
     assert "查看标准 SOP" in js
     assert "Codex 执行模板" in js
+    assert "function renderAutopilotWorkbench" in js
+    assert "function autopilotSynthesisSummary" in js
+    assert "function buildSimpleTaskItems" in js
+    assert "function renderHistoryFromState" in js
+    assert "加权共识 + 共振追问 + 证据门禁" in js
+    assert "function autopilotQueueRows" in js
+    assert "app.simple-mode #verdict-card" in html
     assert '$$("#view-link, #result-view-link")' in js
     assert "const canConfirm = hasVerdict;" in js
+    assert "等待报告生成" in js
     assert 'state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block"' in js
 
 
@@ -41,6 +64,7 @@ def test_product_capabilities_and_health_are_v38():
     capabilities = client.get("/api/product/capabilities").get_json()
 
     assert health["version"] == "3.8.0"
+    assert health["engines"] == ["web"]
     assert "stable_closeout" in health["product_layers"]
     assert capabilities["stable_mode"]["label"] == "简约版"
     assert capabilities["lab_mode"]["label"] == "专业版"
@@ -103,6 +127,56 @@ def test_judge_submission_defaults_to_full_web_council(monkeypatch):
     assert captured["submitted"]["mode"] == "strategic"
     assert captured["worker"]["engine"] == "web"
     assert captured["worker"]["seats"] == data["seats"]
+
+
+def test_judge_submission_rejects_local_engine(monkeypatch):
+    api_server = _load_api_server()
+
+    def fail_start_worker(*_args, **_kwargs):
+        raise AssertionError("local engine must not start a worker")
+
+    monkeypatch.setattr(api_server, "_start_worker", fail_start_worker)
+    response = api_server.app.test_client().post(
+        "/api/judge",
+        json={"question": "不要走本地", "engine": "local"},
+    )
+
+    data = response.get_json()
+    assert response.status_code == 400
+    assert "disabled" in data["error"]
+
+
+def test_prompt_resonate_rejects_local_engine():
+    api_server = _load_api_server()
+    response = api_server.app.test_client().post(
+        "/api/prompt/resonate",
+        json={"question": "不要走本地", "engine": "local"},
+    )
+
+    data = response.get_json()
+    assert response.status_code == 400
+    assert "disabled" in data["error"]
+
+
+def test_execution_router_requires_every_selected_web_seat_ready():
+    api_server = _load_api_server()
+    plan = api_server.decide_execution(
+        engine="web",
+        mode="flash",
+        requested_seats=["chatgpt", "deepseek", "qwen"],
+        bridge_status={
+            "seats": [
+                {"id": "chatgpt", "ready": True, "driver": "chrome_cdp"},
+                {"id": "deepseek", "ready": True, "driver": "chrome_cdp"},
+                {"id": "qwen", "ready": False, "reason": "not_calibrated"},
+            ]
+        },
+    )
+
+    assert plan["decision"] == "block_for_calibration"
+    assert plan["can_run_deep_collection"] is False
+    assert plan["minimum_ready_seats"] == 3
+    assert plan["runnable_seats"] == ["chatgpt", "deepseek"]
 
 
 def test_benchmark_summary_returns_four_reliability_cards(monkeypatch):

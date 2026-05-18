@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Judge v3.8.0 Trust Workbench</title>
+  <title>AI Judge v3.8.0 可信工作台</title>
   <style>
     :root {
       color-scheme: light;
@@ -970,6 +970,616 @@
       font-weight: 560;
       line-height: 1.35;
     }
+    .simple-autopilot-page {
+      display: grid;
+      gap: 14px;
+    }
+    .autopilot-status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .autopilot-status {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+    .autopilot-status span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+    .autopilot-status strong {
+      font-size: 18px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .autopilot-workbench {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      gap: 14px;
+      align-items: start;
+    }
+    .autopilot-main,
+    .autopilot-side {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+    .autopilot-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 1px 0 rgba(255,255,255,.72), var(--shadow);
+      padding: 14px;
+      min-width: 0;
+    }
+    .autopilot-card.soft {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border-color: #cdddf2;
+    }
+    .autopilot-card h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 760;
+    }
+    .autopilot-card p {
+      margin: 6px 0 0;
+      color: var(--text-soft);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .classification-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      border-left: 3px solid var(--blue);
+    }
+    .classification-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: flex-end;
+    }
+    .classification-actions small {
+      flex-basis: 100%;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+    }
+    .classification-reason {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .mini-button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 760;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mini-button.primary {
+      border-color: #111827;
+      background: #111827;
+      color: #fff;
+    }
+    .autopilot-pipeline {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .pipeline-step {
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      display: grid;
+      align-content: space-between;
+      gap: 6px;
+      min-width: 0;
+    }
+    .pipeline-step strong {
+      font-size: 12px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .pipeline-step span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+    .pipeline-step.done { border-color: #bdebd1; background: #f7fdf9; }
+    .pipeline-step.active { border-color: #ffd38a; background: #fffaf0; }
+    .pipeline-step.gate { border-color: #cbdcf6; background: #f7fbff; }
+    .seat-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .seat-mini {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+    .seat-mini strong {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .seat-mini span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .seat-mini.ok { border-color: #bdebd1; background: #f7fdf9; }
+    .seat-mini.recovery { border-color: #ffd38a; background: #fffaf0; }
+    .seat-mini.optional { border-color: #dbe2ee; background: #f8fafc; }
+    .synthesis-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .synthesis-detail {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 9px;
+      min-width: 0;
+    }
+    .synthesis-detail span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      margin-bottom: 4px;
+    }
+    .synthesis-detail strong {
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .evidence-gauge {
+      display: grid;
+      gap: 9px;
+    }
+    .gauge-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: end;
+    }
+    .gauge-head strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .gauge-bar {
+      height: 9px;
+      border-radius: 999px;
+      background: #e8eef6;
+      overflow: hidden;
+    }
+    .gauge-bar span {
+      display: block;
+      width: var(--gauge, 72%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #17925a, #2f6fe4);
+    }
+    .evidence-breakdown {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .evidence-breakdown div {
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      background: #fff;
+      padding: 7px;
+      min-width: 0;
+    }
+    .evidence-breakdown span { display: block; color: var(--muted); font-size: 10px; }
+    .evidence-breakdown strong { display: block; margin-top: 2px; font-size: 14px; }
+    .growth-action-list,
+    .artifact-list {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+    .growth-action-list li,
+    .artifact-list li {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 9px;
+      min-width: 0;
+    }
+    .growth-action-list strong,
+    .artifact-list strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .source-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+    }
+    .source-badges span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 720;
+      padding: 4px 7px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .human-gavel-panel {
+      border-color: #ffd38a;
+      background: #fffaf0;
+    }
+    .gavel-form {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .gavel-form select,
+    .gavel-form input {
+      min-height: 38px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+    .gavel-sign {
+      width: 100%;
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: #111827;
+      color: #fff;
+      font-weight: 760;
+      opacity: .45;
+      cursor: not-allowed;
+    }
+    .failure-inbox {
+      color: var(--warn);
+      font-weight: 760;
+    }
+    .autopilot-intake-card {
+      border: 1px dashed #b8c7dc;
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .autopilot-drop-icon {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 780;
+      background: #f8fbff;
+    }
+    .autopilot-intake-copy {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+    .autopilot-intake-copy strong {
+      font-size: 15px;
+      line-height: 1.3;
+    }
+    .autopilot-intake-copy span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .autopilot-url-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      min-height: 36px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      max-width: 460px;
+    }
+    .autopilot-url-row input {
+      border: 0;
+      box-shadow: none;
+      min-height: 32px;
+      padding: 0;
+      font-size: 13px;
+      background: transparent;
+    }
+    .autopilot-url-row button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 760;
+      cursor: pointer;
+    }
+    .autopilot-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .mode-pill {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 34px;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 760;
+    }
+    .mode-pill.active {
+      border-color: #b7ccff;
+      color: #0649c7;
+      background: #f3f7ff;
+    }
+    .mode-pill.toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-pill.toggle::after {
+      content: "";
+      width: 28px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #0b63ff 50%, #e8eef6 50%);
+      box-shadow: inset 0 0 0 1px #b7ccff;
+    }
+    .autopilot-dashboard {
+      display: grid;
+      grid-template-columns: 258px minmax(0, 1fr) 320px;
+      gap: 14px;
+      align-items: start;
+    }
+    .autopilot-queue,
+    .autopilot-center,
+    .autopilot-side {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+    .queue-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      padding: 12px;
+    }
+    .queue-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .queue-title strong {
+      font-size: 13px;
+    }
+    .queue-filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .queue-filters span {
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      background: var(--panel-soft);
+      padding: 6px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+    }
+    .queue-filters .active {
+      color: var(--blue);
+      background: #f3f7ff;
+      border-color: #b7ccff;
+    }
+    .queue-list {
+      display: grid;
+      gap: 8px;
+    }
+    .queue-run {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+    }
+    .queue-run.active {
+      border-color: #2f6fe4;
+      box-shadow: 0 0 0 1px rgba(47,111,228,.12);
+    }
+    .queue-run strong {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .queue-run small,
+    .queue-run span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .queue-run .run-state {
+      color: #087a4a;
+      font-weight: 760;
+    }
+    .pipeline-card,
+    .seat-status-card,
+    .stage-summary-card {
+      padding: 12px;
+    }
+    .pipeline-card h3,
+    .seat-status-card h3,
+    .stage-summary-card h3 {
+      margin-bottom: 10px;
+    }
+    .pipeline-list {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .pipeline-step {
+      position: relative;
+    }
+    .pipeline-step::after {
+      content: "";
+      position: absolute;
+      right: -7px;
+      top: 28px;
+      width: 7px;
+      height: 1px;
+      background: #cbd5e1;
+    }
+    .pipeline-step:last-child::after {
+      display: none;
+    }
+    .synthesis-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin: 10px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .synthesis-tabs span {
+      padding: 8px 6px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 740;
+      background: #fff;
+      border-right: 1px solid var(--line-soft);
+    }
+    .synthesis-tabs span:last-child {
+      border-right: 0;
+    }
+    .synthesis-tabs .active {
+      color: var(--blue);
+      background: #f3f7ff;
+    }
+    .synthesis-table {
+      margin-top: 10px;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .synthesis-table-row {
+      display: grid;
+      grid-template-columns: 1.2fr .9fr .9fr .8fr;
+      gap: 8px;
+      padding: 8px 10px;
+      border-top: 1px solid var(--line-soft);
+      align-items: center;
+      font-size: 12px;
+    }
+    .synthesis-table-row:first-child {
+      border-top: 0;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-weight: 760;
+    }
+    .stage-summary-grid {
+      display: grid;
+      grid-template-columns: 154px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+    }
+    .donut {
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: conic-gradient(#13a35b var(--gauge, 72%), #e8eef6 0);
+      display: grid;
+      place-items: center;
+      margin: auto;
+    }
+    .donut span {
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      font-weight: 820;
+    }
+    .summary-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .summary-metrics div {
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      padding: 7px;
+      background: #fff;
+    }
+    .summary-metrics span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .summary-metrics strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 15px;
+    }
+    .artifact-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .app.simple-mode #result-empty,
+    .app.simple-mode #verdict-card {
+      display: none !important;
+    }
     .memo-top {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 128px;
@@ -1583,6 +2193,8 @@
       .tab { flex: 0 0 auto; }
       .workspace { grid-column: 1; grid-row: 3; padding: 16px; }
       .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid, .closeout-strip, .benchmark-grid, .capability-list, .paper-meta, .paper-postulates, .paper-columns, .executive-grid, .sop-phases { grid-template-columns: 1fr; }
+      .autopilot-status-strip, .autopilot-workbench, .autopilot-pipeline, .autopilot-dashboard, .autopilot-intake-card, .pipeline-list, .synthesis-detail-grid, .synthesis-table-row, .stage-summary-grid { grid-template-columns: 1fr; }
+      .seat-mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .composer-grid { grid-template-columns: 1fr; }
       .math-signal { grid-template-columns: 1fr; }
       .score-cards, .seat-grid, .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1593,7 +2205,7 @@
     @media (max-width: 620px) {
       .top-actions, .control-row, .page-head { align-items: stretch; flex-direction: column; }
       .workflow { grid-template-columns: 1fr 1fr; }
-      .score-cards, .seat-grid, .roster-grid, .field-grid, .mentor-scores { grid-template-columns: 1fr; }
+      .score-cards, .seat-grid, .roster-grid, .field-grid, .mentor-scores, .seat-mini-grid, .evidence-breakdown, .summary-metrics, .synthesis-tabs { grid-template-columns: 1fr; }
       .audit-row { grid-template-columns: 34px minmax(0, 1fr); }
       .audit-status { grid-column: 2; justify-self: start; }
       table { min-width: 680px; }
@@ -1643,26 +2255,26 @@
     </header>
 
     <nav class="tabs" aria-label="功能页">
-      <button class="tab active" data-tab="tasks">任务中心</button>
-      <button class="tab" data-tab="request">请求录入</button>
-      <button class="tab" data-tab="draft">草稿生成</button>
-      <button class="tab" data-tab="evidence">证据审查</button>
-      <button class="tab" data-tab="council">模型对比</button>
+      <button class="tab active" data-tab="tasks">今日任务</button>
+      <button class="tab" data-tab="request">新建自动任务</button>
+      <button class="tab" data-tab="draft">运行中</button>
+      <button class="tab" data-tab="history">结果收件箱</button>
+      <button class="tab" data-tab="publish">人类确认与产物</button>
+      <button class="tab pro-nav" data-tab="evidence">证据审查</button>
+      <button class="tab pro-nav" data-tab="council">模型对比</button>
       <button class="tab pro-nav" data-tab="benchmarks">可靠性基准</button>
-      <button class="tab" data-tab="publish">发布门禁</button>
-      <button class="tab secondary" data-tab="history">最近议事</button>
-      <button class="tab" data-tab="settings">设置</button>
+      <button class="tab pro-nav" data-tab="settings">设置</button>
     </nav>
 
     <main class="workspace">
       <section class="view" id="view-tasks">
         <div class="page-head">
           <div>
-            <p class="eyebrow">Task Center</p>
+            <p class="eyebrow">今日任务</p>
             <h1>今天的 AI Judge 工作台</h1>
-            <p>先看任务状态，再进入录入、生成、审查、模型对比或发布门禁。</p>
+            <p>先看今天要处理什么，再进入新建、运行、收件箱和人工签字。</p>
           </div>
-          <button class="primary-action" data-tab-shortcut="request">新建议题</button>
+          <button class="primary-action" data-tab-shortcut="request">新建自动任务</button>
         </div>
         <div class="grid-4">
           <div class="metric-card"><span>待处理</span><strong id="task-pending-count">5</strong></div>
@@ -1684,7 +2296,7 @@
           </section>
           <aside class="panel task-inspector">
             <h2 id="task-inspector-title">当前判断</h2>
-            <p class="muted" id="task-inspector-summary">默认走网页端全量深度陪审；本地会议只用于验证、草稿和桥接失败后的补充。</p>
+            <p class="muted" id="task-inspector-summary">默认且只能走网页端全量深度陪审；不会回退到本地 AI Judge 底层陪审。</p>
             <div class="inspector-metrics">
               <div><span>阶段</span><strong id="task-inspector-stage">录入</strong></div>
               <div><span>门禁</span><strong id="task-inspector-gate">待判断</strong></div>
@@ -1692,9 +2304,9 @@
             </div>
             <div class="tag-list">
               <span class="tag">网页全量默认</span>
-              <span class="tag">Mentor gate</span>
-              <span class="tag">Web bridge</span>
-              <span class="tag">Publish gate</span>
+              <span class="tag">导师门禁</span>
+              <span class="tag">网页桥接</span>
+              <span class="tag">人类签字</span>
             </div>
             <div class="inspector-block">
               <h3>网页/桌面席位健康</h3>
@@ -1711,9 +2323,9 @@
       <section class="view" id="view-request" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Request Briefing</p>
-            <h1>定义问题、边界和执行方式</h1>
-            <p>每次只让一个页面承担一个任务：这里负责输入和确认，不展示完整判词。</p>
+            <p class="eyebrow">新建自动任务</p>
+            <h1>丢链接、文件或问题，然后让它自动跑</h1>
+            <p>这里只负责把任务说清楚、确认分类和选择运行承诺；提交后可离开，结果进入收件箱。</p>
           </div>
           <span class="pill" id="run-meta">等待提交</span>
         </div>
@@ -1722,7 +2334,6 @@
             <div class="control-row">
               <span>引擎</span>
               <div class="segmented" id="engine-strip">
-                <button class="segment" data-engine="local">本地验证</button>
                 <button class="segment active" data-engine="web">网页全量</button>
               </div>
               <span>议事深度</span>
@@ -1804,12 +2415,170 @@
       <section class="view" id="view-draft" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Synthesis</p>
-            <h1>最终结论与执行轨迹</h1>
-            <p>先给出和原问题对应的收口报告，再展开提示词共振、执行驱动和底层日志。</p>
+            <p class="eyebrow">运行中</p>
+            <h1>自动任务运行台</h1>
+            <p>看当前 run 的进度、席位回收、失败隔离和阶段报告，底层审计留给专业版。</p>
           </div>
-          <button class="ghost" data-tab-shortcut="evidence">进入证据审查</button>
+          <button class="ghost pro-detail" data-tab-shortcut="evidence">进入证据审查</button>
         </div>
+        <section class="simple-autopilot-page simple-only" id="simple-autopilot-page">
+          <div class="autopilot-status-strip">
+            <div class="autopilot-status">
+              <span>阶段报告</span>
+              <strong id="autopilot-stage-status">等待任务</strong>
+            </div>
+            <div class="autopilot-status">
+              <span>过夜预计</span>
+              <strong id="autopilot-eta">明天 08:30</strong>
+            </div>
+            <div class="autopilot-status">
+              <span>证据完整度</span>
+              <strong id="autopilot-evidence-chip">72%</strong>
+            </div>
+            <div class="autopilot-status">
+              <span>失败收件箱</span>
+              <strong class="failure-inbox" id="autopilot-failure-inbox">0</strong>
+            </div>
+          </div>
+
+          <section class="autopilot-intake-card autopilot-sla-card">
+            <div class="autopilot-drop-icon">SLA</div>
+            <div class="autopilot-intake-copy">
+              <strong id="autopilot-current-title">当前没有运行任务</strong>
+              <span id="autopilot-current-copy">去「新建自动任务」投放链接、文件或问题；提交后这里显示 run id、预计完成和失败隔离区。</span>
+              <div class="source-badges" id="autopilot-sla-badges">
+                <span>最小交付：阶段报告</span>
+                <span>失败策略：隔离后追加修订</span>
+              </div>
+            </div>
+            <div class="autopilot-controls">
+              <button class="mode-pill active" id="autopilot-new-task">新建自动任务</button>
+              <button class="mode-pill" id="autopilot-open-inbox">打开结果收件箱</button>
+            </div>
+          </section>
+
+          <div class="autopilot-dashboard">
+            <aside class="autopilot-queue">
+              <section class="queue-card">
+                <div class="queue-title">
+                  <strong>任务队列</strong>
+                  <button class="mini-button primary" id="autopilot-new-task-small">新建自动任务</button>
+                </div>
+                <div class="queue-filters" id="autopilot-queue-filters">
+                  <span class="active">全部 0</span>
+                  <span>运行 0</span>
+                  <span>完成 0</span>
+                  <span>失败 0</span>
+                </div>
+                <div class="queue-list" id="autopilot-queue-list"></div>
+              </section>
+            </aside>
+
+            <div class="autopilot-center">
+              <section class="autopilot-card soft classification-card">
+                <div>
+                  <h3>任务分类</h3>
+                  <p id="autopilot-classification">任务类型：产品评审 + 增长分析</p>
+                  <div class="classification-reason" id="autopilot-classification-reasons">
+                    <span class="tag">网站推广</span>
+                    <span class="tag">Skill 发布</span>
+                    <span class="tag">自动化工作流</span>
+                  </div>
+                </div>
+                <div class="classification-actions">
+                  <button class="mini-button primary" id="autopilot-confirm-classification">确认分类</button>
+                  <button class="mini-button" data-tab-shortcut="request">调整席位</button>
+                  <small id="autopilot-stage-open">7 秒后自动继续</small>
+                </div>
+              </section>
+
+              <section class="autopilot-card pipeline-card">
+                <h3>执行管线</h3>
+                <div class="pipeline-list" id="autopilot-pipeline-list" aria-label="自动陪审执行管线">
+                  <div class="pipeline-step done"><strong>接收任务</strong><span>已捕获输入</span></div>
+                  <div class="pipeline-step done"><strong>自动分类</strong><span>已完成路由</span></div>
+                  <div class="pipeline-step active"><strong>网页席位</strong><span id="autopilot-pipeline-seats">6/8 席有效</span></div>
+                  <div class="pipeline-step done"><strong>证据审计</strong><span id="autopilot-pipeline-evidence">12 条主张</span></div>
+                  <div class="pipeline-step active"><strong>综合裁决</strong><span>可展开检查</span></div>
+                  <div class="pipeline-step gate"><strong>人类裁决</strong><span>需要签字</span></div>
+                  <div class="pipeline-step"><strong>产物归档</strong><span>待生成</span></div>
+                </div>
+              </section>
+
+              <section class="autopilot-card seat-status-card">
+                <div class="gauge-head">
+                  <div>
+                    <h3>网页席位状态</h3>
+                    <p>必需席位 <span id="autopilot-required-count">6/8</span>；可选席位 <span id="autopilot-optional-count">1</span>。完成席位先交付阶段报告，迟到席位进入回收并追加修订版。</p>
+                  </div>
+                  <button class="mini-button" id="autopilot-seat-config">席位配置</button>
+                </div>
+                <div class="seat-mini-grid" id="autopilot-seat-grid"></div>
+              </section>
+
+              <section class="autopilot-card">
+                <div class="gauge-head">
+                  <div>
+                    <h3>综合细节</h3>
+                    <p id="autopilot-synthesis-summary">加权共识 + 共振追问 + 证据门禁；每一步都可审计。</p>
+                  </div>
+                  <button class="mini-button">查看完整日志</button>
+                </div>
+                <div class="synthesis-tabs" aria-label="综合细节标签">
+                  <span class="active">原始回答</span>
+                  <span>互评摘要</span>
+                  <span>共振追问</span>
+                  <span>导师补充</span>
+                  <span>最终依据</span>
+                </div>
+                <div class="synthesis-detail-grid" id="autopilot-synthesis-details"></div>
+                <div class="synthesis-table" id="autopilot-synthesis-table"></div>
+              </section>
+
+              <section class="autopilot-card stage-summary-card">
+                <h3>阶段报告摘要</h3>
+                <div class="stage-summary-grid">
+                  <div class="donut" id="autopilot-evidence-bar"><span id="autopilot-evidence-score">72%</span></div>
+                  <div>
+                    <strong>证据完整度</strong>
+                    <p id="autopilot-evidence-copy">等待报告生成后显示主张证据覆盖率</p>
+                    <div class="summary-metrics" id="autopilot-evidence-breakdown"></div>
+                    <button class="mini-button" data-tab-shortcut="evidence">查看阶段报告</button>
+                  </div>
+                </div>
+              </section>
+
+              <section class="autopilot-card human-gavel-panel">
+                <h3>人类裁决必需</h3>
+                <p id="autopilot-gavel-copy">阶段报告已就绪；最终报告必须由人类签字。</p>
+                <div class="gavel-form">
+                  <select aria-label="人类裁决结果">
+                    <option>通过</option>
+                    <option>带备注通过</option>
+                    <option>重跑</option>
+                    <option>驳回</option>
+                  </select>
+                  <input aria-label="人类裁决备注" value="认可阶段报告，等待迟到席位后自动生成 revision_001.md" />
+                  <button class="gavel-sign" id="autopilot-gavel-button">签署最终报告</button>
+                </div>
+              </section>
+            </div>
+
+            <aside class="autopilot-side">
+              <section class="autopilot-card">
+                <h3>优先增长动作</h3>
+                <p>每条建议都必须标出来源、证据等级和人工门禁。</p>
+                <ol class="growth-action-list" id="autopilot-growth-actions"></ol>
+              </section>
+
+              <section class="autopilot-card">
+                <h3>产物清单</h3>
+                <p>阶段报告可自动生成；最终报告需要人类裁决。</p>
+                <ul class="artifact-list" id="autopilot-artifacts"></ul>
+              </section>
+            </aside>
+          </div>
+        </section>
         <div class="empty" id="result-empty">判词会在这里出现。快速模式提交后，后台进度仍在“请求录入”页可见。</div>
         <article class="result-card" id="verdict-card" hidden>
           <div class="report-headline">
@@ -1891,7 +2660,7 @@
               <div class="tag-list" id="mentor-result-tags"></div>
             </section>
             <section class="process-panel" id="prompt-flow-panel" hidden>
-              <h3>本地共振</h3>
+              <h3>网页提示词对齐</h3>
               <p id="prompt-flow-summary"></p>
               <pre id="prompt-flow-text"></pre>
               <div class="tag-list" id="prompt-flow-tags"></div>
@@ -1938,7 +2707,7 @@
       <section class="view" id="view-evidence" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Audit & Proof</p>
+            <p class="eyebrow">证据审查</p>
             <h1>证据审查</h1>
             <p>把主张、引用、新鲜度、可验证性分开看，避免判词看起来完整但证据不足。</p>
           </div>
@@ -1960,7 +2729,7 @@
       <section class="view" id="view-council" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Council Console</p>
+            <p class="eyebrow">模型控制台</p>
             <h1>模型对比与桥接状态</h1>
             <p>专业信息集中在这里：席位、网页/桌面通道、评分、分歧和桥接校准。</p>
           </div>
@@ -2060,7 +2829,7 @@
       <section class="view" id="view-benchmarks" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Reliability Benchmark</p>
+            <p class="eyebrow">可靠性基准</p>
             <h1>可靠性基准</h1>
             <p>专业版只回答一个问题：AI Judge 这轮判断为什么值得信，哪里还不够稳。</p>
           </div>
@@ -2090,9 +2859,9 @@
       <section class="view" id="view-publish" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Publish Gate</p>
-            <h1>发布门禁</h1>
-            <p>只检查报告是否可发布；旧页面答案回收请在请求录入页右侧完成。</p>
+            <p class="eyebrow">人类确认与产物</p>
+            <h1>人类确认与产物</h1>
+            <p>没有阶段报告不允许签字；有报告后必须记录人工确认，再下载或发布产物。</p>
           </div>
           <span class="pill">阻断 <strong id="blockerCount">2</strong></span>
         </div>
@@ -2119,7 +2888,7 @@
             </div>
           </section>
           <aside class="panel gate-panel gate-decision">
-            <span class="pill chip-block" id="gateBadge">LOCKED</span>
+            <span class="pill chip-block" id="gateBadge">已锁定</span>
             <div class="gate-state is-locked" id="gateState">不可发布</div>
             <div class="gate-meter" id="gateMeter"><span></span></div>
             <ul class="gate-note-list">
@@ -2134,9 +2903,9 @@
       <section class="view" id="view-history" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Run Ledger</p>
-            <h1>最近议事</h1>
-            <p>所有本地任务都会保留在这里，点击可回看判词、日志和评分摘要。</p>
+            <p class="eyebrow">结果收件箱</p>
+            <h1>结果收件箱</h1>
+            <p>早上醒来只看可读报告、可信度、下一步和是否需要签字；专业日志留给专业版。</p>
           </div>
           <button class="ghost" id="btn-history-refresh">刷新历史</button>
         </div>
@@ -2152,7 +2921,7 @@
       <section class="view" id="view-settings" hidden>
         <div class="page-head">
           <div>
-            <p class="eyebrow">Settings</p>
+            <p class="eyebrow">设置</p>
             <h1>设置</h1>
             <p>通知、专家席位和桥接状态集中放在这里，不打扰主流程。</p>
           </div>
@@ -2180,7 +2949,7 @@
         </div>
       </section>
 
-      <footer>AI Judge v3.8.0 · Trust Workbench / Stable Closeout / Lab Reliability / Human Gavel</footer>
+      <footer>AI Judge v3.8.0 · 可信工作台 / 稳定收口 / 可靠性实验室 / 人类裁决</footer>
     </main>
   </div>
   <script src="dashboard.js"></script>
