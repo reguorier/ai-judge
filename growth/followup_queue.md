@@ -26,6 +26,16 @@ The fields I need are:
 - why the label fits
 ```
 
+## Follow-up 1B: proof kit reply
+
+```text
+The shortest way to evaluate AI Judge is this 3-minute proof kit:
+
+https://github.com/reguorier/ai-judge/blob/main/docs/TRY_AI_JUDGE_IN_3_MINUTES.md
+
+It includes the live Space, one local audit, the eight-report gallery, the 100-case benchmark, the hard 13-case benchmark, and the contribution issues.
+```
+
 ## Follow-up 1A: P0 governance reply
 
 Status: draft only, send only after action-time confirmation.

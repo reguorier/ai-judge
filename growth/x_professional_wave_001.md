@@ -18,7 +18,7 @@ Do not ask people to "check it out" in a vague way. Ask for one concrete contrib
 Primary link:
 
 ```text
-https://github.com/reguorier/ai-judge
+https://github.com/reguorier/ai-judge/blob/main/docs/TRY_AI_JUDGE_IN_3_MINUTES.md
 ```
 
 Live demo:
@@ -160,6 +160,9 @@ Post 7:
 Repo:
 https://github.com/reguorier/ai-judge
 
+3-minute proof kit:
+https://github.com/reguorier/ai-judge/blob/main/docs/TRY_AI_JUDGE_IN_3_MINUTES.md
+
 The ask is simple:
 
 Try the Space, run one local demo, or file one hard benchmark case.
@@ -248,6 +251,9 @@ Use these only where directly relevant. Do not spam unrelated threads.
 This is exactly the failure mode I am trying to make benchmarkable.
 
 I built AI Judge Citation Audit around source isolation: model-mentioned sources are candidates, not proof.
+
+3-minute proof kit:
+https://github.com/reguorier/ai-judge/blob/main/docs/TRY_AI_JUDGE_IN_3_MINUTES.md
 
 If you have a sanitized case, I would love to add it:
 https://github.com/reguorier/ai-judge/issues/2

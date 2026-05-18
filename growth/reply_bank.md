@@ -27,3 +27,14 @@ Yes. The repo includes a composite GitHub Action at `.github/actions/citation-au
 ## "What should I contribute?"
 
 The highest-value contribution is benchmark cases: real examples where an AI answer cites a plausible but fake source, a real source that does not support the claim, or a source that contradicts the answer.
+
+## "What should I try first?"
+
+Use the 3-minute proof kit:
+
+```text
+https://github.com/reguorier/ai-judge/blob/main/docs/TRY_AI_JUDGE_IN_3_MINUTES.md
+```
+
+It gives one live Space link, one local audit command, the eight-report gallery,
+the 100-case benchmark, the hard 13-case benchmark, and the contribution issues.
