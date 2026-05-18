@@ -210,6 +210,9 @@ def test_report_renders_paper_style_final_report():
 
     assert 'id="final-report"' in rendered
     assert "AI Judge 轮值法官最终报告" in rendered
+    assert "FINAL VERDICT · HUMAN SUMMARY" in rendered
+    assert "查看专业报告" in rendered
+    assert 'id="professional-report"' in rendered
     assert "ABSTRACT" in rendered
     assert "THESIS" in rendered
     assert "RECOMMENDATION" in rendered
@@ -252,6 +255,30 @@ def test_final_report_does_not_dump_raw_closeout_into_abstract():
     assert "RAW_SHOULD_NOT_APPEAR" not in abstract_html
     assert "DeepSeek 轮值法官" in rendered
     assert "RECOMMENDATION" in rendered
+
+
+def test_final_report_executive_summary_filters_generic_model_steps():
+    api_server = _load_api_server()
+    verdict = {
+        "question": "报告页摘要不够人话，需要改成一眼结论和专业报告两层。",
+        "one_liner": "建议推进但需验证。",
+        "verdict_label": "建议推进但需验证",
+        "confidence": 86,
+        "reasons": ["ChatGPT: 当前页堆叠太多模型材料，用户看不出最终建议。"],
+        "next_steps": [
+            "Treat the result as usable direction, not final authorization.",
+            "Validate the top risk before committing money, reputation, or irreversible effort.",
+        ],
+        "web_bridge": {"ok_count": 13, "failed_count": 0, "requested_count": 13, "collection_complete": True},
+    }
+    api_server.attach_final_report(verdict)
+    report = verdict["final_report"]
+
+    assert report["executive_summary"]["headline"].startswith("建议推进但需验证")
+    assert "Treat the result" not in report["executive_summary"]["recommendation"]
+    assert "一眼结论" not in report["executive_summary"]["headline"]
+    assert report["executive_summary"]["detail_anchor"] == "#professional-report"
+    assert report["key_findings"][0] == "当前页的职责是帮助用户快速决策，不应承载完整证据堆栈。"
 
 
 def test_report_renders_cross_temporal_closeout():

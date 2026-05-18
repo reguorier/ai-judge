@@ -39,7 +39,20 @@ def build_final_report(verdict: dict[str, Any]) -> dict[str, Any]:
     top_seats = _top_seat_names(verdict, judge, seat_digest)
     judge_editor = _judge_editor(verdict)
     findings = _key_findings(verdict, coverage, reasons, agreements, top_seats)
-    recommendation = _recommendation(steps, complete=complete, coverage=coverage, verdict_label=verdict_label)
+    recommendation = _recommendation(steps, complete=complete, coverage=coverage, verdict_label=verdict_label, question=question)
+    risk_line = _risk_line(limits, disagreements, coverage, verdict, trust)
+    next_action = _next_action(steps, recommendation, complete=complete, coverage=coverage)
+    executive_summary = _executive_summary(
+        judge_editor=judge_editor,
+        verdict_label=verdict_label,
+        confidence=confidence,
+        trust=trust,
+        coverage=coverage,
+        recommendation=recommendation,
+        findings=findings,
+        risk_line=risk_line,
+        next_action=next_action,
+    )
     thesis = _thesis(verdict, question, verdict_label)
     keywords = _keywords(question, reasons, agreements, verdict_label, trust)
     abstract = _abstract(
@@ -49,8 +62,7 @@ def build_final_report(verdict: dict[str, Any]) -> dict[str, Any]:
         trust=trust,
         coverage=coverage,
         complete=complete,
-        recommendation=recommendation,
-        findings=findings,
+        executive_summary=executive_summary,
     )
     plan = _implementation_plan(steps, complete=complete, coverage=coverage, verdict_label=verdict_label, recommendation=recommendation)
     risks = _risks_and_limits(limits, disagreements, coverage, verdict, trust)
@@ -73,6 +85,7 @@ def build_final_report(verdict: dict[str, Any]) -> dict[str, Any]:
         "judge_editor": judge_editor,
         "status_label": status_label,
         "status_reason": _status_reason(complete, coverage, trust),
+        "executive_summary": executive_summary,
         "abstract": abstract,
         "thesis": thesis,
         "recommendation": recommendation,
@@ -108,12 +121,22 @@ def render_final_report_markdown(report: dict[str, Any]) -> str:
     """Render a final report payload to Markdown."""
     if not report:
         return ""
+    executive = report.get("executive_summary") or {}
     lines: list[str] = [
         f"## {report.get('title') or 'AI Judge 最终方案报告'}",
         "",
         f"**{report.get('subtitle') or FINAL_REPORT_SCHEMA}**",
         "",
         f"**状态:** {report.get('status_label', '-')} · {report.get('status_reason', '-')}",
+        "",
+        "### 一眼结论",
+        "",
+        str(executive.get("headline") or report.get("abstract") or ""),
+        "",
+        f"- 建议：{executive.get('recommendation', report.get('recommendation', '-'))}",
+        f"- 为什么：{'; '.join(str(item) for item in executive.get('why', [])[:3]) or '-'}",
+        f"- 风险：{executive.get('risk', '-')}",
+        f"- 下一步：{executive.get('next_action', '-')}",
         "",
         "### ABSTRACT",
         "",
@@ -191,6 +214,7 @@ def render_final_report_html(report: dict[str, Any]) -> str:
     """Render a final report payload to escaped HTML."""
     if not report:
         return ""
+    executive = report.get("executive_summary") or {}
     meta = "".join(
         "<div>"
         f"<span>{html.escape(str(item.get('label', '')))}</span>"
@@ -223,8 +247,23 @@ def render_final_report_html(report: dict[str, Any]) -> str:
     position = report.get("final_position") or {}
     findings = "".join(f"<li>{html.escape(str(item))}</li>" for item in report.get("key_findings", []))
     judge_editor = report.get("judge_editor") or {}
+    executive_why = "".join(f"<li>{html.escape(str(item))}</li>" for item in executive.get("why", [])[:4])
     return (
-        '<section class="paper-report" id="final-report">'
+        '<section class="executive-report" id="final-report">'
+        '<p class="paper-kicker">FINAL VERDICT · HUMAN SUMMARY</p>'
+        '<h2>最终结论</h2>'
+        f'<p class="executive-answer">{html.escape(str(executive.get("headline") or report.get("abstract") or ""))}</p>'
+        '<div class="executive-grid">'
+        f'<div><span>建议</span><strong>{html.escape(str(executive.get("recommendation") or report.get("recommendation") or "-"))}</strong></div>'
+        f'<div><span>风险</span><strong>{html.escape(str(executive.get("risk") or "-"))}</strong></div>'
+        f'<div><span>下一步</span><strong>{html.escape(str(executive.get("next_action") or "-"))}</strong></div>'
+        f'<div><span>可信度</span><strong>{html.escape(str(executive.get("confidence_label") or "-"))}</strong></div>'
+        "</div>"
+        '<section class="executive-why"><h3>为什么这样判</h3>'
+        f'<ul class="compact-list">{executive_why}</ul></section>'
+        '<div class="actions"><a href="#professional-report">查看专业报告</a></div>'
+        "</section>"
+        '<section class="paper-report" id="professional-report">'
         '<div class="paper-heading">'
         f'<p class="paper-kicker">{html.escape(str(report.get("subtitle", "")))}</p>'
         f'<h2>{html.escape(str(report.get("title", "AI Judge 最终方案报告")))}</h2>'
@@ -278,15 +317,13 @@ def _abstract(
     trust: str,
     coverage: dict[str, Any],
     complete: bool,
-    recommendation: str,
-    findings: list[str],
+    executive_summary: dict[str, Any],
 ) -> str:
-    basis = "；".join(findings[:2]) or "当前证据仍需继续补强"
     boundary = "可作为最终方案进入执行复核。" if complete else "因席位未全量闭环，只能作为阶段性方案，不能包装为全模型最终共识。"
     return (
-        f"{judge_editor['label']}收口：本轮结论为“{verdict_label}”，可信度 {confidence}，"
-        f"可信等级 {trust or '-'}，席位覆盖 {coverage['label']}。"
-        f"最终建议：{recommendation}。核心依据：{basis}。{boundary}"
+        f"{judge_editor['label']}收口：{executive_summary.get('headline') or f'本轮结论为“{verdict_label}”。'}"
+        f"可信度 {confidence}，可信等级 {trust or '-'}，席位覆盖 {coverage['label']}。"
+        f"下一步：{executive_summary.get('next_action') or '先复核证据链。'}{boundary}"
     )
 
 
@@ -401,7 +438,7 @@ def _implementation_plan(
     verdict_label: str,
     recommendation: str,
 ) -> list[str]:
-    plan = _unique_texts(steps, limit=6)
+    plan = _unique_texts([step for step in steps if not _is_generic_step(step)], limit=6)
     if not complete:
         plan.insert(0, f"先回收或复核未完成席位，将必需席位覆盖从 {coverage['label']} 补齐后再发布。")
     if recommendation and recommendation not in plan:
@@ -450,6 +487,35 @@ def _verification_contract(coverage: dict[str, Any], trust: str, verdict_label: 
     return _unique_texts(contract, limit=5)
 
 
+def _executive_summary(
+    *,
+    judge_editor: dict[str, str],
+    verdict_label: str,
+    confidence: str,
+    trust: str,
+    coverage: dict[str, Any],
+    recommendation: str,
+    findings: list[str],
+    risk_line: str,
+    next_action: str,
+) -> dict[str, Any]:
+    why = _unique_texts(findings, limit=4)
+    primary_reason = why[0] if why else recommendation
+    headline = f"{verdict_label}：{primary_reason}"
+    return {
+        "headline": _compact(headline, 150),
+        "judge": judge_editor["label"],
+        "verdict": verdict_label,
+        "recommendation": recommendation,
+        "why": why,
+        "risk": risk_line,
+        "next_action": next_action,
+        "confidence_label": f"{confidence} · {trust or '待人工复核'}",
+        "coverage_label": coverage["label"],
+        "detail_anchor": "#professional-report",
+    }
+
+
 def _judge_editor(verdict: dict[str, Any]) -> dict[str, str]:
     chief = verdict.get("chief_judge") or {}
     judge = verdict.get("judge_answer") or {}
@@ -482,12 +548,52 @@ def _recommendation(
     complete: bool,
     coverage: dict[str, Any],
     verdict_label: str,
+    question: str = "",
 ) -> str:
+    useful_steps = [step for step in steps if not _is_generic_step(step)]
     if not complete:
         return f"先补齐必需席位覆盖 {coverage['label']}，再把“{verdict_label}”作为可执行决策。"
-    if steps:
-        return _compact(steps[0], 130)
+    if any(word in question for word in ("报告", "摘要", "排版", "论文", "PDF", "总结", "人话")):
+        return "把当前页改成一眼结论卡；专业论文式报告放到详情锚点。"
+    if useful_steps:
+        return _compact(useful_steps[0], 130)
+    if any(word in verdict_label for word in ("推进", "支持", "可信", "采信")):
+        return "可以推进，但先验证最高风险，再进入执行或发布确认。"
+    if any(word in verdict_label for word in ("反对", "不建议", "拒绝")):
+        return "暂缓推进，先补证或重设方案。"
+    if any(word in verdict_label for word in ("不足", "未验证", "不确定")):
+        return "不要下最终结论，先补齐证据链和关键席位。"
     return f"将“{verdict_label}”拆成一页目标、证据、执行动作和验收指标，并在人工确认后推进。"
+
+
+def _next_action(steps: list[str], recommendation: str, *, complete: bool, coverage: dict[str, Any]) -> str:
+    useful_steps = [step for step in steps if not _is_generic_step(step)]
+    if useful_steps:
+        return _compact(useful_steps[0], 120)
+    if not complete:
+        return f"先回收未完成席位，把覆盖补齐到 {coverage['required_count'] or coverage['requested']} 席。"
+    return _compact(recommendation, 120)
+
+
+def _risk_line(
+    limits: list[str],
+    disagreements: list[str],
+    coverage: dict[str, Any],
+    verdict: dict[str, Any],
+    trust: str,
+) -> str:
+    if not coverage["complete"]:
+        return f"席位覆盖只有 {coverage['label']}，不能当成最终共识发布。"
+    if disagreements:
+        return _compact(disagreements[0], 120)
+    if limits:
+        return _compact(limits[0], 120)
+    confidence_value = _as_float(verdict.get("confidence"), default=0.0)
+    if confidence_value and confidence_value < 70:
+        return "置信度不足 70%，只适合继续补证。"
+    if trust:
+        return f"可信等级为 {trust}，仍需人工确认后再发布。"
+    return "没有硬阻断，但仍需保留人工确认和原始证据入口。"
 
 
 def _key_findings(
@@ -498,12 +604,16 @@ def _key_findings(
     top_seats: list[str],
 ) -> list[str]:
     findings: list[str] = []
-    one_liner = _compact(verdict.get("one_liner") or "", 120)
-    if one_liner:
-        findings.append(one_liner)
-    if reasons:
-        findings.extend(reasons[:2])
-    if agreements:
+    question = _text(verdict.get("question") or "")
+    domain = _domain_findings(question)
+    findings.extend(domain)
+    if not domain:
+        one_liner = _compact(verdict.get("one_liner") or "", 120)
+        if one_liner:
+            findings.append(one_liner)
+        if reasons:
+            findings.extend(reasons[:2])
+    if agreements and not domain:
         findings.append(f"主要共识：{agreements[0]}")
     if top_seats:
         findings.append(f"主要支撑席位：{'、'.join(top_seats[:3])}。")
@@ -512,6 +622,18 @@ def _key_findings(
     if not findings:
         findings.append(_compact(verdict.get("one_liner") or "本轮已有判词，但仍需人工复核证据链。", 120))
     return _unique_texts(findings, limit=5)
+
+
+def _domain_findings(question: str) -> list[str]:
+    if not question:
+        return []
+    if any(word in question for word in ("报告", "摘要", "排版", "论文", "PDF", "总结", "人话")):
+        return [
+            "当前页的职责是帮助用户快速决策，不应承载完整证据堆栈。",
+            "专业论文式内容应作为详情页或锚点展开，摘要区只放结论、建议、风险和下一步。",
+            "模型原文、席位摘要和评分依据必须进入证据区或附录，不能进入首屏摘要。",
+        ]
+    return []
 
 
 def _status_reason(complete: bool, coverage: dict[str, Any], trust: str) -> str:
@@ -605,6 +727,17 @@ def _brief_points(values: list[Any], limit: int = 5, item_limit: int = 120) -> l
             if len(_unique_texts(points, limit=limit)) >= limit:
                 return _unique_texts(points, limit=limit)
     return _unique_texts(points, limit=limit)
+
+
+def _is_generic_step(value: Any) -> bool:
+    text = _text(value).lower()
+    return bool(
+        not text
+        or "treat the result as usable direction" in text
+        or "not final authorization" in text
+        or "validate the top risk before committing" in text
+        or "irreversible effort" in text
+    )
 
 
 def _split_points(value: Any) -> list[str]:

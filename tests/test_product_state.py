@@ -23,6 +23,8 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
 
     assert 'id="result-view-link"' in html
     assert "打开网站完整报告" in html
+    assert ".executive-report" in html
+    assert "查看专业报告" in js
     assert '$$("#view-link, #result-view-link")' in js
     assert "const canConfirm = hasVerdict;" in js
     assert 'state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block"' in js

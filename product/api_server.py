@@ -3338,6 +3338,22 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .section-head {{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }}
     .section-head p {{ margin:8px 0 0; }}
     .report-lead {{ font-size:16px; line-height:1.75; color:var(--text); background:#0f172a; border:1px solid var(--line); border-radius:8px; padding:14px; }}
+    .executive-report {{ border:1px solid var(--line); border-radius:8px; padding:22px; margin:18px 0; background:#101827; }}
+    .executive-report h2 {{ font-size:28px; margin:6px 0 10px; }}
+    .executive-answer {{ font-size:20px; line-height:1.55; color:var(--text); margin:0 0 14px; font-weight:800; }}
+    .executive-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:12px 0; }}
+    .executive-grid div, .executive-why {{ border:1px solid var(--line); border-radius:8px; background:#0d1424; padding:13px; }}
+    .executive-grid span {{ display:block; color:var(--muted); font-size:11px; font-weight:800; margin-bottom:5px; }}
+    .executive-grid strong {{ display:block; font-size:14px; line-height:1.45; overflow-wrap:anywhere; }}
+    .executive-why h3 {{ margin:0 0 8px; color:var(--accent); }}
+    .executive-report {{ border:1px solid var(--line); border-radius:8px; padding:22px; margin:18px 0; background:#101827; }}
+    .executive-report h2 {{ margin:6px 0; font-size:26px; }}
+    .executive-answer {{ font-size:18px; line-height:1.75; font-weight:800; margin:8px 0 14px; }}
+    .executive-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:12px 0; }}
+    .executive-grid div, .executive-why {{ border:1px solid var(--line); border-radius:8px; background:#0d1424; padding:13px; }}
+    .executive-grid span {{ display:block; color:var(--muted); font-size:11px; font-weight:800; margin-bottom:5px; }}
+    .executive-grid strong {{ display:block; line-height:1.45; overflow-wrap:anywhere; }}
+    .executive-why h3 {{ margin:0 0 8px; color:var(--accent); }}
     .paper-report {{ border:1px solid var(--line); border-radius:8px; padding:22px; margin:18px 0; background:#101827; }}
     .paper-heading h2 {{ font-size:24px; margin:6px 0; }}
     .paper-kicker {{ margin:0; color:var(--accent); font-size:12px; font-weight:800; letter-spacing:0; }}
@@ -3381,7 +3397,7 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .actions a {{ color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:9px 12px; background:#101622; font-weight:700; }}
     @media (max-width: 760px) {{
       .summary-grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }}
-      .paper-meta, .paper-postulates, .paper-columns {{ grid-template-columns:1fr; }}
+      .paper-meta, .paper-postulates, .paper-columns, .executive-grid {{ grid-template-columns:1fr; }}
       .section-head {{ display:block; }}
       .report-columns {{ grid-template-columns:1fr; }}
       .mini-actions {{ justify-content:flex-start; margin-top:10px; }}

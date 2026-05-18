@@ -670,6 +670,63 @@
       display: grid;
       gap: 12px;
     }
+    .executive-report {
+      display: grid;
+      gap: 12px;
+      color: var(--text);
+    }
+    .executive-report > h3 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .executive-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .executive-grid div {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #fff;
+      padding: 11px;
+      min-width: 0;
+    }
+    .executive-grid span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      margin-bottom: 6px;
+    }
+    .executive-grid strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .executive-why {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .executive-why h3 {
+      margin: 0 0 8px;
+      color: var(--accent-strong);
+      font-size: 12px;
+    }
+    .executive-why ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.65;
+    }
+    .executive-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
     .paper-heading h3 {
       margin: 0;
       font-size: 20px;
@@ -1476,7 +1533,7 @@
       .tabs { grid-row: 2; position: static; height: auto; flex-direction: row; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--line); }
       .tab { flex: 0 0 auto; }
       .workspace { grid-column: 1; grid-row: 3; padding: 16px; }
-      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid, .closeout-strip, .benchmark-grid, .capability-list, .paper-meta, .paper-postulates, .paper-columns { grid-template-columns: 1fr; }
+      .layout-main, .settings-grid, .history-layout, .run-strip, .grid-4, .grid-3, .grid-2, .arena-grid, .terminal-grid, .process-grid, .two-col, .gate-summary, .ledger-summary-grid, .xray-mini, .trace-depth-grid, .closeout-strip, .benchmark-grid, .capability-list, .paper-meta, .paper-postulates, .paper-columns, .executive-grid { grid-template-columns: 1fr; }
       .composer-grid { grid-template-columns: 1fr; }
       .math-signal { grid-template-columns: 1fr; }
       .score-cards, .seat-grid, .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

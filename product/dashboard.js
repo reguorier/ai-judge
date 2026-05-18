@@ -1660,6 +1660,32 @@ function renderFinalReport(v, executionComplete = true) {
   if ($("#final-report-title")) {
     $("#final-report-title").textContent = report.status_label || (executionComplete ? "最终结论报告" : "执行未完成报告");
   }
+  const executive = report.executive_summary || null;
+  if (executive) {
+    const reportUrl = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
+    const detailHref = `${reportUrl}${executive.detail_anchor || "#professional-report"}`;
+    const why = (executive.why || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+    target.innerHTML = `
+      <section class="executive-report">
+        <p class="paper-kicker">FINAL VERDICT · HUMAN SUMMARY</p>
+        <h3>${escapeHtml(executive.headline || report.abstract || "本轮结论待复核")}</h3>
+        <div class="executive-grid">
+          <div><span>建议</span><strong>${escapeHtml(executive.recommendation || report.recommendation || "-")}</strong></div>
+          <div><span>风险</span><strong>${escapeHtml(executive.risk || "-")}</strong></div>
+          <div><span>下一步</span><strong>${escapeHtml(executive.next_action || "-")}</strong></div>
+          <div><span>可信度</span><strong>${escapeHtml(executive.confidence_label || "-")}</strong></div>
+        </div>
+        <div class="executive-why">
+          <h3>为什么这样判</h3>
+          <ul>${why}</ul>
+        </div>
+        <div class="executive-actions">
+          <a class="ghost" href="${escapeAttr(detailHref)}">查看专业报告</a>
+        </div>
+      </section>
+    `;
+    return;
+  }
   const meta = (report.meta || []).map(item => `
     <div><span>${escapeHtml(item.label || "")}</span><strong>${escapeHtml(item.value || "-")}</strong></div>
   `).join("");
