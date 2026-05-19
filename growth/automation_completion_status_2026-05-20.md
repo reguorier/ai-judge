@@ -23,6 +23,7 @@ Web AI Judge run: `ddb4902f3369`
 | ARC / Agent trace executable demo | `examples/agent-trace-demo.json`, `tools/render_agent_trace_report.py`, `tests/test_agent_trace_audit.py` |
 | RLEval fit-check attempt | Sent after confirmation, then bounced because `flywise.cn` failed SPF/DKIM at Google Groups |
 | Email deliverability fix note | `growth/email_deliverability_fix_2026-05-20.md` |
+| Xiaomi MiMo 100T draft | `growth/mimo_100t_application_draft_2026-05-20.md` |
 
 ## Current Baseline
 
