@@ -16,6 +16,8 @@ Web AI Judge run: `ddb4902f3369`
 | External action queue | `growth/external_action_queue_2026-05-20.md` |
 | Agent trace example | `examples/agent-trace-verdict.md` |
 | README star positioning | top-of-README updated for agent/RAG/citation-audit positioning |
+| MiraclePlus form map | `growth/miracleplus_application_form_map_2026-05-20.md` |
+| MiraclePlus 5-slide pitch deck content | `growth/miracleplus_5_slide_pitch_deck_2026-05-20.md` |
 
 ## Current Baseline
 
@@ -26,6 +28,7 @@ Web AI Judge run: `ddb4902f3369`
 | HF demo | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit |
 | Web run status | staged advisory only; required non-Grok valid seats `8/10`, final machine verdict `unverified / 0%` |
 | Verification | `37 passed` for `tests/test_product_state.py` and `tests/test_report_render.py` |
+| MiraclePlus portal | Opened to account registration; blocked on user-side SMS/account creation |
 
 ## Still Gated By User Confirmation
 
