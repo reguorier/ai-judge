@@ -25,7 +25,7 @@ Status: active follow-through after MiraclePlus submission.
 | GitHub forks | 0 |
 | GitHub watchers | 0 |
 | Open GitHub issues | 5 |
-| Last pushed | 2026-05-19T21:44:09Z |
+| Last pushed | 2026-05-19T22:52:42Z |
 
 ## Monitoring Results
 
@@ -33,7 +33,7 @@ Status: active follow-through after MiraclePlus submission.
 |---|---|---|
 | MiraclePlus critique | Still shows `正在生成中...` after several waits and one refresh | Recheck later from application detail page |
 | OpenReview | Profile page is reachable, but page still shows `Login`; submission route is not usable from current browser session | Wait for activation / user login / organizer reply before upload |
-| AI Judge repo issues | Issues #2 and #4 have no external comments; #3 and #5 have maintainer-only updates | No no-op public reply due |
+| AI Judge repo issues | Issues #1-#5 checked after push; no external comments, only maintainer updates | No no-op public reply due |
 | LegalCiteBench issue #1 | No comments | No follow-up due |
 | RAGChecker issue #38 | No comments | No follow-up due |
 | RLEval fit-check | Sent, then bounced by Google Groups due SPF/DKIM authentication failure on `flywise.cn` | Fix domain email auth, use an authenticated sender, or find alternate route |

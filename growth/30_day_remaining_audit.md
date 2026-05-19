@@ -1,14 +1,14 @@
 # 30-Day Remaining Task Audit
 
 Status: refreshed
-Last refreshed: 2026-05-19 03:22 HKT
+Last refreshed: 2026-05-20 06:55 HKT
 
 ## Current Evidence
 
 | Signal | Latest check | Result |
 |---|---|---|
 | GitHub stars | `gh repo view reguorier/ai-judge` | 3 stars |
-| Repo issues | `gh issue list --repo reguorier/ai-judge` | #1-#5 open; comments are maintainer-only |
+| Repo issues | `gh issue list --repo reguorier/ai-judge` | #1-#5 open; comments are maintainer-only; no external reply due |
 | LegalCiteBench issue | `gh issue view 1 --repo Sijia711/LegalCiteBench` | open, 0 comments |
 | RAGChecker issue | `gh issue view 38 --repo amazon-science/RAGChecker` | open, 0 comments |
 | GitHub repo metadata | `gh repo edit reguorier/ai-judge` | still blocked by API 404 for description/homepage/topics |
@@ -50,7 +50,9 @@ Last refreshed: 2026-05-19 03:22 HKT
 - Regenerated the eight-example citation batch gallery and the two new public demo reports.
 - Added a 3-minute proof kit so external readers can try the live Space, one local audit, the eight-report gallery, both benchmarks, and the contribution funnel from one page.
 - Added reusable proof-kit CTAs for X/email/GitHub replies and confirmed GitHub repo metadata is still permission-blocked.
+- Added executable ARC / Agent trace audit demo: deterministic fixture, report renderer, generated JSON/Markdown/HTML reports, and two focused tests.
+- Recorded the RLEval Google Groups bounce as an email-authentication blocker, not a content failure.
 
 ## Next Non-Gated Move
 
-Keep improving proof quality rather than adding billing: add more hard benchmark cases, generate clearer before/after reports from the batch artifact, and use inbound replies to convert real examples into anonymized fixtures.
+Keep improving proof quality rather than adding billing: add more hard benchmark cases, add real anonymized agent-trace fixtures, and use inbound replies to convert real examples into anonymized fixtures.
