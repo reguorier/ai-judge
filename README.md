@@ -23,6 +23,7 @@
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
+  <a href="docs/ARC_AGENT_TRACE_AUDIT.md">Agent Trace Audit</a> ·
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
   <a href="https://github.com/reguorier/ai-judge/releases/latest">macOS App</a> ·
   <a href="#quick-start">Quick Start</a> ·

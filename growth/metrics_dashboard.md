@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-19 05:28 HKT
+Last refreshed: 2026-05-20 post-MiraclePlus submission pass
 
 ## Targets
 
@@ -18,6 +18,7 @@ Last refreshed: 2026-05-19 05:28 HKT
 |---|---|---|---:|---:|---:|---:|---|
 | Hugging Face Space | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit | live_http_200_checked_2026-05-18 | TBD | TBD | TBD | TBD | Space page is reachable; sample switcher remains a code/deploy follow-up if HF write access is available. |
 | GitHub contribution issues | https://github.com/reguorier/ai-judge/issues/2 | live_5_open_issues_checked_2026-05-19_0322_hkt | TBD | 0 external | 3 | TBD | Issues #1-#5 are open; no new external issue replies; LegalCiteBench and RAGChecker taxonomy issues still have no comments. |
+| ARC / Agent trace audit | docs/ARC_AGENT_TRACE_AUDIT.md | public_doc_added_2026-05-20 | TBD | 0 | TBD | TBD | Added evaluator-not-solver positioning and a minimal agent-trace verdict format for ARC / Agent eval community outreach. |
 | Demo gallery | docs/CITATION_AUDIT_QUICKSTART.md | expanded_claim_support | TBD | 0 | TBD | TBD | Eight demos now cover unverifiable, contradicted, irrelevant, weak evidence, and three real-source/unsupported-claim families: causation, absolutes, and quantified overclaiming. |
 | 3-minute proof kit | docs/TRY_AI_JUDGE_IN_3_MINUTES.md | ready | TBD | 0 | TBD | TBD | Single low-friction link for live Space, local audit, eight-report gallery, full benchmark, hard benchmark, and contribution issues. |
 | Proof-kit CTAs | growth/proof_kit_ctas.md | ready | TBD | 0 | TBD | TBD | Prepared one-link X/email/GitHub reply snippets; do not post automatically without action-time confirmation. |
@@ -32,6 +33,7 @@ Last refreshed: 2026-05-19 05:28 HKT
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition; checked by `gh issue view`, no comments yet. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support; checked by `gh issue view`, no comments yet. |
 | Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | organizer_support_request_sent_packet_verified_hard13 | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview says profile is created and under moderation, usually less than 1 business day and up to 2 weeks. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance; packet check now passes with full 100/100 and hard 13/13. |
+| MiraclePlus application | https://apply.miracleplus.com/batches/17/applications/106828 | submitted_2026-05-20 | 0 | 0 | TBD | TBD | Official application submitted with founder video attached. In-site critique generator was started and remained `正在生成中...` after the post-submit monitoring window. |
 | Submission council | `growth/submission_council_2026.md` | venue_matrix_ready | 0 | 0 | TBD | TBD | Nine-seat council produced current venue matrix, paper variants, fit-check drafts, and a 72-hour execution plan. |
 | Submission abstract variants | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` | drafts_ready_not_submitted | 0 | 0 | TBD | TBD | Four venue-specific abstract variants are ready; final external send/submit still requires action-time confirmation. |
 | Submission fit-check queue | `growth/submission_fitcheck_queue.md` | rleval_clear_drafts_ready_not_sent | 0 | 0 | TBD | TBD | QQ Mail checked 2026-05-19 05:28 HKT; no Eval4SD/OpenReview backup-route reply visible. RLEval and CLEAR fit-check drafts are prepared but not sent. |
