@@ -2333,10 +2333,13 @@ function renderFinalReport(v, executionComplete = true) {
   const executive = report.executive_summary || null;
   if (executive) {
     const reportUrl = v.view_url || `${API_BASE}/api/judge/${v.run_id}/verdict`;
-    const detailHref = `${reportUrl}${executive.detail_anchor || "#professional-report"}`;
+    const detailHref = `${reportUrl}${executive.detail_anchor || "#compiled-report"}`;
     const sopHref = `${reportUrl}#closeout-sop`;
+    const compiledHref = `${reportUrl}#compiled-report`;
     const why = (executive.why || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
     const sop = report.sop_closeout || null;
+    const compiled = report.compiled_report || null;
+    const longform = report.longform_report || compiled?.longform_report || null;
     const sopPhases = sop ? (sop.phases || []).slice(0, 4).map(phase => `
       <article>
         <h4>${escapeHtml(phase.title || "")}</h4>
@@ -2356,6 +2359,32 @@ function renderFinalReport(v, executionComplete = true) {
         </div>
       </div>
     ` : "";
+    const longformSections = longform ? (longform.body_sections || []).slice(0, 2).map(section => `
+      <article>
+        <h4>${escapeHtml(section.title || "")}</h4>
+        <p>${escapeHtml((section.paragraphs || [])[0] || "")}</p>
+      </article>
+    `).join("") : "";
+    const longformSummary = longform ? (longform.executive_summary || []).slice(0, 2).map(item => `<p>${escapeHtml(item)}</p>`).join("") : "";
+    const compiledPreview = longform ? `
+      <div class="sop-preview longform-preview">
+        <p class="paper-kicker">EDITORIAL SYNTHESIS · LONGFORM REPORT</p>
+        <h3>${escapeHtml(longform.title || "完整总结报告")}</h3>
+        <p class="longform-lead">${escapeHtml(longform.one_sentence_judgment || "")}</p>
+        ${longformSummary}
+        ${longformSections}
+        <div class="sop-template-mini">
+          <strong>证据与模型贡献</strong>
+          <span>${escapeHtml(longform.source_note || "模型来源已折叠进附录，不打断正文。")}</span>
+        </div>
+      </div>
+    ` : compiled ? `
+      <div class="sop-preview">
+        <p class="paper-kicker">EDITORIAL SYNTHESIS</p>
+        <h3>${escapeHtml(compiled.title || "最终整合报告")}</h3>
+        <p>${escapeHtml(compiled.editorial_verdict || compiled.problem_restatement || "")}</p>
+      </div>
+    ` : "";
     target.innerHTML = `
       <section class="executive-report">
         <p class="paper-kicker">FINAL VERDICT · HUMAN SUMMARY</p>
@@ -2371,9 +2400,11 @@ function renderFinalReport(v, executionComplete = true) {
           <ul>${why}</ul>
         </div>
         ${sopPreview}
+        ${compiledPreview}
         <div class="executive-actions">
-          ${sop ? `<a class="ghost" href="${escapeAttr(sopHref)}">查看标准 SOP</a>` : ""}
-          <a class="ghost" href="${escapeAttr(detailHref)}">查看专业报告</a>
+          <a class="ghost" href="${escapeAttr(detailHref)}">打开完整报告</a>
+          ${compiled ? `<a class="ghost" href="${escapeAttr(compiledHref)}">查看正文</a>` : ""}
+          ${sop ? `<a class="ghost" href="${escapeAttr(sopHref)}">审计附录</a>` : ""}
         </div>
       </section>
     `;
@@ -3785,6 +3816,9 @@ function finalReportMarkdown(report) {
     "",
     sop.final_essence || "",
     "",
+    ...longformReportMarkdownLines(report.longform_report || report.compiled_report?.longform_report),
+    ...((report.longform_report || report.compiled_report?.longform_report) ? [] : compiledReportMarkdownLines(report.compiled_report)),
+    "",
     "### JUDGE CLOSEOUT",
     "",
     `**Thesis:** ${report.thesis || "-"}`,
@@ -3824,6 +3858,98 @@ function finalReportMarkdown(report) {
     ...((report.verification_contract || []).map(item => `- ${item}`)),
   ];
   return lines.join("\n").trim();
+}
+
+function longformReportMarkdownLines(longform) {
+  if (!longform) return [];
+  const lines = [
+    "### 完整总结报告",
+    "",
+    `#### ${longform.title || "AI Judge 最终总结报告"}`,
+    "",
+    longform.one_sentence_judgment || "",
+    "",
+    "#### 执行摘要",
+    "",
+  ];
+  (longform.executive_summary || []).forEach(item => lines.push(item, ""));
+  (longform.body_sections || []).forEach(section => {
+    lines.push(`#### ${section.title || ""}`, "");
+    (section.paragraphs || []).forEach(paragraph => lines.push(paragraph, ""));
+  });
+  if ((longform.decision_table || []).length) {
+    lines.push("#### 争议裁决表", "", "| 议题 | 裁定 | 依据 |", "|---|---|---|");
+    (longform.decision_table || []).forEach(row => {
+      lines.push(`| ${mdCell(row.issue)} | ${mdCell(row.decision)} | ${mdCell(row.basis)} |`);
+    });
+    lines.push("");
+  }
+  if ((longform.roadmap || []).length) {
+    lines.push("#### 执行路线图", "", "| 阶段 | 目标 | 交付物 | 验收 |", "|---|---|---|---|");
+    (longform.roadmap || []).forEach(row => {
+      lines.push(`| ${mdCell(row.phase)} | ${mdCell(row.goal)} | ${mdCell(row.deliverable)} | ${mdCell(row.acceptance)} |`);
+    });
+    lines.push("");
+  }
+  if ((longform.success_metrics || []).length) {
+    lines.push("#### 成功标准", "");
+    (longform.success_metrics || []).forEach(item => lines.push(`- ${item}`));
+    lines.push("");
+  }
+  if ((longform.model_contribution_appendix || []).length) {
+    lines.push("#### 模型贡献附录", "", "| 模型 | 立场 | 采纳贡献 | 风险备注 |", "|---|---|---|---|");
+    (longform.model_contribution_appendix || []).forEach(row => {
+      lines.push(`| ${mdCell(row.model)} | ${mdCell(row.stance)} | ${mdCell(row.adopted_contribution)} | ${mdCell(row.risk_note)} |`);
+    });
+    lines.push("");
+  }
+  return lines;
+}
+
+function compiledReportMarkdownLines(compiled) {
+  if (!compiled) return [];
+  const lines = [
+    "### 最终整合报告",
+    "",
+    compiled.problem_restatement || "",
+    "",
+    `**总编裁定：** ${compiled.editorial_verdict || "-"}`,
+    "",
+  ];
+  (compiled.sections || []).forEach((section) => {
+    lines.push(`#### ${section.title || ""}`, "", section.summary || "", "");
+    (section.items || []).forEach(item => lines.push(`- ${item}`));
+    if ((section.source_models || []).length) {
+      lines.push(`- 来源席位：${section.source_models.join("、")}`);
+    }
+    lines.push("");
+  });
+  if ((compiled.decision_table || []).length) {
+    lines.push("### 争议裁决表", "", "| 议题 | 裁定 | 依据 |", "|---|---|---|");
+    (compiled.decision_table || []).forEach(row => {
+      lines.push(`| ${mdCell(row.issue)} | ${mdCell(row.decision)} | ${mdCell(row.basis)} |`);
+    });
+    lines.push("");
+  }
+  if ((compiled.roadmap || []).length) {
+    lines.push("### 执行路线图", "", "| 阶段 | 目标 | 交付物 | 验收 |", "|---|---|---|---|");
+    (compiled.roadmap || []).forEach(row => {
+      lines.push(`| ${mdCell(row.phase)} | ${mdCell(row.goal)} | ${mdCell(row.deliverable)} | ${mdCell(row.acceptance)} |`);
+    });
+    lines.push("");
+  }
+  if ((compiled.success_metrics || []).length) {
+    lines.push("### 成功标准", "");
+    (compiled.success_metrics || []).forEach(item => lines.push(`- ${item}`));
+    lines.push("");
+  }
+  if ((compiled.model_contribution_appendix || []).length) {
+    lines.push("### 模型贡献附录", "", "| 模型 | 立场 | 采纳贡献 | 风险备注 |", "|---|---|---|---|");
+    (compiled.model_contribution_appendix || []).forEach(row => {
+      lines.push(`| ${mdCell(row.model)} | ${mdCell(row.stance)} | ${mdCell(row.adopted_contribution)} | ${mdCell(row.risk_note)} |`);
+    });
+  }
+  return lines;
 }
 
 function mdCell(value) {

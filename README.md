@@ -17,6 +17,8 @@
 <h1 align="center">AI Judge v3.8.0</h1>
 <p align="center"><strong>Source-available citation audit for AI-generated answers.</strong></p>
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
+<p align="center"><strong>Built for teams shipping AI agents:</strong> audit the answer, the source, and the judgment path before it reaches a user.</p>
+<p align="center">Star this repo if you want a practical judge layer for LLM outputs, RAG citations, and agent traces instead of another chatbot wrapper.</p>
 
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·

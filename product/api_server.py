@@ -14,13 +14,16 @@ from __future__ import annotations
 
 import html
 import json
+import mimetypes
 import re
+import subprocess
 import sys
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlparse
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
@@ -75,6 +78,64 @@ PRODUCT_DIR = _PROJECT_ROOT / "product"
 STALE_TASK_SECONDS = 90
 AUTO_REQUIRED_RECOVERY_ATTEMPTS = 2
 AUTO_REQUIRED_RECOVERY_WAIT_SECONDS = 6
+MAX_LOCAL_FILE_BYTES = 240_000
+MAX_LOCAL_TEXT_CHARS = 16_000
+MAX_LOCAL_CONTEXT_CHARS = 28_000
+LOCAL_FILE_EXTENSIONS = (
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "webp",
+    "bmp",
+    "tif",
+    "tiff",
+    "heic",
+    "heif",
+    "txt",
+    "md",
+    "markdown",
+    "json",
+    "jsonl",
+    "csv",
+    "tsv",
+    "rtf",
+    "pdf",
+    "doc",
+    "docx",
+    "html",
+    "htm",
+    "xml",
+    "yaml",
+    "yml",
+    "toml",
+    "py",
+    "js",
+    "ts",
+    "tsx",
+    "jsx",
+    "swift",
+    "go",
+    "rs",
+    "java",
+    "kt",
+    "sh",
+    "zsh",
+    "log",
+)
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".heic", ".heif"}
+TEXTUTIL_SUFFIXES = {".rtf", ".doc", ".docx", ".html", ".htm"}
+PDF_SUFFIXES = {".pdf"}
+LOCAL_PATH_RE = re.compile(
+    r"(?P<path>(?:file://)?/(?:Users|private|tmp|var|Volumes)/[^\n\r\t\"'<>]*?\.(?:"
+    + "|".join(re.escape(ext) for ext in LOCAL_FILE_EXTENSIONS)
+    + r"))",
+    re.IGNORECASE,
+)
+LOCAL_OCR_CANDIDATES = [
+    _PROJECT_ROOT / "tools" / "image-ocr",
+    Path.home() / "Library/Application Support/Claude-3p/hermes-guard-mcp/image-ocr",
+]
 WAITING_STEP_RE = re.compile(r"(?:等待\s*(?P<labels>[^，]+)，)?剩余\s*(?P<count>\d+)\s*席，最长等待\s*(?P<seconds>\d+)s")
 RETRY_STEP_RE = re.compile(r"补跑\s*(?P<attempt>\d+)\s*/\s*(?P<total>\d+)")
 RECOVERABLE_WEB_CODES = {
@@ -457,6 +518,244 @@ def _normalize_evidence_options(value: Any) -> dict[str, Any]:
         "allow_network": bool(value.get("allow_network")),
         "max_fetches": max(0, min(20, int(value.get("max_fetches") or 6))),
     }
+
+
+def _prepare_local_file_context(question: str) -> dict[str, Any]:
+    paths = _extract_local_paths(question)
+    items = [_read_local_path(path, index) for index, path in enumerate(paths, 1)]
+    ok_items = [item for item in items if item.get("ok")]
+    return {
+        "schema": "ai_judge.local_file_context.v1",
+        "path_count": len(paths),
+        "ok_count": len(ok_items),
+        "failed_count": len(items) - len(ok_items),
+        "items": items,
+        "external_evidence": [_local_item_to_evidence(item) for item in items],
+    }
+
+
+def _extract_local_paths(text: str) -> list[Path]:
+    paths: list[Path] = []
+    for match in LOCAL_PATH_RE.finditer(text or ""):
+        raw = match.group("path").strip().rstrip(".,;，。；)")
+        if raw.startswith("file://"):
+            parsed = urlparse(raw)
+            raw = unquote(parsed.path)
+        else:
+            raw = unquote(raw)
+        path = Path(raw).expanduser()
+        if _is_allowed_local_file(path):
+            paths.append(path.resolve())
+    return list(dict.fromkeys(paths))
+
+
+def _is_allowed_local_file(path: Path) -> bool:
+    try:
+        if not path.exists() or not path.is_file():
+            return False
+        resolved = path.resolve()
+    except Exception:
+        return False
+    home = Path.home().resolve()
+    allowed_roots = [
+        home,
+        Path("/tmp"),
+        Path("/private/tmp"),
+        Path("/var/folders"),
+        Path("/private/var/folders"),
+        Path("/Volumes"),
+    ]
+    return any(resolved == root or root in resolved.parents for root in allowed_roots)
+
+
+def _read_local_path(path: Path, index: int) -> dict[str, Any]:
+    suffix = path.suffix.lower()
+    stat = path.stat()
+    item: dict[str, Any] = {
+        "id": f"LOCAL-FILE-{index:03d}",
+        "path": str(path),
+        "name": path.name,
+        "suffix": suffix,
+        "size_bytes": stat.st_size,
+        "modified_at": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+        "mime_type": mimetypes.guess_type(str(path))[0] or "application/octet-stream",
+    }
+    try:
+        if suffix in IMAGE_SUFFIXES:
+            item.update(_read_image_ocr(path))
+        elif suffix in TEXTUTIL_SUFFIXES:
+            item.update(_read_textutil_file(path))
+        elif suffix in PDF_SUFFIXES:
+            item.update(_read_pdf_text(path))
+        else:
+            item.update(_read_plain_text_file(path))
+    except Exception as exc:
+        item.update({
+            "ok": False,
+            "kind": "error",
+            "error": f"{type(exc).__name__}: {exc}",
+            "text": "",
+        })
+    item["text"] = _limit_text(str(item.get("text") or ""), MAX_LOCAL_TEXT_CHARS)
+    return item
+
+
+def _read_image_ocr(path: Path) -> dict[str, Any]:
+    binary = next((candidate for candidate in LOCAL_OCR_CANDIDATES if candidate.exists()), None)
+    if not binary:
+        return {
+            "ok": False,
+            "kind": "image",
+            "error": "local OCR binary not found",
+            "text": "",
+        }
+    proc = subprocess.run(
+        [str(binary), str(path)],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return {
+            "ok": False,
+            "kind": "image",
+            "error": (proc.stderr or proc.stdout or f"OCR exited {proc.returncode}").strip()[:800],
+            "text": "",
+        }
+    payload = json.loads(proc.stdout)
+    lines = payload.get("lines") or []
+    text = "\n".join(str(line.get("text") or "").strip() for line in lines if str(line.get("text") or "").strip())
+    return {
+        "ok": bool(text),
+        "kind": "image_ocr",
+        "line_count": int(payload.get("lineCount") or len(lines)),
+        "text": text,
+        "error": "" if text else "OCR returned no text",
+    }
+
+
+def _read_textutil_file(path: Path) -> dict[str, Any]:
+    proc = subprocess.run(
+        ["/usr/bin/textutil", "-convert", "txt", "-stdout", str(path)],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    if proc.returncode == 0 and proc.stdout.strip():
+        return {"ok": True, "kind": "document_text", "text": proc.stdout}
+    fallback = _read_plain_text_file(path)
+    if not fallback.get("ok"):
+        fallback["error"] = (proc.stderr or fallback.get("error") or "textutil returned no text").strip()[:800]
+    return fallback
+
+
+def _read_pdf_text(path: Path) -> dict[str, Any]:
+    proc = subprocess.run(
+        ["/usr/bin/mdls", "-raw", "-name", "kMDItemTextContent", str(path)],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    text = proc.stdout.strip()
+    if proc.returncode == 0 and text and text != "(null)":
+        return {"ok": True, "kind": "pdf_text", "text": text}
+    return {
+        "ok": False,
+        "kind": "pdf_text",
+        "text": "",
+        "error": (proc.stderr or "PDF text extraction unavailable").strip()[:800],
+    }
+
+
+def _read_plain_text_file(path: Path) -> dict[str, Any]:
+    raw = path.read_bytes()[:MAX_LOCAL_FILE_BYTES]
+    for encoding in ("utf-8", "utf-8-sig", "gb18030", "big5", "latin-1"):
+        try:
+            text = raw.decode(encoding)
+            return {
+                "ok": bool(text.strip()),
+                "kind": "text",
+                "encoding": encoding,
+                "truncated_bytes": path.stat().st_size > MAX_LOCAL_FILE_BYTES,
+                "text": text,
+                "error": "" if text.strip() else "empty text file",
+            }
+        except UnicodeDecodeError:
+            continue
+    return {"ok": False, "kind": "text", "text": "", "error": "unsupported text encoding"}
+
+
+def _local_item_to_evidence(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": item.get("id"),
+        "source": "local_file",
+        "source_path": item.get("path"),
+        "name": item.get("name"),
+        "kind": item.get("kind"),
+        "mime_type": item.get("mime_type"),
+        "size_bytes": item.get("size_bytes"),
+        "ok": bool(item.get("ok")),
+        "error": item.get("error", ""),
+        "text": item.get("text", ""),
+    }
+
+
+def _question_with_local_context(question: str, local_context: dict[str, Any]) -> str:
+    items = local_context.get("items") or []
+    if not items:
+        return question
+    sections = []
+    for item in items:
+        header = (
+            f"[{item.get('id')}] {item.get('name')} | {item.get('kind')} | "
+            f"{item.get('size_bytes')} bytes | {item.get('path')}"
+        )
+        if item.get("ok"):
+            body = str(item.get("text") or "").strip()
+        else:
+            body = f"读取失败：{item.get('error') or 'unknown error'}"
+        sections.append(f"{header}\n{body}")
+    attachment_block = _limit_text("\n\n".join(sections), MAX_LOCAL_CONTEXT_CHARS)
+    return (
+        f"{question}\n\n"
+        "---\n"
+        "本机已解析以下本地文件/图片内容。网页模型不能直接读取本地路径；请以这里的文本作为文件内容依据，"
+        "不要声称仍需要用户重新上传同一文件。\n\n"
+        f"{attachment_block}"
+    )
+
+
+def _public_local_file_context(local_context: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema": local_context.get("schema"),
+        "path_count": local_context.get("path_count", 0),
+        "ok_count": local_context.get("ok_count", 0),
+        "failed_count": local_context.get("failed_count", 0),
+        "items": [
+            {
+                "id": item.get("id"),
+                "path": item.get("path"),
+                "name": item.get("name"),
+                "kind": item.get("kind"),
+                "ok": bool(item.get("ok")),
+                "size_bytes": item.get("size_bytes"),
+                "line_count": item.get("line_count"),
+                "error": item.get("error", ""),
+                "text_preview": _limit_text(str(item.get("text") or ""), 800),
+            }
+            for item in (local_context.get("items") or [])
+        ],
+    }
+
+
+def _limit_text(value: str, limit: int) -> str:
+    value = value or ""
+    if len(value) <= limit:
+        return value
+    return value[:limit].rstrip() + f"\n...[truncated {len(value) - limit} chars]"
 
 
 def _is_supplementable_result(item: dict[str, Any]) -> bool:
@@ -1025,6 +1324,9 @@ def _run_worker(
     abstained_seats = abstained_seats or []
     external_evidence = external_evidence or []
     evidence_options = evidence_options or {}
+    local_context = _prepare_local_file_context(question)
+    effective_external_evidence = [*external_evidence, *local_context.get("external_evidence", [])]
+    model_question = _question_with_local_context(question, local_context)
 
     def trace_event(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
         trace.add(phase=phase, action=action, detail=detail, data=data)
@@ -1038,7 +1340,12 @@ def _run_worker(
             "seats": seats,
             "chief_judge": chief_judge,
             "abstained_seats": abstained_seats,
-            "external_evidence_count": len(external_evidence),
+            "external_evidence_count": len(effective_external_evidence),
+            "local_file_context": {
+                "path_count": local_context.get("path_count", 0),
+                "ok_count": local_context.get("ok_count", 0),
+                "failed_count": local_context.get("failed_count", 0),
+            },
             "evidence_options": evidence_options,
             "notify_channels": notify_config.get("channels") or [],
             "mentor_preflight": {
@@ -1056,10 +1363,12 @@ def _run_worker(
                 "assumptions": mentor_preflight.get("assumptions"),
                 "model_routes": mentor_preflight.get("model_routes"),
             })
+        if local_context.get("items"):
+            trace_event("evidence", "local_files_resolved", "本地文件和图片已在后端解析并注入提示词", _public_local_file_context(local_context))
         TASKS.update_progress(run_id, "受理完成，网页提示词对齐", 0.06)
         if engine == "web":
             status = bridge_status()
-            prompt_flow = build_prompt_flow(question, mode=mode, engine=engine, seats=seats, bridge_summary=status)
+            prompt_flow = build_prompt_flow(model_question, mode=mode, engine=engine, seats=seats, bridge_summary=status)
             trace_event("resonance", "prompt_flow_built", "网页执行前置对齐已生成专业提示词", {
                 "intent": prompt_flow.get("intent"),
                 "trace_id": prompt_flow.get("trace_id"),
@@ -1116,7 +1425,7 @@ def _run_worker(
                     seats=runnable_seats,
                     run_id=run_id,
                     display_question=question,
-                    external_evidence=external_evidence,
+                    external_evidence=effective_external_evidence,
                     evidence_options=evidence_options,
                     collect_followups=True,
                     progress=web_progress,
@@ -1133,7 +1442,7 @@ def _run_worker(
                     prompt_question=prompt_flow["professional_prompt"],
                     mode=mode,
                     seats=runnable_seats,
-                    external_evidence=external_evidence,
+                    external_evidence=effective_external_evidence,
                     evidence_options=evidence_options,
                     trace_event=trace_event,
                     update_progress=lambda step, pct: TASKS.update_progress(run_id, step, pct),
@@ -1144,6 +1453,8 @@ def _run_worker(
         TASKS.update_progress(run_id, "生成判词报告", 0.90)
         if mentor_preflight:
             verdict["mentor_preflight"] = mentor_preflight
+        if local_context.get("items"):
+            verdict["local_file_context"] = _public_local_file_context(local_context)
         _attach_product_run_metadata(verdict, chief_judge=chief_judge, abstained_seats=abstained_seats)
         citation_report = _attach_citation_mvp(verdict, run_id=run_id)
         if citation_report:
@@ -3356,6 +3667,11 @@ def _render_html_report(result: dict[str, Any]) -> str:
     .paper-block {{ margin:12px 0; }}
     .paper-block h3, .paper-postulate h3 {{ margin-top:0; }}
     .paper-abstract p {{ font-size:16px; line-height:1.75; }}
+    .longform-report {{ background:#101827; }}
+    .longform-lead {{ font-size:18px; line-height:1.78; font-weight:800; border:1px solid var(--line); border-radius:8px; padding:15px; background:#0d1424; }}
+    .longform-summary p, .longform-section p {{ font-size:15px; line-height:1.86; margin:0 0 12px; }}
+    .longform-summary p:last-child, .longform-section p:last-child {{ margin-bottom:0; }}
+    .source-appendix {{ margin-top:18px; }}
     .paper-keywords {{ display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }}
     .paper-keywords span {{ border:1px solid var(--line); border-radius:999px; padding:5px 8px; color:var(--muted); background:#0b1020; font-size:12px; }}
     .paper-postulates {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:12px 0; }}

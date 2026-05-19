@@ -218,8 +218,9 @@ def test_report_renders_paper_style_final_report():
     assert "Phase 1: 收口体验基线" in rendered
     assert "输出要求" in rendered
     assert "source exists" in rendered
-    assert "查看标准 SOP" in rendered
-    assert "查看专业报告" in rendered
+    assert "查看完整总结报告" in rendered
+    assert "审计附录：标准 SOP" in rendered
+    assert "审计附录：旧版法官报告" in rendered
     assert 'id="professional-report"' in rendered
     assert "ABSTRACT" in rendered
     assert "THESIS" in rendered
@@ -285,12 +286,103 @@ def test_final_report_executive_summary_filters_generic_model_steps():
     assert report["executive_summary"]["headline"].startswith("建议推进但需验证")
     assert "Treat the result" not in report["executive_summary"]["recommendation"]
     assert "一眼结论" not in report["executive_summary"]["headline"]
-    assert report["executive_summary"]["detail_anchor"] == "#professional-report"
+    assert report["executive_summary"]["detail_anchor"] == "#compiled-report"
     assert report["sop_closeout"]["schema"] == "ai_judge.closeout_sop.v1"
     assert report["sop_closeout"]["codex_template"]["label"] == "Codex 执行模板"
     assert report["sop_closeout"]["phases"][0]["title"] == "Phase 1: 收口体验基线"
     assert "输出要求" in render_final_report_markdown(report)
     assert report["key_findings"][0] == "当前页的职责是帮助用户快速决策，不应承载完整证据堆栈。"
+
+
+def test_final_report_compiles_model_answers_into_integrated_report():
+    api_server = _load_api_server()
+    verdict = {
+        "run_id": "compiler-run-001",
+        "question": "请整合 AI Judge 抖音和 TikTok 运营方案，给出最终落地报告。",
+        "one_liner": "建议把短视频运营做成争议选题、视觉钩子、互动挑战和双语发布节奏的完整闭环。",
+        "verdict_label": "建议推进但需验证",
+        "confidence": 86,
+        "reasons": ["多席位都认为要从模型原始答案收口成可执行报告，而不是展示散乱回答。"],
+        "next_steps": ["先固定完整报告模板。", "再把每个模型贡献放入附录。"],
+        "judge_answer": {
+            "label": "AI Judge 法官综合答案",
+            "top_seats": ["ChatGPT", "DeepSeek", "Qwen"],
+            "agreements": ["需要总纲", "需要争议裁决", "需要路线图"],
+            "disagreements": ["是否先做短视频模板还是先做内容数据库。"],
+            "limits": ["热点选题需要人工复核。"],
+        },
+        "web_bridge": {
+            "ok_count": 3,
+            "failed_count": 0,
+            "requested_count": 3,
+            "collection_complete": True,
+            "raw_results": [
+                {
+                    "seat": "chatgpt",
+                    "seat_name": "ChatGPT",
+                    "ok": True,
+                    "response": (
+                        "核心判断：AI Judge 需要先给总纲，再输出完整报告。\n"
+                        "最终方案：建立内容矩阵、图片 prompt、中文文案、英文 caption 和话题标签。\n"
+                        "执行路线图：第一周固定模板，第二周跑 5 条内容，第三周复盘互动率。\n"
+                    ),
+                },
+                {
+                    "seat": "deepseek",
+                    "seat_name": "DeepSeek",
+                    "ok": True,
+                    "response": (
+                        "风险：如果只堆模型回答，用户看不到最终裁定。\n"
+                        "争议：短视频内容应该先追热点还是先建立长期栏目。\n"
+                        "成功标准：每条内容必须能直接发布，并能追踪评论和完播率。\n"
+                    ),
+                },
+                {
+                    "seat": "qwen",
+                    "seat_name": "Qwen",
+                    "ok": True,
+                    "response": (
+                        "MVP：先做一页最终整合报告。\n"
+                        "模块：问题重述、关键发现、最终方案、争议裁决表、路线图、风险与防护、模型贡献附录。\n"
+                    ),
+                },
+            ],
+            "deliberation": {
+                "agreements": ["完整报告应该成为主交付物。"],
+                "disagreements": ["是否优先做热点检索。"],
+                "answer_summaries": [
+                    {"seat": "chatgpt", "seat_name": "ChatGPT", "stance": "支持/推进", "quality": 0.88, "summary": "主张完整报告模板。"},
+                    {"seat": "deepseek", "seat_name": "DeepSeek", "stance": "条件支持", "quality": 0.86, "summary": "强调风险和争议裁决。"},
+                    {"seat": "qwen", "seat_name": "Qwen", "stance": "支持/推进", "quality": 0.84, "summary": "给出模块化 MVP。"},
+                ],
+            },
+        },
+        "seat_scores": [
+            {"seat": "chatgpt", "seat_name": "ChatGPT", "average_score": 0.88, "claims_count": 3},
+            {"seat": "deepseek", "seat_name": "DeepSeek", "average_score": 0.86, "claims_count": 3},
+            {"seat": "qwen", "seat_name": "Qwen", "average_score": 0.84, "claims_count": 3},
+        ],
+    }
+    api_server.attach_final_report(verdict)
+    report = verdict["final_report"]
+    markdown = render_final_report_markdown(report)
+    rendered = api_server._render_html_report(verdict)
+
+    assert report["compiled_report"]["schema"] == "ai_judge.compiled_report.v1"
+    assert report["longform_report"]["schema"] == "ai_judge.longform_report.v1"
+    assert report["longform_report"]["body_sections"][0]["paragraphs"]
+    assert "完整总结报告" in markdown
+    assert "争议裁决表" in markdown
+    assert "执行路线图" in markdown
+    assert "模型贡献附录" in markdown
+    assert "ChatGPT" in markdown and "DeepSeek" in markdown and "Qwen" in markdown
+    assert 'id="compiled-report"' in rendered
+    assert "EDITORIAL SYNTHESIS · LONGFORM REPORT" in rendered
+    assert "完整总结报告" in rendered
+    assert "执行摘要" in rendered
+    assert "争议裁决表" in rendered
+    assert "模型贡献附录" in rendered
+    assert rendered.index("执行摘要") < rendered.index("模型贡献附录")
 
 
 def test_report_renders_cross_temporal_closeout():

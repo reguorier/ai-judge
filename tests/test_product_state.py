@@ -40,8 +40,8 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert "任务队列" in html
     assert "当前没有运行任务" in html
     assert "最小交付：阶段报告" in html
-    assert "查看专业报告" in js
-    assert "查看标准 SOP" in js
+    assert "打开完整报告" in js
+    assert "审计附录" in js
     assert "Codex 执行模板" in js
     assert "function renderAutopilotWorkbench" in js
     assert "function autopilotSynthesisSummary" in js
