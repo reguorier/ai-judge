@@ -20,6 +20,9 @@ Web AI Judge run: `ddb4902f3369`
 | MiraclePlus 5-slide pitch deck content | `growth/miracleplus_5_slide_pitch_deck_2026-05-20.md` |
 | MiraclePlus application submitted | Application ID `106828`; status `已提交`; critique generation pending |
 | ARC / Agent trace public doc | `docs/ARC_AGENT_TRACE_AUDIT.md` |
+| ARC / Agent trace executable demo | `examples/agent-trace-demo.json`, `tools/render_agent_trace_report.py`, `tests/test_agent_trace_audit.py` |
+| RLEval fit-check attempt | Sent after confirmation, then bounced because `flywise.cn` failed SPF/DKIM at Google Groups |
+| Email deliverability fix note | `growth/email_deliverability_fix_2026-05-20.md` |
 
 ## Current Baseline
 
@@ -45,7 +48,8 @@ These are ready to execute, but they publish, submit, email, or DM externally:
 | Post Reddit LocalLLaMA / MachineLearning | `growth/github_star_sprint_7_30_2026-05-20.md` |
 | Send 20-person outreach | `growth/outreach_targets_20_2026-05-20.csv` |
 | Product Hunt launch | `growth/github_star_sprint_7_30_2026-05-20.md` |
-| Send RLEval / CLEAR fit-checks | `growth/email_drafts/w005_rleval_fit_check.eml`, `growth/email_drafts/w006_clear_fit_check.eml` |
+| Send CLEAR fit-check | `growth/email_drafts/w006_clear_fit_check.eml` |
+| Retry RLEval fit-check | `growth/email_drafts/w005_rleval_fit_check.eml`, after SPF/DKIM fix or authenticated alternate sender |
 
 ## Verification Completed
 

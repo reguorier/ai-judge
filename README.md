@@ -138,6 +138,8 @@ The hard set includes governance benchmarks where a real, relevant source suppor
 
 For legal and audit workflows, the next atom is not just a citation. It is `claim-span + source`; see [`docs/CLAIM_SPAN_ROADMAP.md`](docs/CLAIM_SPAN_ROADMAP.md).
 
+Agent trace audit now has a small executable bridge as well: [`examples/agent-trace-demo.json`](examples/agent-trace-demo.json) can be rendered with [`tools/render_agent_trace_report.py`](tools/render_agent_trace_report.py) to produce JSON, Markdown, and HTML trace verdicts for ARC-style / agent-eval conversations.
+
 Want to help without reading the whole codebase? Start here:
 
 | Public issue | What to add |

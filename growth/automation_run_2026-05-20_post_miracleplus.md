@@ -1,6 +1,6 @@
 # Automation Run - 2026-05-20 Post-MiraclePlus
 
-Status: completed non-destructive automation pass after MiraclePlus submission.
+Status: active follow-through after MiraclePlus submission.
 
 ## Completed
 
@@ -11,6 +11,11 @@ Status: completed non-destructive automation pass after MiraclePlus submission.
 - Cleared the optional "invest 2 people" answer before submit because the existing text was low-signal for this application.
 - Added [`docs/ARC_AGENT_TRACE_AUDIT.md`](../docs/ARC_AGENT_TRACE_AUDIT.md) to turn the ARC / Agent eval plan into a public repo asset.
 - Added README navigation link to the Agent Trace Audit page.
+- Sent the RLEval fit-check after user confirmation; Tencent Mail accepted it,
+  but Google Groups bounced it because `flywise.cn` failed SPF/DKIM.
+- Filled the CLEAR fit-check in QQ Mail, then left it unsent when the user
+  redirected to other automation tasks before explicit send confirmation.
+- Added an email deliverability fix note for Tencent Exmail SPF/DKIM recovery.
 
 ## Current Metrics
 
@@ -31,14 +36,15 @@ Status: completed non-destructive automation pass after MiraclePlus submission.
 | AI Judge repo issues | Issues #2 and #4 have no external comments; #3 and #5 have maintainer-only updates | No no-op public reply due |
 | LegalCiteBench issue #1 | No comments | No follow-up due |
 | RAGChecker issue #38 | No comments | No follow-up due |
-| RLEval / CLEAR fit-checks | Drafts verified and current | External send remains the next time-sensitive action |
+| RLEval fit-check | Sent, then bounced by Google Groups due SPF/DKIM authentication failure on `flywise.cn` | Fix domain email auth, use an authenticated sender, or find alternate route |
+| CLEAR fit-check | Composed in QQ Mail, not sent | Send only after explicit confirmation |
 
 ## Time-Sensitive External Queue
 
 These are the next external actions if we choose to execute public/email steps:
 
-1. Send RLEval fit-check: `growth/email_drafts/w005_rleval_fit_check.eml`.
-2. Send CLEAR fit-check: `growth/email_drafts/w006_clear_fit_check.eml`.
+1. Fix or work around `flywise.cn` SPF/DKIM before retrying Google Groups.
+2. Send CLEAR fit-check: `growth/email_drafts/w006_clear_fit_check.eml` after explicit confirmation.
 3. Publish the GitHub star sprint launch wave when platform constraints allow: Show HN, Reddit, X/LinkedIn.
 4. Contact ARC / Agent eval community with the evaluator-not-solver framing from `docs/ARC_AGENT_TRACE_AUDIT.md`.
 

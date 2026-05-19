@@ -1,0 +1,38 @@
+{
+  "schema": "agent_trace_audit.v1",
+  "product": "AI Judge Agent Trace Audit",
+  "audit_id": "agent-trace-demo-001",
+  "generated_at": "2026-05-20T00:00:00+00:00",
+  "task_id": "arc-style-demo-001",
+  "task": "Review whether an agent's grid-rule trace is supported enough to trust the final answer.",
+  "trace_status": "weakly_supported",
+  "exploration_coverage": "partial",
+  "rule_support": "unverifiable",
+  "observed_evidence": [
+    "Training example A maps a red block to the top-left corner.",
+    "Training example B maps a blue block to the bottom-right corner."
+  ],
+  "actions": [
+    "Apply the color-corner rule to the test grid without checking shape, size, or object order."
+  ],
+  "hypothesis": "Objects move toward the nearest corner matching their color.",
+  "final_answer": "Move the green block to the top-left corner.",
+  "unsupported_final_tokens": [
+    "green"
+  ],
+  "missed_alternatives": [
+    "shape-dependent transformation"
+  ],
+  "dissent": [
+    {
+      "seat": "skeptical_reviewer",
+      "claim": "The final answer applies tokens not observed in the trace: green"
+    },
+    {
+      "seat": "method_reviewer",
+      "claim": "The trace did not test plausible alternatives: shape-dependent transformation"
+    }
+  ],
+  "human_gate": "reject_until_rechecked",
+  "replay_ledger_hash": "sha256:a4dcbda7e0202f12a8a187fe98559d81019314e6bc9f98bc3f91189c323e049a"
+}

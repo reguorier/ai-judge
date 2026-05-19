@@ -1,0 +1,13 @@
+{
+  "task_id": "arc-style-demo-001",
+  "task": "Review whether an agent's grid-rule trace is supported enough to trust the final answer.",
+  "observations": [
+    "Training example A maps a red block to the top-left corner.",
+    "Training example B maps a blue block to the bottom-right corner."
+  ],
+  "hypothesis": "Objects move toward the nearest corner matching their color.",
+  "actions": [
+    "Apply the color-corner rule to the test grid without checking shape, size, or object order."
+  ],
+  "final_answer": "Move the green block to the top-left corner."
+}

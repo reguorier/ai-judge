@@ -1,7 +1,7 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-20 post-MiraclePlus submission pass
+Last refreshed: 2026-05-20 post-MiraclePlus and fit-check pass
 
 ## Targets
 
@@ -36,7 +36,7 @@ Last refreshed: 2026-05-20 post-MiraclePlus submission pass
 | MiraclePlus application | https://apply.miracleplus.com/batches/17/applications/106828 | submitted_2026-05-20 | 0 | 0 | TBD | TBD | Official application submitted with founder video attached. In-site critique generator was started and remained `正在生成中...` after the post-submit monitoring window. |
 | Submission council | `growth/submission_council_2026.md` | venue_matrix_ready | 0 | 0 | TBD | TBD | Nine-seat council produced current venue matrix, paper variants, fit-check drafts, and a 72-hour execution plan. |
 | Submission abstract variants | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` | drafts_ready_not_submitted | 0 | 0 | TBD | TBD | Four venue-specific abstract variants are ready; final external send/submit still requires action-time confirmation. |
-| Submission fit-check queue | `growth/submission_fitcheck_queue.md` | rleval_clear_drafts_ready_not_sent | 0 | 0 | TBD | TBD | QQ Mail checked 2026-05-19 05:28 HKT; no Eval4SD/OpenReview backup-route reply visible. RLEval and CLEAR fit-check drafts are prepared but not sent. |
+| Submission fit-check queue | `growth/submission_fitcheck_queue.md` | rleval_bounced_clear_composed_not_sent | 0 | 0 | TBD | TBD | RLEval was sent after confirmation but bounced because `flywise.cn` failed SPF/DKIM at Google Groups. CLEAR was composed in QQ Mail but not sent before the user redirected to other automation tasks. |
 | Pre-attestation receipt schema | `docs/PRE_ATTESTATION_RECEIPT_SCHEMA.md` | public_integration_note_ready | 0 | 0 | TBD | TBD | Ligate/Aequis-style receipt payload now specifies raw answer, mentor supplement, source layer, citation audit, claim support, and replay ledger hashes while preserving source isolation. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |

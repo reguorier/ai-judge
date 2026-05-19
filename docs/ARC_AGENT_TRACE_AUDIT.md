@@ -43,6 +43,19 @@ AI Judge can sit beside solver attempts as a trace verdict layer:
 
 See [`examples/agent-trace-verdict.md`](../examples/agent-trace-verdict.md) for a small ARC-style trace review. The example is deliberately simple: it shows the product wedge, not a formal benchmark claim.
 
+Executable demo fixture:
+
+- Input: [`examples/agent-trace-demo.json`](../examples/agent-trace-demo.json)
+- Renderer: [`tools/render_agent_trace_report.py`](../tools/render_agent_trace_report.py)
+
+```bash
+python tools/render_agent_trace_report.py examples/agent-trace-demo.json \
+  --json reports/agent-trace-demo.json \
+  --md reports/agent-trace-demo.md \
+  --html reports/agent-trace-demo.html \
+  --audit-id agent-trace-demo-001
+```
+
 ## Community Ask
 
 The first ARC / Agent eval community ask should be narrow:
@@ -60,7 +73,7 @@ I am building AI Judge as an evaluator for agent traces, not as a solver. The go
 
 ## Next Build Step
 
-The next useful implementation step is a small `agent-trace.json` fixture plus a report renderer that mirrors citation audit structure:
+The first implementation step is now a small `agent-trace.json` fixture plus a report renderer that mirrors citation audit structure:
 
 1. raw trace
 2. extracted claims / rules
@@ -71,3 +84,5 @@ The next useful implementation step is a small `agent-trace.json` fixture plus a
 7. replay hash
 
 That keeps the citation-audit wedge and the agent-eval wedge consistent: both are about source isolation, claim support, dissent, and human signoff before publication.
+
+The next useful step is to convert several real solver attempts into anonymized trace fixtures and compare trace verdicts against final-answer correctness.
