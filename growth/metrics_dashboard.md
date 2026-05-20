@@ -1,14 +1,14 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-20 post-MiraclePlus and fit-check pass
+Last refreshed: 2026-05-20 post-MiraclePlus, fit-check, and launch-wave pass
 
 ## Targets
 
 | Metric | Day 30 continue threshold | Current |
 |---|---:|---:|
 | GitHub stars | 100 | 3 |
-| Distinct users / replies / issues | 20 | 5 open repo issues with maintainer-only comments + 2 substantive external replies + 2 taxonomy issues pending + 1 Eval4SD support-path request sent |
+| Distinct users / replies / issues | 20 | 5 open repo issues with maintainer-only comments + 2 substantive external replies + 2 taxonomy issues pending + 1 Eval4SD support-path request sent + 1 CLEAR fit-check sent |
 | Pro feature requests | 3 | 0 |
 | Paid users or invoice requests | 1 | 0 |
 
@@ -23,10 +23,11 @@ Last refreshed: 2026-05-20 post-MiraclePlus and fit-check pass
 | 3-minute proof kit | docs/TRY_AI_JUDGE_IN_3_MINUTES.md | ready | TBD | 0 | TBD | TBD | Single low-friction link for live Space, local audit, eight-report gallery, full benchmark, hard benchmark, and contribution issues. |
 | Proof-kit CTAs | growth/proof_kit_ctas.md | ready | TBD | 0 | TBD | TBD | Prepared one-link X/email/GitHub reply snippets; do not post automatically without action-time confirmation. |
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission_rechecked_2026-05-19_0322_hkt | 0 | 0 | 0 | 0 | `gh repo edit` still returns API 404 for description/homepage/topics; README now carries the proof-kit link instead. |
-| X / short-form | https://x.com/liuweidi2/status/2056387592187510933 | live_wave_001_posted_cleanup_pending | TBD | 7 self-replies | TBD | TBD | Professional review thread is live with CTAs for issue #2/#3/#4, HF demo, and repo trial. One accidental `.` reply needs deletion confirmation before cleanup. |
+| X / short-form | https://x.com/liuweidi2/status/2057016834281639966 | live_wave_002_posted | TBD | TBD | TBD | TBD | Latest benchmark-case ask is live; previous professional review thread remains at https://x.com/liuweidi2/status/2056387592187510933 with CTAs for issue #2/#3/#4, HF demo, and repo trial. |
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |
-| Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ | posted_then_removed_by_moderation | TBD | 1 | TBD | TBD | Post exists for the author but was removed from r/LocalLLaMA by moderation. |
-| Hacker News | https://news.ycombinator.com/showlim | blocked_platform_show_hn_restriction | 0 | 0 | 0 | 0 | HN returned the current Show HN restriction page for this account context. |
+| Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/submit/?type=TEXT | blocked_submit_ui_timeout_2026-05-20 | TBD | 1 historical | TBD | TBD | Earlier post exists for the author but was removed by moderation; latest discussion-first repost attempt filled draft + flair but stalled before submit completion. |
+| Hacker News | https://news.ycombinator.com/x?fnid=dtcypQ1rXowueCz1ePTZMO&fnop=toonew | blocked_account_site_permission_2026-05-20 | 0 | 0 | 0 | 0 | HN returned `Sorry, your account isn't able to submit this site.` after the repo submit attempt. |
+| Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_login_2026-05-20 | 0 | 0 | 0 | 0 | `/posts/new` redirects to login; resume only after Product Hunt is logged in. |
 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but no activation code is available for this launch cycle. |
 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
 | Outreach email | growth/outreach_status.md | sent_5_reply_1_benchmark_case_1 | 0 | 1 | TBD | 0 | O001-O004 were sent through QQ Mail; O005 Eval4SD support-path request was sent after user confirmation; O002 produced a high-value benchmark/taxonomy signal. Wait 3-5 days before routine follow-ups unless replies arrive. |
@@ -36,7 +37,7 @@ Last refreshed: 2026-05-20 post-MiraclePlus and fit-check pass
 | MiraclePlus application | https://apply.miracleplus.com/batches/17/applications/106828 | submitted_2026-05-20 | 0 | 0 | TBD | TBD | Official application submitted with founder video attached. In-site critique generator was started and remained `正在生成中...` after the post-submit monitoring window. |
 | Submission council | `growth/submission_council_2026.md` | venue_matrix_ready | 0 | 0 | TBD | TBD | Nine-seat council produced current venue matrix, paper variants, fit-check drafts, and a 72-hour execution plan. |
 | Submission abstract variants | `papers/rleval2026/abstract.md`, `papers/clear2026/abstract.md`, `papers/set-llm2026/abstract.md`, `papers/kdd-agentic-eval2026/abstract.md` | drafts_ready_not_submitted | 0 | 0 | TBD | TBD | Four venue-specific abstract variants are ready; final external send/submit still requires action-time confirmation. |
-| Submission fit-check queue | `growth/submission_fitcheck_queue.md` | rleval_bounced_clear_composed_not_sent | 0 | 0 | TBD | TBD | RLEval was sent after confirmation but bounced because `flywise.cn` failed SPF/DKIM at Google Groups. CLEAR was composed in QQ Mail but not sent before the user redirected to other automation tasks. |
+| Submission fit-check queue | `growth/submission_fitcheck_queue.md` | rleval_bounced_clear_sent | 0 | 0 | TBD | TBD | RLEval was sent after confirmation but bounced because `flywise.cn` failed SPF/DKIM at Google Groups. CLEAR was sent from Tencent Enterprise Mail and now waits for reply. |
 | Pre-attestation receipt schema | `docs/PRE_ATTESTATION_RECEIPT_SCHEMA.md` | public_integration_note_ready | 0 | 0 | TBD | TBD | Ligate/Aequis-style receipt payload now specifies raw answer, mentor supplement, source layer, citation audit, claim support, and replay ledger hashes while preserving source isolation. |
 | Aequis collaboration route | https://aequis.io/ | contact_route_unverified | 0 | 0 | 0 | 0 | Direction matches, but contact is blocked by Cloudflare/TLS/DNS issues; no guessed email sent. |
 | Free AI Decision Audit | growth/free_audit_status.md | open_slots_ready | 0 | 0 | 0 | 0 | Three free-audit slots and intake script are ready for interested replies. |

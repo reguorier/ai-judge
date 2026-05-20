@@ -1,7 +1,7 @@
 # Submission Fit-Check Queue
 
 Status: active, partially blocked by mail deliverability
-Last checked: 2026-05-20 06:45 HKT
+Last checked: 2026-05-20 16:42 HKT
 
 This queue holds venue-specific fit-check drafts created from the submission
 council. These are external actions and must not be sent without action-time
@@ -17,15 +17,15 @@ confirmation.
 - RLEval fit-check was sent from `liuweidi@flywise.cn` at 2026-05-20 06:32 HKT
   after user confirmation, but immediately bounced from Google Groups because
   the `flywise.cn` sender domain failed SPF/DKIM authentication.
-- CLEAR fit-check was filled in QQ Mail, then left unsent when the user asked
-  to continue other automation tasks instead of confirming that external send.
+- CLEAR fit-check was sent from Tencent Enterprise Mail after the user later
+  confirmed continuing the external automation batch.
 
 ## Prepared Drafts
 
 | ID | Target | Route | Draft | Status | Gate |
 |---|---|---|---|---|---|
 | W005 | RLEval 2026 | `rl-eval@googlegroups.com` | `growth/email_drafts/w005_rleval_fit_check.eml` | bounced_spf_dkim | find authenticated sender or alternate route |
-| W006 | CLEAR 2026 | `themis.xanthopoulou@umu.se` | `growth/email_drafts/w006_clear_fit_check.eml` | composed_not_sent | needs explicit send confirmation |
+| W006 | CLEAR 2026 | `themis.xanthopoulou@umu.se` | `growth/email_drafts/w006_clear_fit_check.eml` | sent | monitor for reply |
 
 ## Deliverability Blocker
 
@@ -58,6 +58,6 @@ Recommended recovery:
 
 ## Send Guardrail
 
-The drafts are prepared so confirmation can be fast. Sending email, uploading
-attachments, or final-submitting to OpenReview remains a separate external
-action. CLEAR is composed but not sent.
+The remaining drafts are prepared so confirmation can be fast. Sending new
+email, uploading attachments, or final-submitting to OpenReview remains a
+separate external action.

@@ -23,6 +23,11 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_login | Chrome is not logged into Hugging Face. |
 | 2026-05-17 | V2EX | https://www.v2ex.com/new | blocked_by_login | Chrome is not logged into V2EX. |
 | 2026-05-17 | Zhihu | https://www.zhihu.com/question/waiting | blocked_by_login | Chrome is not logged into Zhihu. |
+| 2026-05-20 | CLEAR fit-check email | `mailto:themis.xanthopoulou@umu.se` | sent | Sent source-isolated citation audit fit-check with repo, CLEAR abstract, and HF demo links from Tencent Enterprise Mail. |
+| 2026-05-20 | Hacker News | https://news.ycombinator.com/x?fnid=dtcypQ1rXowueCz1ePTZMO&fnop=toonew | blocked_by_account_site_permission | HN returned `Sorry, your account isn't able to submit this site.` after the GitHub repo submit attempt. |
+| 2026-05-20 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/submit/?type=TEXT | blocked_by_submit_ui_timeout | Draft was filled and `Discussion` flair was applied, but the Reddit submit UI did not complete; old/new submit pages then timed out in Chrome automation. |
+| 2026-05-20 | X benchmark-case ask | https://x.com/liuweidi2/status/2057016834281639966 | live | Posted a concise request for hard AI Judge Citation Audit benchmark cases, linking GitHub issue #2. |
+| 2026-05-20 | Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_login | `/posts/new` redirected to Product Hunt login before a launch draft could be created. |
 
 ## Signals
 
@@ -82,6 +87,11 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Demo gallery | Added `legal-memo-contradicted` and `opensource-readme-irrelevant` demos with generated HTML/JSON reports. | This satisfies the first concrete acceptance step for issue #5 while keeping the issue open for more community examples. |
 | 2026-05-17 | GitHub issue #5 | https://github.com/reguorier/ai-judge/issues/5#issuecomment-4470644643 | Posted progress update linking the two new demo reports back to the public issue. |
 | 2026-05-17 | Blog draft | `docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md` | Expanded the "9 AI collective blind spots" outline into a publish-ready long-form essay. |
+| 2026-05-20 | CLEAR fit-check | Tencent Enterprise Mail | Sent the CLEAR fit-check email after the user confirmed continuing external automation. | Monitor for reply before preparing a full CLEAR submission packet. |
+| 2026-05-20 | HN launch wave | Hacker News | HN blocked the repo URL submit with an account/site-permission message. | Do not retry the same URL repeatedly; use HN only after account trust improves or a community member posts organically. |
+| 2026-05-20 | X launch wave | X / `@liuweidi2` | Published the benchmark-case ask at https://x.com/liuweidi2/status/2057016834281639966. | Watch replies for public-safe citation hallucination cases and convert useful ones into issue #2 comments or fixtures. |
+| 2026-05-20 | Reddit launch wave | Reddit r/LocalLLaMA | Reddit required flair, accepted `Discussion`, then the submit page stalled and automation timed out. | Retry only from a stable browser session; use a discussion-first post and avoid repeating removed launch copy. |
+| 2026-05-20 | Product Hunt launch wave | Product Hunt | Product Hunt requires login before draft creation. | Resume after user logs in; stop again at product media upload or final launch confirmation if required. |
 
 ## Public Contribution Links
 
@@ -95,6 +105,7 @@ This file records public launch links, replies, objections, and product signals 
 | RAGChecker taxonomy exchange | https://github.com/amazon-science/RAGChecker/issues/38 |
 | X launch post | https://x.com/liuweidi2/status/2055973517779521750 |
 | X professional review thread | https://x.com/liuweidi2/status/2056387592187510933 |
+| X benchmark-case ask | https://x.com/liuweidi2/status/2057016834281639966 |
 | Zhihu long-form launch | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | Reddit r/LocalLLaMA launch attempt | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ |
 

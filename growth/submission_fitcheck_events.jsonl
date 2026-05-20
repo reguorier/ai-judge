@@ -1,2 +1,3 @@
 {"channel":"qq-mail","event_type":"sent_then_bounced","note":"RLEval fit-check sent after user confirmation, then rejected by Google Groups because flywise.cn failed SPF/DKIM authentication.","target_id":"W005","timestamp":"2026-05-19T22:32:39Z"}
 {"channel":"qq-mail","event_type":"composed_not_sent","note":"CLEAR fit-check was filled in QQ Mail with repo, draft abstract, and live demo links, but not sent because the user redirected to other automation tasks before explicit send confirmation.","target_id":"W006","timestamp":"2026-05-19T22:45:37Z"}
+{"channel":"qq-mail","event_type":"sent","note":"CLEAR fit-check sent from Tencent Enterprise Mail after user confirmed continuing the external automation batch.","target_id":"W006","timestamp":"2026-05-20T08:42:34Z"}
