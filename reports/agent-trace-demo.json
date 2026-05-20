@@ -20,19 +20,13 @@
   "unsupported_final_tokens": [
     "green"
   ],
-  "missed_alternatives": [
-    "shape-dependent transformation"
-  ],
+  "missed_alternatives": [],
   "dissent": [
     {
       "seat": "skeptical_reviewer",
       "claim": "The final answer applies tokens not observed in the trace: green"
-    },
-    {
-      "seat": "method_reviewer",
-      "claim": "The trace did not test plausible alternatives: shape-dependent transformation"
     }
   ],
   "human_gate": "reject_until_rechecked",
-  "replay_ledger_hash": "sha256:a4dcbda7e0202f12a8a187fe98559d81019314e6bc9f98bc3f91189c323e049a"
+  "replay_ledger_hash": "sha256:c422611c1bd9392b417de24fa502f17ff8a7d51e39d9c1684259b78237c16109"
 }

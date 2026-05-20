@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Judge Agent Trace Audit</title>
+  <style>
+    body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#17212b; background:#f6f8fb; }
+    header { background:#111827; color:white; padding:30px clamp(20px,5vw,68px); }
+    main { max-width:1040px; margin:0 auto; padding:24px; }
+    h1 { margin:0 0 8px; font-size:34px; }
+    h2 { margin-top:28px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:18px; }
+    .card { background:white; color:#17212b; border:1px solid #dbe3ea; border-radius:8px; padding:14px; }
+    .label { color:#5c6875; font-size:12px; text-transform:uppercase; }
+    .value { font-size:20px; font-weight:750; overflow-wrap:anywhere; }
+    section { background:white; border:1px solid #dbe3ea; border-radius:8px; padding:18px; margin:16px 0; }
+    code { background:#edf2f7; padding:2px 5px; border-radius:4px; }
+    ul { padding-left:20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Judge Agent Trace Audit</h1>
+    <div>Audit ID: agent-trace-partial-001</div>
+    <div class="summary">
+      <div class="card"><div class="label">Trace Status</div><div class="value">partially_supported</div></div>
+      <div class="card"><div class="label">Coverage</div><div class="value">partial</div></div>
+      <div class="card"><div class="label">Rule Support</div><div class="value">supported</div></div>
+      <div class="card"><div class="label">Human Gate</div><div class="value">needs_human_review</div></div>
+    </div>
+  </header>
+  <main>
+    <section><h2>Task</h2><p>Review whether a trace has enough evidence to trust a blue-object transformation.</p></section>
+    <section><h2>Observed Evidence</h2><ul><li>Training example A maps a blue block to the bottom-right corner.</li><li>Training example B maps another blue block to the bottom-right corner.</li><li>Training example C shows the shape stays constant during the move.</li></ul></section>
+    <section><h2>Hypothesis</h2><p>Blue blocks move to the bottom-right corner.</p></section>
+    <section><h2>Actions</h2><ul><li>Apply the blue-block rule to the test grid, but do not check whether size or object order changes the rule.</li></ul></section>
+    <section><h2>Final Answer</h2><p>Move the blue block to the bottom-right corner.</p></section>
+    <section><h2>Missed Alternatives</h2><ul><li>size-dependent transformation</li><li>object-order transformation</li></ul></section>
+    <section><h2>Dissent</h2><ul><li>method_reviewer: The trace did not test plausible alternatives: size-dependent transformation, object-order transformation</li></ul></section>
+    <section><h2>Replay Ledger</h2><p><code>sha256:ee98e348096dcc1c3eefe0d6c2fec3c5d2d42a1421d18a562f8fe585976ce284</code></p></section>
+  </main>
+</body>
+</html>

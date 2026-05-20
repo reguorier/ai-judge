@@ -113,7 +113,10 @@ def render_agent_trace_markdown(report: dict[str, Any]) -> str:
     lines.extend(["", "## Missed Alternatives", ""])
     lines.extend(f"- {item}" for item in report.get("missed_alternatives") or ["No missed alternatives detected."])
     lines.extend(["", "## Dissent", ""])
-    for item in report.get("dissent") or []:
+    dissent_items = report.get("dissent") or []
+    if not dissent_items:
+        lines.append("- No dissent recorded.")
+    for item in dissent_items:
         lines.append(f"- `{item.get('seat')}`: {item.get('claim')}")
     return "\n".join(lines) + "\n"
 
@@ -210,9 +213,8 @@ def _missed_alternatives(
     observations: list[str],
     actions: list[str],
 ) -> list[str]:
-    supplied = _as_text_list(trace.get("missed_alternatives"))
-    if supplied:
-        return supplied
+    if "missed_alternatives" in trace:
+        return _as_text_list(trace.get("missed_alternatives"))
     combined = " ".join([hypothesis, *observations, *actions]).lower()
     missed: list[str] = []
     if "shape" not in combined:
@@ -221,7 +223,7 @@ def _missed_alternatives(
         missed.append("object-order transformation")
     if "size" not in combined:
         missed.append("size-dependent transformation")
-    return missed or DEFAULT_MISSED_ALTERNATIVES[:1]
+    return missed
 
 
 def _exploration_coverage(observations: list[str], actions: list[str], missed: list[str]) -> str:

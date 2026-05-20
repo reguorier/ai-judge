@@ -1,0 +1,18 @@
+{
+  "task_id": "arc-style-partial-001",
+  "task": "Review whether a trace has enough evidence to trust a blue-object transformation.",
+  "observations": [
+    "Training example A maps a blue block to the bottom-right corner.",
+    "Training example B maps another blue block to the bottom-right corner.",
+    "Training example C shows the shape stays constant during the move."
+  ],
+  "hypothesis": "Blue blocks move to the bottom-right corner.",
+  "actions": [
+    "Apply the blue-block rule to the test grid, but do not check whether size or object order changes the rule."
+  ],
+  "final_answer": "Move the blue block to the bottom-right corner.",
+  "missed_alternatives": [
+    "size-dependent transformation",
+    "object-order transformation"
+  ]
+}

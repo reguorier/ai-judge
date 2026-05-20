@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Judge Agent Trace Audit</title>
+  <style>
+    body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#17212b; background:#f6f8fb; }
+    header { background:#111827; color:white; padding:30px clamp(20px,5vw,68px); }
+    main { max-width:1040px; margin:0 auto; padding:24px; }
+    h1 { margin:0 0 8px; font-size:34px; }
+    h2 { margin-top:28px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:18px; }
+    .card { background:white; color:#17212b; border:1px solid #dbe3ea; border-radius:8px; padding:14px; }
+    .label { color:#5c6875; font-size:12px; text-transform:uppercase; }
+    .value { font-size:20px; font-weight:750; overflow-wrap:anywhere; }
+    section { background:white; border:1px solid #dbe3ea; border-radius:8px; padding:18px; margin:16px 0; }
+    code { background:#edf2f7; padding:2px 5px; border-radius:4px; }
+    ul { padding-left:20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Judge Agent Trace Audit</h1>
+    <div>Audit ID: agent-trace-supported-001</div>
+    <div class="summary">
+      <div class="card"><div class="label">Trace Status</div><div class="value">supported</div></div>
+      <div class="card"><div class="label">Coverage</div><div class="value">strong</div></div>
+      <div class="card"><div class="label">Rule Support</div><div class="value">supported</div></div>
+      <div class="card"><div class="label">Human Gate</div><div class="value">allow_with_review</div></div>
+    </div>
+  </header>
+  <main>
+    <section><h2>Task</h2><p>Review whether the agent explored enough evidence before applying a red-block corner rule.</p></section>
+    <section><h2>Observed Evidence</h2><ul><li>Training example A maps a red block to the top-left corner.</li><li>Training example B maps a red triangle to the top-left corner, so shape is not the deciding factor.</li><li>Training example C maps a large red block to the top-left corner, so size is not the deciding factor.</li><li>Training example D keeps object order unchanged while moving the red object to the top-left corner.</li></ul></section>
+    <section><h2>Hypothesis</h2><p>Red objects move to the top-left corner independent of shape, size, or object order.</p></section>
+    <section><h2>Actions</h2><ul><li>Test whether shape changes the transformation.</li><li>Test whether size or object order changes the transformation.</li></ul></section>
+    <section><h2>Final Answer</h2><p>Move the red block to the top-left corner.</p></section>
+    <section><h2>Missed Alternatives</h2><p>No items supplied.</p></section>
+    <section><h2>Dissent</h2><p>No items supplied.</p></section>
+    <section><h2>Replay Ledger</h2><p><code>sha256:7d34055ffe36227bb4ebcd7bb9686a9231d784949a399ed4930fcf29437729b2</code></p></section>
+  </main>
+</body>
+</html>

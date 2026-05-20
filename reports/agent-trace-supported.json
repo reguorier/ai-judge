@@ -1,0 +1,28 @@
+{
+  "schema": "agent_trace_audit.v1",
+  "product": "AI Judge Agent Trace Audit",
+  "audit_id": "agent-trace-supported-001",
+  "generated_at": "2026-05-20T00:00:00+00:00",
+  "task_id": "arc-style-supported-001",
+  "task": "Review whether the agent explored enough evidence before applying a red-block corner rule.",
+  "trace_status": "supported",
+  "exploration_coverage": "strong",
+  "rule_support": "supported",
+  "observed_evidence": [
+    "Training example A maps a red block to the top-left corner.",
+    "Training example B maps a red triangle to the top-left corner, so shape is not the deciding factor.",
+    "Training example C maps a large red block to the top-left corner, so size is not the deciding factor.",
+    "Training example D keeps object order unchanged while moving the red object to the top-left corner."
+  ],
+  "actions": [
+    "Test whether shape changes the transformation.",
+    "Test whether size or object order changes the transformation."
+  ],
+  "hypothesis": "Red objects move to the top-left corner independent of shape, size, or object order.",
+  "final_answer": "Move the red block to the top-left corner.",
+  "unsupported_final_tokens": [],
+  "missed_alternatives": [],
+  "dissent": [],
+  "human_gate": "allow_with_review",
+  "replay_ledger_hash": "sha256:7d34055ffe36227bb4ebcd7bb9686a9231d784949a399ed4930fcf29437729b2"
+}

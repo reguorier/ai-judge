@@ -56,7 +56,7 @@ Hi [Name], I am building AI Judge, an open-source multi-model jury for auditing 
 |---|---|---|
 | Write evaluator memo | This file | Done |
 | Create agent trace example | `examples/agent-trace-verdict.md` | Done |
-| Create executable trace fixture | `examples/agent-trace-demo.json` | Done |
+| Create executable trace fixture | `examples/agent-trace-demo.json`, `examples/agent-trace-supported.json`, `examples/agent-trace-partial.json` | Done |
 | Create report renderer | `tools/render_agent_trace_report.py` | Done |
 | Create ARC community post | Draft above | Ready |
 | Add README sentence | Top positioning updated | Done |

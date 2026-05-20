@@ -4,7 +4,7 @@ Audit ID: `agent-trace-demo-001`
 Task ID: `arc-style-demo-001`
 Trace status: `weakly_supported`
 Human gate: `reject_until_rechecked`
-Replay ledger hash: `sha256:a4dcbda7e0202f12a8a187fe98559d81019314e6bc9f98bc3f91189c323e049a`
+Replay ledger hash: `sha256:c422611c1bd9392b417de24fa502f17ff8a7d51e39d9c1684259b78237c16109`
 
 ## Task
 
@@ -37,9 +37,8 @@ Move the green block to the top-left corner.
 
 ## Missed Alternatives
 
-- shape-dependent transformation
+- No missed alternatives detected.
 
 ## Dissent
 
 - `skeptical_reviewer`: The final answer applies tokens not observed in the trace: green
-- `method_reviewer`: The trace did not test plausible alternatives: shape-dependent transformation

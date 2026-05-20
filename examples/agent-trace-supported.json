@@ -1,0 +1,17 @@
+{
+  "task_id": "arc-style-supported-001",
+  "task": "Review whether the agent explored enough evidence before applying a red-block corner rule.",
+  "observations": [
+    "Training example A maps a red block to the top-left corner.",
+    "Training example B maps a red triangle to the top-left corner, so shape is not the deciding factor.",
+    "Training example C maps a large red block to the top-left corner, so size is not the deciding factor.",
+    "Training example D keeps object order unchanged while moving the red object to the top-left corner."
+  ],
+  "hypothesis": "Red objects move to the top-left corner independent of shape, size, or object order.",
+  "actions": [
+    "Test whether shape changes the transformation.",
+    "Test whether size or object order changes the transformation."
+  ],
+  "final_answer": "Move the red block to the top-left corner.",
+  "missed_alternatives": []
+}

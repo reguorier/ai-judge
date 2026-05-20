@@ -50,9 +50,9 @@ Last refreshed: 2026-05-20 06:55 HKT
 - Regenerated the eight-example citation batch gallery and the two new public demo reports.
 - Added a 3-minute proof kit so external readers can try the live Space, one local audit, the eight-report gallery, both benchmarks, and the contribution funnel from one page.
 - Added reusable proof-kit CTAs for X/email/GitHub replies and confirmed GitHub repo metadata is still permission-blocked.
-- Added executable ARC / Agent trace audit demo: deterministic fixture, report renderer, generated JSON/Markdown/HTML reports, and two focused tests.
+- Added executable ARC / Agent trace audit demo: deterministic rejected/supported/partial fixtures, report renderer, generated JSON/Markdown/HTML reports, and focused tests.
 - Recorded the RLEval Google Groups bounce as an email-authentication blocker, not a content failure.
 
 ## Next Non-Gated Move
 
-Keep improving proof quality rather than adding billing: add more hard benchmark cases, add real anonymized agent-trace fixtures, and use inbound replies to convert real examples into anonymized fixtures.
+Keep improving proof quality rather than adding billing: add real anonymized agent-trace fixtures, then use inbound replies to convert real examples into benchmark cases.

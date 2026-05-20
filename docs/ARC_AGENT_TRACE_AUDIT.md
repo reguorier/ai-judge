@@ -46,6 +46,8 @@ See [`examples/agent-trace-verdict.md`](../examples/agent-trace-verdict.md) for 
 Executable demo fixture:
 
 - Input: [`examples/agent-trace-demo.json`](../examples/agent-trace-demo.json)
+- Supported trace: [`examples/agent-trace-supported.json`](../examples/agent-trace-supported.json)
+- Partial trace: [`examples/agent-trace-partial.json`](../examples/agent-trace-partial.json)
 - Renderer: [`tools/render_agent_trace_report.py`](../tools/render_agent_trace_report.py)
 
 ```bash
@@ -55,6 +57,14 @@ python tools/render_agent_trace_report.py examples/agent-trace-demo.json \
   --html reports/agent-trace-demo.html \
   --audit-id agent-trace-demo-001
 ```
+
+Current generated reports:
+
+| Trace | Verdict | JSON | Markdown | HTML |
+|---|---|---|---|---|
+| Rejected / unobserved token | `weakly_supported` | [`reports/agent-trace-demo.json`](../reports/agent-trace-demo.json) | [`reports/agent-trace-demo.md`](../reports/agent-trace-demo.md) | [`reports/agent-trace-demo.html`](../reports/agent-trace-demo.html) |
+| Supported | `supported` | [`reports/agent-trace-supported.json`](../reports/agent-trace-supported.json) | [`reports/agent-trace-supported.md`](../reports/agent-trace-supported.md) | [`reports/agent-trace-supported.html`](../reports/agent-trace-supported.html) |
+| Partial / missed alternatives | `partially_supported` | [`reports/agent-trace-partial.json`](../reports/agent-trace-partial.json) | [`reports/agent-trace-partial.md`](../reports/agent-trace-partial.md) | [`reports/agent-trace-partial.html`](../reports/agent-trace-partial.html) |
 
 ## Community Ask
 

@@ -1,0 +1,34 @@
+{
+  "schema": "agent_trace_audit.v1",
+  "product": "AI Judge Agent Trace Audit",
+  "audit_id": "agent-trace-partial-001",
+  "generated_at": "2026-05-20T00:00:00+00:00",
+  "task_id": "arc-style-partial-001",
+  "task": "Review whether a trace has enough evidence to trust a blue-object transformation.",
+  "trace_status": "partially_supported",
+  "exploration_coverage": "partial",
+  "rule_support": "supported",
+  "observed_evidence": [
+    "Training example A maps a blue block to the bottom-right corner.",
+    "Training example B maps another blue block to the bottom-right corner.",
+    "Training example C shows the shape stays constant during the move."
+  ],
+  "actions": [
+    "Apply the blue-block rule to the test grid, but do not check whether size or object order changes the rule."
+  ],
+  "hypothesis": "Blue blocks move to the bottom-right corner.",
+  "final_answer": "Move the blue block to the bottom-right corner.",
+  "unsupported_final_tokens": [],
+  "missed_alternatives": [
+    "size-dependent transformation",
+    "object-order transformation"
+  ],
+  "dissent": [
+    {
+      "seat": "method_reviewer",
+      "claim": "The trace did not test plausible alternatives: size-dependent transformation, object-order transformation"
+    }
+  ],
+  "human_gate": "needs_human_review",
+  "replay_ledger_hash": "sha256:ee98e348096dcc1c3eefe0d6c2fec3c5d2d42a1421d18a562f8fe585976ce284"
+}

@@ -20,7 +20,7 @@ Web AI Judge run: `ddb4902f3369`
 | MiraclePlus 5-slide pitch deck content | `growth/miracleplus_5_slide_pitch_deck_2026-05-20.md` |
 | MiraclePlus application submitted | Application ID `106828`; status `已提交`; critique generation pending |
 | ARC / Agent trace public doc | `docs/ARC_AGENT_TRACE_AUDIT.md` |
-| ARC / Agent trace executable demo | `examples/agent-trace-demo.json`, `tools/render_agent_trace_report.py`, `tests/test_agent_trace_audit.py` |
+| ARC / Agent trace executable demo | rejected/supported/partial fixtures, `tools/render_agent_trace_report.py`, focused tests, and generated reports |
 | RLEval fit-check attempt | Sent after confirmation, then bounced because `flywise.cn` failed SPF/DKIM at Google Groups |
 | Email deliverability fix note | `growth/email_deliverability_fix_2026-05-20.md` |
 | Xiaomi MiMo 100T draft | `growth/mimo_100t_application_draft_2026-05-20.md` |
