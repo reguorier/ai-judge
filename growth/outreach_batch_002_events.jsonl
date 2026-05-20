@@ -1,0 +1,3 @@
+{"channel":"repo","event_type":"prepared","note":"Batch 002 prepared for ARC Prize, AutoGen, LangChain, LlamaIndex, and AutoGen GitHub Discussions. Only official/public routes are used; no guessed private emails.","target_id":"O006-O010","timestamp":"2026-05-20T09:15:00Z"}
+{"channel":"email","event_type":"sent","note":"Sent evaluator-not-solver trace-audit outreach to ARC Prize Foundation via Tencent Enterprise Mail; UI showed send success.","target_id":"O006","timestamp":"2026-05-20T12:10:00Z"}
+{"channel":"email","event_type":"sent","note":"Sent AutoGen-style multi-agent trace-audit feedback request via Tencent Enterprise Mail; UI showed send success.","target_id":"O007","timestamp":"2026-05-20T12:13:00Z"}

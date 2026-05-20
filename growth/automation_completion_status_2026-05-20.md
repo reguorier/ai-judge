@@ -22,11 +22,12 @@ Web AI Judge run: `ddb4902f3369`
 | ARC / Agent trace public doc | `docs/ARC_AGENT_TRACE_AUDIT.md` |
 | ARC / Agent trace executable demo | rejected/supported/partial fixtures, `tools/render_agent_trace_report.py`, focused tests, and generated reports |
 | RLEval fit-check attempt | Sent after confirmation, then bounced because `flywise.cn` failed SPF/DKIM at Google Groups |
-| CLEAR fit-check | Sent from Tencent Enterprise Mail after user confirmation |
+| CLEAR fit-check | Sent from Tencent Enterprise Mail; mail UI showed `发送成功` |
 | X benchmark-case ask | Published at https://x.com/liuweidi2/status/2057016834281639966 |
 | HN launch attempt | Attempted and blocked by HN account/site permission |
-| Reddit launch attempt | Draft/flair attempted; blocked by Reddit submit UI timeout |
-| Product Hunt launch attempt | Blocked by Product Hunt login redirect |
+| Reddit launch attempt | Posted, then immediately removed by Reddit filter |
+| Product Hunt launch attempt | Blocked by Product Hunt login redirect into Google account challenge |
+| Outreach Batch 002 | ARC Prize O006 and AutoGen O007 sent from Tencent Enterprise Mail |
 | Email deliverability fix note | `growth/email_deliverability_fix_2026-05-20.md` |
 | Xiaomi MiMo 100T draft | `growth/mimo_100t_application_draft_2026-05-20.md` |
 
@@ -51,9 +52,9 @@ These are ready to execute, but they publish, submit, email, or DM externally:
 
 | External action | Prepared material |
 |---|---|
-| Send 20-person outreach | `growth/outreach_targets_20_2026-05-20.csv` |
-| Product Hunt launch | `growth/github_star_sprint_7_30_2026-05-20.md`, after login |
-| Reddit retry | `growth/github_star_sprint_7_30_2026-05-20.md`, after submit page is stable |
+| Continue community-route outreach | LangChain Forum, LlamaIndex community, and AutoGen GitHub Discussions from `growth/outreach_batch_002_2026-05-20.md` |
+| Product Hunt launch | `growth/github_star_sprint_7_30_2026-05-20.md`, after Product Hunt / Google login challenge is completed |
+| Reddit follow-up | Modmail or directly relevant thread participation; do not repost the same r/LocalLLaMA launch copy today |
 | Retry RLEval fit-check | `growth/email_drafts/w005_rleval_fit_check.eml`, after SPF/DKIM fix or authenticated alternate sender |
 
 ## Platform Blocks From Latest Launch Wave
@@ -61,8 +62,8 @@ These are ready to execute, but they publish, submit, email, or DM externally:
 | Platform | Result | Next viable path |
 |---|---|---|
 | Hacker News | Blocked by account/site permission after submit attempt | Do not retry the same repo URL until account trust improves or another user posts organically |
-| Reddit | Draft and `Discussion` flair reached, submit did not complete and old/new submit pages timed out | Retry from a stable browser session with a discussion-first version |
-| Product Hunt | `/posts/new` redirects to login | User login is required before draft creation |
+| Reddit | Discussion-first post was created, then Reddit showed `抱歉，此帖子已被 Reddit 筛选器移除。` | Do not retry same subreddit today; next viable path is modmail or participation in directly relevant threads |
+| Product Hunt | `/posts/new` redirects through login into Google account challenge | User login/challenge completion is required before draft creation |
 
 ## Verification Completed
 

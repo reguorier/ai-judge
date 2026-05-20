@@ -1,14 +1,14 @@
 # 30-Day Metrics Dashboard
 
 Status: active tracking
-Last refreshed: 2026-05-20 post-MiraclePlus, fit-check, and launch-wave pass
+Last refreshed: 2026-05-20 post-MiraclePlus, launch-wave, and Batch 002 outreach pass
 
 ## Targets
 
 | Metric | Day 30 continue threshold | Current |
 |---|---:|---:|
 | GitHub stars | 100 | 3 |
-| Distinct users / replies / issues | 20 | 5 open repo issues with maintainer-only comments + 2 substantive external replies + 2 taxonomy issues pending + 1 Eval4SD support-path request sent + 1 CLEAR fit-check sent |
+| Distinct users / replies / issues | 20 | 5 open repo issues with maintainer-only comments + 2 substantive external replies + 2 taxonomy issues pending + 1 Eval4SD support-path request sent + 1 CLEAR fit-check sent + 2 agent-eval outreach emails sent |
 | Pro feature requests | 3 | 0 |
 | Paid users or invoice requests | 1 | 0 |
 
@@ -25,12 +25,12 @@ Last refreshed: 2026-05-20 post-MiraclePlus, fit-check, and launch-wave pass
 | GitHub repo metadata | https://github.com/reguorier/ai-judge | blocked_by_permission_rechecked_2026-05-19_0322_hkt | 0 | 0 | 0 | 0 | `gh repo edit` still returns API 404 for description/homepage/topics; README now carries the proof-kit link instead. |
 | X / short-form | https://x.com/liuweidi2/status/2057016834281639966 | live_wave_002_posted | TBD | TBD | TBD | TBD | Latest benchmark-case ask is live; previous professional review thread remains at https://x.com/liuweidi2/status/2056387592187510933 with CTAs for issue #2/#3/#4, HF demo, and repo trial. |
 | Zhihu | https://zhuanlan.zhihu.com/p/2039446444000665819 | live | TBD | TBD | TBD | TBD | Chinese long-form article published. |
-| Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/submit/?type=TEXT | blocked_submit_ui_timeout_2026-05-20 | TBD | 1 historical | TBD | TBD | Earlier post exists for the author but was removed by moderation; latest discussion-first repost attempt filled draft + flair but stalled before submit completion. |
+| Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tijlq4/i_made_a_localfirst_benchmark_and_auditor_for/ | posted_then_removed_by_filter_2026-05-20 | TBD | 1 historical | TBD | TBD | Latest discussion-first post was created under `u/ExpensiveHunt2055`, then Reddit displayed `抱歉，此帖子已被 Reddit 筛选器移除。`; do not retry same subreddit today. |
 | Hacker News | https://news.ycombinator.com/x?fnid=dtcypQ1rXowueCz1ePTZMO&fnop=toonew | blocked_account_site_permission_2026-05-20 | 0 | 0 | 0 | 0 | HN returned `Sorry, your account isn't able to submit this site.` after the repo submit attempt. |
-| Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_login_2026-05-20 | 0 | 0 | 0 | 0 | `/posts/new` redirects to login; resume only after Product Hunt is logged in. |
+| Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_google_login_challenge_2026-05-20 | 0 | 0 | 0 | 0 | `/posts/new` redirects through Product Hunt login into a Google account challenge; resume only after the user completes login. |
 | V2EX | https://www.v2ex.com/invite/activate | abandoned_activation_unavailable | 0 | 0 | 0 | 0 | Logged in as `reguorider`, but no activation code is available for this launch cycle. |
 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_hcaptcha | 0 | 0 | 0 | 0 | Login/email confirmation complete; discussion creation is blocked by repeated hCaptcha challenges. |
-| Outreach email | growth/outreach_status.md | sent_5_reply_1_benchmark_case_1 | 0 | 1 | TBD | 0 | O001-O004 were sent through QQ Mail; O005 Eval4SD support-path request was sent after user confirmation; O002 produced a high-value benchmark/taxonomy signal. Wait 3-5 days before routine follow-ups unless replies arrive. |
+| Outreach email | growth/outreach_status.md + growth/outreach_batch_002_2026-05-20.md | sent_8_reply_1_bounce_1_benchmark_case_1 | 0 | 1 | TBD | 0 | O001-O004 were sent through QQ Mail; O005 Eval4SD support-path request was sent; RLEval bounced on SPF/DKIM; CLEAR, ARC Prize O006, and AutoGen O007 now show Tencent Mail `发送成功`. Wait 3-5 days before routine follow-ups unless replies arrive. |
 | LegalCiteBench taxonomy issue | https://github.com/Sijia711/LegalCiteBench/issues/1 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange asks about real citation vs unsupported legal proposition; checked by `gh issue view`, no comments yet. |
 | RAGChecker taxonomy issue | https://github.com/amazon-science/RAGChecker/issues/38 | open_no_reply_checked_2026-05-19 | TBD | 0 | TBD | TBD | Public taxonomy exchange maps source isolation to RAG faithfulness / retrieved-context support; checked by `gh issue view`, no comments yet. |
 | Eval4SD submission | `papers/eval4sd2026/openreview_submission.md` | openreview_login_still_blocked_checked_2026-05-20 | 0 | 1 | TBD | TBD | Organizer confirmed strong workshop fit; OpenReview profile page is reachable but still shows `Login` in the current Chrome session, so PDF upload/form prep is blocked. On 2026-05-19, organizer support was requested for wait/support/backup-route guidance; packet check passes with full 100/100 and hard 13/13. |

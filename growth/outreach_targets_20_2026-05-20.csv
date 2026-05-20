@@ -1,7 +1,7 @@
 priority,category,target,why,channel,first_message,status
-P0,Accelerator,MiraclePlus,Best-fit China accelerator for AI infra and agent tooling,Official application form/support@miracleplus.com,"我们在做 AI Agent 时代的质量裁判层，想申请 2026 秋季创业营。",drafted
+P0,Accelerator,MiraclePlus,Best-fit China accelerator for AI infra and agent tooling,Official application form/support@miracleplus.com,"我们在做 AI Agent 时代的质量裁判层，想申请 2026 秋季创业营。",submitted_2026-05-20
 P1,Accelerator,Y Combinator,Global accelerator; narrative fits AI infra for agent economy,Official application form,"We are building evaluation infrastructure for the agent economy.",drafted
-P1,Competition/Community,ARC Prize Foundation,ARC-AGI-3 is about frontier agentic intelligence; AI Judge fits evaluator angle,Official site/community/X,"I am testing AI Judge as an evaluator for agent traces, not as a solver.",drafted
+P1,Competition/Community,ARC Prize Foundation,ARC-AGI-3 is about frontier agentic intelligence; AI Judge fits evaluator angle,Official email/community/X,"I am testing AI Judge as an evaluator for agent traces, not as a solver.",email_sent_2026-05-20
 P1,Research/Community,Francois Chollet,ARC-AGI thought leader and evaluator framing,X/public channels,"I am exploring whether multi-model judging can expose agent trace failure modes.",drafted
 P1,Research/Community,Mike Knoop,ARC Prize co-founder and community builder,X/public channels,"AI Judge may help compare ARC agent attempts through evidence-backed verdicts.",drafted
 P0,Open-source KOL,Simon Willison,Strong audience for LLM tools and citation/evidence quality,Blog/Mastodon/X,"I built a small open-source tool that checks whether citations actually prove AI claims.",drafted
@@ -10,7 +10,7 @@ P0,AI infra KOL,Chip Huyen,AI systems and eval audience,LinkedIn/X,"Would love y
 P0,AI eval KOL,Hamel Husain,Practical eval and LLM engineering audience,X/LinkedIn,"I used a multi-model jury to expose citation-support gaps in AI answers.",drafted
 P1,Agent ecosystem,LangChain,Agent ecosystem needs output evaluation,GitHub discussion/X,"Could AI Judge become a judge adapter for agent outputs?",drafted
 P1,RAG ecosystem,LlamaIndex,RAG/citation eval is a direct wedge,GitHub discussion/X,"AI Judge tests whether retrieved sources actually support generated claims.",drafted
-P1,Agent ecosystem,AutoGen,Multi-agent debate evaluation fit,GitHub discussion,"Can AI Judge score multi-agent discussion outputs and preserve dissent?",drafted
+P1,Agent ecosystem,AutoGen,Multi-agent debate evaluation fit,Official email / GitHub discussion,"Can AI Judge score multi-agent discussion outputs and preserve dissent?",email_sent_2026-05-20
 P1,Open-source platform,Hugging Face,Demo and benchmark distribution,Hugging Face Space discussion,"Try the citation audit demo and send cases that break it.",drafted
 P2,Academic eval,Stanford CRFM / HELM,Evaluation authority; long-term benchmark credibility,Public contact channels,"We are exploring human-readable multi-judge evaluation reports for agent tasks.",drafted
 P2,Academic eval,LLM-as-a-Judge authors,Method feedback on judge diversity and evidence traces,Paper author public emails,"We are testing judge diversity plus evidence tracing as a practical eval layer.",drafted

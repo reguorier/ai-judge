@@ -23,11 +23,13 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-17 | Hugging Face Community | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit/discussions/new | blocked_by_login | Chrome is not logged into Hugging Face. |
 | 2026-05-17 | V2EX | https://www.v2ex.com/new | blocked_by_login | Chrome is not logged into V2EX. |
 | 2026-05-17 | Zhihu | https://www.zhihu.com/question/waiting | blocked_by_login | Chrome is not logged into Zhihu. |
-| 2026-05-20 | CLEAR fit-check email | `mailto:themis.xanthopoulou@umu.se` | sent | Sent source-isolated citation audit fit-check with repo, CLEAR abstract, and HF demo links from Tencent Enterprise Mail. |
+| 2026-05-20 | CLEAR fit-check email | `mailto:themis.xanthopoulou@umu.se` | sent_confirmed | Sent source-isolated citation audit fit-check with repo, CLEAR abstract, and HF demo links from Tencent Enterprise Mail; mail UI showed `发送成功`. |
+| 2026-05-20 | ARC Prize outreach | `mailto:team@arcprize.org` | sent_confirmed | Sent evaluator-not-solver ARC-AGI-3 trace-audit outreach from Tencent Enterprise Mail; mail UI showed `发送成功`. |
+| 2026-05-20 | AutoGen outreach | `mailto:autogen@microsoft.com` | sent_confirmed | Sent AutoGen-style multi-agent trace-audit feedback request from Tencent Enterprise Mail; mail UI showed `发送成功`. |
 | 2026-05-20 | Hacker News | https://news.ycombinator.com/x?fnid=dtcypQ1rXowueCz1ePTZMO&fnop=toonew | blocked_by_account_site_permission | HN returned `Sorry, your account isn't able to submit this site.` after the GitHub repo submit attempt. |
-| 2026-05-20 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/submit/?type=TEXT | blocked_by_submit_ui_timeout | Draft was filled and `Discussion` flair was applied, but the Reddit submit UI did not complete; old/new submit pages then timed out in Chrome automation. |
+| 2026-05-20 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tijlq4/i_made_a_localfirst_benchmark_and_auditor_for/ | posted_then_removed_by_reddit_filter | Discussion-first post was created under `u/ExpensiveHunt2055`, but Reddit displayed `抱歉，此帖子已被 Reddit 筛选器移除。` |
 | 2026-05-20 | X benchmark-case ask | https://x.com/liuweidi2/status/2057016834281639966 | live | Posted a concise request for hard AI Judge Citation Audit benchmark cases, linking GitHub issue #2. |
-| 2026-05-20 | Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_login | `/posts/new` redirected to Product Hunt login before a launch draft could be created. |
+| 2026-05-20 | Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_google_login_challenge | `/posts/new` redirected through Product Hunt login into a Google account challenge before a launch draft could be created. |
 
 ## Signals
 
@@ -92,6 +94,11 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-20 | X launch wave | X / `@liuweidi2` | Published the benchmark-case ask at https://x.com/liuweidi2/status/2057016834281639966. | Watch replies for public-safe citation hallucination cases and convert useful ones into issue #2 comments or fixtures. |
 | 2026-05-20 | Reddit launch wave | Reddit r/LocalLLaMA | Reddit required flair, accepted `Discussion`, then the submit page stalled and automation timed out. | Retry only from a stable browser session; use a discussion-first post and avoid repeating removed launch copy. |
 | 2026-05-20 | Product Hunt launch wave | Product Hunt | Product Hunt requires login before draft creation. | Resume after user logs in; stop again at product media upload or final launch confirmation if required. |
+| 2026-05-20 | CLEAR fit-check send | Tencent Enterprise Mail | The previously open CLEAR compose page was still unsent; clicking send produced a `发送成功` receipt. | Monitor for reply before preparing a full CLEAR submission packet. |
+| 2026-05-20 | ARC Prize outreach | Tencent Enterprise Mail | Sent the evaluator-not-solver trace-audit ask to `team@arcprize.org`. | Monitor for reply; if they prefer Discord/community route, move follow-up there without reposting promotional copy. |
+| 2026-05-20 | AutoGen outreach | Tencent Enterprise Mail | Sent the multi-agent trace-audit feedback ask to `autogen@microsoft.com`. | Monitor for adapter/benchmark/action-format feedback; convert useful reply into roadmap issue. |
+| 2026-05-20 | Reddit retry | r/LocalLLaMA | Post was created successfully but removed by Reddit's filter immediately after posting. | Do not retry the same subreddit again today; next path is modmail or participation in directly relevant threads. |
+| 2026-05-20 | Product Hunt retry | Product Hunt / Google OAuth | The next barrier is account login/challenge, not missing launch copy. | Resume only after user completes the login challenge; then create draft and stop at media/final launch boundary. |
 
 ## Public Contribution Links
 
@@ -108,6 +115,7 @@ This file records public launch links, replies, objections, and product signals 
 | X benchmark-case ask | https://x.com/liuweidi2/status/2057016834281639966 |
 | Zhihu long-form launch | https://zhuanlan.zhihu.com/p/2039446444000665819 |
 | Reddit r/LocalLLaMA launch attempt | https://www.reddit.com/r/LocalLLaMA/comments/1tfohfv/ |
+| Reddit r/LocalLLaMA retry attempt | https://www.reddit.com/r/LocalLLaMA/comments/1tijlq4/i_made_a_localfirst_benchmark_and_auditor_for/ |
 
 ## Objections To Track
 
