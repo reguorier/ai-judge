@@ -30,6 +30,16 @@ Status: active follow-through after MiraclePlus submission.
 - Attempted Product Hunt draft creation; `/posts/new` redirected through login
   into a Google account challenge.
 - Added an email deliverability fix note for Tencent Exmail SPF/DKIM recovery.
+- Posted Outreach Batch 002 O010 to AutoGen GitHub Discussions:
+  https://github.com/microsoft/autogen/discussions/7727
+- Posted Outreach Batch 002 O009 to LlamaIndex GitHub Discussions:
+  https://github.com/run-llama/llama_index/discussions/21744
+- Checked the LangChain/LangGraph route. LangGraph GitHub Discussions are not
+  available, LangChain GitHub Discussions point to the LangChain Forum, and the
+  forum requires login before posting.
+- Attempted Reddit r/LocalLLaMA follow-up through message compose after the
+  filtered post; Reddit rejected both `/r/LocalLLaMA` and `r/LocalLLaMA` with
+  `You can't message that user.`
 
 ## Current Metrics
 
@@ -54,10 +64,14 @@ Status: active follow-through after MiraclePlus submission.
 | CLEAR fit-check | Sent from Tencent Enterprise Mail | Monitor for reply |
 | X benchmark-case ask | Live at https://x.com/liuweidi2/status/2057016834281639966 | Watch for replies and convert cases into issue #2 / fixtures |
 | Hacker News | Blocked by account/site permission | Do not retry same repo URL repeatedly |
-| Reddit | Post created at https://www.reddit.com/r/LocalLLaMA/comments/1tijlq4/i_made_a_localfirst_benchmark_and_auditor_for/ and removed by Reddit filter | Do not retry same subreddit today; next path is modmail or relevant-thread participation |
+| Reddit | Post created at https://www.reddit.com/r/LocalLLaMA/comments/1tijlq4/i_made_a_localfirst_benchmark_and_auditor_for/ and removed by Reddit filter; follow-up compose to the subreddit is also blocked | Do not retry same subreddit/message path today; next path is organic relevant-thread participation |
 | Product Hunt | Redirected through login into Google account challenge | Resume after user completes Product Hunt / Google login |
 | ARC Prize outreach | Sent to `team@arcprize.org` | Monitor for reply |
 | AutoGen outreach | Sent to `autogen@microsoft.com` | Monitor for reply |
+| AutoGen GitHub Discussion | Posted at https://github.com/microsoft/autogen/discussions/7727 | Monitor for report-format feedback |
+| LlamaIndex GitHub Discussion | Posted at https://github.com/run-llama/llama_index/discussions/21744 | Monitor for RAG-eval placement feedback |
+| LangChain Forum | Public route requires login before topic creation | Resume only after user logs in or provides another verified community route |
+| Reddit follow-up | Message compose rejected subreddit recipients with `You can't message that user.` | Stop retrying compose; use organic relevant-thread participation later |
 
 ## Time-Sensitive External Queue
 
@@ -65,8 +79,8 @@ These are the next external actions if we choose to execute public/email steps:
 
 1. Fix or work around `flywise.cn` SPF/DKIM before retrying Google Groups.
 2. Monitor CLEAR fit-check reply.
-3. Publish the remaining GitHub star sprint launch wave only when platform constraints allow: Product Hunt after login, LinkedIn if available, and Reddit only via modmail/relevant-thread route.
-4. Continue public community-route outreach for LangChain, LlamaIndex, and AutoGen GitHub Discussions from `growth/outreach_batch_002_2026-05-20.md`.
+3. Publish the remaining GitHub star sprint launch wave only when platform constraints allow: Product Hunt after login, LinkedIn if available, and Reddit only via organic relevant-thread participation or a new trusted route.
+4. Continue public community-route outreach only where account gates are cleared: LangChain Forum still needs login; AutoGen and LlamaIndex GitHub Discussions are already live.
 
 ## Guardrails
 

@@ -26,8 +26,12 @@ Web AI Judge run: `ddb4902f3369`
 | X benchmark-case ask | Published at https://x.com/liuweidi2/status/2057016834281639966 |
 | HN launch attempt | Attempted and blocked by HN account/site permission |
 | Reddit launch attempt | Posted, then immediately removed by Reddit filter |
+| Reddit follow-up attempt | Modmail-style message compose rejected both `/r/LocalLLaMA` and `r/LocalLLaMA` recipients with `You can't message that user.` |
 | Product Hunt launch attempt | Blocked by Product Hunt login redirect into Google account challenge |
 | Outreach Batch 002 | ARC Prize O006 and AutoGen O007 sent from Tencent Enterprise Mail |
+| AutoGen GitHub Discussion | Posted at https://github.com/microsoft/autogen/discussions/7727 |
+| LlamaIndex GitHub Discussion | Posted at https://github.com/run-llama/llama_index/discussions/21744 |
+| LangChain route check | GitHub Discussions route moved/closed; https://forum.langchain.com/latest requires login before posting |
 | Email deliverability fix note | `growth/email_deliverability_fix_2026-05-20.md` |
 | Xiaomi MiMo 100T draft | `growth/mimo_100t_application_draft_2026-05-20.md` |
 
@@ -52,9 +56,8 @@ These are ready to execute, but they publish, submit, email, or DM externally:
 
 | External action | Prepared material |
 |---|---|
-| Continue community-route outreach | LangChain Forum, LlamaIndex community, and AutoGen GitHub Discussions from `growth/outreach_batch_002_2026-05-20.md` |
+| Continue LangChain community-route outreach | LangChain Forum account/login is required before creating the prepared topic |
 | Product Hunt launch | `growth/github_star_sprint_7_30_2026-05-20.md`, after Product Hunt / Google login challenge is completed |
-| Reddit follow-up | Modmail or directly relevant thread participation; do not repost the same r/LocalLLaMA launch copy today |
 | Retry RLEval fit-check | `growth/email_drafts/w005_rleval_fit_check.eml`, after SPF/DKIM fix or authenticated alternate sender |
 
 ## Platform Blocks From Latest Launch Wave
@@ -62,7 +65,7 @@ These are ready to execute, but they publish, submit, email, or DM externally:
 | Platform | Result | Next viable path |
 |---|---|---|
 | Hacker News | Blocked by account/site permission after submit attempt | Do not retry the same repo URL until account trust improves or another user posts organically |
-| Reddit | Discussion-first post was created, then Reddit showed `抱歉，此帖子已被 Reddit 筛选器移除。` | Do not retry same subreddit today; next viable path is modmail or participation in directly relevant threads |
+| Reddit | Discussion-first post was created, then Reddit showed `抱歉，此帖子已被 Reddit 筛选器移除。`; message compose follow-up to r/LocalLLaMA also returned `You can't message that user.` | Do not retry same subreddit or message compose path today; next viable path is organic relevant-thread participation or a different account/channel with moderation trust |
 | Product Hunt | `/posts/new` redirects through login into Google account challenge | User login/challenge completion is required before draft creation |
 
 ## Verification Completed

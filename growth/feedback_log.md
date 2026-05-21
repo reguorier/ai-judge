@@ -30,6 +30,10 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-20 | Reddit r/LocalLLaMA | https://www.reddit.com/r/LocalLLaMA/comments/1tijlq4/i_made_a_localfirst_benchmark_and_auditor_for/ | posted_then_removed_by_reddit_filter | Discussion-first post was created under `u/ExpensiveHunt2055`, but Reddit displayed `抱歉，此帖子已被 Reddit 筛选器移除。` |
 | 2026-05-20 | X benchmark-case ask | https://x.com/liuweidi2/status/2057016834281639966 | live | Posted a concise request for hard AI Judge Citation Audit benchmark cases, linking GitHub issue #2. |
 | 2026-05-20 | Product Hunt | https://www.producthunt.com/login?origin=%2Fposts%2Fnew | blocked_by_google_login_challenge | `/posts/new` redirected through Product Hunt login into a Google account challenge before a launch draft could be created. |
+| 2026-05-21 | AutoGen GitHub Discussion | https://github.com/microsoft/autogen/discussions/7727 | live | Posted a post-run trace-audit report format question for AutoGen-style multi-agent runs. |
+| 2026-05-21 | LlamaIndex GitHub Discussion | https://github.com/run-llama/llama_index/discussions/21744 | live | Posted a claim-source support verdict question for RAG eval placement. |
+| 2026-05-21 | LangChain Forum | https://forum.langchain.com/latest | blocked_by_forum_login | GitHub Discussions have moved/closed; the forum page is reachable but requires login before creating a new topic. |
+| 2026-05-21 | Reddit r/LocalLLaMA follow-up | https://www.reddit.com/message/compose/?to=r/LocalLLaMA | blocked_by_message_policy | After the filtered Reddit post, message compose rejected both `/r/LocalLLaMA` and `r/LocalLLaMA` recipients with `You can't message that user.` |
 
 ## Signals
 
@@ -99,6 +103,10 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-20 | AutoGen outreach | Tencent Enterprise Mail | Sent the multi-agent trace-audit feedback ask to `autogen@microsoft.com`. | Monitor for adapter/benchmark/action-format feedback; convert useful reply into roadmap issue. |
 | 2026-05-20 | Reddit retry | r/LocalLLaMA | Post was created successfully but removed by Reddit's filter immediately after posting. | Do not retry the same subreddit again today; next path is modmail or participation in directly relevant threads. |
 | 2026-05-20 | Product Hunt retry | Product Hunt / Google OAuth | The next barrier is account login/challenge, not missing launch copy. | Resume only after user completes the login challenge; then create draft and stop at media/final launch boundary. |
+| 2026-05-21 | AutoGen GitHub Discussion | GitHub Discussions | Public discussion #7727 is live. | Monitor for maintainer/community replies and convert format feedback into a trace-report roadmap issue. |
+| 2026-05-21 | LlamaIndex GitHub Discussion | GitHub Discussions | Public discussion #21744 is live. | Monitor for RAG eval placement feedback and convert accepted terminology into docs/examples. |
+| 2026-05-21 | LangChain route | LangChain Forum | GitHub Discussions are not an available route; the forum requires login. | Resume only after user logs into the forum or identifies an alternate public LangChain community channel. |
+| 2026-05-21 | Reddit follow-up | Reddit compose | Message-to-subreddit path is blocked by Reddit with `You can't message that user.` | Do not keep retrying compose; use organic relevant-thread participation or wait for account trust/moderation context. |
 
 ## Public Contribution Links
 

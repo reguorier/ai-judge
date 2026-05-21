@@ -1,6 +1,6 @@
 # Outreach Batch 002 - Agent Eval / ARC Entry
 
-Status: partially_executed
+Status: community_routes_executed_with_platform_blocks
 Created: 2026-05-20
 
 This batch continues the 20-target outreach list after Batch 001. It uses only
@@ -14,9 +14,9 @@ already filtered the launch.
 |---|---:|---|---|---|---|
 | O006 | P0 | ARC Prize Foundation | `team@arcprize.org` | Official ARC community page says to reach the team by this email or Discord; AI Judge has a credible evaluator-not-solver angle. | sent_2026-05-20 |
 | O007 | P0 | Microsoft AutoGen | `autogen@microsoft.com` | Microsoft Research lists this as the AutoGen contact; agent trace evaluation fits AutoGenBench / multi-agent trace debugging. | sent_2026-05-20 |
-| O008 | P1 | LangChain / LangGraph community | LangChain Forum | Agent trace audit and post-run evaluation fit LangChain's agent workflow community, but it should be posted as a discussion, not a repo issue. | forum_login_or_post_needed |
-| O009 | P1 | LlamaIndex community | Discord / GitHub Discussions | Claim-source audit fits RAG faithfulness and citation-support workflows; use public community route only. | community_login_or_post_needed |
-| O010 | P1 | AutoGen GitHub Discussions | GitHub Discussions | Public discussions are active and include audit-trail / agent-memory / evaluation topics. | github_session_needed |
+| O008 | P1 | LangChain / LangGraph community | LangChain Forum | Agent trace audit and post-run evaluation fit LangChain's agent workflow community, but it should be posted as a discussion, not a repo issue. | blocked_forum_login_2026-05-21 |
+| O009 | P1 | LlamaIndex community | GitHub Discussions | Claim-source audit fits RAG faithfulness and citation-support workflows; use public community route only. | posted_2026-05-21 |
+| O010 | P1 | AutoGen GitHub Discussions | GitHub Discussions | Public discussions are active and include audit-trail / agent-memory / evaluation topics. | posted_2026-05-21 |
 
 ## O006 - ARC Prize
 
@@ -100,4 +100,7 @@ Repo: https://github.com/reguorier/ai-judge
 
 - 2026-05-20: Sent O006 to `team@arcprize.org` from Tencent Enterprise Mail. Mail UI showed `发送成功` and saved to Sent.
 - 2026-05-20: Sent O007 to `autogen@microsoft.com` from Tencent Enterprise Mail. Mail UI showed `发送成功` and saved to Sent.
-- O008/O009/O010 remain public community routes; do not guess private emails or duplicate removed Reddit-style launch copy.
+- 2026-05-21: Posted O010 to AutoGen GitHub Discussions: https://github.com/microsoft/autogen/discussions/7727.
+- 2026-05-21: Posted O009 to LlamaIndex GitHub Discussions: https://github.com/run-llama/llama_index/discussions/21744.
+- 2026-05-21: Checked O008 public route. `langchain-ai/langgraph` discussions returned 404, `langchain-ai/langchain` discussions have moved to https://forum.langchain.com/latest, and the forum requires login before a new topic can be created.
+- 2026-05-21: Tried Reddit r/LocalLLaMA follow-up via message compose after the filtered post. Both `/r/LocalLLaMA` and `r/LocalLLaMA` recipients were rejected with `You can't message that user.` Do not keep retrying this path.
