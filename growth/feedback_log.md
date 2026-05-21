@@ -34,6 +34,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-21 | LlamaIndex GitHub Discussion | https://github.com/run-llama/llama_index/discussions/21744 | live | Posted a claim-source support verdict question for RAG eval placement. |
 | 2026-05-21 | LangChain Forum | https://forum.langchain.com/latest | blocked_by_forum_login | GitHub Discussions have moved/closed; the forum page is reachable but requires login before creating a new topic. |
 | 2026-05-21 | Reddit r/LocalLLaMA follow-up | https://www.reddit.com/message/compose/?to=r/LocalLLaMA | blocked_by_message_policy | After the filtered Reddit post, message compose rejected both `/r/LocalLLaMA` and `r/LocalLLaMA` recipients with `You can't message that user.` |
+| 2026-05-21 | MiraclePlus critique | https://apply.miracleplus.com/batches/17/applications/106828#critique-section | captured | In-site application critique generated; four main dimensions are high, strategic Why Us is yellow, and BP improvements are now concrete. |
 
 ## Signals
 
@@ -107,6 +108,7 @@ This file records public launch links, replies, objections, and product signals 
 | 2026-05-21 | LlamaIndex GitHub Discussion | GitHub Discussions | Public discussion #21744 is live. | Monitor for RAG eval placement feedback and convert accepted terminology into docs/examples. |
 | 2026-05-21 | LangChain route | LangChain Forum | GitHub Discussions are not an available route; the forum requires login. | Resume only after user logs into the forum or identifies an alternate public LangChain community channel. |
 | 2026-05-21 | Reddit follow-up | Reddit compose | Message-to-subreddit path is blocked by Reddit with `You can't message that user.` | Do not keep retrying compose; use organic relevant-thread participation or wait for account trust/moderation context. |
+| 2026-05-21 | MiraclePlus critique | MiraclePlus portal | Application critique is available and mostly positive. | Build BP iteration around three milestones, architecture diagram, before/after case, five seed customer profiles, and a sharper founder edge story. |
 
 ## Public Contribution Links
 

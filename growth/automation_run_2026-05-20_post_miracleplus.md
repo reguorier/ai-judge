@@ -40,6 +40,8 @@ Status: active follow-through after MiraclePlus submission.
 - Attempted Reddit r/LocalLLaMA follow-up through message compose after the
   filtered post; Reddit rejected both `/r/LocalLLaMA` and `r/LocalLLaMA` with
   `You can't message that user.`
+- Rechecked MiraclePlus application page. The in-site critique is now generated
+  and captured in `growth/miracleplus_application_critique_2026-05-21.md`.
 
 ## Current Metrics
 
@@ -55,7 +57,7 @@ Status: active follow-through after MiraclePlus submission.
 
 | Channel | Result | Next action |
 |---|---|---|
-| MiraclePlus critique | Still shows `正在生成中...` after several waits and one refresh | Recheck later from application detail page |
+| MiraclePlus critique | Generated; ratings are high across Vision, Technology, Product, and Market, with Why Us marked yellow in the strategic review | Turn critique into BP updates: founder proof, customer profiles, architecture diagram, and before/after case visual |
 | OpenReview | Profile page is reachable, but page still shows `Login`; submission route is not usable from current browser session | Wait for activation / user login / organizer reply before upload |
 | AI Judge repo issues | Issues #1-#5 checked after push; no external comments, only maintainer updates | No no-op public reply due |
 | LegalCiteBench issue #1 | No comments | No follow-up due |

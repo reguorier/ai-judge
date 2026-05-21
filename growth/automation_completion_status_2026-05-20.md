@@ -19,6 +19,7 @@ Web AI Judge run: `ddb4902f3369`
 | MiraclePlus form map | `growth/miracleplus_application_form_map_2026-05-20.md` |
 | MiraclePlus 5-slide pitch deck content | `growth/miracleplus_5_slide_pitch_deck_2026-05-20.md` |
 | MiraclePlus application submitted | Application ID `106828`; status `已提交`; critique generation pending |
+| MiraclePlus application critique | Generated and captured in `growth/miracleplus_application_critique_2026-05-21.md`; strongest next gaps are founder proof, customer profiles, architecture diagram, and before/after case visual |
 | ARC / Agent trace public doc | `docs/ARC_AGENT_TRACE_AUDIT.md` |
 | ARC / Agent trace executable demo | rejected/supported/partial fixtures, `tools/render_agent_trace_report.py`, focused tests, and generated reports |
 | RLEval fit-check attempt | Sent after confirmation, then bounced because `flywise.cn` failed SPF/DKIM at Google Groups |
@@ -47,7 +48,7 @@ Web AI Judge run: `ddb4902f3369`
 | HF demo | https://huggingface.co/spaces/reguorier/ai-judge-citation-audit |
 | Web run status | staged advisory only; required non-Grok valid seats `8/10`, final machine verdict `unverified / 0%` |
 | Verification | `37 passed` for `tests/test_product_state.py` and `tests/test_report_render.py` |
-| MiraclePlus portal | Submitted successfully; in-site critique still generating |
+| MiraclePlus portal | Submitted successfully; in-site critique generated and captured |
 | Latest X post | https://x.com/liuweidi2/status/2057016834281639966 |
 
 ## Still Gated By User Confirmation
