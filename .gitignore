@@ -44,3 +44,6 @@ temp_debug*.py
 # Local mail backups
 *.emlx
 growth/**/mail_outbox_backup_*
+
+# Local OpenReview / submission email backups
+growth/**/openreview_backup_emails_*
