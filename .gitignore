@@ -34,3 +34,13 @@ product/video-exports/
 data/
 runs/
 assets/*.iconset/
+
+# Local debug / backup files
+*.bak
+*.bak-*
+*.tmp
+temp_debug*.py
+
+# Local mail backups
+*.emlx
+growth/**/mail_outbox_backup_*
