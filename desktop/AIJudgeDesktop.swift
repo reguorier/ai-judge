@@ -53,7 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyAppIcon()
         buildMenu()
         buildWindow()
-        startOrConnectServer()
+        clearDashboardCache { [weak self] in
+            self?.startOrConnectServer()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -100,7 +102,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func reloadDashboard(_ sender: Any?) {
-        loadDashboard()
+        clearDashboardCache { [weak self] in
+            self?.loadDashboard()
+        }
     }
 
     private func applyAppIcon() {
@@ -148,7 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func buildWindow() {
-        let frame = NSRect(x: 0, y: 0, width: 1420, height: 920)
+        let frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
         window = NSWindow(
             contentRect: frame,
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -157,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.title = "AI Judge - 双模式客户端"
         window.center()
-        window.minSize = NSSize(width: 1080, height: 720)
+        window.minSize = NSSize(width: 1280, height: 800)
 
         let preferences = WKPreferences()
         preferences.javaScriptCanOpenWindowsAutomatically = true
@@ -185,7 +189,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
               let decoded = try? JSONDecoder().decode(AIJudgeConfig.self, from: data) else {
             return fallback
         }
-        return decoded
+        return AIJudgeConfig(
+            projectRoot: resolveProjectRoot(decoded.projectRoot, resourceURL: resourceURL),
+            host: decoded.host,
+            port: decoded.port
+        )
+    }
+
+    private func resolveProjectRoot(_ rawValue: String, resourceURL: URL) -> String {
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value == "$APP_SUPPORT" {
+            return appSupportURL().path
+        }
+        if value.hasPrefix("$APP_SUPPORT/") {
+            let suffix = String(value.dropFirst("$APP_SUPPORT/".count))
+            return appSupportURL().appendingPathComponent(suffix, isDirectory: true).path
+        }
+        if value == "$APP_RESOURCES" {
+            return resourceURL.path
+        }
+        if value.hasPrefix("$APP_RESOURCES/") {
+            let suffix = String(value.dropFirst("$APP_RESOURCES/".count))
+            return resourceURL.appendingPathComponent(suffix, isDirectory: true).path
+        }
+        if value.hasPrefix("~/") {
+            let suffix = String(value.dropFirst(2))
+            return FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(suffix, isDirectory: true)
+                .path
+        }
+        if value.hasPrefix("/") {
+            return value
+        }
+        return resourceURL.appendingPathComponent(value, isDirectory: true).path
+    }
+
+    private func appSupportURL() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support", isDirectory: true)
+        return base.appendingPathComponent("AI Judge", isDirectory: true)
     }
 
     private func startOrConnectServer() {
@@ -291,15 +333,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func loadDashboard() {
-        guard let url = URL(string: baseURL()) else {
+        guard var components = URLComponents(string: baseURL()) else {
             showStartupError("Invalid AI Judge URL.")
             return
         }
-        webView.load(URLRequest(url: url))
+        components.queryItems = [
+            URLQueryItem(name: "desktop_ts", value: String(Int(Date().timeIntervalSince1970)))
+        ]
+        guard let url = components.url else {
+            showStartupError("Invalid AI Judge URL.")
+            return
+        }
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        webView.load(request)
+        ensureChromeBridge()
     }
 
     private func baseURL() -> String {
         return "http://\(config.host):\(config.port)"
+    }
+
+    private func clearDashboardCache(completion: @escaping () -> Void) {
+        let cacheTypes: Set<String> = [
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeMemoryCache,
+            WKWebsiteDataTypeOfflineWebApplicationCache
+        ]
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: cacheTypes,
+            modifiedSince: Date(timeIntervalSince1970: 0)
+        ) {
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
+    }
+
+
+    private func ensureChromeBridge() {
+        guard let url = URL(string: "\(baseURL())/api/bridge/ensure") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 20
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            // Fire-and-forget; bridge will be ready by the time user triggers werewolf
+        }.resume()
     }
 
     private func shellQuote(_ value: String) -> String {

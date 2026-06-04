@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -25,6 +26,34 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert "打开网站完整报告" in html
     assert ".executive-report" in html
     assert ".sop-preview" in html
+    assert ".single-report" in html
+    assert ".manuscript-report" in html
+    assert "color-scheme: light" in html
+    assert "--app: #F5F5F7" in html
+    assert "--side-bg: #F1F5F9" in html
+    assert "--paper: #FFFFFF" in html
+    assert "background: #F8FAFC" in html
+    assert 'id="mentorPromptPreview"' in html
+    assert 'id="btn-confirm-mentor"' in html
+    assert 'id="report-lang-en"' in html
+    assert 'id="btn-report-pdf"' in html
+    assert 'id="btn-copy-share"' in html
+    assert 'id="btn-view-pdf"' in html
+    assert 'id="btn-share-link"' in html
+    assert "$(\"#verdict-title\").textContent = reportHeaderTitle(v);" in js
+    assert "$(\"#verdict-question\").textContent = reportHeaderSummary(v);" in js
+    assert "brief.title || longform.title || report.title" in js
+    assert "function unifiedFinalReportHtml" in js
+    assert "function manuscriptReportHtml" in js
+    assert "function schedulePromptPreview" in js
+    assert "function refreshPromptPreview" in js
+    assert "professional_prompt" in js
+    assert "api/prompt/resonate" in js
+    assert "function setReportLanguage" in js
+    assert "function updateReportToolbarLabels" in js
+    assert "function openPrintableReport" in js
+    assert "async function copyCurrentShareLink" in js
+    assert "Open Full Web Report" in js
     assert 'id="simple-autopilot-page"' in html
     assert 'id="autopilot-queue-list"' in html
     assert 'id="autopilot-synthesis-details"' in html
@@ -32,11 +61,37 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert "证据完整度" in html
     assert "优先增长动作" in html
     assert "过夜预计" in html
-    assert "今日任务" in html
-    assert "新建自动任务" in html
-    assert "运行中" in html
-    assert "结果收件箱" in html
-    assert "人类确认与产物" in html
+    assert "议会会议室" in html
+    assert "让每个模型像议员一样发言" in html
+    assert "Parliament Record" in html
+    assert "marvis-parliament-mode" in html
+    assert "width: 1440px" in html
+    assert "min-width: 1440px" in html
+    assert "--sidebar-w: 272px" in html
+    assert "--right-w: 0px" in html
+    assert "--v2-bg-deep: #08080f" in html
+    assert "--v2-bg-surface: #0e0e1a" in html
+    assert "--v2-accent: #7c6ff7" in html
+    assert "Parliament of Models" in html
+    assert "Member Seats" in html
+    assert "Grand Judge" in html
+    assert "Parliament Record" in html
+    assert "Submit Motion" in html
+    assert "Work Progress" in html
+    assert "Evidence Board" in html
+    assert 'id="parliament-seat-search"' in html
+    assert 'id="parliament-seat-rail"' in html
+    assert 'id="parliament-workbench"' in html
+    assert 'id="parliament-question-input"' in html
+    assert 'id="parliament-report-overlay"' in html
+    assert 'id="parliament-report-content"' in html
+    assert "+ 选择议题类型" in html
+    assert "+ 定义评分维度" in html
+    assert 'id="council-roundtable"' not in html
+    assert 'id="council-speech-grid"' not in html
+    assert 'id="conference-score-flow"' in html
+    assert 'id="conference-memory-panel"' in html
+    assert "正式裁决报告" in html
     assert "任务队列" in html
     assert "当前没有运行任务" in html
     assert "最小交付：阶段报告" in html
@@ -44,6 +99,23 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert "审计附录" in js
     assert "Codex 执行模板" in js
     assert "function renderAutopilotWorkbench" in js
+    assert "const PARLIAMENT_SEATS" in js
+    assert "function renderParliamentSeatRail" in js
+    assert "function parliamentMessages" in js
+    assert "function parliamentSpeakers" in js
+    assert "function parliamentBubbleHtml" in js
+    assert "function openParliamentReportOverlay" in js
+    assert "function selectParliamentSeat" in js
+    assert "function parliamentStatusDotClass" in js
+    assert "function parliamentEmptyStateHtml" in js
+    assert "data-seat-message" in js
+    assert "member-badge" in js
+    assert "msg-wrapper" in js
+    assert "function renderConferenceScoreFlow" in js
+    assert "function renderConferenceResonanceRibbon" in js
+    assert "function updateAppChromeForTab" in js
+    assert '"#10a37f"' in js
+    assert '"#4d6bfe"' in js
     assert "function autopilotSynthesisSummary" in js
     assert "function buildSimpleTaskItems" in js
     assert "function renderHistoryFromState" in js
@@ -54,6 +126,10 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     assert "const canConfirm = hasVerdict;" in js
     assert "等待报告生成" in js
     assert 'state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block"' in js
+
+    desktop = (root / "desktop" / "AIJudgeDesktop.swift").read_text(encoding="utf-8")
+    assert "width: 1440, height: 900" in desktop
+    assert "window.minSize = NSSize(width: 1280, height: 800)" in desktop
 
 
 def test_product_capabilities_and_health_are_v38():
@@ -129,6 +205,189 @@ def test_judge_submission_defaults_to_full_web_council(monkeypatch):
     assert captured["worker"]["seats"] == data["seats"]
 
 
+def test_wenxin_is_default_fixed_chrome_council_seat():
+    from bridges.web_seat_bridge import default_config
+    from core.modes import resolve_mode
+
+    config = default_config()
+    wenxin = config["seats"]["wenxin"]
+
+    assert "wenxin.baidu.com" in wenxin["url"]
+    assert wenxin["channel"] == "web"
+    assert wenxin["execution_required"] is True
+    assert wenxin["fragile_page"] is True
+    assert "wenxin" in resolve_mode("flash")["seats"]
+    assert "grok" not in resolve_mode("flash")["seats"]
+    assert "wenxin" in resolve_mode("standard")["seats"]
+    assert "grok" not in resolve_mode("standard")["seats"]
+
+
+def test_worldcup_prediction_flow_uses_fourteen_seats_with_zhipu():
+    root = Path(__file__).resolve().parents[1]
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    assert "const WORLDCUP_EXCLUDED_SEATS = new Set([]);" in js
+    assert "14 席全部参审，Zhipu 必须进入赛事预测" in js
+    assert "Zhipu 已纳入" in js
+
+
+def test_worldcup_pool_keeps_all_fourteen_live_web_seats():
+    from core.worldcup_pool import split_worldcup_pool_web_and_adapter_seats, worldcup_pool_seats
+
+    seats = worldcup_pool_seats()
+    web_seats, adapter_seats = split_worldcup_pool_web_and_adapter_seats(seats)
+
+    assert len(seats) == 14
+    assert {"grok", "minimax", "wenxin", "zhipu"}.issubset(set(seats))
+    assert {"grok", "minimax", "wenxin", "zhipu"}.issubset(set(web_seats))
+    assert adapter_seats == []
+
+
+def test_werewolf_mode_is_exposed_in_meeting_room():
+    root = Path(__file__).resolve().parents[1]
+    html = (root / "product" / "dashboard.html").read_text(encoding="utf-8")
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+    api_server = _load_api_server()
+
+    response = api_server.app.test_client().get("/api/werewolf/demo?topic=测试局")
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert 'id="composer-werewolf-toggle"' in html
+    assert "标准竞技" in js
+    assert "AI实验" in js
+    assert "const WEREWOLF_CANDIDATE_SEAT_IDS" in js
+    assert "const DEFAULT_WEREWOLF_SEAT_IDS" in js
+    assert "standard_14" in js
+    assert "white_wolf_14" in js
+    assert "quick_6" in js
+    assert "classic_12" in js
+    assert "thirteen" in js
+    assert "spectatorRoleMap" in js
+    assert "ww-guide-box" in js
+    assert "ww-roster-grid" in js
+    assert "data-werewolf-play-toggle" in js
+    assert "function recoverWerewolfRawResultEvents" in js
+    assert "后台回收同步" in js
+    assert "window.setWerewolfBoard" in js
+    assert "ww-mode-toggle" in html
+    assert "ww-roster-card" in html
+    assert '"wenxin"' in js
+    assert '"grok"' in js[js.index("const WEREWOLF_CANDIDATE_SEAT_IDS"):js.index("const WEREWOLF_ROLE_LABELS")]
+    assert len(data["candidate_seats"]) == 14
+    assert len(data["seats"]) == 9
+    assert "wenxin" in data["candidate_seats"]
+    assert "grok" in data["candidate_seats"]
+    assert "meta" in data["candidate_seats"]
+    assert "grok" in data["seats"]
+    assert data["mode"] == "werewolf_14_pool_9p_standard"
+    assert "werewolf-game-running #werewolf-seat-picker:not(.is-replacement-pending)" in html
+    assert "const needsReplacementPicker = state.werewolfGame?.status === \"blocked\" && Boolean(pendingReplacement);" in js
+    assert "const shouldShowPicker = isMeetingRoom && isWerewolfMode && !isPreRun && needsReplacementPicker;" in js
+    assert "node.classList.remove(\"is-replacement-pending\");" in js
+
+    boards = api_server.app.test_client().get("/api/werewolf/boards").get_json()
+    assert boards["boards"]["quick_6"]["seat_count"] == 6
+    assert boards["boards"]["classic_12"]["seat_count"] == 12
+    assert boards["boards"]["thirteen"]["seat_count"] == 13
+    assert boards["boards"]["white_wolf_14"]["seat_count"] == 14
+    assert "white_wolf" in boards["boards"]["white_wolf_14"]["roles"]
+    assert set(boards["play_modes"]) == {"standard_competition", "ai_experiment"}
+    assert boards["default_play_mode"] == "standard_competition"
+
+
+def test_werewolf_demo_accepts_selected_seats_and_substitutions():
+    api_server = _load_api_server()
+    selected = ["chatgpt", "claude", "gemini", "deepseek", "qwen", "kimi", "grok", "doubao", "wenxin"]
+
+    response = api_server.app.test_client().post(
+        "/api/werewolf/demo",
+        json={
+            "topic": "替补局",
+            "selected_seats": selected,
+            "substitutions": [{"offline_seat": "gork", "substitute_seat": "mimo"}],
+        },
+    )
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert "mimo" in data["seats"]
+    assert "grok" not in data["seats"]
+    assert data["private_role_packets"][6]["seat"] == "mimo"
+    assert data["private_role_packets"][6]["role"] == "werewolf"
+    assert data["substitutions"][0]["offline_seat"] == "grok"
+
+
+def test_werewolf_demo_accepts_fourteen_player_board():
+    api_server = _load_api_server()
+
+    response = api_server.app.test_client().post(
+        "/api/werewolf/demo",
+        json={"topic": "14 人白狼王", "board": "white_wolf_14"},
+    )
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["board"] == "white_wolf_14"
+    assert data["seat_count"] == 14
+    assert len(data["seats"]) == 14
+    assert data["standby_seats"] == []
+    assert any(packet["role"] == "white_wolf" for packet in data["private_role_packets"])
+
+
+def test_werewolf_start_enforces_bridge_gate(monkeypatch):
+    api_server = _load_api_server()
+    monkeypatch.setattr(api_server, "bridge_status", lambda: {
+        "seats": [
+            {"id": "chatgpt", "ready": True, "driver": "chrome_cdp"},
+            {"id": "claude", "ready": False, "reason": "fixed_tab_not_found"},
+        ]
+    })
+
+    response = api_server.app.test_client().post(
+        "/api/werewolf/start",
+        json={"topic": "门禁测试", "seats": ["chatgpt", "claude"]},
+    )
+    data = response.get_json()
+
+    assert response.status_code == 409
+    assert data["error"] == "bridge_not_ready"
+    assert data["execution_plan"]["decision"] == "block_for_calibration"
+
+
+def test_werewolf_start_returns_real_session_metadata(monkeypatch):
+    api_server = _load_api_server()
+    selected = ["chatgpt", "claude", "gemini", "deepseek", "qwen", "kimi", "grok", "doubao", "wenxin"]
+    monkeypatch.setattr(api_server, "bridge_status", lambda: {
+        "seats": [{"id": seat, "ready": True, "driver": "chrome_cdp"} for seat in selected]
+    })
+
+    def fake_start_werewolf_session(*, topic, selected_seats, board="standard", play_mode="standard_competition"):
+        return {
+            "game_id": "werewolf-test",
+            "topic": topic,
+            "board": board,
+            "play_mode": play_mode,
+            "status": "queued",
+            "players": [{"id": seat, "seat": seat, "name": seat, "slot": index + 1} for index, seat in enumerate(selected_seats)],
+            "events": [],
+            "visibleCount": 0,
+            "version": 1,
+        }
+
+    monkeypatch.setattr(api_server, "start_werewolf_session", fake_start_werewolf_session)
+    response = api_server.app.test_client().post(
+        "/api/werewolf/start",
+        json={"topic": "真实启动", "seats": selected},
+    )
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["ok"] is True
+    assert data["game_id"] == "werewolf-test"
+    assert data["events_url"].endswith("/api/werewolf/werewolf-test/events")
+
+
 def test_judge_submission_rejects_local_engine(monkeypatch):
     api_server = _load_api_server()
 
@@ -156,6 +415,72 @@ def test_prompt_resonate_rejects_local_engine():
     data = response.get_json()
     assert response.status_code == 400
     assert "disabled" in data["error"]
+
+
+def test_prompt_resonate_returns_confirmable_professional_prompt(monkeypatch):
+    api_server = _load_api_server()
+    monkeypatch.setattr(api_server, "bridge_status", lambda: {
+        "config_exists": True,
+        "ready_count": 2,
+        "configured_count": 2,
+        "seats": [{"id": "chatgpt", "ready": True}, {"id": "qwen", "ready": True}],
+    })
+    response = api_server.app.test_client().post(
+        "/api/prompt/resonate",
+        json={
+            "question": "AI Judge 输入页需要先帮我想清楚，并输出专业报告格式。",
+            "engine": "web",
+            "mode": "strategic",
+            "seats": ["chatgpt", "qwen"],
+        },
+    )
+
+    data = response.get_json()
+    prompt = data["prompt_flow"]["professional_prompt"]
+    assert response.status_code == 200
+    assert "[SYSTEM]" in prompt
+    assert "[QUESTION] [AIJUDGE_PRE_RUN_CONFIRMATION]" in prompt
+    assert "用户原始任务" in prompt
+    assert "专业报告要求" in prompt
+    assert "至少 3 个可选方案" in prompt
+
+
+def test_prompt_resonate_surfaces_restricted_required_seat_gate(monkeypatch):
+    api_server = _load_api_server()
+    monkeypatch.setattr(api_server, "bridge_status", lambda: {
+        "config_exists": True,
+        "ready_count": 1,
+        "configured_count": 2,
+        "seats": [
+            {"id": "chatgpt", "ready": True, "driver": "chrome_cdp"},
+            {
+                "id": "claude",
+                "ready": False,
+                "reason": "provider_account_restricted",
+                "driver": "chrome_cdp",
+                "calibration": {"status": "fail"},
+            },
+        ],
+    })
+
+    response = api_server.app.test_client().post(
+        "/api/prompt/resonate",
+        json={
+            "question": "检查 Claude 受限时能否阻断真实会议。",
+            "engine": "web",
+            "mode": "flash",
+            "seats": ["chatgpt", "claude"],
+        },
+    )
+    data = response.get_json()
+    plan = data["execution_plan"]
+
+    assert response.status_code == 200
+    assert plan["can_run_deep_collection"] is False
+    assert plan["decision"] == "block_for_calibration"
+    assert plan["runnable_seats"] == ["chatgpt"]
+    assert plan["blocked_seats"][0]["seat"] == "claude"
+    assert plan["blocked_seats"][0]["reason"] == "provider_account_restricted"
 
 
 def test_execution_router_requires_every_selected_web_seat_ready():
@@ -226,7 +551,7 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
     assert verdict["single_judge_baseline"]["label"] == "DeepSeek 单模型对照"
     assert verdict["roster_sensitivity"]
     assert verdict["final_report"]["schema"] == "ai_judge.final_report.v1"
-    assert verdict["final_report"]["title"] == "AI Judge 轮值法官最终报告"
+    assert verdict["final_report"]["title"] == "AI Judge 最终行动方案：测试主审"
     assert verdict["final_report"]["judge_editor"]["label"] == "DeepSeek 轮值法官"
     assert verdict["final_report"]["recommendation"]
     assert verdict["final_report"]["sop_closeout"]["schema"] == "ai_judge.closeout_sop.v1"
@@ -400,6 +725,11 @@ def test_send_button_failures_are_recoverable():
     assert api_server._is_supplementable_result({
         "seat": "qwen",
         "ok": False,
+        "error": {"code": "prompt_still_in_input"},
+    })
+    assert api_server._is_supplementable_result({
+        "seat": "qwen",
+        "ok": False,
         "error": {"code": "existing_answer_not_found"},
     })
     assert api_server._is_supplementable_result({
@@ -470,6 +800,30 @@ def test_rescue_plan_marks_transcript_pollution_as_clean_session_resubmit():
     assert plan["fresh_seats"] == ["chatgpt"]
     assert plan["actions"][0]["method"] == "clean_session_resubmit"
     assert plan["actions"][0]["label"] == "清理串流并回收"
+
+
+def test_rescue_plan_treats_mode_and_composer_failures_as_fresh_resubmit():
+    api_server = _load_api_server()
+    verdict = {
+        "seats": ["deepseek", "doubao", "claude", "minimax", "qwen", "grok"],
+        "web_bridge": {
+            "raw_results": [
+                {"seat": "deepseek", "ok": False, "error": {"code": "deepseek_expert_mode_not_verified"}},
+                {"seat": "doubao", "ok": False, "error": {"code": "doubao_expert_mode_not_verified"}},
+                {"seat": "claude", "ok": False, "error": {"code": "apple_events_execute_failed"}},
+                {"seat": "minimax", "ok": False, "error": {"code": "chrome_composer_not_ready"}},
+                {"seat": "qwen", "ok": False, "error": {"code": "prompt_still_in_input"}},
+                {"seat": "grok", "ok": False, "error": {"code": "chrome_composer_not_ready"}},
+            ],
+        },
+    }
+
+    plan = api_server._build_rescue_plan(verdict)
+
+    assert plan["status"] == "ready"
+    assert plan["fresh_seats"] == ["deepseek", "doubao", "claude", "minimax", "qwen"]
+    assert "grok" not in plan["seats"]
+    assert all(action["method"] == "fresh_web_submission" for action in plan["actions"])
 
 
 def test_supplementable_run_seats_prefers_required_non_grok_seats():
@@ -736,6 +1090,116 @@ def test_recheck_endpoint_accepts_stale_running_task():
     assert captured["source_run_id"] == run_id
     assert captured["seats"] == ["minimax"]
     assert captured["task"]["question"] == "需要二次回收的网页任务"
+
+
+def test_recheck_endpoint_honors_explicit_all_seats_for_stale_task():
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    old_start = api_server._start_recheck_worker
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+
+        def fake_start(recheck_run_id, source_run_id, task, seats, notify_config):
+            captured["seats"] = seats
+            captured["source_run_id"] = source_run_id
+
+        api_server._start_recheck_worker = fake_start
+        try:
+            run_id = api_server.TASKS.submit(
+                "需要全量回收的网页任务",
+                mode="strategic",
+                seats=["chatgpt", "qwen", "claude"],
+            )
+            api_server.TASKS.update_progress(
+                run_id,
+                "二轮共振：Chrome 固定标签回答轮询：等待 ChatGPT，剩余 1 席，最长等待 427s",
+                0.85,
+            )
+            run_dir = tmp_path / run_id
+            run_dir.mkdir(parents=True)
+            (run_dir / "trace.json").write_text(json.dumps({
+                "run_id": run_id,
+                "events": [
+                    {
+                        "phase": "seat",
+                        "action": "chrome_submit_complete",
+                        "detail": "chatgpt 提示词已发送",
+                        "at": "2026-05-16T15:44:24+00:00",
+                        "data": {"seat": "chatgpt"},
+                    }
+                ],
+            }), encoding="utf-8")
+
+            response = api_server.app.test_client().post(
+                f"/api/judge/{run_id}/recheck",
+                json={"seats": ["chatgpt", "qwen", "claude"]},
+            )
+        finally:
+            api_server._start_recheck_worker = old_start
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    data = response.get_json()
+    assert response.status_code == 202
+    assert data["seat_count"] == 3
+    assert captured["source_run_id"] == run_id
+    assert captured["seats"] == ["chatgpt", "qwen", "claude"]
+
+
+def test_recheck_endpoint_honors_explicit_all_seats_for_saved_run():
+    api_server = _load_api_server()
+    old_tasks = api_server.TASKS
+    old_runs_dir = api_server.RUNS_DIR
+    old_start_supplement = api_server._start_supplement_worker
+    captured = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        api_server.RUNS_DIR = tmp_path
+        api_server.TASKS = api_server.TaskManager(db_path=tmp_path / "tasks.sqlite3")
+        run_dir = tmp_path / "run-saved-all"
+        run_dir.mkdir(parents=True)
+        (run_dir / "verdict.json").write_text(json.dumps({
+            "run_id": "run-saved-all",
+            "question": "需要从旧报告补回全席位",
+            "mode": "strategic",
+            "seats": ["chatgpt", "qwen", "claude"],
+            "web_bridge": {
+                "raw_results": [
+                    {"seat": "chatgpt", "ok": True, "response": "done"},
+                    {
+                        "seat": "qwen",
+                        "ok": False,
+                        "supplementable": True,
+                        "error": {"code": "slow_response_pending"},
+                    },
+                ],
+            },
+        }), encoding="utf-8")
+
+        def fake_start_supplement(recheck_run_id, source_run_id, seats, notify_config):
+            captured["source_run_id"] = source_run_id
+            captured["seats"] = seats
+
+        api_server._start_supplement_worker = fake_start_supplement
+        try:
+            response = api_server.app.test_client().post(
+                "/api/judge/run-saved-all/recheck",
+                json={"seats": ["chatgpt", "qwen", "claude"]},
+            )
+        finally:
+            api_server._start_supplement_worker = old_start_supplement
+            api_server.TASKS = old_tasks
+            api_server.RUNS_DIR = old_runs_dir
+
+    data = response.get_json()
+    assert response.status_code == 202
+    assert data["seat_count"] == 3
+    assert captured["source_run_id"] == "run-saved-all"
+    assert captured["seats"] == ["qwen", "chatgpt", "claude"]
 
 
 def test_recheck_endpoint_can_resubmit_saved_required_seat():
@@ -1189,3 +1653,61 @@ def test_evidence_os_api_endpoints_update_saved_run():
         finally:
             api_server.RUNS_DIR = old_runs_dir
             api_server.TASKS = old_tasks
+
+
+def test_bindui_addEventListener_bindings_guard_missing_elements():
+    """P62: Every $('#id').addEventListener in dashboard.js must use optional chaining
+    when the target element is absent from dashboard.html.  This catches the specific
+    bug where $("#btn-history-refresh").addEventListener threw during boot because
+    the element does not exist in the HTML."""
+    root = Path(__file__).resolve().parents[1]
+    html = (root / "product" / "dashboard.html").read_text(encoding="utf-8")
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    # Collect all IDs present in the HTML
+    html_ids = set(re.findall(r'id="([^"]+)"', html))
+
+    # Find all direct addEventListener bindings: $("#some-id").addEventListener(...)
+    # These are the dangerous ones — they throw if the element is missing.
+    direct_bindings = re.findall(
+        r"""\$\(["'](\#)?([\w-]+)["']\)\.addEventListener""",
+        js,
+    )
+
+    failures = []
+    for _hash, element_id in direct_bindings:
+        if element_id not in html_ids:
+            failures.append(
+                f"$('#{element_id}').addEventListener used directly but "
+                f"id=\"{element_id}\" not found in dashboard.html — must use ?.addEventListener"
+            )
+
+    assert not failures, "Unsafe direct addEventListener on missing elements:\n" + "\n".join(failures)
+
+
+def test_dashboard_preflights_selected_web_seats_before_creating_run():
+    root = Path(__file__).resolve().parents[1]
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    assert "async function preflightExecutionGate" in js
+    assert "/api/prompt/resonate" in js
+    assert "selectedSeatIds()" in js
+    assert "showExecutionGateDiagnostic(gate.plan, gate.bridge)" in js
+    assert "await submitJudge({ skipPreflight: true })" in js
+    assert "if (!options.skipPreflight)" in js
+    assert "executionGateMessage(gate.plan)" in js
+    assert "provider_account_restricted" in js
+
+
+def test_dashboard_run_controls_call_unified_backend_api():
+    root = Path(__file__).resolve().parents[1]
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    assert "async function postRunControl" in js
+    assert "/api/runs/${encodeURIComponent(runId)}/${action}" in js
+    assert "async function pauseCurrentRun" in js
+    assert 'await postRunControl(runId, "stop")' in js
+    assert "async function resumeCurrentRun" in js
+    assert 'await postRunControl(runId, "resume")' in js
+    assert "停止新席位" in js
+    assert "state.workflow.stage === WORKFLOW_STAGE.CANCELLED" in js
