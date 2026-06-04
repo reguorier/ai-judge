@@ -15,14 +15,16 @@
 </p>
 
 <h1 align="center">AI Judge v3.8.0</h1>
-<p align="center"><strong>Source-available citation audit for AI-generated answers.</strong></p>
+<p align="center"><strong>Source-isolated claim-support gate for AI-generated answers.</strong></p>
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
+<p align="center"><strong>A source can exist and still fail to support the exact generated claim.</strong></p>
 <p align="center"><strong>Built for teams shipping AI agents:</strong> audit the answer, the source, and the judgment path before it reaches a user.</p>
 <p align="center">Star this repo if you want a practical judge layer for LLM outputs, RAG citations, and agent traces instead of another chatbot wrapper.</p>
 
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
+  <a href="docs/THREE_BLOCK_GOVERNANCE_PACKET.md">Governance Packet</a> ·
   <a href="docs/ARC_AGENT_TRACE_AUDIT.md">Agent Trace Audit</a> ·
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
   <a href="https://github.com/reguorier/ai-judge/releases/latest">macOS App</a> ·
@@ -76,11 +78,11 @@ It separates polished language from actual thinking quality, then gives the huma
 
 ## Citation Audit in 60 Seconds
 
-Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citation-audit wedge, then adds a narrower product question: **which citations and model-seat answers are reliable enough to become a human-confirmed decision?**
+Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citation-audit wedge, then adds a narrower product question: **does the isolated source support the exact claim span, or did the model overclaim what the source proves?**
 
 The current growth strategy is intentionally constrained: prove the citation and claim-support protocol first, collect hard benchmark cases from professional users, and delay full SaaS monetization until there is visible demand. See [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](docs/AI_JUDGE_GROWTH_PLAYBOOK.md).
 
-For the shortest reproducible path, start with [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). It links the live Space, one local audit, the eight-report gallery, the 100-case benchmark, the hard 13-case benchmark, and the public contribution issues.
+For the shortest reproducible path, start with [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). For governance and legal-review handoffs, use the [`three-block governance packet`](docs/THREE_BLOCK_GOVERNANCE_PACKET.md): raw model answer, isolated evidence, and audit output stay separate.
 
 Try it in the browser first:
 
