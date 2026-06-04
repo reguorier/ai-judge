@@ -49,6 +49,23 @@
 
 ---
 
+
+## AI Judge Client-first Flow
+
+AI Judge 的主交付物是最终报告，不是 dashboard。日常本地入口是最小客户端/API：提交问题、查看聚合状态、暂停/继续/终止、打开最终报告、继续追问、归档。
+
+```bash
+python3 client/ai_judge_client.py --smoke
+bash scripts/client_smoke_test.sh
+bash scripts/report_smoke_test.sh
+bash scripts/run_control_smoke_test.sh
+bash scripts/archive_smoke_test.sh
+```
+
+Dashboard / workbench 只作为 legacy/debug/operator aid；不要把它扩展成核心产品界面。
+
+Client-first MVP is sealed: client CLI/API is the basic operation surface, final report output is the primary user-facing deliverable, and future work must improve report quality or real seat adapter reliability instead of dashboard complexity. Real Web seat adapters and Flask endpoint verification are backlog items, not blockers for this MVP seal.
+
 ## Agent / Codex Working Entry
 
 Before changing this repository, read [`AGENTS.md`](AGENTS.md), [`docs/agent_memory.md`](docs/agent_memory.md), and [`docs/runbook.md`](docs/runbook.md). Agent task evidence belongs in [`artifacts/`](artifacts/); AI Judge product audit outputs remain in [`reports/`](reports/).

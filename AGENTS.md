@@ -17,6 +17,8 @@ AI Judge is report-first, not dashboard-first. The core product value is the aud
 
 Dashboard and workbench surfaces are optional internal/operator aids only. Do not expand dashboard as the main product. Do not add new UI unless it directly supports report generation, verification, or operator safety. Prefer CLI/API/report artifacts over UI complexity. If the user has not explicitly requested UI work, do not initiate dashboard or frontend development. Minimal client control is allowed only as a thin path to submit work, see real run status, pause/resume/stop/rerun, open the final report, follow up, export, or archive. The user should feel the system working, but the durable value must land in the final report, not in interface density.
 
+Client-first MVP Seal: the MVP surface is the minimal client CLI/API plus report artifacts. `final_report.md` / `final_report.html`, `summary.json`, `evidence_packet.json`, `seat_matrix.json`, trace/dissent/human-final gate evidence are the primary deliverables. Dashboard-first development is out of scope by default. Real Web seat adapters, Flask endpoint verification under the `web` extra, and report quality polish are backlog work, not blockers for this sealed MVP.
+
 ## Architecture Overview
 
 - Python 3.11+ CLI and core engine live in `cli/`, `core/`, `harness/`, and `bridges/`.

@@ -20,6 +20,8 @@ AI Judge is report-first, not dashboard-first. Before any dashboard, workbench, 
 
 If the answer is no, do not make the UI change. If a report artifact can solve it, prefer the report artifact. Minimal client controls are acceptable only when they expose real backend state/control and lead the user back to the final report; do not turn them into dashboards, multi-page panels, rankings, or raw log waterfalls.
 
+Client-first MVP is sealed. Treat the client CLI/API as the basic operation surface and the final report bundle as the product surface. Future work must improve report quality, trace/dissent/human-final gate clarity, or real seat adapter reliability. Dashboard-first development, extra UI panels, and feature-area surfaces are rejected by default unless they directly serve report output or operator safety.
+
 ## quick
 
 Steps:

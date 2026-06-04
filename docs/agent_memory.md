@@ -29,7 +29,9 @@ This file records project-specific long-term context for AI Judge. Do not store 
 - `artifacts/` is for agent work evidence, acceptance reports, screenshots, and decision records. Source: user_instruction
 - Agent infrastructure self-check is `python3 scripts/agent_check.py`. Source: repo
 - Dashboard/workbench surfaces are optional internal/operator aids only; do not expand them unless they directly support report generation, verification, or operator safety. Source: user_instruction
-- A future client-first direction may provide a minimal local client for input, mode selection, run control, final report viewing, follow-up, export, and archive; do not implement it without an explicit scoped task and verification plan. Source: user_instruction
+- Client-first MVP is sealed: the minimal client CLI/API is the basic operation surface for submit/status/control/report/follow-up/archive; final report output is the primary user-facing deliverable. Source: user_instruction
+- Future work should improve report quality or real Web seat adapter reliability; dashboard-first expansion is out of scope unless it directly serves report output or operator safety. Source: user_instruction
+- Flask `/api/client/*` endpoint verification requires the optional `web` extra; missing Flask in a default Python environment is a non-blocking backlog item, not an MVP blocker. Source: repo
 - GitHub Actions publish workflow gates Docker publishing behind harness, v3.2 smoke, and citation-bench checks. Source: repo
 
 ## Historical Pitfalls

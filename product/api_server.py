@@ -31,6 +31,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from flask import Flask, Response, jsonify, redirect, request, send_file, send_from_directory, stream_with_context
+from product.client_api import client_blueprint
 
 # P24: Background threads (run_worker, rescue, recheck, supplement) need a stable base URL
 # because Flask's request proxy is unavailable outside the request context.
@@ -118,6 +119,7 @@ from core.web_jury import assemble_web_verdict_from_raw_results, run_web_jury
 
 
 app = Flask(__name__)
+app.register_blueprint(client_blueprint)
 if CORS:
     CORS(app)
 
