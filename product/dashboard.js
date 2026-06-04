@@ -14,7 +14,7 @@ try {
   document.body.appendChild(s2);
 } catch(e) {}
 
-const AI_JUDGE_CLIENT_BUILD = "P3.5-RC1";
+const AI_JUDGE_CLIENT_BUILD = "p8.7-drift-sentinel-e2e-v1";
 window.__AI_JUDGE_BUILD_ID__ = AI_JUDGE_CLIENT_BUILD;
 
 // Sentinel 3: After build marker set
@@ -190,20 +190,20 @@ const WEREWOLF_ROLE_LABELS = {
 };
 const WEREWOLF_TEAM_LABELS = { good: "好人阵营", werewolf: "狼人阵营" };
 const WEREWOLF_HISTORICAL_SCORES_KEY = "WEREWOLF_HISTORICAL_SCORES";
-const WORLDCUP_EXCLUDED_SEATS = new Set(["claude", "zhipu"]);
+const WORLDCUP_EXCLUDED_SEATS = new Set([]);
 const WORLDCUP_TARGET_SEAT_IDS = PARLIAMENT_SEATS
   .map(seat => seat.id)
   .filter(id => id && !WORLDCUP_EXCLUDED_SEATS.has(id));
 const WORLDCUP_SEAT_TARGET_COUNT = WORLDCUP_TARGET_SEAT_IDS.length;
-const WORLDCUP_PREDICTION_PROMPT = `世界杯预测池 Run #7：请基于 Run #6 的真实回收结果，重新跑一轮 12 席全量赛事预测，并把每个模型的发言写入“档案室”。
+const WORLDCUP_PREDICTION_PROMPT = `世界杯预测池 Run #7：请基于 Run #6 的真实回收结果，重新跑一轮 14 席全量赛事预测，并把每个模型的发言写入“档案室”。
 
 上一轮已知结果：
 - Run #3 已补齐 DeepSeek，欧冠前哨 PSG 1-1 阿森纳并由巴黎点球胜出；DeepSeek 的 PSG 冠军、小 2.5、平局三线同时命中，960GP 投入结算为 1810GP。
-- Run #6 真实原始回复已回收 12/12，provider smoke 已通过并拿到 989 行真实赔率；当前 betting receipts 仍为 0 个有效下注，必须基于真实赔率重新生成/复核投注单，不能虚构收益。
-- 本轮必须按 12 席口径运行：ChatGPT、Gemini、DeepSeek、Qwen、Kimi、xAI/Grok、Yuanbao、Doubao、MiniMax、MiMo、Wenxin、Meta AI。Claude 与 Zhipu 已从当前席位池移除，只保留历史档案记录。
-- 当前预测池基线：12 席位池，7 个数据源，104 场世界杯赛程 + 13 场热身赛，热门基线为西班牙 17.4%、法国 16.7%、英格兰 13.3%、巴西 11.1%、阿根廷 10.0%、摩洛哥 2.0%。
+- Run #6 回收暴露问题：Claude 登录态缺席，不能算满席；Grok、MiniMax、文心只进入适配席，没有形成真实投注；Qwen、Kimi、豆包、MiMo、Meta 有结构化破损或正文截断；Zhipu 没进入本轮赛事选择名单。
+- 本轮必须按 14 席口径运行：ChatGPT、Claude、Gemini、DeepSeek、Qwen、Kimi、Grok、Yuanbao、Doubao、MiniMax、Zhipu、MiMo、Wenxin、Meta AI。任何席位失败只允许标记失败原因，不允许悄悄替换、删除或本地适配。
+- 当前预测池基线：15,460 GP，14 席位池，7 个数据源，104 场世界杯赛程 + 13 场热身赛，热门基线为西班牙 17.4%、法国 16.7%、英格兰 13.3%、巴西 11.1%、阿根廷 10.0%、摩洛哥 2.0%。
 - Run #4 赛后复盘：5/31 Brazil 6-2 Panama、USA 3-2 Senegal、Germany 4-0 Finland 已核验。强队让球和大球方向明显优于“小球/净胜球衰减”共识；精确 GP 返还仍等待盘口赔率、让球线、组合单和 void/push 规则确认。
-- 方向性命中：ChatGPT 命中 Brazil -1.5 与 Germany -1.5；Kimi 命中 Brazil -2.5 / 大3.5 / Germany -1.5；MiniMax 命中 Brazil -2.5/O2.5 与 Germany -1.5/O2.5；豆包重仓 Brazil -1.5 命中。
+- 方向性命中：ChatGPT 命中 Brazil -1.5 与 Germany -1.5；Claude 命中 Germany 胜+大2.5；Kimi 命中 Brazil -2.5 / 大3.5 / Germany -1.5；MiniMax 命中 Brazil -2.5/O2.5 与 Germany -1.5/O2.5；豆包重仓 Brazil -1.5 命中。
 - 方向性失误：DeepSeek 的 Finland +2.5 和 USA-Senegal 小2.5 失败；元宝、通义、MiniMax 的 USA-Senegal 小球/平局方向失败；所有模型必须解释自己是否低估热身赛进攻强度、首发质量或主场战意。
 
 当前最新赛事状态：
@@ -212,7 +212,7 @@ const WORLDCUP_PREDICTION_PROMPT = `世界杯预测池 Run #7：请基于 Run #6
 - 本轮主要下注对象：6/1 Norway vs Sweden、6/2 Belgium vs Croatia、6/4 France vs Ivory Coast、Iraq vs Spain、6/6 USA vs Germany、Brazil vs Egypt，以及世界杯小组赛高价值窗口。
 
 本轮席位规则：
-- 12 席全部参审；Claude/Zhipu 不再入池。如果某席位登录、额度、网页协议、长思考或结构化失败，必须写明 seat_status 和 failure_reason，不得静默替换、删除或改成本地适配。
+- 14 席全部参审，Zhipu 必须进入赛事预测；如果某席位登录、额度、网页协议、长思考或结构化失败，必须写明 seat_status 和 failure_reason，不得静默替换、删除或改成本地适配。
 - 脆弱网页席位会收到短提示词，只要求结构化回执，不要求长篇分析；强模型席位收到完整提示词，负责补足推理、证据和策略。
 - Grok、MiniMax、Wenxin 本轮必须尝试真实投注。若额度或页面阻断，只能标记为 account_limited / page_blocked / auth_required，不能用“适配席”代替真实投注。
 - 每个模型必须给出新的赛事分析、下注结论、GP 分配、风险边界、触发撤单/加注条件。
@@ -1627,8 +1627,8 @@ function worldcupPromptFromPackage(pkg) {
   return `世界杯预测池 ${pkg.runId || "下一轮"}：请读取网页预测池回传的开庭包，作为一轮新的 AI Judge 对话流运行，不直接跳网页。
 
 硬性口径：
-- 本轮必须按 ${WORLDCUP_SEAT_TARGET_COUNT} 席运行；Claude/Zhipu 已从当前预测池移除，只保留历史档案记录。
-- 如果 xAI/Grok、MiniMax、文心或其他当前席位存在登录、额度、协议、页面或结构化问题，只能记录 failure_reason，不允许静默降级席位总数。
+- 本轮必须按 ${WORLDCUP_SEAT_TARGET_COUNT} 席运行，Zhipu 必须进入赛事预测名单。
+- 如果 Claude、Grok、MiniMax、文心或其他席位存在登录、额度、协议、页面或结构化问题，只能记录 failure_reason，不允许静默降级席位总数。
 - 脆弱网页席位使用短提示词补结构化回执；强模型席位使用完整提示词补推理、证据和投注策略。
 
 主席指令：
@@ -1713,7 +1713,7 @@ function startWorldcupPredictionFlow(runPackage = null) {
       role: "你",
       text: runPackage
         ? "从预测池网页带回开庭包，启动下一轮世界杯赛事预测。请沿用包内排行榜、贷款账本、奖励账本、证据库和席位任务，让模型给出新的分析和投注结论。"
-        : "启动新一轮 12 席世界杯赛事预测。沿用 Run #6 回收结果，让每个席位带着贷款、奖金、对手结果、信源任务和信息贡献规则给出新的分析和投注结论，并写入档案室。",
+        : "启动新一轮 14 席世界杯赛事预测。沿用 Run #6 回收结果，让每个席位带着贷款、奖金、对手结果、信源任务和信息贡献规则给出新的分析和投注结论，并写入档案室。",
       msgState: "sent",
     },
     {
@@ -1721,7 +1721,7 @@ function startWorldcupPredictionFlow(runPackage = null) {
       role: "Grand Judge",
       text: runPackage
         ? `收到。已读取 ${runPackage.runId || "网页"} 开庭包：排行榜、贷款/奖励、证据库队列和席位任务都会进入本轮对话流。\n\n我会先声明赛后结算保护：没有盘口、赔率、让球线和 void/push 规则，不虚构 GP 返还；随后逐席要求模型复述自身账户、对手态势、贷款资格、上轮误差和本轮信息采集任务。`
-        : "收到。赛事预测会作为一轮新的 AI Judge 对话流运行，不直接跳网页。\n\n我会先把 Run #6 的 12/12 原始回收、真实赔率和投注单缺口写入上下文，再声明 Claude/Zhipu 已从当前席位池移除：强模型走完整提示词，脆弱网页走短提示词补结构化回执。网页预测池会沉淀每个模型的账户、投注记录、当时思考、盈收比、情报贡献和档案室回溯字段。",
+        : "收到。赛事预测会作为一轮新的 AI Judge 对话流运行，不直接跳网页。\n\n我会先把 Run #6 的回收问题写入上下文，再声明 14 席必须逐一尝试，Zhipu 必须进入：强模型走完整提示词，脆弱网页走短提示词补结构化回执。网页预测池会沉淀每个模型的账户、投注记录、当时思考、盈收比、情报贡献和档案室回溯字段。",
       msgState: "drafting",
       working: true,
       stage: 0,
@@ -1743,13 +1743,13 @@ function startWorldcupPredictionFlow(runPackage = null) {
       kind: "judge_prerun",
       role: "Grand Judge",
       text: runPackage
-        ? `开庭包已入场：当前会让 ${seatCount} 个席位参审，目标口径 ${WORLDCUP_SEAT_TARGET_COUNT}/${WORLDCUP_SEAT_TARGET_COUNT}。包内最新状态包括：Run #6 12/12 原始回收、989 行真实赔率、投注单待重生成、贷款账本、奖励账本和 ${runPackage.evidenceQueue?.length || 0} 条证据队列。\n\n每个席位必须先复述自己的排名、GP、上轮下注/返还/净收益和对手结果，再输出：是否贷款、贷款用途、GP 下注方案、预期 ROI、最坏亏损、投注思考、赛事信息源、风险边界、加注/撤单条件，以及相对上一轮的判断变化。脆弱网页席位使用短提示词补结构化回执，强模型席位补充完整策略。\n\n激励规则：收益前三分别 +300 / +200 / +100 GP；进步最快 +150 GP；最佳信息贡献 +100 GP；贷款后盈利超过利息 2 倍可拿逆风翻盘奖 +200 GP。所有结果写回档案室字段：账户、贷款、投注表、思考、信源、风险、赛后回写。`
-        : `上一轮结果已整理：Run #6 已拿到 12/12 真实原始回复，provider smoke 通过并有 989 行真实赔率；当前缺口是 bet receipts 仍为 0 个有效下注，需要用真实赔率重新生成/复核投注单。Claude/Zhipu 已从当前席位池移除，只保留历史档案。\n\n本轮会让 ${seatCount} 个席位参审，目标口径 ${WORLDCUP_SEAT_TARGET_COUNT}/${WORLDCUP_SEAT_TARGET_COUNT}。5/31 Brazil vs Panama、USA vs Senegal、Germany vs Finland 已核验比分，但精确收益仍必须依赖盘口、赔率、让球线和 void/push 规则。每个席位必须先复述自己的排名、GP、上轮下注/返还/净收益和对手结果，再输出：是否贷款、贷款用途、GP 下注方案、预期 ROI、最坏亏损、当时投注思考、赛事信息源、风险边界、加注/撤单条件，以及相对 Run #6 的判断变化。\n\n激励规则：收益前三分别 +300 / +200 / +100 GP；进步最快 +150 GP；最佳信息贡献 +100 GP；贷款后盈利超过利息 2 倍可拿逆风翻盘奖 +200 GP。所有结果会写入档案室字段：账户、贷款、投注表、思考、信源、风险、赛后回写。`,
+        ? `开庭包已入场：当前会让 ${seatCount} 个席位参审，目标口径 ${WORLDCUP_SEAT_TARGET_COUNT}/${WORLDCUP_SEAT_TARGET_COUNT}。包内最新状态包括：Run #6 回收、9 策略 + 3 适配、Claude 登录缺席、贷款账本、奖励账本和 ${runPackage.evidenceQueue?.length || 0} 条证据队列。\n\n每个席位必须先复述自己的排名、GP、上轮下注/返还/净收益和对手结果，再输出：是否贷款、贷款用途、GP 下注方案、预期 ROI、最坏亏损、投注思考、赛事信息源、风险边界、加注/撤单条件，以及相对上一轮的判断变化。脆弱网页席位使用短提示词补结构化回执，强模型席位补充完整策略。\n\n激励规则：收益前三分别 +300 / +200 / +100 GP；进步最快 +150 GP；最佳信息贡献 +100 GP；贷款后盈利超过利息 2 倍可拿逆风翻盘奖 +200 GP。所有结果写回档案室字段：账户、贷款、投注表、思考、信源、风险、赛后回写。`
+        : `上一轮结果已整理：Run #6 暴露了 Claude 登录缺席、Grok/MiniMax/文心只适配未投注、Qwen/Kimi/豆包/MiMo/Meta 结构破损或截断、Zhipu 未入池的问题；预测池当前基线为 15,460 GP、7 数据源、104 场世界杯赛程 + 13 场热身赛。\n\n本轮会让 ${seatCount} 个席位参审，目标口径 ${WORLDCUP_SEAT_TARGET_COUNT}/${WORLDCUP_SEAT_TARGET_COUNT}。5/31 Brazil vs Panama、USA vs Senegal、Germany vs Finland 只作为赛前下注与待官方确认赛事，未核验盘口不得虚构 GP 返还。每个席位必须先复述自己的排名、GP、上轮下注/返还/净收益和对手结果，再输出：是否贷款、贷款用途、GP 下注方案、预期 ROI、最坏亏损、当时投注思考、赛事信息源、风险边界、加注/撤单条件，以及相对 Run #6 的判断变化。\n\n激励规则：收益前三分别 +300 / +200 / +100 GP；进步最快 +150 GP；最佳信息贡献 +100 GP；贷款后盈利超过利息 2 倍可拿逆风翻盘奖 +200 GP。所有结果会写入档案室字段：账户、贷款、投注表、思考、信源、风险、赛后回写。`,
       msgState: "ready",
       chips: [
         ["Run #7", "mode"],
         [`${seatCount}/${WORLDCUP_SEAT_TARGET_COUNT} 席`, "seat"],
-        ["12席口径", "auto"],
+        ["Zhipu 已纳入", "auto"],
         ["贷款激励", "auto"],
         ["信息贡献", "auto"],
         ["档案室", "auto"],
@@ -2423,7 +2423,7 @@ function renderConferenceRoom(v = state.currentVerdict) {
         ? `${werewolfSelectedSeatIds().length}/${WEREWOLF_SEAT_COUNT} 参赛`
         : "计划就绪");
     $("#conference-current-question") && ($("#conference-current-question").textContent = isWorldcupFlow
-      ? "赛事预测 Run #7：12 席基于上一轮结果重新预测，发言写入档案室。"
+      ? "赛事预测 Run #7：14 席基于上一轮结果重新预测，发言写入档案室。"
       : excerpt(question, 170) || "等待用户提交裁决问题。");
     $("#conference-room-copy") && ($("#conference-room-copy").textContent = isWorldcupFlow
       ? "赛事预测预开局：Grand Judge 先整理上下文、席位和档案写入规则，再进入同一套对话流。"

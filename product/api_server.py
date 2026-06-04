@@ -13,7 +13,6 @@ Runs the product end-to-end:
 from __future__ import annotations
 
 import html
-import hashlib
 import json
 import mimetypes
 import os
@@ -30,9 +29,6 @@ from urllib.parse import unquote, urlparse
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
-_PRODUCT_MODULE_DIR = Path(__file__).resolve().parent
-if str(_PRODUCT_MODULE_DIR) not in sys.path:
-    sys.path.insert(0, str(_PRODUCT_MODULE_DIR))
 
 from flask import Flask, Response, jsonify, redirect, request, send_file, send_from_directory, stream_with_context
 
@@ -119,23 +115,13 @@ from core.werewolf_game import (
     play_mode_public_config,
 )
 from core.web_jury import assemble_web_verdict_from_raw_results, run_web_jury
-from product.runtime.events import EventLedger
-from product.runtime.lifecycle import emit_runtime_event, reason_code_from_error
 
-
-POOL_BRIDGE_ALLOWED_ORIGINS = {
-    "https://pool-app-one.vercel.app",
-    "http://127.0.0.1:8501",
-    "http://localhost:8501",
-    "http://127.0.0.1:8510",
-    "http://localhost:8510",
-}
 
 app = Flask(__name__)
 if CORS:
-    CORS(app, origins=sorted(POOL_BRIDGE_ALLOWED_ORIGINS), allow_headers=["Content-Type"], methods=["GET", "POST", "OPTIONS"])
+    CORS(app)
 
-PRODUCT_VERSION = "3.8.0-P3.5-RC1"
+PRODUCT_VERSION = "3.8.0-p8.7-drift-sentinel-e2e-v1"
 PRODUCT_NAME = "AI Judge Trust Workbench"
 DEFAULT_JUDGE_MODE = "strategic"
 DEFAULT_JUDGE_ENGINE = "web"
@@ -144,7 +130,6 @@ RUNS_DIR = _PROJECT_ROOT / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
 PRODUCT_DIR = _PROJECT_ROOT / "product"
 SRC_DIR = Path(os.environ.get("AI_JUDGE_SRC_DIR", str(Path.home() / "Documents" / "ai-judge-skill" / "product")))
-POOL_APP_DIR = Path(os.environ.get("AI_JUDGE_POOL_APP_DIR", str(Path.home() / "Documents" / "Playground" / ".omx" / "ai-judge" / "pool-app")))
 STALE_TASK_SECONDS = 90
 AUTO_REQUIRED_RECOVERY_ATTEMPTS = 2
 AUTO_REQUIRED_RECOVERY_WAIT_SECONDS = 6
@@ -308,66 +293,6 @@ def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
 
 def _trace_path(run_id: str) -> Path:
     return RUNS_DIR / run_id / "trace.json"
-
-
-# P3.3-RC1 runtime parity patch: keep runtime-only web runs auditable
-# without changing the web seat controller contract.
-def _emit_harness_event(
-    run_id: str,
-    event_type: str,
-    payload: dict[str, Any] | None = None,
-    *,
-    seat_id: str | None = None,
-    reason_code: str | None = None,
-) -> None:
-    emit_runtime_event(
-        run_id,
-        event_type,
-        payload or {},
-        seat_id=seat_id,
-        reason_code=reason_code,
-        strict=False,
-    )
-
-
-def _raw_results_from_verdict(verdict: dict[str, Any]) -> list[dict[str, Any]]:
-    bridge = verdict.get("web_bridge") if isinstance(verdict.get("web_bridge"), dict) else {}
-    raw = bridge.get("raw_results") if isinstance(bridge, dict) else []
-    return [item for item in raw if isinstance(item, dict)]
-
-
-def _emit_harness_seat_collection_events(run_id: str, raw_results: list[dict[str, Any]]) -> None:
-    for item in raw_results:
-        seat = str(item.get("seat") or item.get("provider_id") or item.get("seat_name") or "").strip()
-        if not seat:
-            continue
-        if item.get("ok"):
-            response = str(item.get("response") or "")
-            _emit_harness_event(run_id, "seat_submit_confirmed", {"seat_name": item.get("seat_name")}, seat_id=seat)
-            if response:
-                _emit_harness_event(run_id, "seat_readback_detected", {"chars": len(response)}, seat_id=seat)
-                _emit_harness_event(run_id, "seat_output_captured", {"chars": len(response)}, seat_id=seat)
-            _emit_harness_event(run_id, "seat_structured_validated", {"source": "web_jury.raw_results"}, seat_id=seat)
-        else:
-            _emit_harness_event(
-                run_id,
-                "seat_failed",
-                {"seat_name": item.get("seat_name"), "error": item.get("error") or item.get("reason")},
-                seat_id=seat,
-                reason_code=reason_code_from_error(item),
-            )
-
-
-def _emit_harness_evidence_saved(run_id: str, raw_results: list[dict[str, Any]]) -> None:
-    for item in raw_results:
-        seat = str(item.get("seat") or item.get("provider_id") or item.get("seat_name") or "").strip()
-        if seat and item.get("ok"):
-            _emit_harness_event(
-                run_id,
-                "seat_evidence_saved",
-                {"artifact_ref": f"runs/{run_id}/verdict.json", "evidence_count": 1},
-                seat_id=seat,
-            )
 
 
 def _load_run(run_id: str) -> dict[str, Any] | None:
@@ -1557,19 +1482,6 @@ def _run_worker(
     if attachment_context:
         model_question = model_question + "\n\n" + attachment_context
     bridge_claim = None
-    # P3.3-RC1 runtime parity patch: root web lifecycle events.
-    _emit_harness_event(
-        run_id,
-        "run_created",
-        {
-            "source": "runtime_api_server",
-            "mode": mode,
-            "engine": engine,
-            "seats": seats,
-            "external_evidence_count": len(effective_external_evidence),
-        },
-    )
-    _emit_harness_event(run_id, "run_started", {"source": "runtime_api_server"})
 
     def trace_event(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
         trace.add(phase=phase, action=action, detail=detail, data=data)
@@ -1598,14 +1510,6 @@ def _run_worker(
             if not bridge_claim:
                 busy = bridge_run_snapshot()
                 trace_event("bridge", "busy", "固定 Chrome 桥接正被其他流程占用", busy)
-                for seat in seats:
-                    _emit_harness_event(
-                        run_id,
-                        "seat_failed",
-                        {"reason": "bridge_busy", "bridge": busy},
-                        seat_id=seat,
-                        reason_code="browser_unavailable",
-                    )
                 TASKS.fail(
                     run_id,
                     f"bridge_busy: 固定 Chrome 桥接正在被 {busy.get('label') or busy.get('run_id') or '其他流程'} 使用，请等待当前流程结束后重试。",
@@ -1686,17 +1590,6 @@ def _run_worker(
                     "runnable_seats": execution_plan.get("runnable_seats"),
                     "blocked_seats": execution_plan.get("blocked_seats"),
                 })
-                for item in execution_plan.get("blocked_seats") or []:
-                    item_payload = item if isinstance(item, dict) else {"seat": item}
-                    seat = str(item_payload.get("seat") or item_payload.get("seat_name") or "").strip()
-                    if seat:
-                        _emit_harness_event(
-                            run_id,
-                            "seat_failed",
-                            {"reason": item_payload.get("reason"), "driver": item_payload.get("driver")},
-                            seat_id=seat,
-                            reason_code="provider_disabled",
-                        )
                 verdict = build_bridge_blocked_verdict(
                     question=question,
                     mode=mode,
@@ -1713,13 +1606,6 @@ def _run_worker(
                     "runnable_seats": runnable_seats,
                 })
                 TASKS.update_progress(run_id, f"后台网页桥接准备：{len(runnable_seats)} 席校准通过", 0.12)
-                for seat in runnable_seats:
-                    _emit_harness_event(
-                        run_id,
-                        "seat_submit_attempted",
-                        {"source": "runtime_api_server", "provider_id": seat},
-                        seat_id=seat,
-                    )
 
                 def web_progress(step: str, progress: float) -> None:
                     TASKS.update_progress(run_id, step, progress)
@@ -1763,12 +1649,10 @@ def _run_worker(
                     trace_event=trace_event,
                     update_progress=lambda step, pct: TASKS.update_progress(run_id, step, pct),
                 )
-                _emit_harness_seat_collection_events(run_id, _raw_results_from_verdict(verdict))
         else:
             raise ValueError("local AI Judge engine is disabled; submit with engine='web' for full web-seat collection")
 
         TASKS.update_progress(run_id, "生成判词报告", 0.90)
-        _emit_harness_event(run_id, "verdict_started", {"source": "runtime_api_server"})
         if mentor_preflight:
             verdict["mentor_preflight"] = mentor_preflight
         if local_context.get("items"):
@@ -1780,17 +1664,6 @@ def _run_worker(
                 "certification_id": citation_report.get("certification_id"),
                 "overall_status": (citation_report.get("citation_verification") or {}).get("overall_status"),
                 "replay_ledger_hash": citation_report.get("replay_ledger_hash"),
-            })
-        pool_date, pool_round_id = _extract_worldcup_pool_context(question)
-        pool_export = _export_worldcup_pool_raw_outputs(verdict, run_id, pool_date, pool_round_id)
-        if pool_export:
-            verdict.setdefault("worldcup_pool", {})["pool_app_bridge"] = pool_export
-            trace_event("worldcup_pool", "pool_app_export", "赛事模型原始回复已写回 pool-app 并触发 pipeline", {
-                "ok": pool_export.get("ok"),
-                "exported_outputs": pool_export.get("exported_outputs"),
-                "blocked_outputs": pool_export.get("blocked_outputs"),
-                "pipeline_returncode": (pool_export.get("pipeline") or {}).get("returncode"),
-                "pipeline_allowed_blocked": (pool_export.get("pipeline") or {}).get("allowed_blocked"),
             })
         # Generate canonical full report URL
         canonical_view_url = f"{_base_url()}/api/runs/{run_id}/index.html"
@@ -1804,18 +1677,6 @@ def _run_worker(
         verdict["view_url"] = canonical_view_url
         verdict["legacy_view_url"] = legacy_view_url
         _save_run(run_id, verdict)
-        _emit_harness_evidence_saved(run_id, _raw_results_from_verdict(verdict))
-        _emit_harness_event(
-            run_id,
-            "verdict_completed",
-            {
-                "verdict": verdict.get("verdict"),
-                "confidence": verdict.get("confidence"),
-                "ok_count": (verdict.get("web_bridge") or {}).get("ok_count"),
-            },
-        )
-        if (RUNS_DIR / run_id / "index.html").exists():
-            _emit_harness_event(run_id, "dashboard_rendered", {"artifact_ref": f"runs/{run_id}/index.html"})
         trace_event("report", "run_saved", "verdict.json / verdict.md / trace.json 已写入 runs 目录", {
             "run_dir": str(RUNS_DIR / run_id),
         })
@@ -2523,27 +2384,15 @@ def add_no_cache_headers(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
-    origin = request.headers.get("Origin")
-    if origin in POOL_BRIDGE_ALLOWED_ORIGINS:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Private-Network"] = "true"
     return response
 
 
 @app.route("/api/health")
 def health():
-    # P3.3-RC1 runtime parity patch: release integrity follows current.lock.
-    release_context = _p33_release_context()
-    release_integrity = release_context.get("integrity", "unknown")
-
     return jsonify({
         "status": "ok",
         "version": PRODUCT_VERSION,
         "product": PRODUCT_NAME,
-        "release_id": release_context.get("release_id", "unknown"),
-        "release_integrity": release_integrity,
         "seats_available": len(SEAT_PERSONAS),
         "engines": ["web"],
         "execution_drivers": ["web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
@@ -2986,417 +2835,6 @@ def ai_judge_icon_png():
 @app.route("/worldcup_pool.html")
 def worldcup_pool():
     return send_from_directory(PRODUCT_DIR, "worldcup_pool.html")
-
-
-def _pool_python() -> str:
-    candidates = [
-        POOL_APP_DIR / ".venv" / "bin" / "python",
-        POOL_APP_DIR / ".venv" / "bin" / "python3",
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return str(candidate)
-    return sys.executable or "python3"
-
-
-def _run_pool_command(args: list[str], timeout: int = 180, stdout_limit: int = 12000, stderr_limit: int = 4000) -> dict[str, Any]:
-    if not POOL_APP_DIR.exists():
-        return {
-            "ok": False,
-            "returncode": 127,
-            "command": args,
-            "stdout": "",
-            "stderr": f"pool-app directory not found: {POOL_APP_DIR}",
-        }
-    env = os.environ.copy()
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["PYTHONPATH"] = str(POOL_APP_DIR) + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-    started = datetime.now(timezone.utc)
-    try:
-        proc = subprocess.run(
-            args,
-            cwd=str(POOL_APP_DIR),
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        return {
-            "ok": proc.returncode == 0,
-            "returncode": proc.returncode,
-            "command": args,
-            "stdout": (proc.stdout or "")[-stdout_limit:],
-            "stderr": (proc.stderr or "")[-stderr_limit:],
-            "started_at": started.isoformat(),
-            "finished_at": datetime.now(timezone.utc).isoformat(),
-        }
-    except subprocess.TimeoutExpired as exc:
-        return {
-            "ok": False,
-            "returncode": -1,
-            "command": args,
-            "stdout": (exc.stdout or "")[-stdout_limit:] if isinstance(exc.stdout, str) else "",
-            "stderr": f"timeout after {timeout}s",
-            "started_at": started.isoformat(),
-            "finished_at": datetime.now(timezone.utc).isoformat(),
-        }
-
-
-def _pool_runtime_summary(date: str, round_id: str) -> dict[str, Any]:
-    code = (
-        "from pool_data import get_runtime_summary; import json; "
-        f"print(json.dumps(get_runtime_summary(round_id={round_id!r}, date={date!r}), ensure_ascii=False))"
-    )
-    result = _run_pool_command([_pool_python(), "-c", code], timeout=30, stdout_limit=240000)
-    if not result.get("ok"):
-        return {"ok": False, "error": result.get("stderr") or result.get("stdout"), "pool_app_dir": str(POOL_APP_DIR)}
-    try:
-        return json.loads(result.get("stdout") or "{}")
-    except Exception as exc:
-        return {"ok": False, "error": f"runtime summary parse failed: {exc}", "raw": result.get("stdout", "")[:1000]}
-
-
-def _pool_bridge_origin_allowed() -> bool:
-    origin = request.headers.get("Origin")
-    return not origin or origin in POOL_BRIDGE_ALLOWED_ORIGINS
-
-
-def _pool_model_to_ai_judge_seat(model_account: str) -> str:
-    aliases = {"xai": "grok"}
-    return aliases.get(str(model_account or "").lower(), str(model_account or "").lower())
-
-
-def _ai_judge_seat_to_pool_model(seat: str) -> str:
-    aliases = {"grok": "xai"}
-    return aliases.get(str(seat or "").lower(), str(seat or "").lower())
-
-
-def _pool_active_ai_judge_seats(runtime: dict[str, Any]) -> list[str]:
-    excluded = {"claude", "zhipu"}
-    selected: list[str] = []
-    for item in runtime.get("active_models") or []:
-        model = str(item.get("model_account") or item.get("seat_id") or "").lower()
-        seat = _pool_model_to_ai_judge_seat(model)
-        if seat in excluded or seat not in SEAT_PERSONAS or seat in selected:
-            continue
-        selected.append(seat)
-    if selected:
-        return selected
-    try:
-        from core.worldcup_pool import worldcup_pool_seats
-        for seat in worldcup_pool_seats():
-            if seat not in excluded and seat in SEAT_PERSONAS and seat not in selected:
-                selected.append(seat)
-    except Exception:
-        pass
-    return selected
-
-
-def _extract_worldcup_pool_context(question: str) -> tuple[str, str]:
-    date_match = re.search(r"(?im)^\s*date\s*:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\s*$", question or "")
-    round_match = re.search(r"(?im)^\s*round_id\s*:\s*([A-Za-z0-9_.-]+)\s*$", question or "")
-    return (
-        date_match.group(1) if date_match else "2026-06-03",
-        round_match.group(1) if round_match else "run-6",
-    )
-
-
-def _export_worldcup_pool_raw_outputs(verdict: dict[str, Any], run_id: str, date: str, round_id: str) -> dict[str, Any] | None:
-    if not isinstance(verdict.get("worldcup_pool"), dict):
-        return None
-    if not POOL_APP_DIR.exists():
-        return {"ok": False, "error": "pool_app_dir_not_found", "pool_app_dir": str(POOL_APP_DIR)}
-
-    runtime = _pool_runtime_summary(date, round_id)
-    active_pool_models = {
-        str(item.get("model_account") or item.get("seat_id") or "").lower()
-        for item in (runtime.get("active_models") or [])
-        if isinstance(item, dict)
-    }
-    if not active_pool_models:
-        active_pool_models = {"gemini", "chatgpt", "yuanbao", "wenxin", "deepseek", "mimo", "kimi", "qwen", "xai", "minimax", "doubao", "meta"}
-
-    raw_results = (verdict.get("web_bridge") or {}).get("raw_results") or []
-    raw_dir = POOL_APP_DIR / "data" / "pool" / "model_outputs" / "raw" / round_id
-    provenance_dir = POOL_APP_DIR / "data" / "pool" / "model_outputs" / "provenance" / round_id
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    provenance_dir.mkdir(parents=True, exist_ok=True)
-
-    rows: list[dict[str, Any]] = []
-    blocked: list[dict[str, Any]] = []
-    exported = 0
-    for item in raw_results:
-        seat = str(item.get("seat") or item.get("seat_id") or "").lower()
-        pool_model = _ai_judge_seat_to_pool_model(seat)
-        if pool_model not in active_pool_models:
-            continue
-        response = str(item.get("response") or "").strip()
-        if item.get("ok") and len(response) > 50:
-            raw_path = raw_dir / f"{pool_model}.txt"
-            raw_path.write_text(response + "\n", encoding="utf-8")
-            parsed = None
-            try:
-                from core.worldcup_pool import extract_first_json_object
-                parsed = extract_first_json_object(response)
-            except Exception:
-                parsed = None
-            record_path = provenance_dir / f"{pool_model}.json"
-            record = {
-                "version": "ai_judge_desktop_worldcup_pool_export.v1",
-                "run_id": run_id,
-                "round_id": round_id,
-                "date": date,
-                "seat": seat,
-                "model_account": pool_model,
-                "ok": True,
-                "method": item.get("method"),
-                "raw_output_path": str(raw_path.relative_to(POOL_APP_DIR)),
-                "parsed": parsed if isinstance(parsed, dict) else None,
-                "response_chars": len(response),
-            }
-            record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
-            rows.append({
-                "seat_id": pool_model,
-                "source_file": str(record_path),
-                "raw_output_path": str(raw_path.relative_to(POOL_APP_DIR)),
-                "response_chars": len(response),
-            })
-            exported += 1
-        else:
-            blocked.append({
-                "seat_id": pool_model,
-                "seat": seat,
-                "failure_reason": item.get("error") or item.get("reason") or "no_valid_response",
-                "method": item.get("method"),
-            })
-
-    provenance = {
-        "version": "ai_judge_desktop_worldcup_pool_export.v1",
-        "run_id": run_id,
-        "round_id": round_id,
-        "date": date,
-        "exported_at": datetime.now(timezone.utc).isoformat(),
-        "rows": rows,
-        "blocked": blocked,
-        "active_pool_models": sorted(active_pool_models),
-    }
-    (provenance_dir / "web_collection_sync.json").write_text(json.dumps(provenance, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    pipeline = _run_pool_command([
-        _pool_python(), "ops/run_daily_pool_pipeline.py",
-        "--date", date,
-        "--round", round_id,
-        "--odds-provider", "the_odds_api",
-        "--reuse-existing-odds",
-    ], timeout=240)
-    pipeline["allowed_blocked"] = pipeline.get("returncode") == 1 and "final_status:  blocked" in (pipeline.get("stdout") or "")
-    return {
-        "ok": exported > 0 and (pipeline.get("ok") or pipeline.get("allowed_blocked")),
-        "exported_outputs": exported,
-        "blocked_outputs": len(blocked),
-        "raw_dir": str(raw_dir),
-        "provenance_path": str(provenance_dir / "web_collection_sync.json"),
-        "pipeline": pipeline,
-        "runtime_summary": _pool_runtime_summary(date, round_id),
-    }
-
-
-def _start_worldcup_pool_model_round(date: str, round_id: str) -> tuple[dict[str, Any], int]:
-    try:
-        from core.worldcup_pool import default_worldcup_pool_question, worldcup_pool_seats
-    except Exception as exc:
-        return {"ok": False, "error": f"worldcup pool module unavailable: {exc}"}, 500
-
-    busy = bridge_run_snapshot()
-    if busy.get("busy"):
-        return {
-            "ok": False,
-            "error": "bridge_busy",
-            "message": "固定 Chrome 桥接正在运行其他 AI Judge 流程，请等当前流程结束后再启动赛事模型局。",
-            "bridge_run": busy,
-        }, 409
-
-    runtime = _pool_runtime_summary(date, round_id)
-    provider = runtime.get("provider", {}) if isinstance(runtime, dict) else {}
-    betting = runtime.get("betting", {}) if isinstance(runtime, dict) else {}
-    automation = runtime.get("automation", {}) if isinstance(runtime, dict) else {}
-    seats = _pool_active_ai_judge_seats(runtime)
-    question = (
-        default_worldcup_pool_question()
-        + "\n\n【本地桥接运行上下文】\n"
-        + f"date: {date}\n"
-        + f"round_id: {round_id}\n"
-        + f"pipeline_status: {automation.get('pipeline_status', 'unknown')}\n"
-        + f"valid_odds_rows: {provider.get('valid_odds_rows', 0)}\n"
-        + f"accepted_bets: {(betting.get('summary') or {}).get('accepted_bets', betting.get('accepted_bets', 0))}\n"
-        + "本轮必须把赛果、排名、筹码、贷款、模型投注、信源与赛后记忆写成可回填网页的结构化结果。"
-    )
-    run_id = TASKS.submit(question=question, mode="strategic", seats=seats)
-    start_run(
-        "worldcup",
-        label=f"赛事预测池: {round_id}",
-        bridge_claim=None,
-        run_id=run_id,
-        metadata={"question": question, "mode": "strategic", "seats": seats, "product_mode": "worldcup_pool", "pool_round_id": round_id, "pool_date": date},
-    )
-    _start_worker(
-        run_id,
-        question,
-        "strategic",
-        seats,
-        "web",
-        {},
-        "auto",
-        [],
-        None,
-        [],
-        {},
-        attachments=[],
-    )
-    return {
-        "ok": True,
-        "action": "start_model_round",
-        "run_id": run_id,
-        "pool_date": date,
-        "pool_round_id": round_id,
-        "seats": seats,
-        "progress_url": f"/api/judge/{run_id}/progress",
-        "report_url": f"/api/runs/{run_id}/index.html",
-        "verdict_url": f"/api/judge/{run_id}/verdict",
-    }, 200
-
-
-@app.route("/api/worldcup-pool/health")
-def worldcup_pool_bridge_health():
-    return jsonify({
-        "ok": True,
-        "bridge": "ai_judge_desktop_local",
-        "pool_app_dir": str(POOL_APP_DIR),
-        "pool_app_exists": POOL_APP_DIR.exists(),
-        "python": _pool_python(),
-        "base_url": _base_url(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
-
-
-@app.route("/api/worldcup-pool/runtime-summary")
-def worldcup_pool_runtime_summary():
-    date = str(request.args.get("date") or "2026-06-03")
-    round_id = str(request.args.get("round") or request.args.get("round_id") or "run-6")
-    return jsonify(_pool_runtime_summary(date, round_id))
-
-
-@app.route("/api/worldcup-pool/action", methods=["POST", "OPTIONS"])
-def worldcup_pool_action():
-    if request.method == "OPTIONS":
-        return ("", 204)
-    if not _pool_bridge_origin_allowed():
-        return jsonify({
-            "ok": False,
-            "error": "origin_not_allowed",
-            "allowed_origins": sorted(POOL_BRIDGE_ALLOWED_ORIGINS),
-        }), 403
-
-    data = request.get_json(silent=True) or {}
-    action = str(data.get("action") or "").strip()
-    date = str(data.get("date") or "2026-06-03").strip()
-    round_id = str(data.get("round_id") or data.get("round") or "run-6").strip()
-    python = _pool_python()
-
-    if action == "sync_results":
-        commands = [
-            [python, "ops/sync_matches.py", "--date", date, "--days", "14"],
-            [python, "ops/sync_results.py", "--date", date],
-        ]
-    elif action == "generate_prompts":
-        commands = [[
-            python, "ops/ai_judge_daily_pool.py", "run",
-            "--date", date,
-            "--round", round_id,
-            "--odds-provider", "the_odds_api",
-            "--generate-prompts-only",
-        ]]
-    elif action == "run_pipeline":
-        commands = [[
-            python, "ops/run_daily_pool_pipeline.py",
-            "--date", date,
-            "--round", round_id,
-            "--odds-provider", "the_odds_api",
-            "--reuse-existing-odds",
-        ]]
-    elif action == "start_model_round":
-        payload, status = _start_worldcup_pool_model_round(date, round_id)
-        return jsonify(payload), status
-    elif action == "full_local_cycle":
-        preflight_commands = [
-            [python, "ops/sync_matches.py", "--date", date, "--days", "14"],
-            [python, "ops/sync_results.py", "--date", date],
-            [
-                python, "ops/ai_judge_daily_pool.py", "run",
-                "--date", date,
-                "--round", round_id,
-                "--odds-provider", "the_odds_api",
-                "--generate-prompts-only",
-            ],
-        ]
-        preflight_results = []
-        for command in preflight_commands:
-            result = _run_pool_command(command, timeout=240)
-            preflight_results.append(result)
-            if not result.get("ok"):
-                return jsonify({
-                    "ok": False,
-                    "action": action,
-                    "stage": "preflight",
-                    "date": date,
-                    "round_id": round_id,
-                    "results": preflight_results,
-                    "runtime_summary": _pool_runtime_summary(date, round_id),
-                }), 500
-        payload, status = _start_worldcup_pool_model_round(date, round_id)
-        if status >= 400:
-            return jsonify(payload), status
-        return jsonify({
-            "ok": True,
-            "action": action,
-            "date": date,
-            "round_id": round_id,
-            "steps": [
-                {"action": "sync_results", "results": preflight_results[:2]},
-                {"action": "generate_prompts", "result": preflight_results[2]},
-                {"action": "start_model_round", "result": payload},
-                {"action": "auto_export_and_pipeline", "note": "模型网页回复完成后，worker 会自动写回 raw outputs 并触发 pool-app pipeline。"},
-            ],
-            "run_id": payload.get("run_id"),
-            "progress_url": payload.get("progress_url"),
-            "report_url": payload.get("report_url"),
-            "runtime_summary": _pool_runtime_summary(date, round_id),
-        })
-    else:
-        return jsonify({
-            "ok": False,
-            "error": "unknown_action",
-            "allowed_actions": ["sync_results", "generate_prompts", "run_pipeline", "start_model_round", "full_local_cycle"],
-        }), 400
-
-    results = []
-    for command in commands:
-        result = _run_pool_command(command, timeout=240)
-        result["allowed_blocked"] = action == "run_pipeline" and result.get("returncode") == 1 and "final_status:  blocked" in (result.get("stdout") or "")
-        results.append(result)
-        if not result.get("ok") and not result.get("allowed_blocked"):
-            break
-
-    ok = all(r.get("ok") or r.get("allowed_blocked") for r in results)
-    return jsonify({
-        "ok": ok,
-        "action": action,
-        "date": date,
-        "round_id": round_id,
-        "pool_app_dir": str(POOL_APP_DIR),
-        "results": results,
-        "runtime_summary": _pool_runtime_summary(date, round_id),
-    }), 200 if ok else 500
 
 
 @app.route("/citation-dashboard")
@@ -5711,69 +5149,6 @@ def _signal_status_class(status: str) -> str:
     return {"ok": "good", "warn": "warn", "block": "bad"}.get(status, "warn")
 
 
-# P3.3-RC1 runtime parity patch: expose the ledger projection in existing
-# reports only when harness artifacts exist for this run.
-def _render_p33_runtime_harness(result: dict[str, Any]) -> str:
-    run_id = str(result.get("run_id") or "").strip()
-    if not run_id:
-        return ""
-    try:
-        run_dir = EventLedger().run_dir(run_id)
-        state_path = run_dir / "run_state.json"
-        seal_path = run_dir / "P3.3_RC1_SEAL.json"
-        if not state_path.exists() and not seal_path.exists():
-            return ""
-        state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
-        seal = json.loads(seal_path.read_text(encoding="utf-8")) if seal_path.exists() else {}
-    except Exception as exc:
-        return (
-            '<section class="band" id="p33-runtime-harness">'
-            '<div class="section-head"><div><h2>P3.3 Runtime Harness</h2>'
-            f'<p class="muted">run_state 读取失败：{html.escape(type(exc).__name__)}</p></div></div>'
-            '<span class="status-pill bad">unavailable</span>'
-            "</section>"
-        )
-
-    integrity = state.get("integrity_status") or {}
-    counts = state.get("counts") or {}
-    integrity_ok = integrity.get("ok") is True
-    sealed = bool(seal)
-    status_class = "good" if integrity_ok else "bad"
-    sealed_label = "sealed" if sealed else "not sealed"
-    sealed_class = "good" if sealed else "warn"
-    errors = integrity.get("errors") or []
-    errors_html = ""
-    if errors:
-        errors_html = (
-            '<p class="decision-warning">'
-            f"Integrity: {html.escape('; '.join(str(item) for item in errors[:4]))}"
-            "</p>"
-        )
-    seal_html = ""
-    if seal:
-        seal_html = (
-            '<section class="summary-grid compact" aria-label="P3.3 seal status">'
-            f"<div><span>seal_id</span><strong>{html.escape(str(seal.get('seal_id', '-')))}</strong></div>"
-            f"<div><span>created_at</span><strong>{html.escape(str(seal.get('created_at', '-')))}</strong></div>"
-            f"<div><span>event_chain_valid</span><strong>{html.escape(str(seal.get('event_chain_valid', '-')))}</strong></div>"
-            f"<div><span>run_state_valid</span><strong>{html.escape(str(seal.get('run_state_valid', '-')))}</strong></div>"
-            "</section>"
-        )
-    return (
-        '<section class="band" id="p33-runtime-harness">'
-        '<div class="section-head"><div><h2>P3.3 Runtime Harness</h2>'
-        '<p class="muted">events.jsonl / run_state.json / seal projection</p></div>'
-        f'<span class="status-pill {status_class}">{"integrity ok" if integrity_ok else "integrity issue"}</span></div>'
-        '<section class="summary-grid compact" aria-label="P3.3 runtime status">'
-        f"<div><span>run_status</span><strong>{html.escape(str(state.get('status', '-')))}</strong></div>"
-        f"<div><span>seat_counts</span><strong>{html.escape(str((counts.get('seats') or {}).get('completed', 0)))}/{html.escape(str((counts.get('seats') or {}).get('total', 0)))}</strong></div>"
-        f"<div><span>last_event_id</span><strong>{html.escape(str(state.get('last_event_id', '-')))}</strong></div>"
-        f'<div><span>seal</span><strong><span class="status-pill {sealed_class}">{sealed_label}</span></strong></div>'
-        "</section>"
-        f"{errors_html}{seal_html}</section>"
-    )
-
-
 def _render_html_report(result: dict[str, Any]) -> str:
     reasons = "".join(
         f"<li>{html.escape(_compact_report_text(r, 260))}</li>"
@@ -5855,7 +5230,6 @@ def _render_html_report(result: dict[str, Any]) -> str:
     deliberation_html = _render_deliberation(result)
     citation_verification_html = _render_citation_verification(result)
     evidence_os_html = _render_evidence_os(result)
-    p33_runtime_harness_html = _render_p33_runtime_harness(result)
     result_archive_html = _render_complete_result_archive(result)
     judge_answer_link = '<a href="#judge-answer">法官答案</a>' if judge_answer_html else ""
     score_rounds_link = '<a href="#score-rounds">评分轮次</a>' if score_rounds_html else ""
@@ -6151,7 +5525,6 @@ def _render_html_report(result: dict[str, Any]) -> str:
     {score_rounds_html}
     {citation_verification_html}
     {evidence_os_html}
-    {p33_runtime_harness_html}
     <section class="band"><h2>关键理由</h2><ul class="compact-list">{reasons}</ul></section>
     {seat_digest_html}
     {mentor_supplements_html}
@@ -6624,111 +5997,6 @@ def release_drift_check():
         return jsonify({"ok": False, "error": "drift_check_error", "reason": str(_e)}), 500
 
 
-# ─── Release Status (operator_check requirement) ───
-
-def _p33_sha256_file(path: Path) -> str:
-    hasher = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
-
-
-def _p33_release_context() -> dict[str, Any]:
-    """P3.3-RC1 runtime parity patch: derive release status from current.lock."""
-    release_dir = RUNS_DIR.parent / "release"
-    runtime_root = release_dir.parent
-    current_lock_path = release_dir / "current.lock"
-    result: dict[str, Any] = {
-        "release_id": "unknown",
-        "sealed": False,
-        "integrity": "fail",
-        "manifest_path": None,
-        "drift": [],
-        "missing": [],
-        "errors": [],
-    }
-
-    lock_data: dict[str, Any] = {}
-    if current_lock_path.is_file():
-        try:
-            lock_data = json.loads(current_lock_path.read_text(encoding="utf-8"))
-            result["release_id"] = lock_data.get("release_id", "unknown")
-            result["sealed"] = bool(lock_data.get("sealed", False))
-        except Exception as exc:
-            result["errors"].append(f"current_lock_read_failed:{exc}")
-    else:
-        result["errors"].append("current_lock_missing")
-
-    manifest_path: Path | None = None
-    manifest_ref = str(lock_data.get("manifest") or "").strip()
-    if manifest_ref:
-        candidate = Path(manifest_ref)
-        manifest_path = candidate if candidate.is_absolute() else runtime_root / manifest_ref
-    elif result["release_id"] != "unknown":
-        manifest_path = release_dir / str(result["release_id"]) / "manifest.json"
-
-    manifest: dict[str, Any] = {}
-    if manifest_path is not None:
-        result["manifest_path"] = str(manifest_path)
-        if manifest_path.is_file():
-            try:
-                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            except Exception as exc:
-                result["errors"].append(f"manifest_read_failed:{exc}")
-        else:
-            result["errors"].append("manifest_missing")
-    else:
-        result["errors"].append("manifest_unresolved")
-
-    if manifest:
-        manifest_release_id = manifest.get("release_id")
-        if manifest_release_id and result["release_id"] != "unknown" and manifest_release_id != result["release_id"]:
-            result["errors"].append("release_id_mismatch")
-        result["sealed"] = bool(result["sealed"] and manifest.get("sealed", False))
-
-        for entry in manifest.get("files", []):
-            rel_path = entry.get("file_path")
-            expected = entry.get("sha256")
-            if not rel_path or not expected:
-                result["errors"].append("manifest_entry_invalid")
-                continue
-            abs_path = runtime_root / rel_path
-            if not abs_path.is_file():
-                result["missing"].append(rel_path)
-                continue
-            try:
-                current = _p33_sha256_file(abs_path)
-            except Exception as exc:
-                result["errors"].append(f"hash_failed:{rel_path}:{exc}")
-                continue
-            if current != expected:
-                result["drift"].append(rel_path)
-
-    if result["sealed"] and not result["drift"] and not result["missing"] and not result["errors"]:
-        result["integrity"] = "pass"
-    return result
-
-@app.route("/api/release/status", methods=["GET"])
-def release_status():
-    """GET /api/release/status — return release status with integrity check.
-
-    Used by operator_check.py to verify release health.
-    """
-    release_context = _p33_release_context()
-
-    return jsonify({
-        "ok": True,
-        "release_id": release_context.get("release_id", "unknown"),
-        "sealed": release_context.get("sealed", False),
-        "integrity": release_context.get("integrity", "fail"),
-        "manifest_path": release_context.get("manifest_path"),
-        "drift_count": len(release_context.get("drift", [])),
-        "missing_count": len(release_context.get("missing", [])),
-        "product_version": PRODUCT_VERSION,
-    }), 200, {"Content-Type": "application/json"}
-
-
 # ─── P9.2 Maintenance Control Center thin wrappers ───
 
 @app.route("/api/release/restore-drill", methods=["POST"])
@@ -6774,57 +6042,6 @@ def api_decision_intelligence_refresh():
         return jsonify({"ok": True, "status": "no_data", "data": {}})
     except Exception as _e:
         return jsonify({"ok": False, "error": str(_e), "reason": "di_refresh_failed"}), 500
-
-
-# === P10.2 Operator Docs API ===
-_OPERATOR_DOC_WHITELIST = {
-    "operator_guide": "OPERATOR_GUIDE.md",
-    "regression_checklist": "REGRESSION_CHECKLIST.md",
-    "stop_line": "STOP_LINE_P8.md",
-    "unfreeze_protocol": "UNFREEZE_PROTOCOL_P8.md",
-    "p9_operator_seal": "P9_OPERATOR_SEAL.md",
-}
-
-
-@app.route("/api/operator/docs", methods=["GET"])
-def api_operator_docs():
-    """P10.2: List available operator docs with metadata."""
-    product_dir = os.path.dirname(os.path.abspath(__file__))
-    docs = []
-    for doc_id, filename in _OPERATOR_DOC_WHITELIST.items():
-        file_path = os.path.join(product_dir, filename)
-        exists = os.path.exists(file_path)
-        size = os.path.getsize(file_path) if exists else 0
-        docs.append({
-            "id": doc_id,
-            "file": filename,
-            "exists": exists,
-            "size_bytes": size,
-        })
-    return jsonify({"ok": True, "docs": docs})
-
-
-@app.route("/api/operator/doc/<doc_id>", methods=["GET"])
-def api_operator_doc(doc_id):
-    """P10.2: Serve a whitelisted operator doc by ID."""
-    if doc_id not in _OPERATOR_DOC_WHITELIST:
-        return jsonify({
-            "ok": False, "error": "invalid_doc_id",
-            "reason": f"doc_id '{doc_id}' not in whitelist. Allowed: {list(_OPERATOR_DOC_WHITELIST.keys())}"
-        }), 400
-    product_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(product_dir, _OPERATOR_DOC_WHITELIST[doc_id])
-    if not os.path.exists(file_path):
-        return jsonify({
-            "ok": False, "error": "file_not_found",
-            "reason": f"File not found: {_OPERATOR_DOC_WHITELIST[doc_id]}"
-        }), 404
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        return jsonify({"ok": True, "doc_id": doc_id, "content": content})
-    except Exception as _e:
-        return jsonify({"ok": False, "error": str(_e), "reason": "read_failed"}), 500
 
 
 def main():
