@@ -11,6 +11,7 @@ This file records project-specific long-term context for AI Judge. Do not store 
 - For high-risk changes, give a plan before editing. Source: user_instruction
 - Do not overwrite existing repository files mechanically when migrating agent rules. Source: user_instruction
 - User explicitly wants AI Judge functionality narrowed: no dashboard-first development, no endless UI expansion, and only basic functional surfaces. Core value must be expressed in auditable report output. Source: user_instruction
+- User clarified the final product vision: AI Judge should have operation controls and user-visible progress, but must not pile up interface surfaces; perceived value lands in the final report. Source: user_instruction
 
 ## Project Long-Term Goals
 
@@ -28,6 +29,7 @@ This file records project-specific long-term context for AI Judge. Do not store 
 - `artifacts/` is for agent work evidence, acceptance reports, screenshots, and decision records. Source: user_instruction
 - Agent infrastructure self-check is `python3 scripts/agent_check.py`. Source: repo
 - Dashboard/workbench surfaces are optional internal/operator aids only; do not expand them unless they directly support report generation, verification, or operator safety. Source: user_instruction
+- A future client-first direction may provide a minimal local client for input, mode selection, run control, final report viewing, follow-up, export, and archive; do not implement it without an explicit scoped task and verification plan. Source: user_instruction
 - GitHub Actions publish workflow gates Docker publishing behind harness, v3.2 smoke, and citation-bench checks. Source: repo
 
 ## Historical Pitfalls

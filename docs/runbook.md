@@ -18,7 +18,7 @@ AI Judge is report-first, not dashboard-first. Before any dashboard, workbench, 
 2. Could the user need be solved with a CLI/API/report artifact instead of UI complexity?
 3. Is this necessary for operator safety or release hygiene?
 
-If the answer is no, do not make the UI change. If a report artifact can solve it, prefer the report artifact.
+If the answer is no, do not make the UI change. If a report artifact can solve it, prefer the report artifact. Minimal client controls are acceptable only when they expose real backend state/control and lead the user back to the final report; do not turn them into dashboards, multi-page panels, rankings, or raw log waterfalls.
 
 ## quick
 

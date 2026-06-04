@@ -15,7 +15,7 @@ AI Judge is report-first, not dashboard-first. The core product value is the aud
 - claim-support and overclaim detection
 - human-final gate
 
-Dashboard and workbench surfaces are optional internal/operator aids only. Do not expand dashboard as the main product. Do not add new UI unless it directly supports report generation, verification, or operator safety. Prefer CLI/API/report artifacts over UI complexity. If the user has not explicitly requested UI work, do not initiate dashboard or frontend development.
+Dashboard and workbench surfaces are optional internal/operator aids only. Do not expand dashboard as the main product. Do not add new UI unless it directly supports report generation, verification, or operator safety. Prefer CLI/API/report artifacts over UI complexity. If the user has not explicitly requested UI work, do not initiate dashboard or frontend development. Minimal client control is allowed only as a thin path to submit work, see real run status, pause/resume/stop/rerun, open the final report, follow up, export, or archive. The user should feel the system working, but the durable value must land in the final report, not in interface density.
 
 ## Architecture Overview
 
