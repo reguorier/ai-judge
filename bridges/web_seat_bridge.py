@@ -18,6 +18,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -41,7 +42,7 @@ from bridges.chrome_fixed_tab_bridge import (
     list_chrome_tabs,
     run_chrome_fixed_tabs,
 )
-from bridges.chrome_cdp_bridge import chrome_cdp_status, list_cdp_tabs, run_chrome_cdp_tabs
+from bridges.chrome_cdp_bridge import chrome_cdp_status, ensure_chrome_cdp_awake, list_cdp_tabs, run_chrome_cdp_tabs
 
 
 DATA_DIR = _PROJECT_ROOT / "data"
@@ -50,12 +51,15 @@ PROFILE_ROOT = DATA_DIR / "web_profiles"
 CALIBRATION_PATH = DATA_DIR / "seat_calibration.json"
 CALIBRATION_MAX_AGE_HOURS = 72
 RETRYABLE_WEB_ERROR_CODES = {
+    "cdp_unavailable",
     "response_timeout",
     "slow_response_pending",
     "response_not_relevant",
     "model_page_error",
     "page_error",
     "chrome_crash",
+    "fixed_tab_not_found",
+    "deepseek_expert_mode_not_verified",
     "submit_unconfirmed",
     "send_button_not_found",
     "composer_busy",
@@ -71,10 +75,11 @@ DEFAULT_URLS = {
     "grok": "https://grok.com/",
     "yuanbao": "https://yuanbao.tencent.com/chat/",
     "doubao": "https://www.doubao.com/chat/",
-    "minimax": "https://agent.minimax.io/chat",
+    "minimax": "https://agent.minimax.io",
     "zhipu": "https://bigmodel.cn/trialcenter/modeltrial/text",
     "wenxin": "https://wenxin.baidu.com/new-chat",
     "mimo": "https://aistudio.xiaomimimo.com/#/chat",
+    "meta": "https://www.meta.ai/",
 }
 
 DEFAULT_TARGETS = {
@@ -90,8 +95,8 @@ DEFAULT_TARGETS = {
     "minimax": {
         "provider": "MiniMax",
         "channel": "web",
-        "browser_label": "MiniMax Agent / minimax.io",
-        "fallback_url": "https://agent.minimaxi.com/chat",
+        "browser_label": "MiniMax Agent / agent.minimax.io",
+        "allow_label_fallback": False,
     },
     "zhipu": {"provider": "智谱 AI", "channel": "web", "browser_label": "智谱AI开放平台 / bigmodel.cn"},
     "wenxin": {"provider": "Wenxin", "channel": "web", "browser_label": "文心一言 / wenxin.baidu.com"},
@@ -103,6 +108,11 @@ DEFAULT_TARGETS = {
         "bundle_id": "com.bot.neotix.doubao",
         "app_path": "/Applications/豆包.app",
         "fallback_url": "https://www.doubao.com/chat/",
+    },
+    "meta": {
+        "provider": "Meta AI",
+        "channel": "web",
+        "browser_label": "Meta AI / meta.ai",
     },
 }
 
@@ -128,6 +138,28 @@ DEFAULT_RESPONSE_SELECTORS = [
     "main",
 ]
 
+WORLDCUP_PROMPT_MARKERS = (
+    "世界杯预测池",
+    "赛事预测",
+    "下注表",
+    "贷款",
+    "GP",
+    "bet_ledger",
+)
+
+WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS = {
+    "claude",
+    "qwen",
+    "kimi",
+    "doubao",
+    "mimo",
+    "meta",
+    "grok",
+    "minimax",
+    "zhipu",
+    "wenxin",
+}
+
 
 class SeatBridgeError(RuntimeError):
     """Raised when the web bridge cannot run."""
@@ -152,6 +184,20 @@ def default_config() -> dict[str, Any]:
         "required_final_nudge_timeout_seconds": 120,
         "required_post_timeout_grace_seconds": 120,
         "auto_open_missing_tabs": False,
+        "auto_wake_cdp": True,
+        "auto_wake_open_tabs": True,
+        "auto_wake_cooldown_seconds": 20,
+        "auto_wake_wait_seconds": 25,
+        "chrome_cdp_endpoint": "http://127.0.0.1:9333",
+        "chrome_cdp_profile_dir": str(Path.home() / "Documents/Playground/.omx/ai-judge/chrome-profile"),
+        "chrome_cdp_state_path": str(DATA_DIR / "chrome_cdp_bridge_state.json"),
+        "chrome_launch_strategy": "open_app",
+        "strict_chrome_profile_guard": True,
+        "auto_terminate_wrong_cdp_profile": True,
+        "chrome_profile_marker_required": True,
+        "chrome_profile_marker_path": str(Path.home() / "Documents/Playground/.omx/ai-judge/chrome-profile/AI_JUDGE_DEDICATED_PROFILE.txt"),
+        "login_state_path": str(DATA_DIR / "seat_login_state.json"),
+        "login_state_audit": True,
         "humanized_pacing": True,
         "human_pacing": {
             "base_delay_seconds": 1.2,
@@ -179,6 +225,7 @@ def default_config() -> dict[str, Any]:
                 "channel": DEFAULT_TARGETS.get(seat, {}).get("channel", "web"),
                 "provider": DEFAULT_TARGETS.get(seat, {}).get("provider", SEAT_PERSONAS[seat]["name"]),
                 "browser_label": DEFAULT_TARGETS.get(seat, {}).get("browser_label", DEFAULT_URLS.get(seat, "")),
+                "allow_label_fallback": DEFAULT_TARGETS.get(seat, {}).get("allow_label_fallback", True),
                 "desktop_app": {
                     "name": DEFAULT_TARGETS.get(seat, {}).get("app_name"),
                     "bundle_id": DEFAULT_TARGETS.get(seat, {}).get("bundle_id"),
@@ -188,7 +235,7 @@ def default_config() -> dict[str, Any]:
                 "execution_required": seat != "grok",
                 "best_effort": seat == "grok",
                 "exclude_from_publish_gate": seat == "grok",
-                "fragile_page": seat in {"chatgpt", "deepseek", "qwen", "wenxin", "mimo"},
+                "fragile_page": seat in WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS or seat in {"chatgpt", "deepseek"},
                 "notes": "Set enabled=true after logging into this model in its isolated profile.",
             }
             for seat in SEAT_PERSONAS
@@ -284,6 +331,18 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
     automation_driver = str(config.get("automation_driver") or "playwright").strip().lower()
     chrome_status = chrome_apple_events_status() if automation_driver == "chrome_apple_events" else None
     cdp_status = chrome_cdp_status(config) if automation_driver == "chrome_cdp" else None
+    cdp_wake = None
+    if automation_driver == "chrome_cdp" and cdp_status and not cdp_status.get("available") and config.get("auto_wake_cdp", True):
+        cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=bool(config.get("auto_wake_open_tabs", True)))
+        cdp_status = chrome_cdp_status(config)
+        cdp_status["wake"] = cdp_wake
+    elif automation_driver == "chrome_cdp" and cdp_status and cdp_status.get("available") and config.get("auto_wake_open_tabs", True):
+        # A CDP endpoint can survive with zero useful tabs after a crash/restart.
+        # Treat status checks as a light self-heal point so the client does not
+        # report a connected but empty bridge.
+        cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=True)
+        cdp_status = chrome_cdp_status(config)
+        cdp_status["wake"] = cdp_wake
     chrome_tabs = []
     if chrome_status and chrome_status.get("available"):
         try:
@@ -331,14 +390,23 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
             and configured
             and _fixed_chrome_tab_available(seat_config, chrome_tabs)
         )
-        ready = bool(
-            configured
-            and driver["safe_background"]
-            and (
-                fixed_tab_ready
-                or (calibration_entry["fresh"] and calibration_entry["status"] == "pass")
+        fixed_tab_driver = channel == "web" and automation_driver in {"chrome_apple_events", "chrome_cdp"}
+        login_state = _seat_login_state(seat_config, chrome_tabs) if fixed_tab_driver else {"state": "not_applicable"}
+        login_blocked = login_state.get("state") in {"missing", "login_required", "challenge_required", "page_error", "provider_account_restricted"}
+        if fixed_tab_driver:
+            ready = bool(
+                configured
+                and driver["safe_background"]
+                and fixed_tab_ready
+                and not login_blocked
             )
-        )
+        else:
+            ready = bool(
+                configured
+                and driver["safe_background"]
+                and calibration_entry["fresh"]
+                and calibration_entry["status"] == "pass"
+            )
         reason = _readiness_reason(
             channel=channel,
             enabled=enabled,
@@ -354,6 +422,8 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 reason = str((chrome_status or {}).get("reason") or "apple_events_js_disabled")
             elif not _fixed_chrome_tab_available(seat_config, chrome_tabs):
                 reason = "fixed_tab_not_found"
+            elif login_state.get("state") in {"login_required", "challenge_required", "page_error", "provider_account_restricted"}:
+                reason = str(login_state.get("state"))
             else:
                 reason = "ready"
         if channel == "web" and automation_driver == "chrome_cdp":
@@ -361,6 +431,8 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 reason = str((cdp_status or {}).get("reason") or "cdp_unavailable")
             elif not _fixed_chrome_tab_available(seat_config, chrome_tabs):
                 reason = "fixed_tab_not_found"
+            elif login_state.get("state") in {"login_required", "challenge_required", "page_error", "provider_account_restricted"}:
+                reason = str(login_state.get("state"))
             else:
                 reason = "ready"
         row = {
@@ -383,6 +455,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
             "url": seat_config.get("url", ""),
             "fresh_url": seat_config.get("fresh_url", ""),
             "match_domains": seat_config.get("match_domains", []),
+            "login_state": login_state,
             "display_url": seat_config.get("display_url") or seat_config.get("fresh_url") or seat_config.get("url", ""),
             "profile_dir": str(profile_dir),
             "calibration": calibration_entry,
@@ -396,7 +469,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
         }
         seat_rows.append(row)
 
-    return {
+    status_payload = {
         "available": installed and any(seat["ready"] for seat in seat_rows),
         "playwright_installed": installed,
         "config_exists": bool(config.get("_config_exists")),
@@ -419,6 +492,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 "url": seat.get("url"),
                 "fresh_url": seat.get("fresh_url"),
                 "match_domains": seat.get("match_domains"),
+                "login_state": seat.get("login_state"),
                 "configured": seat.get("configured"),
                 "ready": seat.get("ready"),
                 "reason": seat.get("reason"),
@@ -450,7 +524,43 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
         "automation_driver": automation_driver,
         "chrome_apple_events": chrome_status,
         "chrome_cdp": cdp_status,
+        "chrome_cdp_wake": cdp_wake,
     }
+    if config.get("login_state_audit", True):
+        _write_login_state_audit(config, status_payload)
+    return status_payload
+
+
+def _write_login_state_audit(config: dict[str, Any], status_payload: dict[str, Any]) -> None:
+    try:
+        path_value = str(config.get("login_state_path") or "").strip()
+        path = Path(path_value).expanduser() if path_value else DATA_DIR / "seat_login_state.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for seat in status_payload.get("seat_browser_matrix") or []:
+            rows.append({
+                "seat": seat.get("seat"),
+                "provider": seat.get("provider"),
+                "ready": bool(seat.get("ready")),
+                "reason": seat.get("reason"),
+                "login_state": seat.get("login_state"),
+                "url": seat.get("url"),
+                "fresh_url": seat.get("fresh_url"),
+                "execution_required": bool(seat.get("execution_required")),
+                "best_effort": bool(seat.get("best_effort")),
+            })
+        payload = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "automation_driver": status_payload.get("automation_driver"),
+            "enabled_count": status_payload.get("enabled_count"),
+            "configured_count": status_payload.get("configured_count"),
+            "ready_count": status_payload.get("ready_count"),
+            "chrome_cdp": status_payload.get("chrome_cdp"),
+            "seats": rows,
+        }
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
 
 
 def calibrate_bridge(
@@ -894,6 +1004,10 @@ def _retry_snapshot(item: dict[str, Any], attempt: int) -> dict[str, Any]:
 
 def _fixed_chrome_tab_available(seat_config: dict[str, Any], tabs: list[Any]) -> bool:
     """Return whether an open Chrome tab appears to match this seat."""
+    return _matching_chrome_tab(seat_config, tabs) is not None
+
+
+def _matching_chrome_tab(seat_config: dict[str, Any], tabs: list[Any]) -> Any | None:
     urls = _url_candidates(seat_config)
     labels = _match_labels(seat_config)
     domains = _match_domains(seat_config, urls)
@@ -901,13 +1015,52 @@ def _fixed_chrome_tab_available(seat_config: dict[str, Any], tabs: list[Any]) ->
         tab_url = str(getattr(tab, "url", "") or "")
         tab_title = str(getattr(tab, "title", "") or "")
         if any(url and tab_url.rstrip("/") == url.rstrip("/") for url in urls):
-            return True
+            return tab
         if any(domain and domain in tab_url.lower() for domain in domains):
-            return True
+            return tab
+        if not _label_fallback_enabled(seat_config):
+            continue
         haystack = f"{tab_title} {tab_url}".lower()
         if any(label and label in haystack for label in labels):
-            return True
-    return False
+            return tab
+    return None
+
+
+def _seat_login_state(seat_config: dict[str, Any], tabs: list[Any]) -> dict[str, Any]:
+    """Best-effort visible-tab login marker without reading cookies or private account data."""
+    tab = _matching_chrome_tab(seat_config, tabs)
+    if tab is None:
+        return {"state": "missing", "title": "", "url": ""}
+    title = str(getattr(tab, "title", "") or "")
+    url = str(getattr(tab, "url", "") or "")
+    haystack = f"{title} {url}".lower()
+    error_haystack = f"{title} {url.split('?', 1)[0]}".lower()
+    login_markers = (
+        "/login", "/signin", "/sign_in", "/sign-in", "/auth", "accounts.google.com",
+        "login", "sign in", "signin", "sign_in", "log in", "logout", "登录", "登陆", "未登录", "请登录",
+    )
+    challenge_markers = ("captcha", "verify", "verification", "验证", "人机", "安全检查")
+    error_markers = ("err_connection", "无法访问", "not found", "timeout", "出错了")
+    restricted_markers = (
+        "/restricted", "account hold", "account on hold", "restricted",
+        "suspended", "blocked", "request a review",
+    )
+    error_404 = bool(re.search(r"(^|[^0-9])404([^0-9]|$)", error_haystack))
+    if any(marker in haystack for marker in challenge_markers):
+        state = "challenge_required"
+    elif any(marker in haystack for marker in restricted_markers):
+        state = "provider_account_restricted"
+    elif any(marker in haystack for marker in login_markers):
+        state = "login_required"
+    elif any(marker in error_haystack for marker in error_markers) or error_404:
+        state = "page_error"
+    else:
+        state = "session_present"
+    return {
+        "state": state,
+        "title": title[:160],
+        "url": url,
+    }
 
 
 def _url_candidates(seat_config: dict[str, Any]) -> list[str]:
@@ -943,6 +1096,10 @@ def _match_labels(seat_config: dict[str, Any]) -> list[str]:
         if value:
             labels.append(value)
     return list(dict.fromkeys(labels))
+
+
+def _label_fallback_enabled(seat_config: dict[str, Any]) -> bool:
+    return seat_config.get("allow_label_fallback", True) is not False and not bool(seat_config.get("strict_match_domains"))
 
 
 def _domain(url: str) -> str:
@@ -1263,7 +1420,78 @@ def _recover_playwright_page(
         return False
 
 
+def _is_worldcup_prompt(question: str) -> bool:
+    if not question:
+        return False
+    head = question[:5000]
+    return any(marker in head for marker in WORLDCUP_PROMPT_MARKERS)
+
+
+def _compact_worldcup_context(question: str, limit: int = 1800) -> str:
+    text = re.sub(r"\n{3,}", "\n\n", question or "").strip()
+    if len(text) <= limit:
+        return text
+    keep_patterns = (
+        "Run #6",
+        "本轮必须",
+        "14 席",
+        "Claude",
+        "Grok",
+        "MiniMax",
+        "文心",
+        "Zhipu",
+        "贷款",
+        "奖励",
+        "本轮主要下注对象",
+        "当前预测池基线",
+        "输出必须包含",
+    )
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    selected: list[str] = []
+    for line in lines:
+        if any(pattern in line for pattern in keep_patterns):
+            selected.append(line)
+    compact = "\n".join(selected)
+    if len(compact) < 500:
+        compact = f"{text[:900]}\n...\n{text[-700:]}"
+    return compact[:limit]
+
+
+def _worldcup_short_prompt(seat: str, question: str, mode: str) -> str:
+    persona = SEAT_PERSONAS.get(seat, {})
+    seat_name = persona.get("name") or seat
+    context = _compact_worldcup_context(question)
+    return (
+        f"AI Judge 世界杯预测池短回执。你是 {seat_name}（seat_id={seat}）。\n"
+        "任务：本轮必须给出真实赛事投注判断；如果网页、额度、登录或信息不足，也要输出状态和原因，不要空白或只说无法完成。\n\n"
+        "背景摘要：\n"
+        f"{context}\n\n"
+        "请只输出中文，尽量短，不要长篇推理，不要 Markdown 表格。\n"
+        "必须输出一个 ```json 代码块，字段如下：\n"
+        "{\n"
+        '  "seat": "seat_id",\n'
+        '  "seat_status": "real_bet | account_limited | auth_required | page_blocked | info_gap",\n'
+        '  "loan_decision": {"apply": true/false, "amount_gp": 0, "reason": "一句话"},\n'
+        '  "model_account": {"available_gp": 0, "max_loss_gp": 0, "strategy": "守榜/追赶/翻盘"},\n'
+        '  "bet_ledger": [{"match": "比赛", "pick": "投注方向", "stake_gp": 0, "confidence": "高/中/低", "conditions": "撤单/加注条件"}],\n'
+        '  "betting_thought": "为什么这么押，尤其说明是否修正小球假设",\n'
+        '  "source_cards": [{"source_type": "阵容/伤停/赔率/赛程/战术/天气/旅行", "claim": "你用到的信息", "need_human_confirm": true/false}],\n'
+        '  "risk_rules": ["止损/撤单/不下注条件"],\n'
+        '  "opponent_context": "你在追谁或防谁",\n'
+        '  "settlement_pending": ["需要盘口、赔率、让球线或赛果确认的项目"]\n'
+        "}\n"
+        "JSON 后再用一句中文总结你的本轮投注态度。"
+        f"\n当前模式：{mode}。"
+    )
+
+
 def _seat_prompt(seat: str, question: str, mode: str) -> str:
+    # Werewolf / game prompts are self-contained; skip jury persona injection.
+    head = question[:200] if question else ""
+    if "AI Judge 狼人杀" in head or "AI Judge 的模型狼人杀" in head:
+        return question
+    if _is_worldcup_prompt(question) and seat in WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS:
+        return _worldcup_short_prompt(seat, question, mode)
     base = render_jury_prompt(seat, question) or question
     is_resonance_followup = "[AIJUDGE_RESONANCE_FOLLOWUP]" in question
     if is_resonance_followup:
@@ -1377,7 +1605,10 @@ def _seat_config(config: dict[str, Any], seat: str) -> dict[str, Any]:
 
 
 def _profile_dir(config: dict[str, Any], seat: str) -> Path:
-    return Path(config.get("profile_root") or PROFILE_ROOT) / seat
+    root = Path(config.get("profile_root") or PROFILE_ROOT).expanduser()
+    if not root.is_absolute():
+        root = (_PROJECT_ROOT / root).resolve()
+    return root / seat
 
 
 def _desktop_app_running(app_name: str | None) -> bool:

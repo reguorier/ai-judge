@@ -10,7 +10,7 @@ Usage:
   from core.modes import JURY_MODES, resolve_mode, mode_info
 
   config = resolve_mode("flash")
-  config = resolve_mode("standard", override_seats=["gemini", "grok"])
+  config = resolve_mode("standard", override_seats=["gemini", "wenxin"])
 """
 
 from __future__ import annotations
@@ -29,10 +29,10 @@ JURY_MODES: dict[str, dict[str, Any]] = {
         "name": "Flash 快速陪审",
         "name_en": "Flash Quick Jury",
         "emoji": "⚡",
-        "seats": ["gemini", "grok", "doubao"],
+        "seats": ["gemini", "wenxin", "doubao"],
         "seat_rationale": (
             "INTJ (Gemini): 系统性风险识别，事实核查最强。"
-            "ENTP (Grok): 挑衅性提问，发现盲点。"
+            "ESFJ (Wenxin): 中文知识、合规和企业语境稳定。"
             "ENTJ (Doubao): 决策果断，快速收敛。"
         ),
         "description": (
@@ -55,10 +55,10 @@ JURY_MODES: dict[str, dict[str, Any]] = {
         "name": "Standard 标准陪审",
         "name_en": "Standard Jury",
         "emoji": "⚖",
-        "seats": ["gemini", "deepseek", "claude", "kimi", "grok", "doubao"],
+        "seats": ["gemini", "deepseek", "claude", "kimi", "wenxin", "doubao"],
         "seat_rationale": (
-            "INTJ + INTP + ENFP + ENTP + ENTJ: 覆盖系统性分析、深度推理、"
-            "市场叙事、挑衅性检查、决策执行六大维度。6 席平衡裁决。"
+            "INTJ + INTP + INFJ + ENFP + ESFJ + ENTJ: 覆盖系统性分析、深度推理、"
+            "语义边界、市场叙事、中文合规、决策执行六大维度。6 席平衡裁决。"
         ),
         "description": (
             "6 席平衡裁决，约 2 分钟出结果。"

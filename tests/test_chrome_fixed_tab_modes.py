@@ -9,6 +9,7 @@ from bridges.chrome_fixed_tab_bridge import (
     _deepseek_prepare_verified,
     _doubao_prepare_verified,
     _page_state_needs_reload,
+    _response_matches_question,
     _readiness_can_recover,
     _should_send_final_answer_nudge,
     _seat_prompt,
@@ -67,12 +68,48 @@ def test_doubao_prepare_requires_expert_mode_verified():
     })
 
 
-def test_qwen_prepare_prefers_reliable_non_thinking_mode_for_bridge_output():
+def test_qwen_prepare_requires_deep_thinking_mode_for_bridge_output():
     js = _build_prepare_submission_ui_js("AIJUDGE-qwen-test")
 
-    assert "qwen_reliable_mode" in js
-    assert "qwen_mode_menu_open" in js
-    assert "qwen_thinking_mode" not in js
+    assert "qwen_deep_thinking_clicked" in js
+    assert "qwen_thinking_menu_open" in js
+    assert "qwen_deep_thinking_verified:yes" in js
+    assert "深入思考" in js
+    assert "qwen_reliable_mode" not in js
+
+
+def test_existing_answer_capture_reports_retryable_page_state():
+    js = _build_existing_answer_capture_js("deepseek")
+
+    assert "existing_answer_page_state" in js
+    assert "page_error" in js
+    assert "chrome_crash" in js
+    assert "blank_page" in js
+
+
+def test_existing_answer_capture_prioritizes_answer_marker_before_page_error():
+    js = _build_existing_answer_capture_js("minimax")
+
+    assert js.index("const latest = unique[unique.length - 1] || null") < js.index("if (pageError || chromeCrash || blankPage)")
+    assert "existing_answer_marker" in js
+
+
+def test_gemini_prepare_prefers_pro_model():
+    js = _build_prepare_submission_ui_js("AIJUDGE-gemini-test")
+
+    assert "gemini_pro_clicked" in js
+    assert "gemini_pro_verified:yes" in js
+    assert "gemini_model_menu_open" in js
+    assert "Gemini\\s*2\\.5\\s*Pro" in js
+
+
+def test_commercial_growth_prompt_rejects_report_ui_stale_answer():
+    question = "【任务：AI Judge 商业化/投稿/融资/GitHub 加星全量评审】请给商业化、投稿、融资、社媒和 GitHub star 增长方案。"
+    stale_answer = "当前 AI Judge 报告存在结构性失败，首屏同时承载流程状态和完整业务报告，建议重构运行健康门禁。"
+    current_answer = "条件支持：优先冲 GitHub 加星、Hugging Face Spaces 开源传播、融资加速器投稿和社媒增长。"
+
+    assert not _response_matches_question(stale_answer, question)
+    assert _response_matches_question(current_answer, question)
 
 
 def test_chatgpt_prepare_prefers_reliable_mode_for_bridge_output():
@@ -241,7 +278,7 @@ def test_clear_blocking_ui_detects_crashes_blank_pages_and_retryable_errors():
 def test_minimax_fixed_tab_has_dedicated_send_fallback():
     js = _build_click_send_js("AIJUDGE-minimax-test")
 
-    assert "agent\\.minimaxi\\.com" in js
+    assert "agent\\.minimax\\.io" in js
     assert "miniMaxButtons" in js
     assert "closeToComposerRight" in js
     assert "提出共振" in js

@@ -23,7 +23,13 @@ RECOVERABLE_EXECUTION_CODES = {
     "submit_unconfirmed",
     "chrome_submit_unconfirmed",
     "composer_busy",
+    "page_error",
+    "model_page_error",
+    "chrome_crash",
+    "blank_page",
+    "page_recovery_failed",
     "response_not_relevant",
+    "prompt_still_in_input",
     "long_prompt_still_in_input",
     "existing_answer_not_found",
     "existing_answer_placeholder",
@@ -31,6 +37,11 @@ RECOVERABLE_EXECUTION_CODES = {
     "fixed_tab_not_found",
     "input_not_found",
     "transcript_pollution",
+    "apple_events_execute_failed",
+    "chrome_composer_not_ready",
+    "composer_not_ready",
+    "deepseek_expert_mode_not_verified",
+    "doubao_expert_mode_not_verified",
 }
 
 

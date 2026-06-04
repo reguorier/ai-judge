@@ -4,8 +4,14 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
+import sys
+import subprocess
 import time
-from urllib.parse import urlparse
+from contextlib import contextmanager
+from pathlib import Path
+from urllib.parse import quote, urlparse
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -16,6 +22,7 @@ from bridges.chrome_fixed_tab_bridge import (
     _build_capture_js,
     _build_clear_blocking_ui_js,
     _build_prepare_submission_ui_js,
+    _append_prepare_followup,
     _capture_acceptance,
     _deepseek_prepare_verified,
     _doubao_prepare_verified,
@@ -29,6 +36,34 @@ from bridges.chrome_fixed_tab_bridge import (
 
 
 DEFAULT_CDP_ENDPOINT = "http://127.0.0.1:9222"
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+@contextmanager
+def _local_cdp_proxy_bypass():
+    """Keep local DevTools websocket traffic off the user's HTTP proxy."""
+    proxy_keys = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy")
+    saved = {key: os.environ.get(key) for key in proxy_keys}
+    saved_no_proxy = os.environ.get("NO_PROXY")
+    try:
+        for key in proxy_keys:
+            os.environ.pop(key, None)
+        no_proxy = [item.strip() for item in (saved_no_proxy or "").split(",") if item.strip()]
+        for host in ("127.0.0.1", "localhost", "::1"):
+            if host not in no_proxy:
+                no_proxy.append(host)
+        os.environ["NO_PROXY"] = ",".join(no_proxy)
+        yield
+    finally:
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        if saved_no_proxy is None:
+            os.environ.pop("NO_PROXY", None)
+        else:
+            os.environ["NO_PROXY"] = saved_no_proxy
 
 
 @dataclass
@@ -38,8 +73,115 @@ class CDPTab:
     page: Any | None = None
 
 
+def ensure_chrome_cdp_awake(
+    config: dict[str, Any] | None = None,
+    *,
+    open_tabs: bool = True,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> dict[str, Any]:
+    """Wake the dedicated AI Judge Chrome CDP bridge without killing the user's Chrome."""
+    config = config or {}
+    endpoint = _endpoint(config)
+    status = chrome_cdp_status(config)
+    bypass_cooldown = False
+    if status.get("reason") in {"wrong_cdp_profile", "profile_marker_missing"} and config.get("auto_terminate_wrong_cdp_profile", True):
+        terminated = _terminate_cdp_process(status.get("process") or {}, trace)
+        bypass_cooldown = bool(terminated)
+        status = chrome_cdp_status(config)
+    if status.get("available"):
+        opened = _ensure_enabled_cdp_tabs(config, trace) if open_tabs else []
+        result = {"ok": True, "woke": False, "endpoint": endpoint, "opened_tabs": opened, "status": status}
+        _write_cdp_state(config, result)
+        return result
+
+    if config.get("auto_wake_cdp") is False:
+        result = {"ok": False, "woke": False, "endpoint": endpoint, "reason": status.get("reason"), "status": status}
+        _write_cdp_state(config, result)
+        return result
+
+    if not bypass_cooldown and _cdp_wake_in_cooldown(config):
+        result = {
+            "ok": False,
+            "woke": False,
+            "endpoint": endpoint,
+            "reason": "wake_cooldown",
+            "status": status,
+        }
+        _write_cdp_state(config, result)
+        return result
+
+    _write_cdp_state(config, {"ok": False, "woke": False, "endpoint": endpoint, "reason": "wake_starting"})
+    profile_dir = _cdp_profile_dir(config)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    parsed = urlparse(endpoint)
+    port = parsed.port or int(str(endpoint).rsplit(":", 1)[-1].split("/", 1)[0])
+    chrome_args = [
+        f"--remote-debugging-port={port}",
+        f"--user-data-dir={profile_dir}",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-mode",
+        "--disable-features=DialMediaRouteProvider,MediaRouter",
+    ]
+    launch_strategy = str(config.get("chrome_launch_strategy") or "open_app").strip().lower()
+    if sys.platform == "darwin" and launch_strategy == "open_app" and not config.get("chrome_binary"):
+        cmd = ["/usr/bin/open", "-na", "Google Chrome", "--args", *chrome_args]
+        launch_label = "macos_open_app"
+    else:
+        chrome_bin = str(config.get("chrome_binary") or "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        cmd = [chrome_bin, *chrome_args]
+        launch_label = "chrome_binary"
+    try:
+        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        if trace:
+            trace("chrome", "cdp_wake_launch", "唤醒 AI Judge 专用 Chrome CDP", {
+                "endpoint": endpoint,
+                "profile_dir": str(profile_dir),
+                "launch_strategy": launch_label,
+                "kill_user_chrome": False,
+            })
+    except Exception as exc:
+        result = {"ok": False, "woke": False, "endpoint": endpoint, "reason": "launch_failed", "error": str(exc), "launch_strategy": launch_label}
+        _write_cdp_state(config, result)
+        return result
+
+    deadline = time.time() + float(config.get("auto_wake_wait_seconds") or 25)
+    while time.time() < deadline:
+        time.sleep(0.75)
+        status = chrome_cdp_status(config)
+        if status.get("available"):
+            opened = _ensure_enabled_cdp_tabs(config, trace) if open_tabs else []
+            result = {"ok": True, "woke": True, "endpoint": endpoint, "opened_tabs": opened, "status": status, "launch_strategy": launch_label}
+            _write_cdp_state(config, result)
+            return result
+    result = {"ok": False, "woke": True, "endpoint": endpoint, "reason": "wake_timeout", "status": chrome_cdp_status(config), "launch_strategy": launch_label}
+    _write_cdp_state(config, result)
+    return result
+
+
 def chrome_cdp_status(config: dict[str, Any] | None = None) -> dict[str, Any]:
     endpoint = _endpoint(config)
+    process = _cdp_process_info(config)
+    if config and config.get("strict_chrome_profile_guard", True):
+        marker = _profile_marker_status(config)
+        if not marker.get("ok"):
+            return {
+                "available": False,
+                "reason": "profile_marker_missing",
+                "message": marker.get("message"),
+                "endpoint": endpoint,
+                "process": process,
+                "profile_marker": marker,
+            }
+        if process.get("pid") and process.get("profile_match") is False:
+            return {
+                "available": False,
+                "reason": "wrong_cdp_profile",
+                "message": "Chrome CDP port is owned by a non AI Judge profile.",
+                "endpoint": endpoint,
+                "process": process,
+                "profile_marker": marker,
+            }
     try:
         version = _cdp_get_json(f"{endpoint}/json/version", timeout=2)
         tabs = _cdp_get_json(f"{endpoint}/json/list", timeout=2)
@@ -51,6 +193,7 @@ def chrome_cdp_status(config: dict[str, Any] | None = None) -> dict[str, Any]:
         "endpoint": endpoint,
         "browser": version.get("Browser"),
         "tab_count": len(tabs) if isinstance(tabs, list) else 0,
+        "process": process,
     }
 
 
@@ -64,6 +207,210 @@ def list_cdp_tabs(config: dict[str, Any] | None = None) -> list[CDPTab]:
     ]
 
 
+def _cdp_state_path(config: dict[str, Any] | None = None) -> Path:
+    value = str((config or {}).get("chrome_cdp_state_path") or "").strip()
+    return Path(value).expanduser() if value else _PROJECT_ROOT / "data" / "chrome_cdp_bridge_state.json"
+
+
+def _cdp_profile_dir(config: dict[str, Any] | None = None) -> Path:
+    value = str((config or {}).get("chrome_cdp_profile_dir") or "").strip()
+    return Path(value).expanduser() if value else _PROJECT_ROOT / "data" / "chrome-profile"
+
+
+def _profile_marker_status(config: dict[str, Any] | None = None) -> dict[str, Any]:
+    if not (config or {}).get("chrome_profile_marker_required", True):
+        return {"ok": True, "required": False}
+    marker_value = str((config or {}).get("chrome_profile_marker_path") or "").strip()
+    marker_path = Path(marker_value).expanduser() if marker_value else _cdp_profile_dir(config) / "AI_JUDGE_DEDICATED_PROFILE.txt"
+    if not marker_path.exists():
+        return {"ok": False, "required": True, "path": str(marker_path), "message": "Dedicated AI Judge profile marker is missing."}
+    try:
+        content = marker_path.read_text(encoding="utf-8", errors="replace")
+    except Exception as exc:
+        return {"ok": False, "required": True, "path": str(marker_path), "message": str(exc)}
+    if "AI Judge bridge" not in content and "AI Judge" not in content:
+        return {"ok": False, "required": True, "path": str(marker_path), "message": "Dedicated profile marker does not identify AI Judge."}
+    return {"ok": True, "required": True, "path": str(marker_path)}
+
+
+def _cdp_process_info(config: dict[str, Any] | None = None) -> dict[str, Any]:
+    endpoint = _endpoint(config)
+    parsed = urlparse(endpoint)
+    port = parsed.port or int(str(endpoint).rsplit(":", 1)[-1].split("/", 1)[0])
+    pid = _cdp_listen_pid(port)
+    expected = _cdp_profile_dir(config)
+    if not pid:
+        return {"pid": None, "port": port, "expected_profile_dir": str(expected), "profile_match": None}
+    command = _process_command(pid)
+    actual_profile = _profile_dir_from_command(command)
+    profile_match = None
+    if actual_profile:
+        profile_match = _same_path(actual_profile, expected)
+    return {
+        "pid": pid,
+        "port": port,
+        "command": command,
+        "profile_dir": str(actual_profile) if actual_profile else "",
+        "expected_profile_dir": str(expected),
+        "profile_match": profile_match,
+    }
+
+
+def _cdp_listen_pid(port: int) -> int | None:
+    try:
+        result = subprocess.run(
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fp"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+            check=False,
+        )
+    except Exception:
+        return None
+    for line in result.stdout.splitlines():
+        if line.startswith("p") and line[1:].isdigit():
+            return int(line[1:])
+    return None
+
+
+def _process_command(pid: int) -> str:
+    try:
+        result = subprocess.run(
+            ["ps", "eww", "-p", str(pid)],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+            check=False,
+        )
+    except Exception:
+        return ""
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    return lines[-1] if len(lines) >= 2 else ""
+
+
+def _profile_dir_from_command(command: str) -> Path | None:
+    marker = "--user-data-dir="
+    start = command.find(marker)
+    if start < 0:
+        return None
+    value_start = start + len(marker)
+    remainder = command[value_start:]
+    end_candidates = [index for index in (remainder.find(" --"), remainder.find(" http://"), remainder.find(" https://")) if index >= 0]
+    value = remainder[:min(end_candidates)] if end_candidates else remainder
+    value = value.strip().strip("\"'")
+    return Path(value).expanduser() if value else None
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    try:
+        return left.resolve() == right.resolve()
+    except Exception:
+        return str(left.expanduser()) == str(right.expanduser())
+
+
+def _terminate_cdp_process(process: dict[str, Any], trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None) -> bool:
+    pid = process.get("pid")
+    try:
+        pid_int = int(pid)
+    except Exception:
+        return False
+    if pid_int <= 1:
+        return False
+    try:
+        os.kill(pid_int, signal.SIGTERM)
+        if trace:
+            trace("chrome", "wrong_cdp_profile_terminated", "终止占用 9333 的错误 Chrome profile", {
+                "pid": pid_int,
+                "profile_dir": process.get("profile_dir"),
+                "expected_profile_dir": process.get("expected_profile_dir"),
+            })
+    except Exception:
+        return False
+    deadline = time.time() + 5
+    while time.time() < deadline:
+        try:
+            os.kill(pid_int, 0)
+        except OSError:
+            return True
+        time.sleep(0.25)
+    return True
+
+
+def _write_cdp_state(config: dict[str, Any] | None, payload: dict[str, Any]) -> None:
+    try:
+        path = _cdp_state_path(config)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        current: dict[str, Any] = {}
+        if path.exists():
+            try:
+                current = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                current = {}
+        current.update(payload)
+        current["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if payload.get("reason") == "wake_starting":
+            current["last_launch_at"] = time.time()
+        elif payload.get("woke"):
+            current.setdefault("last_launch_at", time.time())
+        path.write_text(json.dumps(current, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _cdp_wake_in_cooldown(config: dict[str, Any] | None = None) -> bool:
+    path = _cdp_state_path(config)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        last = float(payload.get("last_launch_at") or 0)
+    except Exception:
+        return False
+    cooldown = float((config or {}).get("auto_wake_cooldown_seconds") or 20)
+    return last > 0 and time.time() - last < cooldown
+
+
+def _ensure_enabled_cdp_tabs(
+    config: dict[str, Any],
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> list[str]:
+    try:
+        tabs = list_cdp_tabs(config)
+    except Exception:
+        tabs = []
+    endpoint = _endpoint(config)
+    opened: list[str] = []
+    for seat, seat_config in (config.get("seats") or {}).items():
+        if not seat_config.get("enabled") or str(seat_config.get("channel") or "web") != "web":
+            continue
+        if _match_tab(seat_config, tabs):
+            continue
+        url = str(seat_config.get("fresh_url") or seat_config.get("url") or seat_config.get("fallback_url") or "").strip()
+        if not url:
+            continue
+        try:
+            encoded = quote(url, safe=":/?&=%#")
+            session = requests.Session()
+            session.trust_env = False
+            response = session.put(f"{endpoint}/json/new?{encoded}", timeout=10)
+            response.raise_for_status()
+            opened.append(seat)
+            try:
+                tabs = list_cdp_tabs(config)
+            except Exception:
+                pass
+            if trace:
+                trace("seat", "cdp_fixed_tab_opened", f"{seat} 固定标签已补开", {"seat": seat, "url": url})
+        except Exception as exc:
+            if trace:
+                trace("seat", "cdp_fixed_tab_open_failed", f"{seat} 固定标签补开失败", {
+                    "seat": seat,
+                    "url": url,
+                    "error": str(exc),
+                })
+    return opened
+
+
 def run_chrome_cdp_tabs(
     question: str,
     seats: list[str],
@@ -73,6 +420,10 @@ def run_chrome_cdp_tabs(
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> list[dict[str, Any]]:
     status = chrome_cdp_status(config)
+    if not status.get("available") and config.get("auto_wake_cdp", True):
+        wake = ensure_chrome_cdp_awake(config, open_tabs=bool(config.get("auto_wake_open_tabs", True)), trace=trace)
+        status = chrome_cdp_status(config)
+        status["wake"] = wake
     if trace:
         trace("chrome", "cdp_probe", "检测 Chrome CDP 通道", status)
     if not status.get("available"):
@@ -90,8 +441,16 @@ def run_chrome_cdp_tabs(
     timeout_seconds = float(config.get("timeout_seconds") or 180)
 
     with sync_playwright() as playwright:
-        browser = playwright.chromium.connect_over_cdp(_endpoint(config), timeout=5000)
+        cdp_connect_timeout_ms = int(float(config.get("cdp_connect_timeout_seconds") or 20) * 1000)
+        with _local_cdp_proxy_bypass():
+            browser = playwright.chromium.connect_over_cdp(_connect_endpoint(config), timeout=cdp_connect_timeout_ms)
         pages = [page for context in browser.contexts for page in context.pages]
+        for page in pages:
+            try:
+                page.set_default_timeout(int(float(config.get("cdp_default_timeout_seconds") or 8) * 1000))
+                page.set_default_navigation_timeout(int(float(config.get("cdp_navigation_timeout_seconds") or 15) * 1000))
+            except Exception:
+                pass
         tabs = [CDPTab(title=page.title(), url=page.url, page=page) for page in pages]
         if trace:
             trace("chrome", "cdp_tabs_listed", "读取当前 Chrome CDP 标签页", {
@@ -112,6 +471,11 @@ def run_chrome_cdp_tabs(
                 )
                 continue
             tab = _match_tab(seat_config, tabs)
+            if (tab is None or tab.page is None) and config.get("open_missing_fixed_tabs", True):
+                recovered_page = _open_missing_cdp_tab(browser, seat_config, seat, trace)
+                if recovered_page is not None:
+                    tab = CDPTab(title=_safe_page_title(recovered_page), url=recovered_page.url, page=recovered_page)
+                    tabs.append(tab)
             if tab is None or tab.page is None:
                 submissions[seat] = _failed_result(seat, "fixed_tab_not_found", "No Chrome CDP tab matched this seat URL/title.")
                 if trace:
@@ -124,7 +488,7 @@ def run_chrome_cdp_tabs(
             prompt_with_marker = (
                 f"{prompt}\n\n"
                 "重要：不要只进行思考，必须在最终回答区域输出正文。请将你的最终答案完整包裹在以下两行标记之间，"
-                "标记必须原样输出，标记外不要输出正文。不要输出“你的最终答案”这几个占位字，请替换成你的实际回答：\n"
+                "标记必须原样输出，标记外不要输出正文。不要输出（你的最终答案）这几个占位字，请替换成你的实际回答：\n"
                 f"[AIJUDGE_ANSWER_START:{prompt_id}]\n"
                 "你的最终答案\n"
                 f"[AIJUDGE_ANSWER_END:{prompt_id}]\n\n"
@@ -144,18 +508,42 @@ def run_chrome_cdp_tabs(
                 _humanized_sleep(config, seat_config, seat, "before_submit")
                 fresh_url = str(seat_config.get("fresh_url") or "").strip()
                 if fresh_url and config.get("fresh_conversation_per_run", False):
-                    page.goto(fresh_url, wait_until="domcontentloaded", timeout=15000)
-                    _humanized_sleep(config, seat_config, seat, "after_reload")
-                    page.wait_for_timeout(int(float(config.get("fresh_load_seconds") or 3.0) * 1000))
+                    try:
+                        fresh_timeout_ms = int(float(config.get("fresh_navigation_timeout_seconds") or 12) * 1000)
+                        page.goto(fresh_url, wait_until="domcontentloaded", timeout=fresh_timeout_ms)
+                        _humanized_sleep(config, seat_config, seat, "after_reload")
+                        page.wait_for_timeout(int(float(config.get("fresh_load_seconds") or 3.0) * 1000))
+                    except Exception as exc:
+                        if trace:
+                            trace("seat", "cdp_fresh_navigation_skipped", f"{seat} 新会话跳转超时，继续使用当前固定标签", {
+                                "seat": seat,
+                                "url": page.url,
+                                "fresh_url": fresh_url,
+                                "error": str(exc),
+                            })
                 preflight = _clear_or_recover_page(page, config, seat_config, seat, "preflight", trace)
                 prepared = _prepare_submission_ui(page, prompt_id)
                 if prepared.get("clicked"):
                     _humanized_sleep(config, seat_config, seat, "after_click")
-                if prepared.get("needs_followup"):
+                prepare_attempt = 1
+                max_prepare_attempts = int(float(config.get("mode_prepare_max_attempts") or 4))
+                while prepared.get("needs_followup") and prepare_attempt < max_prepare_attempts:
                     followup = _prepare_submission_ui(page, prompt_id)
-                    prepared["followup"] = followup
+                    _append_prepare_followup(prepared, followup)
+                    prepare_attempt += 1
                     if followup.get("clicked"):
                         _humanized_sleep(config, seat_config, seat, "after_click")
+                    if trace:
+                        trace("seat", "cdp_submission_ui_prepare_followup", f"{seat} CDP 提交前模式第 {prepare_attempt} 次确认", {
+                            "seat": seat,
+                            "prepared": prepared,
+                        })
+                    if seat == "deepseek" and _deepseek_prepare_verified(prepared):
+                        break
+                    if seat == "doubao" and _doubao_prepare_verified(prepared):
+                        break
+                    if not followup.get("needs_followup"):
+                        break
                 if seat == "deepseek" and not _deepseek_prepare_verified(prepared):
                     submissions[seat] = _failed_result(
                         seat,
@@ -335,6 +723,49 @@ def _clear_or_recover_page(
         return failed
 
 
+def _safe_page_title(page: Any) -> str:
+    try:
+        return str(page.title() or "")
+    except Exception:
+        return ""
+
+
+def _open_missing_cdp_tab(
+    browser: Any,
+    seat_config: dict[str, Any],
+    seat: str,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> Any | None:
+    """Open a fresh fixed tab inside the dedicated AI Judge Chrome if a seat tab disappears."""
+    fresh_url = (
+        str(seat_config.get("fresh_url") or "").strip()
+        or str(seat_config.get("url") or "").strip()
+        or str(seat_config.get("fallback_url") or "").strip()
+    )
+    if not fresh_url:
+        return None
+    try:
+        context = browser.contexts[0] if browser.contexts else browser.new_context()
+        page = context.new_page()
+        page.goto(fresh_url, wait_until="domcontentloaded", timeout=20000)
+        page.wait_for_timeout(2500)
+        if trace:
+            trace("seat", "cdp_missing_tab_reopened", f"{seat} 固定标签缺失，已重新打开", {
+                "seat": seat,
+                "fresh_url": fresh_url,
+                "url": page.url,
+            })
+        return page
+    except Exception as exc:
+        if trace:
+            trace("seat", "cdp_missing_tab_reopen_failed", f"{seat} 固定标签缺失且重开失败", {
+                "seat": seat,
+                "fresh_url": fresh_url,
+                "error": str(exc),
+            })
+        return None
+
+
 def _fill_prompt(page: Any, prompt: str) -> dict[str, Any]:
     selectors = [
         "textarea[data-testid='prompt-textarea']",
@@ -503,10 +934,11 @@ def _match_tab(seat_config: dict[str, Any], tabs: list[CDPTab]) -> CDPTab | None
         tab_url = str(tab.url or "").lower()
         if any(domain and domain in tab_url for domain in domains):
             return tab
-    for tab in tabs:
-        haystack = f"{tab.title} {tab.url}".lower()
-        if any(label and label in haystack for label in labels):
-            return tab
+    if _label_fallback_enabled(seat_config):
+        for tab in tabs:
+            haystack = f"{tab.title} {tab.url}".lower()
+            if any(label and label in haystack for label in labels):
+                return tab
     return None
 
 
@@ -545,6 +977,10 @@ def _match_labels(seat_config: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(labels))
 
 
+def _label_fallback_enabled(seat_config: dict[str, Any]) -> bool:
+    return seat_config.get("allow_label_fallback", True) is not False and not bool(seat_config.get("strict_match_domains"))
+
+
 def _domain(url: str) -> str:
     if "://" in url:
         url = url.split("://", 1)[1]
@@ -553,6 +989,20 @@ def _domain(url: str) -> str:
 
 def _endpoint(config: dict[str, Any] | None = None) -> str:
     return str((config or {}).get("chrome_cdp_endpoint") or DEFAULT_CDP_ENDPOINT).rstrip("/")
+
+
+def _connect_endpoint(config: dict[str, Any] | None = None) -> str:
+    endpoint = _endpoint(config)
+    if endpoint.startswith("ws://") or endpoint.startswith("wss://"):
+        return endpoint
+    try:
+        version = _cdp_get_json(f"{endpoint}/json/version", timeout=2)
+        websocket_url = str(version.get("webSocketDebuggerUrl") or "").strip()
+        if websocket_url:
+            return websocket_url
+    except Exception:
+        pass
+    return endpoint
 
 
 def _cdp_get_json(url: str, timeout: float) -> Any:

@@ -7,12 +7,16 @@ from bridges.chrome_fixed_tab_bridge import (
 )
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from core.seat_execution_policy import execution_policy_summary
+import bridges.web_seat_bridge as web_seat_bridge
 from bridges.web_seat_bridge import (
     _calibrate_desktop_seat,
     _desktop_collection_block,
     _merge_retry_results,
     _readiness_reason,
     _run_driver_with_retries,
+    _seat_prompt,
+    _seat_login_state,
     _should_retry_result,
     default_config,
     merge_bridge_config_overrides,
@@ -124,8 +128,8 @@ def test_rescue_config_overrides_enable_clean_conversation_without_losing_seat_s
     assert merged["fresh_conversation_per_run"] is True
     assert merged["seats"]["minimax"]["enabled"] is True
     assert merged["seats"]["minimax"]["timeout_seconds"] == 900
-    assert merged["seats"]["minimax"]["url"] == "https://agent.minimax.io/chat"
-    assert merged["seats"]["minimax"]["fallback_url"] == "https://agent.minimaxi.com/chat"
+    assert merged["seats"]["minimax"]["url"] == "https://agent.minimax.io"
+    assert merged["seats"]["minimax"]["fallback_url"] == ""
 
 
 def test_default_config_enables_humanized_pacing_and_fragile_seats():
@@ -140,6 +144,18 @@ def test_default_config_enables_humanized_pacing_and_fragile_seats():
     assert config["seats"]["wenxin"]["fragile_page"] is True
     assert config["seats"]["mimo"]["fragile_page"] is True
     assert config["seats"]["gemini"]["fragile_page"] is False
+
+
+def test_worldcup_fragile_seats_receive_short_structured_prompt():
+    prompt = _seat_prompt(
+        "minimax",
+        "世界杯预测池 Run #7：14 席全部参审，输出 bet_ledger、贷款和 GP 投注。",
+        "strategic",
+    )
+
+    assert "世界杯预测池短回执" in prompt
+    assert '"seat_status"' in prompt
+    assert "不要 Markdown 表格" in prompt
 
 
 def test_human_pacing_can_be_disabled_and_is_more_conservative_for_fragile_pages():
@@ -157,6 +173,44 @@ def test_page_state_reload_filter_ignores_quota_but_recovers_crash_and_page_erro
     assert _page_state_needs_reload({"chrome_crash": True, "reason": "chrome_crash"})
     assert _page_state_needs_reload({"blank_page": True, "reason": "blank_page"})
     assert not _page_state_needs_reload({"page_error": True, "reason": "provider_quota_limited"})
+
+
+def test_login_state_does_not_treat_chat_id_404_as_page_error():
+    class Tab:
+        title = "MiniMax Agent: 简单指令, 无限可能"
+        url = "https://agent.minimax.io/?id=404104636134110"
+
+    seat_config = {"url": "https://agent.minimax.io", "match_domains": ["agent.minimax.io"]}
+
+    assert _seat_login_state(seat_config, [Tab()])["state"] == "session_present"
+
+
+def test_login_state_still_detects_real_404_pages():
+    class Tab:
+        title = "404 Not Found"
+        url = "https://agent.minimax.io/not-found"
+
+    seat_config = {"url": "https://agent.minimax.io", "match_domains": ["agent.minimax.io"]}
+
+    assert _seat_login_state(seat_config, [Tab()])["state"] == "page_error"
+
+
+def test_required_page_error_failure_is_supplementable():
+    summary = execution_policy_summary(
+        [
+            {
+                "seat": "deepseek",
+                "seat_name": "DeepSeek",
+                "ok": False,
+                "error": {"code": "page_error", "message": "页面错误"},
+                "submission_confirmed": True,
+            }
+        ],
+        requested_seats=["deepseek"],
+    )
+
+    assert summary["required_supplementable_seats"][0]["seat"] == "deepseek"
+    assert summary["required_supplementable_seats"][0]["supplementable"] is True
 
 
 def test_fixed_tab_timeout_prefers_per_seat_retry_timeout():
@@ -209,3 +263,85 @@ def test_deepseek_desktop_path_is_explicitly_blocked_until_expert_operator_exist
     assert code == "deepseek_desktop_expert_operator_missing"
     assert "专家模式" in message
     assert calibration["error"]["code"] == "deepseek_desktop_expert_operator_missing"
+
+
+def test_login_state_detects_claude_restricted_page():
+    """P62: A Claude tab at /restricted must return provider_account_restricted, not session_present."""
+    class Tab:
+        title = "Claude"
+        url = "https://claude.ai/restricted"
+
+    seat_config = {"url": "https://claude.ai/new", "match_domains": ["claude.ai"]}
+
+    result = _seat_login_state(seat_config, [Tab()])
+    assert result["state"] == "provider_account_restricted"
+
+
+def test_bridge_status_marks_restricted_required_tab_not_ready(monkeypatch):
+    """A restricted required tab must not count as ready in the product status matrix."""
+    config = web_seat_bridge.default_config()
+    config["automation_driver"] = "chrome_cdp"
+    config["auto_wake_cdp"] = False
+    config["auto_wake_open_tabs"] = False
+    config["login_state_audit"] = False
+    for seat_config in config["seats"].values():
+        seat_config["enabled"] = False
+    config["seats"]["claude"].update({
+        "enabled": True,
+        "url": "https://claude.ai/new",
+        "fresh_url": "https://claude.ai/new",
+        "match_domains": ["claude.ai"],
+        "channel": "web",
+        "execution_required": True,
+    })
+
+    class Tab:
+        title = "Claude"
+        url = "https://claude.ai/restricted"
+
+    monkeypatch.setattr(web_seat_bridge, "load_bridge_config", lambda path=None: config)
+    monkeypatch.setattr(web_seat_bridge, "load_calibration", lambda: {"version": 1, "updated_at": None, "seats": {}})
+    monkeypatch.setattr(web_seat_bridge, "playwright_installed", lambda: True)
+    monkeypatch.setattr(web_seat_bridge, "chrome_cdp_status", lambda config: {"available": True})
+    monkeypatch.setattr(web_seat_bridge, "list_cdp_tabs", lambda config: [Tab()])
+    monkeypatch.setattr(web_seat_bridge, "_write_login_state_audit", lambda config, status_payload: None)
+
+    status = web_seat_bridge.bridge_status()
+    claude = next(row for row in status["seat_browser_matrix"] if row["seat"] == "claude")
+
+    assert status["ready_count"] == 0
+    assert claude["configured"] is True
+    assert claude["ready"] is False
+    assert claude["reason"] == "provider_account_restricted"
+    assert claude["login_state"]["state"] == "provider_account_restricted"
+
+
+def test_login_state_detects_generic_account_blocked_markers():
+    """P62: Various account-restriction markers must produce provider_account_restricted."""
+    blocked_cases = [
+        ("Account on hold", "https://claude.ai/restricted"),
+        ("Request a review", "https://chatgpt.com/"),
+        ("Your account has been suspended", "https://gemini.google.com/app"),
+        ("Blocked", "https://chat.deepseek.com/"),
+    ]
+    for title, url in blocked_cases:
+        class Tab:
+            pass
+        Tab.title = title
+        Tab.url = url
+        domain = url.split("//")[1].split("/")[0]
+        seat_config = {"url": url, "match_domains": [domain]}
+        result = _seat_login_state(seat_config, [Tab()])
+        assert result["state"] == "provider_account_restricted", (
+            f"Expected provider_account_restricted for title={title!r} url={url!r}, got {result['state']}"
+        )
+
+
+def test_login_state_normal_session_not_flagged_as_restricted():
+    """P62: A normal Claude session must remain session_present."""
+    class Tab:
+        title = "Claude"
+        url = "https://claude.ai/new"
+
+    seat_config = {"url": "https://claude.ai/new", "match_domains": ["claude.ai"]}
+    assert _seat_login_state(seat_config, [Tab()])["state"] == "session_present"

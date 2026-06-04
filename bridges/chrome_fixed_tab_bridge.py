@@ -30,7 +30,20 @@ class ChromeFixedTabError(RuntimeError):
 MIN_MARKER_ANSWER_CHARS = 8
 MIN_FALLBACK_ANSWER_CHARS = 180
 SLOW_SEAT_FALLBACK_ANSWER_CHARS = 800
-FRAGILE_WEB_SEATS = {"chatgpt", "deepseek", "qwen", "wenxin"}
+FRAGILE_WEB_SEATS = {
+    "chatgpt",
+    "deepseek",
+    "qwen",
+    "kimi",
+    "doubao",
+    "mimo",
+    "meta",
+    "grok",
+    "minimax",
+    "zhipu",
+    "wenxin",
+    "claude",
+}
 RECOVERABLE_PAGE_REASONS = {
     "page_error",
     "model_page_error",
@@ -43,6 +56,9 @@ RECOVERABLE_PAGE_REASONS = {
     "empty_result",
     "chrome_crash",
     "blank_page",
+    "chrome_composer_not_ready",
+    "deepseek_expert_mode_not_verified",
+    "doubao_expert_mode_not_verified",
 }
 
 
@@ -249,13 +265,27 @@ def run_chrome_fixed_tabs(
             _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
                 trace("seat", "chrome_submission_ui_prepared", f"{seat} 提交前模式已准备", {"seat": seat, "prepared": prepared})
-        if prepared.get("needs_followup"):
+        prepare_attempt = 1
+        max_prepare_attempts = int(float(config.get("mode_prepare_max_attempts") or 4))
+        while prepared.get("needs_followup") and prepare_attempt < max_prepare_attempts:
             followup = _safe_execute_json(tab, _build_prepare_submission_ui_js(prompt_id), timeout=5)
-            prepared["followup"] = followup
+            _append_prepare_followup(prepared, followup)
+            prepare_attempt += 1
             if followup.get("clicked"):
                 _humanized_sleep(config, seat_config, seat, "after_click")
             if trace:
-                trace("seat", "chrome_submission_ui_prepare_followup", f"{seat} 提交前模式二次确认", {"seat": seat, "prepared": prepared})
+                trace(
+                    "seat",
+                    "chrome_submission_ui_prepare_followup",
+                    f"{seat} 提交前模式第 {prepare_attempt} 次确认",
+                    {"seat": seat, "prepared": prepared},
+                )
+            if seat == "deepseek" and _deepseek_prepare_verified(prepared):
+                break
+            if seat == "doubao" and _doubao_prepare_verified(prepared):
+                break
+            if not followup.get("needs_followup"):
+                break
         if seat == "deepseek":
             if not _deepseek_prepare_verified(prepared):
                 submissions[seat] = _failed_result(
@@ -363,14 +393,37 @@ def run_chrome_fixed_tabs(
                     if submission_confirmed:
                         submitted["ok"] = True
                 elif retry.get("error") in {"provider_quota_limited", "page_error"}:
-                    submissions[seat] = _failed_result(
+                    recovery = _recover_fixed_tab(
+                        tab,
+                        config,
+                        seat_config,
                         seat,
-                        str(retry.get("error")),
-                        str(retry.get("message") or "The model page is blocked."),
+                        str(retry.get("error") or "retry_submit_page_state"),
+                        trace,
                     )
-                    if trace:
-                        trace("seat", "chrome_submit_blocked", f"{seat} 页面阻断，无法提交", {"seat": seat, "submit": submitted})
-                    continue
+                    submitted["refresh_recovery"] = recovery
+                    if recovery.get("ok"):
+                        all_tabs = list_chrome_tabs()
+                        tab = _match_tab(seat_config, all_tabs) or tab
+                        written = _safe_execute_json(tab, _build_write_prompt_js(prompt_with_marker, prompt_id), timeout=15)
+                        clicked = _safe_execute_json(tab, _build_click_send_js(prompt_id), timeout=10) if written.get("ok") else {}
+                        submitted["retry_after_refresh"] = {"write": written, "click": clicked}
+                        if clicked.get("ok"):
+                            _humanized_sleep(config, seat_config, seat, "after_click")
+                            verification = _safe_execute_json(tab, _build_submission_check_js(prompt_id), timeout=8)
+                            submitted["verification"] = verification
+                            submission_confirmed = bool(verification.get("submitted"))
+                            if submission_confirmed:
+                                submitted["ok"] = True
+                    if not submission_confirmed:
+                        submissions[seat] = _failed_result(
+                            seat,
+                            str(retry.get("error")),
+                            str(retry.get("message") or "The model page is blocked."),
+                        )
+                        if trace:
+                            trace("seat", "chrome_submit_blocked", f"{seat} 页面阻断，无法提交", {"seat": seat, "submit": submitted})
+                        continue
             if not submission_confirmed:
                 code = str(submitted.get("error") or (submitted.get("verification") or {}).get("reason") or "submit_unconfirmed")
                 message = str(
@@ -468,6 +521,12 @@ def run_chrome_fixed_tabs(
             marker_in_input = bool(capture.get("marker_in_input"))
             known_error = capture.get("known_error") or {}
             if known_error.get("code"):
+                code = str(known_error.get("code"))
+                if not item.get("capture_error_recovery_attempted") and _page_state_needs_reload({"reason": code, "page_error": code in {"page_error", "model_page_error"}}):
+                    item["capture_error_recovery_attempted"] = True
+                    recovery = _recover_fixed_tab(item["tab"], config, _seat_config(config, seat), seat, code, trace)
+                    if recovery.get("ok"):
+                        continue
                 submissions[seat] = _failed_result(seat, str(known_error.get("code")), str(known_error.get("message") or "The model page returned an error."))
                 pending.remove(seat)
                 if trace:
@@ -580,15 +639,27 @@ def run_chrome_fixed_tabs(
         marker_in_input = bool(capture.get("marker_in_input"))
         known_error = capture.get("known_error") or {}
         if known_error.get("code"):
-            submissions[seat] = _failed_result(seat, str(known_error.get("code")), str(known_error.get("message") or "The model page returned an error."))
-            if trace:
-                trace(
-                    "seat",
-                    "chrome_response_page_error",
-                    f"{seat} 页面返回错误",
-                    {"seat": seat, "known_error": known_error, "marker_found": marker_found, "marker_in_input": marker_in_input},
-                )
-            continue
+            code = str(known_error.get("code"))
+            if not item.get("final_capture_error_recovery_attempted") and _page_state_needs_reload({"reason": code, "page_error": code in {"page_error", "model_page_error"}}):
+                item["final_capture_error_recovery_attempted"] = True
+                recovery = _recover_fixed_tab(item["tab"], config, _seat_config(config, seat), seat, code, trace)
+                if recovery.get("ok"):
+                    capture = _safe_execute_json(item["tab"], _build_capture_js(item["prompt_id"]), timeout=12)
+                    known_error = capture.get("known_error") or {}
+                    marker_found = bool(capture.get("marker_found"))
+                    marker_in_input = bool(capture.get("marker_in_input"))
+                    response_text = _response_text_from_capture(capture, item)
+                    text = str(capture.get("text") or "").strip()
+            if known_error.get("code"):
+                submissions[seat] = _failed_result(seat, str(known_error.get("code")), str(known_error.get("message") or "The model page returned an error."))
+                if trace:
+                    trace(
+                        "seat",
+                        "chrome_response_page_error",
+                        f"{seat} 页面返回错误",
+                        {"seat": seat, "known_error": known_error, "marker_found": marker_found, "marker_in_input": marker_in_input},
+                    )
+                continue
         assessment = _capture_acceptance(capture, item, question)
         response_text = assessment["response_text"]
         text = assessment["text"]
@@ -734,6 +805,24 @@ def recover_existing_fixed_tab_answers(
                 trace("seat", "existing_answer_tab_not_found", f"{seat} 未找到固定 Chrome 标签", {"seat": seat})
             continue
         capture = _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=12)
+        if _page_state_needs_reload(capture):
+            recovery = _recover_fixed_tab(
+                tab,
+                config,
+                seat_config,
+                seat,
+                str(capture.get("reason") or capture.get("error") or "existing_answer_page_state"),
+                trace,
+            )
+            if not recovery.get("skipped"):
+                all_tabs = list_chrome_tabs()
+                tab = _match_tab(seat_config, all_tabs) or tab
+                recapture = _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=12)
+                recapture["refresh_recovery"] = recovery
+                if recapture.get("ok") or recapture.get("marker_found") or not _page_state_needs_reload(recapture):
+                    capture = recapture
+                else:
+                    capture["refresh_recovery"] = recovery
         prompt_id = str(capture.get("prompt_id") or "")
         response_text = _clean_response_text(str(capture.get("text") or ""), prompt_id)
         prompt_echo = _capture_is_prompt_echo(response_text, prompt_id)
@@ -1144,10 +1233,11 @@ def _match_tab(seat_config: dict[str, Any], tabs: list[ChromeTab]) -> ChromeTab 
         tab_url = str(tab.url or "").lower()
         if any(domain and domain in tab_url for domain in domains):
             return tab
-    for tab in tabs:
-        haystack = f"{tab.title} {tab.url}".lower()
-        if any(label and label in haystack for label in labels):
-            return tab
+    if _label_fallback_enabled(seat_config):
+        for tab in tabs:
+            haystack = f"{tab.title} {tab.url}".lower()
+            if any(label and label in haystack for label in labels):
+                return tab
     return None
 
 
@@ -1184,6 +1274,10 @@ def _match_labels(seat_config: dict[str, Any]) -> list[str]:
         if value:
             labels.append(value)
     return list(dict.fromkeys(labels))
+
+
+def _label_fallback_enabled(seat_config: dict[str, Any]) -> bool:
+    return seat_config.get("allow_label_fallback", True) is not False and not bool(seat_config.get("strict_match_domains"))
 
 
 def _domain(url: str) -> str:
@@ -1258,13 +1352,16 @@ def _post_timeout_grace_seconds(config: dict[str, Any], seat_config: dict[str, A
 
 
 def _failed_result(seat: str, code: str, message: str) -> dict[str, Any]:
-    return {
+    result = {
         "seat": seat,
         "seat_name": SEAT_PERSONAS.get(seat, {}).get("name", seat),
         "ok": False,
         "response": "",
         "error": {"code": code, "message": message},
     }
+    if code in RECOVERABLE_PAGE_REASONS or code in {"slow_response_pending", "response_timeout"}:
+        result["supplementable"] = True
+    return result
 
 
 def _response_text_from_capture(capture: dict[str, Any], item: dict[str, Any]) -> str:
@@ -1419,13 +1516,22 @@ def _capture_is_polluted(text: str, prompt_id: str) -> bool:
 
 
 def _seat_prompt(seat: str, question: str, mode: str) -> str:
+    if "模型狼人杀娱乐模式" in question or "我的公开发言：" in question:
+        seat_guard = ""
+        if seat == "chatgpt":
+            seat_guard = "\nChatGPT 专用要求：直接输出最终公开发言正文，并完整保留 AIJUDGE 起止标记。"
+        elif seat == "qwen":
+            seat_guard = "\nQwen 专用要求：不要只停在思考完成提示，必须输出最终公开发言正文，并完整保留 AIJUDGE 起止标记。"
+        elif seat == "doubao":
+            seat_guard = "\nDoubao 专用要求：不要使用快速闲聊，必须输出最终公开发言正文，并完整保留 AIJUDGE 起止标记。"
+        return f"{question}{seat_guard}"
     base = render_jury_prompt(seat, question) or question
     is_resonance_followup = "[AIJUDGE_RESONANCE_FOLLOWUP]" in question
     seat_guard = ""
     if seat == "chatgpt":
         seat_guard = "\nChatGPT 专用要求：不要切换到深入/思考模式；直接输出最终正文，并完整保留 AIJUDGE 起止标记。"
     elif seat == "qwen":
-        seat_guard = "\nQwen 专用要求：不要只停在思考完成提示；必须输出最终正文，并完整保留 AIJUDGE 起止标记。"
+        seat_guard = "\nQwen 专用要求：本轮必须使用深入思考模型；不要只停在思考完成提示，必须输出最终正文，并完整保留 AIJUDGE 起止标记。"
     elif seat == "doubao":
         seat_guard = "\nDoubao 专用要求：本轮必须在专家/超能模式下回答；不要使用快速模式，并完整保留 AIJUDGE 起止标记。"
     if is_resonance_followup:
@@ -1466,6 +1572,17 @@ def _response_matches_question(text: str, question: str) -> bool:
 
 
 _STRONG_TOPIC_TERMS = {
+    "商业化",
+    "投稿",
+    "融资",
+    "github",
+    "加星",
+    "star",
+    "社媒",
+    "开源",
+    "加速器",
+    "投资",
+    "定价",
     "世界杯",
     "world cup",
     "fifa",
@@ -1482,6 +1599,23 @@ _STRONG_TOPIC_TERMS = {
 
 
 _DOMAIN_HINTS = (
+    "商业化",
+    "投稿",
+    "融资",
+    "github",
+    "加星",
+    "star",
+    "社媒",
+    "开源",
+    "加速器",
+    "投资",
+    "定价",
+    "商业",
+    "增长",
+    "论文",
+    "比赛",
+    "社区",
+    "媒体",
     "世界杯",
     "小组",
     "淘汰赛",
@@ -1690,6 +1824,34 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
     if (/使用专家模式开始对话/.test(bodyText) && !/使用快速模式开始对话/.test(bodyText)) return true;
     return byDeepseekLabel("专家模式").some(deepseekSelected);
   }};
+  if (/gemini\\.google\\.com|aistudio\\.google\\.com/i.test(location.hostname)) {{
+    const geminiLabel = el => (labelOf(el) || textOf(el)).replace(/\\s+/g, " ").trim();
+    const shortGeminiLabel = el => {{
+      const label = geminiLabel(el);
+      return label.length <= 80 ? label : "";
+    }};
+    const proLabel = label => /\\bpro\\b|Gemini\\s*2\\.5\\s*Pro|Gemini\\s*1\\.5\\s*Pro|高级版/i.test(label)
+      && !/flash|lite|preview|image|veo|imagen/i.test(label);
+    const currentPro = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu'],[role='combobox']"))
+      .some(el => visible(el) && proLabel(shortGeminiLabel(el)) && selected(clickTarget(el)));
+    const geminiOptions = Array.from(document.querySelectorAll("[role='menuitemradio'],[role='menuitem'],[role='option'],button"))
+      .filter(el => visible(el) && el.getBoundingClientRect().width > 20 && shortGeminiLabel(el));
+    const proOption = geminiOptions.find(el => proLabel(shortGeminiLabel(el)) && !selected(clickTarget(el)));
+    const modelMenu = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu'],[role='combobox']"))
+      .find(el => visible(el) && /(Gemini|模型|model|flash|pro)/i.test(shortGeminiLabel(el)));
+    if (currentPro) {{
+      clicked.push("gemini_pro_verified:yes");
+    }} else if (proOption) {{
+      click(`gemini_pro_clicked:${{shortGeminiLabel(proOption)}}`, proOption);
+      needsFollowup = true;
+    }} else if (modelMenu) {{
+      click("gemini_model_menu_open", modelMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("gemini_pro_verified:no");
+      needsFollowup = true;
+    }}
+  }}
   if (/chat\\.qwen\\.ai/i.test(location.hostname)) {{
     const qwenModeLabel = () => (document.querySelector(".qwen-thinking-selector")?.innerText
       || document.querySelector(".qwen-select-thinking")?.innerText
@@ -1697,25 +1859,32 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
     const optionLabel = el => (el.getAttribute("title") || el.getAttribute("aria-label") || textOf(el)).trim();
     const options = Array.from(document.querySelectorAll(".ant-select-item-option,[role='option'],.ant-select-dropdown *"))
       .filter(el => visible(el) && el.getBoundingClientRect().width > 20);
-    const reliableOption = options.find(el => {{
+    const deepThinkingOption = options.find(el => {{
       const label = optionLabel(el);
-      return label && !/^(思考|Thinking)$/i.test(label) && /^(非思考|不思考|普通|快速|自动|Auto|Fast|Instant|None|No Thinking)$/i.test(label);
+      return label && /深入思考|深度思考|强思考|思考增强|Thinking|Think/i.test(label)
+        && !/非思考|不思考|普通|快速|Instant|None|No Thinking|Fast/i.test(label);
     }}) || options.find(el => {{
       const label = optionLabel(el);
-      return label && !/思考|Thinking/i.test(label);
+      return label && /思考|Thinking|Think/i.test(label)
+        && !/非思考|不思考|普通|快速|Instant|None|No Thinking|Fast/i.test(label);
     }});
     const selector = document.querySelector(".qwen-thinking-selector")
       || document.querySelector(".qwen-select-thinking")
       || Array.from(document.querySelectorAll("[role='combobox']")).find(visible);
-    if (/^(思考|Thinking)$/i.test(qwenModeLabel())) {{
-      if (reliableOption) {{
-        click("qwen_reliable_mode", reliableOption);
-      }} else if (selector) {{
-        click("qwen_mode_menu_open", selector);
-        needsFollowup = true;
-      }}
+    const currentLabel = qwenModeLabel();
+    const deepThinkingSelected = /深入思考|深度思考|强思考|Thinking|Think|思考/i.test(currentLabel)
+      && !/非思考|不思考|普通|快速|Instant|None|No Thinking|Fast/i.test(currentLabel);
+    if (deepThinkingSelected) {{
+      clicked.push("qwen_deep_thinking_verified:yes");
+    }} else if (deepThinkingOption) {{
+      click(`qwen_deep_thinking_clicked:${{optionLabel(deepThinkingOption)}}`, deepThinkingOption);
+      needsFollowup = true;
+    }} else if (selector) {{
+      click("qwen_thinking_menu_open", selector);
+      needsFollowup = true;
     }} else {{
-      clicked.push("qwen_reliable_mode_verified");
+      clicked.push("qwen_deep_thinking_verified:no");
+      needsFollowup = true;
     }}
   }}
   if (/chatgpt\\.com/i.test(location.hostname)) {{
@@ -1832,15 +2001,39 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
 """
 
 
+def _prepared_state_chain(prepared: dict[str, Any]) -> list[dict[str, Any]]:
+    chain: list[dict[str, Any]] = []
+    current: Any = prepared
+    while isinstance(current, dict):
+        chain.append(current)
+        current = current.get("followup")
+    return chain
+
+
+def _append_prepare_followup(prepared: dict[str, Any], followup: dict[str, Any]) -> None:
+    """Append a prepare pass without overwriting earlier diagnostic states."""
+    current: Any = prepared
+    while isinstance(current, dict) and isinstance(current.get("followup"), dict):
+        current = current["followup"]
+    if isinstance(current, dict):
+        current["followup"] = followup
+
+
 def _final_prepared_state(prepared: dict[str, Any]) -> dict[str, Any]:
-    followup = prepared.get("followup")
-    return followup if isinstance(followup, dict) else prepared
+    chain = _prepared_state_chain(prepared or {})
+    return chain[-1] if chain else {}
 
 
 def _deepseek_prepare_verified(prepared: dict[str, Any]) -> bool:
-    final_prepared = _final_prepared_state(prepared or {})
-    clicked_names = [str(name) for name in (final_prepared.get("clicked_names") or [])]
-    return "deepseek_expert_verified:yes" in clicked_names and "deepseek_tools_verified:yes" in clicked_names
+    expert_verified = False
+    tools_verified = False
+    for state in reversed(_prepared_state_chain(prepared or {})):
+        clicked_names = [str(name) for name in (state.get("clicked_names") or [])]
+        if "deepseek_expert_verified:yes" in clicked_names and "deepseek_tools_verified:yes" in clicked_names:
+            return True
+        expert_verified = expert_verified or "deepseek_expert_verified:yes" in clicked_names
+        tools_verified = tools_verified or "deepseek_tools_verified:yes" in clicked_names
+    return expert_verified and tools_verified
 
 
 def _doubao_prepare_verified(prepared: dict[str, Any]) -> bool:
@@ -2792,6 +2985,7 @@ def _build_existing_answer_capture_js(seat: str) -> str:
 (() => {{
   const seat = {seat_json}.toLowerCase();
   const pageRaw = document.body?.innerText || document.body?.textContent || "";
+  const titleText = document.title || "";
   const conversationRoot = document.querySelector("main")
     || document.querySelector("[role='main']")
     || document.body;
@@ -2807,6 +3001,9 @@ def _build_existing_answer_capture_js(seat: str) -> str:
     .map(el => [el.getAttribute("aria-label") || "", el.innerText || "", el.textContent || "", String(el.className || "")].join(" "))
     .join(" ");
   const pageBusy = /停止回答|stop generating|stop response|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
+  const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(pageRaw + "\\n" + titleText);
+  const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(pageRaw + "\\n" + titleText);
+  const blankPage = clean(pageRaw).length < 8;
   const editableAncestors = node => {{
     for (let el = node.parentElement; el; el = el.parentElement) {{
       const tag = (el.tagName || "").toLowerCase();
@@ -2903,6 +3100,24 @@ def _build_existing_answer_capture_js(seat: str) -> str:
       placeholder_found: placeholderFound,
       candidate_count: unique.length,
       page_busy: pageBusy
+    }});
+  }}
+  if (pageError || chromeCrash || blankPage) {{
+    return JSON.stringify({{
+      ok: false,
+      title: document.title,
+      url: location.href,
+      text: "",
+      text_length: 0,
+      marker_found: false,
+      fallback_found: false,
+      capture_mode: "existing_answer_page_state",
+      page_busy: pageBusy,
+      page_error: pageError,
+      chrome_crash: chromeCrash,
+      blank_page: blankPage,
+      reason: chromeCrash ? "chrome_crash" : (pageError ? "page_error" : "blank_page"),
+      message: chromeCrash ? "The provider tab appears to have crashed." : (pageError ? "The provider page reports a retryable page error." : "The provider page did not render usable content.")
     }});
   }}
   const fallbackUnique = [];

@@ -13,11 +13,28 @@ import hashlib
 import re
 from typing import Any
 
+from core.worldcup_pool import build_worldcup_pool_prompt_flow, is_worldcup_pool_prompt
+
 
 MODE_LABELS = {
-    "flash": "快速判断",
+    "flash": "快速裁决",
     "standard": "标准议事",
-    "strategic": "深度议事",
+    "strategic": "深度裁决",
+}
+
+# P69: Mode-specific system instructions
+MODE_SYSTEM_INSTRUCTIONS = {
+    "flash": (
+        "你正在执行快速裁决模式。请优先给出明确结论，用较少轮次完成判断。"
+        "输出应包含：核心结论、3-5条关键理由、主要风险、最小下一步。"
+        "避免展开长篇多席位辩论，除非问题本身需要。"
+    ),
+    "strategic": (
+        "你正在执行深度裁决模式。请按议会式流程处理问题：先拆解目标，"
+        "再组织多个席位独立发言，进行交叉验证，标注证据、假设、分歧和不确定性，"
+        "最后形成可审计裁决报告。输出应包含：问题拆解、席位观点、交叉验证、"
+        "共识与分歧、风险、最终裁决、下一步行动。"
+    ),
 }
 
 
@@ -30,6 +47,14 @@ def build_prompt_flow(
 ) -> dict[str, Any]:
     """Return a product-facing alignment packet for a jury run."""
     original = question.strip()
+    if is_worldcup_pool_prompt(original):
+        return build_worldcup_pool_prompt_flow(
+            question=original,
+            mode=mode,
+            engine=engine,
+            seats=seats,
+            bridge_summary=bridge_summary,
+        )
     normalized = _normalize(original)
     intent = _infer_intent(normalized)
     required_output = _required_output(normalized)
@@ -99,10 +124,13 @@ def _required_output(question: str) -> list[str]:
             "区分事实、假设与主观判断",
         ]
     return [
-        "明确结论或立场",
-        "列出 3-5 条关键依据",
-        "指出最大风险和反方观点",
-        "给出最小可执行下一步",
+        "独立结论或方案，标题必须对齐用户任务",
+        "列出 3-5 条关键依据，并区分事实、推断和建议",
+        "说明页面/流程/证据或实施结构，不要只给评价",
+        "给出报告/文稿/交付物的专业格式建议",
+        "指出最大风险、反方观点和失败条件",
+        "若存在多个可行路径，列出至少 3 个可选方案供用户选择",
+        "给出最小可执行下一步和验收标准",
     ]
 
 
@@ -130,17 +158,33 @@ def _professional_prompt(
 ) -> str:
     output_lines = "\n".join(f"- {item}" for item in required_output)
     assumption_lines = "\n".join(f"- {item}" for item in assumptions)
+    mode_instruction = MODE_SYSTEM_INSTRUCTIONS.get(mode, "")
     return (
-        "你是 AI Judge 的独立专家席位。请围绕用户问题给出可审计、可比较的答案。\n\n"
-        f"用户原始问题：{original}\n"
-        f"规范化任务：{normalized}\n"
-        f"任务意图：{intent}\n"
-        f"议事深度：{MODE_LABELS.get(mode, mode)}\n\n"
+        "[SYSTEM] 作为 AI Judge 独立专家席位，你重视清晰、证据和可执行性。"
+        "请先给出明确立场，再说明依据、风险和下一步；不要回避，不要只写空泛结论。\n\n"
+        + (f"[MODE_INSTRUCTION] {mode_instruction}\n\n" if mode_instruction else "") +
+        "[QUESTION] [AIJUDGE_PRE_RUN_CONFIRMATION]\n"
+        "你将作为 AI Judge 全席位中的独立专家，不要互相迎合，也不要只给一个省略式结论。"
+        "目标是输出可审计、可比较、可落地的方案。\n\n"
+        "用户原始任务：\n"
+        f"{original}\n\n"
+        "规范化任务：\n"
+        f"{normalized}\n\n"
+        "任务意图：\n"
+        f"{intent}\n\n"
+        "裁决模式：\n"
+        f"{MODE_LABELS.get(mode, mode)}\n\n"
         "输出必须包含：\n"
         f"{output_lines}\n\n"
+        "专业报告要求：\n"
+        "- 标题必须与用户任务对齐，不能把流程状态误写成业务标题\n"
+        "- 先给可阅读的结论和方案，再把证据、模型贡献、互评和原始日志放入附录\n"
+        "- 若存在多个可行方向，必须分别说明适用场景、优点、缺点、风险和实施成本\n"
+        "- 不要省略有效模型给出的具体路径；提炼噪音，但保留可追溯来源\n\n"
         "需要主动核查或声明的假设：\n"
         f"{assumption_lines}\n\n"
-        "请避免泛泛而谈；事实、推断、建议要分开写。"
+        "约束：不要把所有内容塞进一个杂乱页面；不要把不可验证内容说成事实；"
+        "事实、推断、建议要分开写，最终输出要能被产品经理直接审阅和选择。"
     )
 
 

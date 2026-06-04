@@ -25,6 +25,14 @@ from core.seat_execution_policy import (
     execution_policy_summary,
 )
 from core.seat_personas import SEAT_PERSONAS
+from core.worldcup_pool import (
+    attach_worldcup_pool_state,
+    build_worldcup_pool_adapter_results,
+    build_worldcup_pool_resonance_prompts,
+    is_worldcup_pool_prompt,
+    split_worldcup_pool_web_and_adapter_seats,
+    worldcup_pool_seats,
+)
 
 
 def run_web_jury(
@@ -47,16 +55,33 @@ def run_web_jury(
 
     config = resolve_mode(mode, override_seats=seats)
     resolved_seats = [seat for seat in config["seats"] if seat in SEAT_PERSONAS]
+    if is_worldcup_pool_prompt(question):
+        resolved_seats = worldcup_pool_seats(resolved_seats)
     if trace:
         trace("jury", "web_jury_start", "进入网页陪审收集", {"mode": mode, "seats": resolved_seats})
-    raw_results = run_web_seats(
-        question=question,
-        seats=resolved_seats,
-        mode=mode,
-        config_overrides=bridge_config_overrides,
-        progress=progress,
-        trace=trace,
-    )
+    web_seats = resolved_seats
+    adapter_results: list[dict[str, Any]] = []
+    if is_worldcup_pool_prompt(question):
+        web_seats, adapter_seats = split_worldcup_pool_web_and_adapter_seats(resolved_seats)
+        adapter_results = build_worldcup_pool_adapter_results(adapter_seats)
+        if adapter_results and trace:
+            trace("seat", "worldcup_pool_platform_adapter", "赛事预测池平台限制席位改走透明适配结果", {
+                "adapter_seats": adapter_seats,
+                "web_seats": web_seats,
+            })
+        if adapter_results and progress:
+            progress("赛事预测池平台限制席位已透明适配", 0.13)
+    raw_results = []
+    if web_seats:
+        raw_results = run_web_seats(
+            question=question,
+            seats=web_seats,
+            mode=mode,
+            config_overrides=bridge_config_overrides,
+            progress=progress,
+            trace=trace,
+        )
+    raw_results.extend(adapter_results)
     mentor_supplements: list[dict[str, Any]] = []
     if collect_followups:
         mentor_supplements = collect_resonance_followups(
@@ -85,6 +110,12 @@ def run_web_jury(
     )
     if evidence_options:
         verdict.setdefault("web_bridge", {})["evidence_options"] = dict(evidence_options)
+    attach_worldcup_pool_state(
+        verdict,
+        question=question,
+        raw_results=raw_results,
+        mentor_supplements=mentor_supplements,
+    )
     return verdict
 
 
@@ -257,6 +288,8 @@ def collect_resonance_followups(
 
 
 def build_resonance_followup_prompts(question: str, raw_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if is_worldcup_pool_prompt(question):
+        return build_worldcup_pool_resonance_prompts(question, raw_results)
     prompts: list[dict[str, Any]] = []
     for item in raw_results:
         if not item.get("ok"):

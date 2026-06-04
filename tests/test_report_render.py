@@ -151,18 +151,89 @@ def test_report_keeps_navigation_and_full_web_answers():
     })
 
     assert "返回提问" in rendered
+    assert 'data-lang-button="en"' in rendered
+    assert 'data-print-report' in rendered
+    assert 'data-copy-link' in rendered
+    assert "Download PDF" in rendered
+    assert "Copy Share Link" in rendered
+    assert "setReportLanguage" in rendered
+    assert "window.print()" in rendered
     assert 'id="seat-answers"' in rendered
     assert "未拿全" in rendered
     assert full_answer in rendered
     assert "send_button_not_found" in rendered
     assert "AI Judge 法官答案与单模型对照" in rendered
     assert "每轮评分表现" in rendered
-    assert "每个模型的回答入口、优缺点" in rendered
+    assert "内部资料库：每个模型的回答索引" in rendered
     assert "答案总结、互评与评分链路" in rendered
     assert "score_jury_v2" in rendered
     assert 'class="seat-answer is-ok"' in rendered
     assert 'class="seat-answer is-failed" id="seat-answer-gemini" open' in rendered
     assert "全部展开" in rendered
+
+
+def test_report_renders_readable_stored_answers_and_archive_index():
+    api_server = _load_api_server()
+    rendered = api_server._render_html_report({
+        "question": "检查内部资料库是否能看完整结果。",
+        "one_liner": "原始答案、互评、共振和依据都应可追溯。",
+        "verdict_label": "建议推进",
+        "confidence": 88,
+        "web_bridge": {
+            "ok_count": 1,
+            "failed_count": 0,
+            "requested_count": 1,
+            "collection_complete": True,
+            "raw_results": [
+                {
+                    "seat": "doubao",
+                    "seat_name": "Doubao",
+                    "ok": True,
+                    "response": (
+                        r"\u6700\u7ec8\u65b9\u6848\uff1a\u4fdd\u7559\u5b8c\u6574\u539f\u6587\n"
+                        "| 路径 | 动作 |\n"
+                        "|---|---|\n"
+                        "| GitHub | 发布 README |\n"
+                        "参考 https://example.com/report"
+                    ),
+                }
+            ],
+            "deliberation": {
+                "peer_review_count": 1,
+                "summary_claim_count": 1,
+                "claim_count": 1,
+                "peer_reviews": [
+                    {"reviewer": "doubao", "reviewer_name": "Doubao", "target": "doubao", "target_name": "Doubao", "score": 0.8, "label": "支持", "comment": "路径可执行。"}
+                ],
+                "answer_summaries": [
+                    {"seat": "doubao", "seat_name": "Doubao", "stance": "支持", "quality": 0.8, "summary": "保留完整原文。"}
+                ],
+            },
+            "mentor_supplements": [
+                {
+                    "seat": "doubao",
+                    "seat_name": "Doubao",
+                    "ok": True,
+                    "source_questions": ["如何追溯原始日志？"],
+                    "response": "二轮补充：打开内部资料库。",
+                }
+            ],
+        },
+    })
+
+    readable_part = rendered.split('id="raw-json"', 1)[0]
+    assert "最终方案：保留完整原文" in rendered
+    assert r"\u6700\u7ec8" not in readable_part
+    assert 'class="answer readable-answer"' in rendered
+    assert 'class="raw-log"' in rendered
+    assert "stored-table" in rendered
+    assert "查看纯文本原始日志" in rendered
+    assert 'id="result-archive"' in rendered
+    assert "完整结果资料库" in rendered
+    assert 'href="#seat-answers"' in rendered
+    assert 'href="#deliberation"' in rendered
+    assert 'href="#mentor-supplements"' in rendered
+    assert 'id="raw-json"' in rendered
 
 
 def test_report_renders_paper_style_final_report():
@@ -210,28 +281,23 @@ def test_report_renders_paper_style_final_report():
         ],
     })
 
-    assert 'id="final-report"' in rendered
-    assert "AI Judge 轮值法官最终报告" in rendered
-    assert "FINAL VERDICT · HUMAN SUMMARY" in rendered
-    assert "STANDARD CLOSEOUT SOP" in rendered
-    assert "Codex 执行模板" in rendered
-    assert "Phase 1: 收口体验基线" in rendered
-    assert "输出要求" in rendered
-    assert "source exists" in rendered
-    assert "查看完整总结报告" in rendered
-    assert "审计附录：标准 SOP" in rendered
-    assert "审计附录：旧版法官报告" in rendered
-    assert 'id="professional-report"' in rendered
-    assert "ABSTRACT" in rendered
-    assert "THESIS" in rendered
-    assert "RECOMMENDATION" in rendered
-    assert "KEY FINDINGS" in rendered
-    assert "POSTULATE 1" in rendered
-    assert "EVIDENCE MAP" in rendered
-    assert "EXECUTION PLAN" in rendered
-    assert "VERIFICATION CONTRACT" in rendered
+    assert 'id="report-manuscript"' in rendered
+    assert 'data-report-root="professional-manuscript"' in rendered
+    assert 'class="paper-cover"' in rendered
+    assert "AI JUDGE FINAL REPORT" in rendered
+    assert "摘要 / ABSTRACT" in rendered
+    assert "关键指标 / SCORECARD" in rendered
+    assert "证据溯源 / EVIDENCE LEDGER" in rendered
+    assert 'id="internal-library"' in rendered
+    assert "color-scheme: light" in rendered
+    assert "--paper:#fffdf8" in rendered
+    assert "background:rgba(251,252,254,.96)" in rendered
+    assert "研究报告" in rendered or "RESEARCH REPORT" in rendered
+    assert "内部资料库" in rendered
     assert "席位覆盖 2/3" in rendered
     assert "最终方案" in rendered
+    assert rendered.index('id="report-manuscript"') < rendered.index('id="internal-library"')
+    assert 'class="council-card"' not in rendered
 
 
 def test_final_report_does_not_dump_raw_closeout_into_abstract():
@@ -258,12 +324,13 @@ def test_final_report_does_not_dump_raw_closeout_into_abstract():
         },
     })
 
-    abstract_start = rendered.index("ABSTRACT")
-    abstract_end = rendered.index("FINAL POSITION")
-    abstract_html = rendered[abstract_start:abstract_end]
+    report_body = rendered.split('id="internal-library"', 1)[0]
+    abstract_start = report_body.index("摘要 / ABSTRACT")
+    abstract_end = report_body.index("关键指标 / SCORECARD")
+    abstract_html = report_body[abstract_start:abstract_end]
     assert "RAW_SHOULD_NOT_APPEAR" not in abstract_html
     assert "DeepSeek 轮值法官" in rendered
-    assert "RECOMMENDATION" in rendered
+    assert "行动建议 / ACTION ITEMS" in rendered
 
 
 def test_final_report_executive_summary_filters_generic_model_steps():
@@ -286,7 +353,7 @@ def test_final_report_executive_summary_filters_generic_model_steps():
     assert report["executive_summary"]["headline"].startswith("建议推进但需验证")
     assert "Treat the result" not in report["executive_summary"]["recommendation"]
     assert "一眼结论" not in report["executive_summary"]["headline"]
-    assert report["executive_summary"]["detail_anchor"] == "#compiled-report"
+    assert report["executive_summary"]["detail_anchor"] == "#report-manuscript"
     assert report["sop_closeout"]["schema"] == "ai_judge.closeout_sop.v1"
     assert report["sop_closeout"]["codex_template"]["label"] == "Codex 执行模板"
     assert report["sop_closeout"]["phases"][0]["title"] == "Phase 1: 收口体验基线"
@@ -376,13 +443,378 @@ def test_final_report_compiles_model_answers_into_integrated_report():
     assert "执行路线图" in markdown
     assert "模型贡献附录" in markdown
     assert "ChatGPT" in markdown and "DeepSeek" in markdown and "Qwen" in markdown
-    assert 'id="compiled-report"' in rendered
-    assert "EDITORIAL SYNTHESIS · LONGFORM REPORT" in rendered
-    assert "完整总结报告" in rendered
-    assert "执行摘要" in rendered
+    assert 'id="report-manuscript"' in rendered
+    assert 'id="internal-library"' in rendered
+    assert "Final Decision Manuscript" in rendered
+    assert "摘要 / ABSTRACT" in rendered
     assert "争议裁决表" in rendered
     assert "模型贡献附录" in rendered
-    assert rendered.index("执行摘要") < rendered.index("模型贡献附录")
+    assert rendered.index("摘要 / ABSTRACT") < rendered.index("模型贡献附录")
+
+
+def test_final_report_keeps_title_and_plan_topic_aligned():
+    api_server = _load_api_server()
+    verdict = {
+        "run_id": "topic-align-001",
+        "question": "请整合 AI Judge 抖音和 TikTok 运营方案，目标是获得点赞、评论、关注和 GitHub stars。",
+        "one_liner": "建议围绕 9 个 AI 同审一个判断做短视频增长闭环。",
+        "verdict_label": "建议推进但需验证",
+        "confidence": 84,
+        "reasons": ["内容必须围绕短视频钩子、互动挑战和双语发布节奏。"],
+        "next_steps": ["先确定首发选题和 9:16 视觉素材包。", "再排一周五条内容矩阵。"],
+        "web_bridge": {
+            "ok_count": 2,
+            "failed_count": 0,
+            "requested_count": 2,
+            "collection_complete": True,
+            "raw_results": [
+                {
+                    "seat": "chatgpt",
+                    "seat_name": "ChatGPT",
+                    "ok": True,
+                    "response": (
+                        "最终方案：首发视频用“我让 9 个 AI 同时审一个判断，结果它们互相否定”做冲突钩子。\n"
+                        "执行路线图：T0 写中文抖音文案和 TikTok caption，T1 生成 9:16 图片 prompt，T2 发布复盘评论率。\n"
+                    ),
+                },
+                {
+                    "seat": "stale",
+                    "seat_name": "Stale Model",
+                    "ok": True,
+                    "response": "最终方案：奇绩秋季营预计 8-9 月开，LinkedIn/X 英文 KOL 矩阵，Papers with Code 加速器。",
+                },
+            ],
+        },
+    }
+
+    api_server.attach_final_report(verdict)
+    report = verdict["final_report"]
+    rendered = api_server._render_html_report(verdict)
+    visible_report = rendered.split('id="internal-library"', 1)[0]
+    brief_blob = " ".join(
+        [report["decision_brief"]["title"], *[card["value"] for card in report["decision_brief"]["cards"]]]
+    )
+
+    assert "抖音/TikTok" in report["decision_brief"]["title"]
+    assert "首发视频" in brief_blob or "9 个 AI" in brief_blob
+    assert "奇绩秋季营" not in brief_blob
+    assert "奇绩秋季营" not in visible_report
+
+
+def test_commercial_growth_report_stays_aligned_when_bridge_is_blocked():
+    api_server = _load_api_server()
+    prompt = (
+        "【任务：AI Judge 商业化/投稿/融资/GitHub 加星全量评审】\n"
+        "请给能落地执行的商业化、投稿、融资、社媒和 GitHub star 增长方案，"
+        "同时覆盖抖音/TikTok、Reddit、Show HN、Hugging Face Spaces 和投资人触达。"
+    )
+    verdict = {
+        "run_id": "commercial-bridge-001",
+        "question": prompt,
+        "one_liner": "非 Grok 必需网页席位只拿到 8/9 个执行有效回答；这不是问题本身的判决。",
+        "verdict_label": "必需席位执行未完成",
+        "confidence": 0,
+        "reasons": ["MiMo provider_quota_limited，Grok 可选。"],
+        "next_steps": ["先恢复 MiMo，再做发布确认。"],
+        "web_bridge": {
+            "ok_count": 2,
+            "failed_count": 1,
+            "requested_count": 3,
+            "collection_complete": False,
+            "execution_policy": {
+                "required_count": 3,
+                "required_valid_count": 2,
+                "required_failures": [
+                    {"seat": "mimo", "seat_name": "MiMo", "error": {"code": "provider_quota_limited"}}
+                ],
+            },
+            "raw_results": [
+                {
+                    "seat": "gemini",
+                    "seat_name": "Gemini",
+                    "ok": True,
+                    "response": "最终方案：修复报告 UI，避免把必需席位执行未完成写进抖音/TikTok 运营方案。",
+                },
+                {
+                    "seat": "qwen",
+                    "seat_name": "Qwen",
+                    "ok": True,
+                    "response": (
+                        "最终方案：聚焦 Agent 评测基建，以开源陪审团架构和合规审计 SaaS 为商业化主轴。"
+                        "优先 GitHub README、Hugging Face Spaces、Show HN、Reddit 和 AI Evaluation Demo。"
+                    ),
+                },
+            ],
+        },
+    }
+
+    api_server.attach_final_report(verdict)
+    report = verdict["final_report"]
+    rendered = api_server._render_html_report(verdict)
+    hero = rendered.split('<details class="prompt-details"', 1)[0]
+    visible_draft = rendered.split('id="internal-library"', 1)[0]
+    brief_blob = " ".join(
+        [report["decision_brief"]["title"], report["decision_brief"]["one_sentence"], *[card["value"] for card in report["decision_brief"]["cards"]]]
+    )
+
+    assert report["decision_brief"]["title"] == "AI Judge 商业化 / 投稿 / 融资 / GitHub 加星收口报告"
+    assert "抖音/TikTok 内容增长" not in report["decision_brief"]["title"]
+    assert "开源可信基础设施" in brief_blob
+    assert "必需席位执行未完成" not in report["decision_brief"]["title"]
+    assert "请给能落地执行" not in hero
+    assert "商业化 / 投稿 / 融资 / GitHub 加星收口报告" in hero
+    assert "Final Decision Manuscript" in visible_draft
+    assert "GitHub" in visible_draft
+    assert "Hugging Face" in visible_draft or "HF" in visible_draft
+
+
+def test_product_flow_report_stays_aligned_when_bridge_is_blocked():
+    api_server = _load_api_server()
+    verdict = {
+        "run_id": "product-flow-bridge-001",
+        "question": (
+            "【任务：AI Judge 网页版产品流程全量评审】检查主要流程、跑任务、拿报告收口、"
+            "下载、转发、一键切换语言和最终报告展示。"
+        ),
+        "one_liner": "非 Grok 必需网页席位只拿到 10/12 个执行有效回答；这不是问题本身的判决。",
+        "verdict_label": "必需席位执行未完成",
+        "confidence": 0,
+        "reasons": ["ChatGPT 未匹配当前问题，DeepSeek 未找到旧页面答案。"],
+        "next_steps": ["先恢复 ChatGPT 和 DeepSeek，再做发布确认。"],
+        "web_bridge": {
+            "ok_count": 10,
+            "failed_count": 2,
+            "requested_count": 12,
+            "collection_complete": False,
+            "execution_policy": {
+                "required_count": 12,
+                "required_valid_count": 10,
+                "required_failures": [
+                    {"seat": "chatgpt", "seat_name": "ChatGPT", "error": {"code": "response_not_relevant"}},
+                    {"seat": "deepseek", "seat_name": "DeepSeek", "error": {"code": "existing_answer_not_found"}},
+                ],
+            },
+            "raw_results": [
+                {
+                    "seat": "mimo",
+                    "seat_name": "MiMo",
+                    "ok": True,
+                    "response": "最终方案：报告做成单页成稿，首屏放结论、方案、计划、风险，底部放模型附录。",
+                },
+                {
+                    "seat": "qwen",
+                    "seat_name": "Qwen",
+                    "ok": True,
+                    "response": "最终方案：新增下载、分享、中英切换，并把桥接恢复放到运行健康门禁。",
+                },
+            ],
+        },
+    }
+
+    api_server.attach_final_report(verdict)
+    report = verdict["final_report"]
+    brief = report["decision_brief"]
+    brief_blob = " ".join([brief["title"], brief["one_sentence"], *[card["value"] for card in brief["cards"]]])
+
+    assert report["compact_overview"]["schema"] == "ai_judge.compact_report_overview.v1"
+    assert report["compact_overview"]["title"] == "AI Judge 产品流程与报告收口方案"
+    assert report["compact_overview"]["jump_pages"][0]["label"] == "全量路径汇总"
+    assert report["compact_overview"]["jump_pages"][2]["label"] == "全部议员草稿"
+    assert report["compact_overview"]["council_index"][0]["draft_href"] == "#seat-answer-mimo"
+    assert report["title"] == "AI Judge 最终行动方案：报告页重点与执行计划"
+    assert brief["title"] == "AI Judge 产品流程与报告收口方案"
+    assert "单页可读的最终报告工作台" in brief["one_sentence"]
+    assert "直接看、下载和转发" in brief_blob
+    assert "ChatGPT" in brief_blob and "DeepSeek" in brief_blob
+    assert "必需席位执行未完成" not in brief["title"]
+
+
+def test_compact_report_uses_internal_logs_instead_of_external_model_pages():
+    api_server = _load_api_server()
+    verdict = {
+        "question": "针对 AI Judge 给出商业化、投稿、融资、GitHub 加星的落地计划。",
+        "verdict_label": "建议推进",
+        "confidence": 82,
+        "web_bridge": {
+            "ok_count": 1,
+            "failed_count": 0,
+            "requested_count": 1,
+            "collection_complete": True,
+            "raw_results": [
+                {
+                    "seat": "chatgpt",
+                    "seat_name": "ChatGPT",
+                    "ok": True,
+                    "url": "https://chatgpt.com/c/external-login-page",
+                    "response": "GitHub README + Demo 是第一路径，72 小时内发布 Show HN。",
+                }
+            ],
+        },
+    }
+
+    api_server.attach_final_report(verdict)
+    row = verdict["final_report"]["compact_overview"]["council_index"][0]
+    rendered = api_server._render_html_report(verdict)
+    compact_html = rendered.split('id="seat-answers"', 1)[0]
+
+    assert row["raw_href"] == "#seat-answer-chatgpt"
+    assert row["stored_log_href"] == "#seat-answer-chatgpt"
+    assert row["external_url"] == "https://chatgpt.com/c/external-login-page"
+    assert "https://chatgpt.com/c/external-login-page" not in compact_html
+    assert "内部日志" in compact_html
+    assert "内部资料库：席位完整原始日志" in rendered
+
+
+def test_commercial_report_synthesizes_full_action_paths_from_model_drafts():
+    api_server = _load_api_server()
+    verdict = {
+        "question": "针对 AI Judge 项目给出商业化方向、投稿方向、参赛方向、融资方向和 GitHub 加星全量计划。",
+        "verdict_label": "建议推进",
+        "confidence": 88,
+        "web_bridge": {
+            "ok_count": 3,
+            "failed_count": 0,
+            "requested_count": 3,
+            "collection_complete": True,
+            "raw_results": [
+                {
+                    "seat": "chatgpt",
+                    "seat_name": "ChatGPT",
+                    "ok": True,
+                    "response": "72 小时内重写 GitHub README 首屏，录制 Demo，并发布 Show HN / Reddit / LinkedIn 首轮帖子。",
+                },
+                {
+                    "seat": "kimi",
+                    "seat_name": "Kimi",
+                    "ok": True,
+                    "response": "投稿路径：Hugging Face 中文社区 https://hf.link/tougao；AI Engineer Workshop 截止 2026-05-30。",
+                },
+                {
+                    "seat": "qwen",
+                    "seat_name": "Qwen",
+                    "ok": True,
+                    "response": "商业化路径：企业试点先卖 SLA、私有化部署、CI 审计报告；融资优先联系 AI infra 投资人。",
+                },
+            ],
+        },
+    }
+
+    api_server.attach_final_report(verdict)
+    overview = verdict["final_report"]["compact_overview"]
+    rendered = api_server._render_html_report(verdict)
+    path_blob = " ".join(
+        " ".join(str(row.get(key, "")) for key in ("path", "execution", "entry", "deadline", "evidence"))
+        for row in overview["action_paths"]
+    )
+
+    assert len(overview["action_paths"]) >= 8
+    assert "GitHub" in path_blob
+    assert "Hugging Face" in path_blob
+    assert "Show HN" in path_blob
+    assert "企业试点" in path_blob
+    assert "ChatGPT" in " ".join("、".join(row.get("source_models", [])) for row in overview["action_paths"])
+    assert "全量可执行路径汇总" in rendered
+
+
+def test_final_report_html_surfaces_decision_brief_before_longform_body():
+    api_server = _load_api_server()
+    verdict = {
+        "question": "报告页方案和标题对不上，需要重新梳理重点和计划。",
+        "one_liner": "先按结论、方案、计划、风险重排。",
+        "verdict_label": "建议推进但需验证",
+        "confidence": 88,
+        "reasons": ["用户首屏看不到重点。"],
+        "next_steps": ["先改完整报告首屏信息架构。", "再把模型贡献放进附录。"],
+        "web_bridge": {"ok_count": 3, "failed_count": 0, "requested_count": 3, "collection_complete": True},
+    }
+
+    api_server.attach_final_report(verdict)
+    rendered = api_server._render_html_report(verdict)
+
+    assert 'id="report-manuscript"' in rendered
+    assert "Final Decision Manuscript" in rendered
+    assert "关键指标 / SCORECARD" in rendered
+    assert "行动建议 / ACTION ITEMS" in rendered
+    assert 'id="internal-library"' in rendered
+    assert rendered.index('id="report-manuscript"') < rendered.index('id="internal-library"')
+    assert rendered.index("摘要 / ABSTRACT") < rendered.index("行动建议 / ACTION ITEMS")
+
+
+def test_incomplete_final_report_surfaces_run_health_gate_before_draft():
+    api_server = _load_api_server()
+    verdict = {
+        "run_id": "bridge-blocked-001",
+        "question": "当前完整报告看不懂，需要全量 AI Judge 评审报告展示，并排查桥接问题。",
+        "one_liner": "运行未闭环，不能把草稿包装成最终报告。",
+        "verdict_label": "不可发布",
+        "confidence": 0,
+        "reasons": ["DeepSeek 未确认专家模式，Qwen 未返回可用正文。"],
+        "next_steps": ["先恢复 DeepSeek 专家模式与 Qwen 深入思考回收。"],
+        "web_bridge": {
+            "ok_count": 1,
+            "failed_count": 2,
+            "requested_count": 3,
+            "collection_complete": False,
+            "execution_policy": {
+                "required_count": 3,
+                "required_valid_count": 1,
+                "required_failed_count": 2,
+                "required_rule": "all_requested_non_grok_seats_must_have_valid_execution",
+                "collection_complete": False,
+                "required_failures": [
+                    {
+                        "seat": "deepseek",
+                        "seat_name": "DeepSeek",
+                        "error": {"code": "expert_mode_not_confirmed", "message": "未确认专家模式，拒绝提交"},
+                        "supplementable": True,
+                    },
+                    {
+                        "seat": "qwen",
+                        "seat_name": "Qwen",
+                        "error": {"code": "slow_response_pending", "message": "未读到可用回答"},
+                        "supplementable": True,
+                    },
+                ],
+            },
+            "rescue_plan": {
+                "button_label": "一键修复并回收答案",
+                "actions": [
+                    {
+                        "seat": "deepseek",
+                        "seat_name": "DeepSeek",
+                        "code": "expert_mode_not_confirmed",
+                        "label": "修复专家模式并重试",
+                    },
+                    {
+                        "seat": "qwen",
+                        "seat_name": "Qwen",
+                        "code": "slow_response_pending",
+                        "label": "读取旧页面答案",
+                    },
+                ],
+            },
+            "raw_results": [
+                {"seat": "kimi", "seat_name": "Kimi", "ok": True, "response": "首屏先放运行健康、结论、下一步。"},
+                {"seat": "deepseek", "seat_name": "DeepSeek", "ok": False, "error": {"code": "expert_mode_not_confirmed"}},
+                {"seat": "qwen", "seat_name": "Qwen", "ok": False, "error": {"code": "slow_response_pending"}},
+            ],
+        },
+    }
+
+    api_server.attach_final_report(verdict)
+    report = verdict["final_report"]
+    rendered = api_server._render_html_report(verdict)
+
+    assert report["report_mode"] == "bridge_recovery_required"
+    assert report["status_label"] == "运行未闭环"
+    assert report["executive_summary"]["detail_anchor"] == "#run-health"
+    assert "运行健康门禁" in rendered
+    assert "运行未闭环：必需席位覆盖只有 1/3" in rendered
+    assert "不生成业务最终结论" in rendered
+    assert "阶段性文稿 · 等待桥接闭环" in rendered
+    assert "内部资料库" in rendered
+    assert "DeepSeek" in rendered and "expert_mode_not_confirmed" in rendered
+    assert rendered.index("运行健康门禁") < rendered.index('id="report-manuscript"')
 
 
 def test_report_renders_cross_temporal_closeout():

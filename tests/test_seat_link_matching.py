@@ -41,12 +41,28 @@ def test_fixed_tab_matches_fresh_url_after_navigation():
 
 def test_cdp_tab_uses_provider_label_as_fallback():
     config = {
-        "url": "https://agent.minimaxi.com/chat",
-        "fresh_url": "https://agent.minimaxi.com/chat",
-        "match_domains": ["agent.minimaxi.com"],
-        "browser_label": "MiniMax Agent / agent.minimaxi.com",
+        "url": "https://agent.minimax.io",
+        "fresh_url": "https://agent.minimax.io",
+        "match_domains": ["agent.minimax.io"],
+        "browser_label": "MiniMax Agent / agent.minimax.io",
         "provider": "MiniMax Agent",
     }
-    tab = CDPTab(title="MiniMax Agent: 简单指令, 无限可能", url="https://agent.minimaxi.com/chat?id=398526514742292")
+    tab = CDPTab(title="MiniMax makes your work easier", url="https://agent.minimax.io")
 
     assert match_cdp_tab(config, [tab]) is tab
+
+
+def test_cdp_tab_can_disable_label_fallback_for_reused_provider_titles():
+    config = {
+        "url": "https://agent.minimax.io",
+        "fresh_url": "https://agent.minimax.io",
+        "match_domains": ["agent.minimax.io"],
+        "browser_label": "MiniMax Agent / agent.minimax.io",
+        "provider": "MiniMax Agent",
+        "allow_label_fallback": False,
+    }
+    old_tab = CDPTab(title="MiniMax Agent: 简单指令, 无限可能", url="https://agent.minimaxi.com/home")
+    new_tab = CDPTab(title="MiniMax makes your work easier", url="https://agent.minimax.io")
+
+    assert match_cdp_tab(config, [old_tab]) is None
+    assert match_cdp_tab(config, [old_tab, new_tab]) is new_tab
