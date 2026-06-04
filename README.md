@@ -21,6 +21,8 @@
 <p align="center"><strong>Built for teams shipping AI agents:</strong> audit the answer, the source, and the judgment path before it reaches a user.</p>
 <p align="center">Star this repo if you want a practical judge layer for LLM outputs, RAG citations, and agent traces instead of another chatbot wrapper.</p>
 
+<p align="center"><strong>Report-first scope:</strong> AI Judge's core product is the auditable report output: claim-level evidence, dissent, traceability, source/citation audit, claim-support and overclaim detection, and a human-final gate. Dashboard/workbench surfaces are optional internal aids, not the main product.</p>
+
 <p align="center">
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
@@ -67,7 +69,7 @@ Download the signed local wrapper and bundled runtime:
   <a href="https://github.com/reguorier/ai-judge/releases/latest"><strong>Download the latest AI Judge macOS build</strong></a>
 </p>
 
-The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions. The current branch reports v3.8.0 from the local API and desktop workbench; use GitHub Releases for signed artifacts.
+The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions. The current branch reports v3.8.0 from the local API and optional desktop workbench; use GitHub Releases for signed artifacts.
 
 ## Why People Notice It
 
@@ -198,24 +200,24 @@ flowchart LR
 
 ## What v3.8 Adds
 
-AI Judge v3.8 turns the Decision Audit Workbench into a Trust Workbench. Simple mode gives a five-minute closeout surface; Pro mode exposes reliability diagnostics, benchmark cards, bridge status, and the evidence behind the final report.
+AI Judge v3.8 locks the product around report-first trust output. The dashboard/workbench remains an optional internal operator aid; the primary artifact is the auditable report with evidence, dissent, traceability, claim-support checks, and a human-final gate.
 
 | Layer | What it does | User-visible output |
 |---|---|---|
-| Trust Workbench API | Reports product version, Stable/Lab capability cards, Human Gavel states, and reliability benchmark summaries | `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary` |
+| Report support API | Reports product version, capability cards, Human Gavel states, and reliability benchmark summaries for report verification | `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary` |
 | Paper-style final report | Converts verdicts into an auditable abstract, postulates, evidence map, execution plan, limits, and verification contract | `final_report`, HTML report, Markdown export |
-| Stable closeout | Shows final answer, recommended action, primary risk, and Human Gavel state without exposing bridge internals by default | Simple dashboard mode |
-| Lab reliability console | Keeps model-seat diagnostics, score rounds, bridge readiness, and benchmark cards available for expert users | Professional dashboard mode |
-| Desktop sync | Ships the macOS wrapper as `AIJudgeDesktop/3.8.0 macOS TrustWorkbench` while preserving the AJ icon and paste menu | `desktop/AIJudgeDesktop.swift` |
+| Stable closeout | Produces final answer, recommended action, primary risk, and Human Gavel state for the report-first flow | HTML/Markdown/JSON report surfaces |
+| Internal reliability console | Keeps model-seat diagnostics, score rounds, bridge readiness, and benchmark cards available for operator verification | Optional/internal dashboard mode |
+| Desktop sync | Ships the optional macOS wrapper while preserving the AJ icon and paste menu | `desktop/AIJudgeDesktop.swift` |
 | Parser guardrails | Markdown/JSON batch audit remains executable while PDF/Docx inputs are explicitly marked parser-pending instead of disappearing | `skipped_inputs`, `unsupported_input`, `unmatched_input` |
 
 ## What v3.7 Adds
 
-AI Judge v3.7 turns the Command Center into a desktop Decision Audit Workbench. It keeps the local-first citation audit core, then adds execution gates for multi-model web seats, recovery, evidence review, and publish readiness.
+AI Judge v3.7 kept the local-first citation audit core and added execution gates for multi-model web seats, recovery, evidence review, and publish readiness. The desktop workbench is an operator aid; the release value remains the auditable report.
 
 | Layer | What it does | User-visible output |
 |---|---|---|
-| Decision Audit Workbench | Runs the request, mentor gate, draft, evidence review, model comparison, and publish gate from one desktop surface | `product/dashboard.html`, `product/api_server.py` |
+| Optional operator workbench | Runs the request, mentor gate, draft, evidence review, model comparison, and publish gate as support for report generation | `product/dashboard.html`, `product/api_server.py` |
 | 13-seat web bridge | Tracks fixed visible Chrome tabs and per-seat readiness without using the system clipboard, keyboard, or mouse | `/api/bridge/status`, 13/13 configured seats |
 | Required-seat policy | Treats Grok as best-effort and keeps the other web seats execution-required for publish confidence | `core/seat_execution_policy.py` |
 | Recovery Cockpit | Rechecks slow or supplementable seats instead of turning a timing delay into a final model failure | `/api/rescue`, supplement history |

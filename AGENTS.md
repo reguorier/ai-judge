@@ -4,11 +4,24 @@
 
 AI Judge v3.8.0 is a local-first citation-audit and decision-audit system. Its core product question is whether isolated evidence supports the exact generated claim span before an AI-generated report, paper, README, client memo, or agent trace is published.
 
+## Product Scope Lock
+
+AI Judge is report-first, not dashboard-first. The core product value is the auditable report output:
+
+- claim-level evidence
+- dissent preservation
+- traceability
+- source/citation audit
+- claim-support and overclaim detection
+- human-final gate
+
+Dashboard and workbench surfaces are optional internal/operator aids only. Do not expand dashboard as the main product. Do not add new UI unless it directly supports report generation, verification, or operator safety. Prefer CLI/API/report artifacts over UI complexity. If the user has not explicitly requested UI work, do not initiate dashboard or frontend development.
+
 ## Architecture Overview
 
 - Python 3.11+ CLI and core engine live in `cli/`, `core/`, `harness/`, and `bridges/`.
 - Citation-audit flows use `core/citation_audit.py`, `core/citation_batch.py`, `core/citation_validator.py`, `core/evidence_broker.py`, examples in `examples/`, and reports in `reports/`.
-- Product workbench code lives in `product/`, especially `product/api_server.py`, `product/dashboard.html`, and `product/dashboard.js`.
+- Optional/internal product runtime surfaces live in `product/`, especially `product/api_server.py`, `product/dashboard.html`, and `product/dashboard.js`; they support report generation, verification, and operator safety, but are not the primary product.
 - Desktop and web-seat bridge behavior is documented in `docs/DESKTOP_AND_WEB_BRIDGE.md`; web collection must not silently degrade into local synthetic answers.
 - UI reference components live under `frontend/` with Tauri/React/TypeScript scripts in `frontend/package.json`.
 - CI lives in `.github/workflows/`: `publish.yml` runs harness/smoke/citation-bench gates, and `citation-audit.yml` runs benchmark/demo audit jobs for citation paths.
@@ -19,7 +32,7 @@ AI Judge v3.8.0 is a local-first citation-audit and decision-audit system. Its c
 - `cli/`: command entrypoints for audit, jury, trace, demo, and pipeline commands.
 - `core/`: scoring, evidence, dissent, citation audit, web jury, and policy logic.
 - `bridges/`: Chrome/CDP/fixed-tab/web-seat bridge integrations.
-- `product/`: local Decision Audit Workbench API, dashboard, operator/freeze/release docs, and product-state modules.
+- `product/`: optional/internal API, dashboard, operator/freeze/release docs, and product-state modules that support report-first operation.
 - `frontend/`: Tauri/React UI reference package.
 - `tests/`: pytest tests plus smoke scripts.
 - `tools/`: build, citation-bench, readiness, outreach, and release helper scripts.
@@ -82,7 +95,7 @@ Always read these before changing behavior:
 6. `docs/DESKTOP_AND_WEB_BRIDGE.md`
 7. The specific source, tests, docs, and artifacts for the task
 
-For product dashboard work, also read `product/OPERATOR_GUIDE.md`, `product/REGRESSION_CHECKLIST.md`, and the relevant P8/P9/P10 scope or freeze documents if present.
+For any product UI/dashboard work, first confirm it directly supports report generation, verification, or operator safety. Then read `product/OPERATOR_GUIDE.md`, `product/REGRESSION_CHECKLIST.md`, and the relevant P8/P9/P10 scope or freeze documents if present.
 
 ## Working Persona
 
@@ -122,7 +135,7 @@ Requirements:
 
 ### deep
 
-Use for architecture, citation logic, bridge behavior, data contracts, automation, deployment, product dashboard flows, or publish gates.
+Use for architecture, citation logic, bridge behavior, data contracts, automation, deployment, report pipeline changes, operator safety gates, or publish gates. Product UI/dashboard changes are deep work only when they directly support report generation, verification, or operator safety.
 
 Requirements:
 
@@ -172,8 +185,8 @@ Store audits, acceptance reports, smoke output summaries, before/after notes, sc
 
 - Page context ingest rules live in `docs/page_context_ingest.md`.
 - UI/design change template lives in `artifacts/design-spec-template.md`.
-- The dashboard must preserve AI Judge's audit posture: evidence first, dissent before confidence, source isolation, publish gate, and human-final decision.
-- Before UI changes, identify page goal, user path, component list, states, empty/error states, and screenshot evidence.
+- Dashboard/workbench surfaces are optional internal aids, not the core product. They must preserve AI Judge's audit posture: evidence first, dissent before confidence, source isolation, publish gate, and human-final decision.
+- Before any UI change, answer: does this directly support report generation, verification, or operator safety? If not, do not do it. If yes, identify page goal, user path, component list, states, empty/error states, and screenshot evidence.
 
 ## Final Response Format
 

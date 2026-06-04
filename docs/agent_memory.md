@@ -10,10 +10,12 @@ This file records project-specific long-term context for AI Judge. Do not store 
 - Separate important conclusions into fact, inference, and recommendation. Source: user_instruction
 - For high-risk changes, give a plan before editing. Source: user_instruction
 - Do not overwrite existing repository files mechanically when migrating agent rules. Source: user_instruction
+- User explicitly wants AI Judge functionality narrowed: no dashboard-first development, no endless UI expansion, and only basic functional surfaces. Core value must be expressed in auditable report output. Source: user_instruction
 
 ## Project Long-Term Goals
 
 - AI Judge is a local-first source-isolated claim-support gate for AI-generated answers. Source: repo
+- AI Judge is report-first, not dashboard-first; the value is in claim-level evidence, dissent, traceability, source/citation audit, claim-support/overclaim detection, and the human-final gate. Source: user_instruction
 - The current v3.8.0 wedge is citation audit: prove whether isolated evidence supports the exact generated claim span before publication. Source: repo
 - The product should expose the evidence, weak spots, dissent, traceability, and next falsifiable action so a human can make the final decision. Source: repo
 - The repository supports Python CLI/core, product dashboard/API, web-seat bridges, Tauri/React UI references, GitHub Actions, Docker packaging, and HTML/JSON/Markdown reports. Source: repo
@@ -25,6 +27,7 @@ This file records project-specific long-term context for AI Judge. Do not store 
 - `reports/` remains the AI Judge product report output directory. Source: repo
 - `artifacts/` is for agent work evidence, acceptance reports, screenshots, and decision records. Source: user_instruction
 - Agent infrastructure self-check is `python3 scripts/agent_check.py`. Source: repo
+- Dashboard/workbench surfaces are optional internal/operator aids only; do not expand them unless they directly support report generation, verification, or operator safety. Source: user_instruction
 - GitHub Actions publish workflow gates Docker publishing behind harness, v3.2 smoke, and citation-bench checks. Source: repo
 
 ## Historical Pitfalls
@@ -33,7 +36,7 @@ This file records project-specific long-term context for AI Judge. Do not store 
 - Model-mentioned sources are candidate sources, not proof; source isolation matters. Source: repo
 - Web-seat runs must not silently degrade into local synthetic answers when calibration, login, quota, or DOM readiness fails. Source: repo
 - The repository currently has many pre-existing uncommitted changes; do not revert or normalize unrelated dirty files. Source: repo
-- Product dashboard and bridge work is easy to overreach; preserve publish gates, recovery traces, and human-final decision points. Source: inferred
+- Dashboard/workbench and bridge work is easy to overreach; keep the report pipeline primary and preserve publish gates, recovery traces, and human-final decision points. Source: inferred
 
 ## Disabled Approaches
 
@@ -54,6 +57,5 @@ This file records project-specific long-term context for AI Judge. Do not store 
 
 ## Open Questions
 
-- Which v3.8 product surfaces are currently release-blocking versus experimental? Source: unknown
 - Which existing uncommitted changes are intentional release work versus local scratch? Source: unknown
 - Whether `reports/` should be pruned, versioned, or treated as generated output for future releases. Source: unknown

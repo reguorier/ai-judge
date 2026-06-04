@@ -5,10 +5,20 @@ This runbook defines AI Judge work modes for Codex and other agents: `quick`, `d
 ## Mode Selection
 
 - Use `quick` for narrow docs/config/script changes with low product risk.
-- Use `deep` for citation logic, bridge behavior, dashboard flows, data contracts, automation, deployment, release gates, or cross-module changes.
+- Use `deep` for citation logic, bridge behavior, report pipeline changes, data contracts, automation, deployment, release gates, or cross-module changes. Product UI/dashboard work is deep only when it directly supports report generation, verification, or operator safety.
 - Use `verify` when the task is to prove a claim, inspect drift, or re-check readiness without adding features.
 
 If unsure, choose the more conservative mode and mark unknowns.
+
+## Product Scope Gate
+
+AI Judge is report-first, not dashboard-first. Before any dashboard, workbench, product UI, or frontend change, answer these questions in the task notes:
+
+1. Does this directly improve report generation, report verification, source/citation audit, claim-support/overclaim detection, traceability, dissent preservation, or the human-final gate?
+2. Could the user need be solved with a CLI/API/report artifact instead of UI complexity?
+3. Is this necessary for operator safety or release hygiene?
+
+If the answer is no, do not make the UI change. If a report artifact can solve it, prefer the report artifact.
 
 ## quick
 
@@ -21,7 +31,7 @@ Steps:
 5. Run one focused command tied to the touched area:
    - Docs-only: `python3 scripts/agent_check.py` plus link/path checks.
    - Citation audit: targeted pytest or `PYTHONPATH=. python cli/main.py audit ...`.
-   - Product dashboard: focused `pytest tests/test_product_state.py -q` or relevant endpoint/browser check.
+   - Product/API/report surface: focused `pytest tests/test_product_state.py -q`, report artifact checks, or relevant endpoint verification. Do not add dashboard UI for display-only improvements.
    - Frontend: `npm run lint` or `npm run typecheck` from `frontend/`.
 6. Report changed files, reason, command output, and remaining risk.
 
@@ -40,7 +50,7 @@ Steps:
    - Python behavior: focused `pytest`, then broader `pytest` or `PYTHONPATH=. python3 tests/run_harness.py` when risk warrants.
    - Citation benchmark: `PYTHONPATH=. python3 tools/run_citation_bench.py --fail-under 0.95`.
    - Smoke: `PYTHONPATH=. python3 tests/smoke_test_v3_2.py`, `PYTHONPATH=. python3 tests/smoke_test_v3.py`, or `PYTHONPATH=. python3 tests/smoke_test_council_004.py`.
-   - Product dashboard/API: endpoint checks such as `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary`, plus browser/screenshot evidence for UI behavior.
+   - Report/product API: endpoint checks such as `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary`, generated report artifacts, and browser/screenshot evidence only when UI is explicitly in scope.
    - Frontend package: `npm run lint`, `npm run typecheck`, and `npm run build` if build readiness is claimed.
    - Release/publish: do not run release, publish, signing, or Docker push commands without explicit approval.
 7. Report pass/fail/unknown with evidence.
