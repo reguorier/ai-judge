@@ -45,6 +45,18 @@
 
 ---
 
+## Agent / Codex Working Entry
+
+Before changing this repository, read [`AGENTS.md`](AGENTS.md), [`docs/agent_memory.md`](docs/agent_memory.md), and [`docs/runbook.md`](docs/runbook.md). Agent task evidence belongs in [`artifacts/`](artifacts/); AI Judge product audit outputs remain in [`reports/`](reports/).
+
+Run the agent infrastructure check with:
+
+```bash
+python3 scripts/agent_check.py
+```
+
+---
+
 ## macOS Desktop App
 
 Download the signed local wrapper and bundled runtime:
