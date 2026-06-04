@@ -1,0 +1,563 @@
+{
+  "schema": "citation_audit.v1",
+  "product": "AI Judge Citation Audit",
+  "version": "3.8.0",
+  "audit_id": "nikunj-agentic-justice-synthetic-sc-bail-partial",
+  "title": "Synthetic Indian SC Bail Partial",
+  "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?",
+  "answer": "According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case.",
+  "allow_network": false,
+  "grand_judge": {
+    "schema": "grand_judge.citation_mvp.v1",
+    "phase": "citation_verification_mvp",
+    "run_id": "nikunj-agentic-justice-synthetic-sc-bail-partial",
+    "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?",
+    "certification_id": "CITE-20260523-EA78A8F7D5",
+    "citation_verification": {
+      "schema": "citation_validator.summary.v1",
+      "status_schema": [
+        "verified",
+        "weakly_verified",
+        "irrelevant",
+        "unverifiable",
+        "contradicted"
+      ],
+      "overall_status": "weakly_verified",
+      "citation_count": 1,
+      "item_count": 1,
+      "counts": {
+        "verified": 0,
+        "weakly_verified": 1,
+        "irrelevant": 0,
+        "unverifiable": 0,
+        "contradicted": 0
+      },
+      "unverifiable_reason_schema": [
+        "no_citation",
+        "missing_external_evidence",
+        "candidate_not_fetched",
+        "fetch_error",
+        "retrieval_blocked",
+        "weak_match"
+      ],
+      "unverifiable_reason_counts": {
+        "no_citation": 0,
+        "missing_external_evidence": 0,
+        "candidate_not_fetched": 0,
+        "fetch_error": 0,
+        "retrieval_blocked": 0,
+        "weak_match": 0
+      },
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+      "verification_hash": "ab6abadbec7914dca908056e1b17130315594e73fe6ffdeb5d76b57dd94f1910",
+      "certification_id": "CITE-20260523-EA78A8F7D5",
+      "replay_ledger_hash": "fca4c395443955e2c04673c58c4133677f81e73ff96fb44f2aa298c65e5b57be",
+      "external_evidence_count": 2
+    },
+    "replay_ledger": [
+      {
+        "ledger_id": "LEDGER-001",
+        "seat": "submitted_answer",
+        "seat_name": "Submitted AI Answer",
+        "ok": true,
+        "raw_answer": "According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case.",
+        "raw_answer_hash": "ef9753d68be67b58c072662d23918af5f93894d9fd99f336d25e2495dd0d083a",
+        "mentor_supplement": "",
+        "mentor_supplement_hash": null,
+        "citation_verification": {
+          "schema": "citation_validator.v1",
+          "status_schema": [
+            "verified",
+            "weakly_verified",
+            "irrelevant",
+            "unverifiable",
+            "contradicted"
+          ],
+          "overall_status": "weakly_verified",
+          "citation_count": 1,
+          "item_count": 1,
+          "counts": {
+            "verified": 0,
+            "weakly_verified": 1,
+            "irrelevant": 0,
+            "unverifiable": 0,
+            "contradicted": 0
+          },
+          "unverifiable_reason_schema": [
+            "no_citation",
+            "missing_external_evidence",
+            "candidate_not_fetched",
+            "fetch_error",
+            "retrieval_blocked",
+            "weak_match"
+          ],
+          "unverifiable_reason_counts": {
+            "no_citation": 0,
+            "missing_external_evidence": 0,
+            "candidate_not_fetched": 0,
+            "fetch_error": 0,
+            "retrieval_blocked": 0,
+            "weak_match": 0
+          },
+          "items": [
+            {
+              "citation_id": "CITE-001",
+              "raw": "SC Bail Review",
+              "kind": "implied",
+              "normalized": "sc bail review",
+              "context": "According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence",
+              "status": "weakly_verified",
+              "reason": "间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。",
+              "matched_evidence": {
+                "evidence_id": "SYNTH-INDIA-SC-BAIL-PARTIAL-001",
+                "url": "",
+                "title": "SC Bail Review Synthetic Note",
+                "snippet": "In this synthetic public-safe training note, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. The note is relevant, but the generated answer names the source o...",
+                "status": "user_supplied",
+                "source_layer": "user_supplied",
+                "provenance": "user_supplied",
+                "match_score": 0.86,
+                "evidence_hash": "8154dca45cbc0028c3c85a3d34829e0c3eb396c0824ae4aeb45caf9e10a89f4a"
+              },
+              "relevance_score": 0.6452,
+              "verified_at": "2026-05-23T17:15:15.104764+00:00"
+            }
+          ],
+          "external_evidence_used": 2,
+          "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
+          "verified_at": "2026-05-23T17:15:15.104764+00:00",
+          "verification_hash": "f70ecd886b5bf06e2e95d505449a3a29b677955090420bfa21e497194b5e1f82"
+        },
+        "mentor_citation_verification": null,
+        "unverifiable_reasons": [],
+        "verification_timestamp": "2026-05-23T17:15:15.104764+00:00",
+        "source_isolation": {
+          "raw_answer": "replay_ledger[].raw_answer",
+          "mentor_supplement": "replay_ledger[].mentor_supplement",
+          "external_evidence": "external_evidence_index",
+          "rule": "Grand Judge 只汇总、统计、打分；不得改写模型原文。"
+        }
+      }
+    ],
+    "replay_ledger_hash": "fca4c395443955e2c04673c58c4133677f81e73ff96fb44f2aa298c65e5b57be",
+    "external_evidence_index": [
+      {
+        "evidence_id": "SYNTH-INDIA-SC-BAIL-PARTIAL-001",
+        "url": null,
+        "title": "SC Bail Review Synthetic Note",
+        "status": "user_supplied",
+        "source_layer": "user_supplied",
+        "provenance": "user_supplied",
+        "retrieval_state": "provided",
+        "evidence_hash": "25145f4d4a91fa278425ccbcf427e88c4ef8b89a78436af53d5e0a875767ac40"
+      },
+      {
+        "evidence_id": "CAND-9CA6ECDD8A",
+        "url": null,
+        "title": "SC Bail Review",
+        "status": "candidate_unverified",
+        "source_layer": "candidate_source",
+        "provenance": "model_candidate",
+        "retrieval_state": "not_fetched",
+        "evidence_hash": "3cb29e628dbc1e41cad16e28256eb7f4c3feb945db8f57da2aa7a81affc80ecd"
+      }
+    ],
+    "source_isolation": {
+      "raw_model_answers": "replay_ledger[].raw_answer",
+      "mentor_supplements": "replay_ledger[].mentor_supplement",
+      "external_evidence": "external_evidence_index",
+      "principle": "原文、导师补充、外部证据三者隔离；引用升级只能来自外部证据层。"
+    },
+    "judge_contract": {
+      "role": "summarize_stat_score_only",
+      "does_not_rewrite_model_originals": true,
+      "anti_hallucination_rule": "不要用模型共识直接验证模型引用；只用隔离外部证据升级引用状态。",
+      "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+    },
+    "roadmap": [
+      {
+        "phase": "Phase 1",
+        "name": "引用真实性 + 相关性验证",
+        "status": "implemented_mvp",
+        "scope": "verified / weakly_verified / irrelevant / unverifiable / contradicted"
+      },
+      {
+        "phase": "Phase 2",
+        "name": "证据缺口建议 + L1/L2/L3 导师反馈",
+        "status": "suggestion_only",
+        "scope": "evidence_gap_filler.py 只输出建议，不代写正文。"
+      },
+      {
+        "phase": "Phase 3",
+        "name": "Agent Graph Arena 对接",
+        "status": "contract_recorded",
+        "scope": "Graph Lab 印章、AgentFi 认证资产、Arena Casino 对抗验证、Forecast Market 可结算预测。"
+      }
+    ],
+    "known_bottom_limits": [
+      "Grok provider quota 不能由桥接层绕过。",
+      "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
+      "unverifiable 不是 false，UI 必须解释清楚。"
+    ],
+    "created_at": "2026-05-23T17:15:15.104764+00:00",
+    "certification_hash": "c6d47f07e055c641447173c1f1181e7dc9ba0b69225c2139d2d9e6c788a75f93",
+    "evidence_broker": {
+      "schema": "evidence_broker.v1",
+      "created_at": "2026-05-23T17:15:15.104764+00:00",
+      "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?",
+      "allow_network": false,
+      "source_policy": {
+        "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
+        "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",
+        "network_fetch": "Evidence Broker 实际抓取到的网页快照，可进入 citation_validator。",
+        "provenance": "证据来源等级会保留为 user_supplied / fetched / independently_attested / notarized / model_candidate。"
+      },
+      "items": [
+        {
+          "id": "SYNTH-INDIA-SC-BAIL-PARTIAL-001",
+          "title": "SC Bail Review Synthetic Note",
+          "snippet": "In this synthetic public-safe training note, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. The note is relevant, but the generated answer names the source only indirectly and gives no URL, doc_id, paragraph, page, or neutral citation anchor.",
+          "provenance": "user_supplied",
+          "url": "",
+          "text": "In this synthetic public-safe training note, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. The note is relevant, but the generated answer names the source only indirectly and gives no URL, doc_id, paragraph, page, or neutral citation anchor.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance_rank": 1,
+          "evidence_hash": "934e56217cd8962817c370a3c91d03d0cdc4319cfa28f721aaa986da50e51a5c"
+        },
+        {
+          "id": "CAND-9CA6ECDD8A",
+          "url": "",
+          "title": "SC Bail Review",
+          "snippet": "",
+          "text": "",
+          "raw_source": "SC Bail Review",
+          "kind": "implied",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "f8fafe9a8e32706d956468499149291e7695164754e5927c449a3aed5fb72a90"
+        }
+      ],
+      "items_for_validation": [
+        {
+          "id": "SYNTH-INDIA-SC-BAIL-PARTIAL-001",
+          "title": "SC Bail Review Synthetic Note",
+          "snippet": "In this synthetic public-safe training note, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. The note is relevant, but the generated answer names the source only indirectly and gives no URL, doc_id, paragraph, page, or neutral citation anchor.",
+          "provenance": "user_supplied",
+          "url": "",
+          "text": "In this synthetic public-safe training note, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. The note is relevant, but the generated answer names the source only indirectly and gives no URL, doc_id, paragraph, page, or neutral citation anchor.",
+          "status": "user_supplied",
+          "trusted": true,
+          "source_layer": "user_supplied",
+          "retrieval_state": "provided",
+          "provenance_rank": 1,
+          "evidence_hash": "934e56217cd8962817c370a3c91d03d0cdc4319cfa28f721aaa986da50e51a5c"
+        },
+        {
+          "id": "CAND-9CA6ECDD8A",
+          "url": "",
+          "title": "SC Bail Review",
+          "snippet": "",
+          "text": "",
+          "raw_source": "SC Bail Review",
+          "kind": "implied",
+          "status": "candidate_unverified",
+          "trusted": false,
+          "source_layer": "candidate_source",
+          "retrieval_state": "not_fetched",
+          "provenance": "model_candidate",
+          "provenance_rank": 0,
+          "origin_seat": "submitted_answer",
+          "origin_layer": "raw_answer",
+          "evidence_hash": "f8fafe9a8e32706d956468499149291e7695164754e5927c449a3aed5fb72a90"
+        }
+      ],
+      "counts": {
+        "user_supplied": 1,
+        "network_fetch": 0,
+        "candidate_source": 1,
+        "fetch_error": 0,
+        "provenance": {
+          "model_candidate": 1,
+          "user_supplied": 1,
+          "fetched": 0,
+          "independently_attested": 0,
+          "notarized": 0
+        }
+      },
+      "broker_hash": "4fe2f22c4125f32837caa90ee11f395259c6ad0d7701cd4dd245d6f4d529f651"
+    },
+    "claim_support_audit": {
+      "schema": "claim_support.v1",
+      "status_schema": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "contradicted",
+        "unknown"
+      ],
+      "source_relevance_schema": [
+        "relevant",
+        "weakly_relevant",
+        "irrelevant",
+        "unknown"
+      ],
+      "failure_code_schema": [
+        "none",
+        "overclaimed_causation",
+        "overclaimed_absolute",
+        "overclaimed_quantified_effect",
+        "missing_claim_evidence",
+        "source_silent",
+        "citation_unmatched",
+        "source_contradicts_claim"
+      ],
+      "item_count": 1,
+      "claim_support_counts": {
+        "supported": 0,
+        "partially_supported": 1,
+        "unsupported": 0,
+        "contradicted": 0,
+        "unknown": 0
+      },
+      "source_relevance_counts": {
+        "relevant": 1,
+        "weakly_relevant": 0,
+        "irrelevant": 0,
+        "unknown": 0
+      },
+      "support_failure_counts": {
+        "none": 1,
+        "overclaimed_causation": 0,
+        "overclaimed_absolute": 0,
+        "overclaimed_quantified_effect": 0,
+        "missing_claim_evidence": 0,
+        "source_silent": 0,
+        "citation_unmatched": 0,
+        "source_contradicts_claim": 0
+      },
+      "items": [
+        {
+          "claim_id": "CLAIM-587ED9E5C3",
+          "citation_id": "CITE-001",
+          "citation_status": "weakly_verified",
+          "raw_citation": "SC Bail Review",
+          "claim_span": "According to study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case.",
+          "source_id": "SYNTH-INDIA-SC-BAIL-PARTIAL-001",
+          "source_url": "",
+          "source_title": "SC Bail Review Synthetic Note",
+          "source_relevance": "relevant",
+          "claim_support": "partially_supported",
+          "support_failure_code": "none",
+          "support_reason": "The citation has partial support, but the source anchor is not strong enough for full claim support.",
+          "matched_evidence_hash": "8154dca45cbc0028c3c85a3d34829e0c3eb396c0824ae4aeb45caf9e10a89f4a",
+          "audited_at": "2026-05-23T17:15:15.104764+00:00"
+        }
+      ],
+      "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
+      "audited_at": "2026-05-23T17:15:15.104764+00:00",
+      "overall_claim_support": "partially_supported",
+      "claim_support_hash": "6d78b97c2df214f3eb77b50ac3690ee9c7e4aedb50686fb917248f8a05284ad1"
+    },
+    "evidence_gap_suggestions": {
+      "schema": "evidence_gap_filler.suggestion_only.v1",
+      "will_rewrite_body": false,
+      "policy": "只输出证据缺口建议；不得替用户补正文或把模型补充混入原文。",
+      "mentor_levels": {
+        "L1": "明确引用缺口：需要 URL、DOI、报告页码、数据表或可复核出处。",
+        "L2": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+        "L3": "无引用缺口：该段目前只能作为模型推理，不能作为事实认证依据。"
+      },
+      "suggestions": [
+        {
+          "citation_id": "CITE-001",
+          "raw": "SC Bail Review",
+          "status": "weakly_verified",
+          "mentor_level": "L2",
+          "mentor_feedback": "间接来源缺口：需要把“某报告/研究表明”升级成具体来源。",
+          "gap": "已有弱匹配，但来源精度或上下文相关性不足。",
+          "suggested_action": "补充更精确出处，并说明该来源支持哪一句断言。",
+          "will_rewrite_body": false,
+          "action": "suggest_evidence_gap"
+        }
+      ],
+      "suggestion_count": 1
+    },
+    "evidence_quality_metrics": {
+      "schema": "evidence_quality_metrics.v1",
+      "groundedness_proxy": 0.5,
+      "verified_ratio": 0.0,
+      "weakly_verified_ratio": 1.0,
+      "unverifiable_rate": 0.0,
+      "contradiction_rate": 0.0,
+      "irrelevant_rate": 0.0,
+      "hard_evidence_count": 2,
+      "trust_gate": "needs_more_evidence"
+    },
+    "evidence_gap_queue": {
+      "schema": "evidence_gap_queue.v1",
+      "created_at": "2026-05-23T17:15:15.104764+00:00",
+      "open_count": 1,
+      "tasks": [
+        {
+          "task_id": "GAP-001-70E9C7",
+          "citation_id": "CITE-001",
+          "raw": "SC Bail Review",
+          "status": "weakly_verified",
+          "priority": "medium",
+          "mentor_level": "L2",
+          "gap": "已有弱匹配，但来源精度或上下文相关性不足。",
+          "suggested_action": "补充更精确出处，并说明该来源支持哪一句断言。",
+          "queue_status": "open",
+          "created_at": "2026-05-23T17:15:15.104764+00:00"
+        }
+      ],
+      "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
+      "queue_hash": "220556b9bc19e2af125a14381cd22fb384ebc513a1a7b6b662adc1b31b143a6d"
+    },
+    "blind_cross_validation": {
+      "schema": "blind_cross_validation.v1",
+      "status": "pending_model_reviews",
+      "created_at": "2026-05-23T17:15:15.104764+00:00",
+      "reviewer_count": 4,
+      "threshold": 0.67,
+      "anonymization": {
+        "seat_names_removed": true,
+        "raw_text_truncated": true,
+        "source_hashes_preserved": true
+      },
+      "anonymized_claims": [
+        {
+          "answer_id": "ANSWER-001",
+          "layer": "raw_answer",
+          "citation_id": "CITE-001",
+          "citation": "SC Bail Review",
+          "status": "weakly_verified",
+          "reason": "间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。",
+          "context_preview": "According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence",
+          "answer_hash": "ef9753d68be67b58c072662d23918af5f93894d9fd99f336d25e2495dd0d083a"
+        }
+      ],
+      "review_prompts": [
+        {
+          "reviewer": "gemini",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"SC Bail Review\",\n    \"status\": \"weakly_verified\",\n    \"reason\": \"间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。\",\n    \"context_preview\": \"According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence\",\n    \"answer_hash\": \"ef9753d68be67b58c072662d23918af5f93894d9fd99f336d25e2495dd0d083a\"\n  }\n]"
+        },
+        {
+          "reviewer": "chatgpt",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"SC Bail Review\",\n    \"status\": \"weakly_verified\",\n    \"reason\": \"间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。\",\n    \"context_preview\": \"According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence\",\n    \"answer_hash\": \"ef9753d68be67b58c072662d23918af5f93894d9fd99f336d25e2495dd0d083a\"\n  }\n]"
+        },
+        {
+          "reviewer": "deepseek",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"SC Bail Review\",\n    \"status\": \"weakly_verified\",\n    \"reason\": \"间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。\",\n    \"context_preview\": \"According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence\",\n    \"answer_hash\": \"ef9753d68be67b58c072662d23918af5f93894d9fd99f336d25e2495dd0d083a\"\n  }\n]"
+        },
+        {
+          "reviewer": "qwen",
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"SC Bail Review\",\n    \"status\": \"weakly_verified\",\n    \"reason\": \"间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。\",\n    \"context_preview\": \"According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence\",\n    \"answer_hash\": \"ef9753d68be67b58c072662d23918af5f93894d9fd99f336d25e2495dd0d083a\"\n  }\n]"
+        }
+      ],
+      "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
+      "packet_hash": "36df428bcae50a9616fc2c9159bbf1eb1c334e0d0ea6798bda356864b088ca86"
+    },
+    "eval_case": {
+      "schema": "ai_judge_eval_case.v1",
+      "case_id": "EVAL-E6E5CCB3C2CA",
+      "run_id": "nikunj-agentic-justice-synthetic-sc-bail-partial",
+      "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?",
+      "mode": null,
+      "engine": null,
+      "verdict": null,
+      "confidence": null,
+      "average_score": null,
+      "citation_overall_status": "weakly_verified",
+      "citation_counts": {
+        "verified": 0,
+        "weakly_verified": 1,
+        "irrelevant": 0,
+        "unverifiable": 0,
+        "contradicted": 0
+      },
+      "evidence_quality_metrics": {
+        "schema": "evidence_quality_metrics.v1",
+        "groundedness_proxy": 0.5,
+        "verified_ratio": 0.0,
+        "weakly_verified_ratio": 1.0,
+        "unverifiable_rate": 0.0,
+        "contradiction_rate": 0.0,
+        "irrelevant_rate": 0.0,
+        "hard_evidence_count": 2,
+        "trust_gate": "needs_more_evidence"
+      },
+      "certification_id": "CITE-20260523-EA78A8F7D5",
+      "certification_hash": "c6d47f07e055c641447173c1f1181e7dc9ba0b69225c2139d2d9e6c788a75f93",
+      "replay_ledger_hash": "fca4c395443955e2c04673c58c4133677f81e73ff96fb44f2aa298c65e5b57be",
+      "human_label": null,
+      "created_at": "2026-05-23T17:15:15.107536+00:00",
+      "case_hash": "8fc12c435a7861504c69cfa2fb53017cfdf12fb2ae9e47e547a199e256a445de"
+    }
+  },
+  "human_review_status": {
+    "status": "optional",
+    "reason": "引用状态较稳，可选人工签名。"
+  },
+  "created_at": "2026-05-23T17:15:15.104764+00:00",
+  "summary": {
+    "overall_status": "weakly_verified",
+    "overall_claim_support": "partially_supported",
+    "certification_id": "CITE-20260523-EA78A8F7D5",
+    "certification_hash": "c6d47f07e055c641447173c1f1181e7dc9ba0b69225c2139d2d9e6c788a75f93",
+    "replay_ledger_hash": "fca4c395443955e2c04673c58c4133677f81e73ff96fb44f2aa298c65e5b57be",
+    "item_count": 1,
+    "counts": {
+      "verified": 0,
+      "weakly_verified": 1,
+      "irrelevant": 0,
+      "unverifiable": 0,
+      "contradicted": 0
+    },
+    "claim_support_counts": {
+      "supported": 0,
+      "partially_supported": 1,
+      "unsupported": 0,
+      "contradicted": 0,
+      "unknown": 0
+    },
+    "claim_support_failure_counts": {
+      "none": 1,
+      "overclaimed_causation": 0,
+      "overclaimed_absolute": 0,
+      "overclaimed_quantified_effect": 0,
+      "missing_claim_evidence": 0,
+      "source_silent": 0,
+      "citation_unmatched": 0,
+      "source_contradicts_claim": 0
+    },
+    "unverifiable_reason_counts": {
+      "no_citation": 0,
+      "missing_external_evidence": 0,
+      "candidate_not_fetched": 0,
+      "fetch_error": 0,
+      "retrieval_blocked": 0,
+      "weak_match": 0
+    },
+    "evidence_provenance_counts": {
+      "model_candidate": 1,
+      "user_supplied": 1,
+      "fetched": 0,
+      "independently_attested": 0,
+      "notarized": 0
+    },
+    "trust_gate": "needs_more_evidence",
+    "groundedness_proxy": 0.5,
+    "gap_count": 1,
+    "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。"
+  }
+}

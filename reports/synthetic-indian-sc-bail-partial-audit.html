@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Real Source, Unsupported Causal Claim</title>
+  <title>Synthetic Indian SC Bail Partial</title>
   <style>
     :root { color-scheme: light; --ink:#17212b; --muted:#5c6875; --line:#dbe3ea; --bg:#f7f9fb; --panel:#ffffff; --accent:#0f766e; --bad:#b42318; --warn:#a15c07; --good:#067647; }
     * { box-sizing:border-box; }
@@ -35,36 +35,36 @@
 </head>
 <body>
   <header>
-    <h1>Real Source, Unsupported Causal Claim</h1>
+    <h1>Synthetic Indian SC Bail Partial</h1>
     <div class="sub">AI Judge Citation Audit checks AI-generated claims against isolated external evidence. Model-mentioned candidate sources do not verify themselves.</div>
     <div class="grid">
-      <div class="card"><div class="label">Overall</div><div class="value">verified</div></div>
-      <div class="card"><div class="label">Claim Support</div><div class="value">contradicted</div></div>
-      <div class="card"><div class="label">Trust Gate</div><div class="value">pass</div></div>
-      <div class="card"><div class="label">Certification</div><div class="value">CITE-20260522-33F187B654</div></div>
-      <div class="card"><div class="label">Open Gaps</div><div class="value"></div></div>
+      <div class="card"><div class="label">Overall</div><div class="value">weakly_verified</div></div>
+      <div class="card"><div class="label">Claim Support</div><div class="value">partially_supported</div></div>
+      <div class="card"><div class="label">Trust Gate</div><div class="value">needs_more_evidence</div></div>
+      <div class="card"><div class="label">Certification</div><div class="value">CITE-20260523-EA78A8F7D5</div></div>
+      <div class="card"><div class="label">Open Gaps</div><div class="value">1</div></div>
     </div>
   </header>
   <main>
     <h2>Question</h2>
-    <div class="card">Does the cited study prove that the AI review program caused lower churn?</div>
+    <div class="card">Does the cited Indian Supreme Court-style source support treating unexplained funds as one bail factor?</div>
     <h2>Submitted Answer</h2>
-    <pre>The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026</pre>
+    <pre>According to SC Bail Review study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case.</pre>
     <h2>Citation Verification</h2>
-    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody><tr><td>CITE-001</td><td>https://example.com/research/ai-review-churn-2026</td><td><span class="pill status-verified">verified</span></td><td>引用与外部证据强匹配，且与当前问题/上下文相关。</td><td></td><td>0.45</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody><tr><td>CITE-001</td><td>SC Bail Review</td><td><span class="pill status-weakly-verified">weakly_verified</span></td><td>间接引用可匹配到外部证据，但未给出 URL/DOI/页码等可复核锚点。</td><td></td><td>0.6452</td></tr></tbody></table>
     <p class="note">unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。</p>
     <h2>Claim Support</h2>
-    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Failure</th><th>Reason</th></tr></thead><tbody><tr><td>CLAIM-C64ED23F9D</td><td>The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program.</td><td><span class="pill status-relevant">relevant</span></td><td><span class="pill status-contradicted">contradicted</span></td><td>overclaimed_causation</td><td>The claim uses causal language, while the matched source reports association or explicitly disclaims causation.</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Failure</th><th>Reason</th></tr></thead><tbody><tr><td>CLAIM-587ED9E5C3</td><td>According to study, unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case.</td><td><span class="pill status-relevant">relevant</span></td><td><span class="pill status-partially-supported">partially_supported</span></td><td>none</td><td>The citation has partial support, but the source anchor is not strong enough for full claim support.</td></tr></tbody></table>
     <p class="note">A verified citation can still fail claim support when the source is relevant but does not prove the exact generated claim.</p>
     <h2>Evidence Broker</h2>
-    <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody><tr><td>USR-EVID-001</td><td>user_supplied</td><td>user_supplied</td><td>provided</td><td>AI review usage and customer churn study</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody><tr><td>SYNTH-INDIA-SC-BAIL-PARTIAL-001</td><td>user_supplied</td><td>user_supplied</td><td>provided</td><td>SC Bail Review Synthetic Note</td></tr><tr><td>CAND-9CA6ECDD8A</td><td>candidate_source</td><td>model_candidate</td><td>not_fetched</td><td>SC Bail Review</td></tr></tbody></table>
     <h2>Evidence Gap Queue</h2>
-    <table><thead><tr><th>ID</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td colspan="4">No open gaps.</td></tr></tbody></table>
+    <table><thead><tr><th>ID</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>GAP-001-70E9C7</td><td>medium</td><td>open</td><td>补充更精确出处，并说明该来源支持哪一句断言。</td></tr></tbody></table>
     <h2>Replay Ledger</h2>
     <div class="card">
-      <div><strong>Replay Ledger Hash:</strong> 9a350eb692631afe886eba104ee9d6e1f0ed80b707cb19da75f64728d32b4192</div>
-      <div><strong>Certification Hash:</strong> 59580a9b56b47ed5aff6e2ba6e77f6a03e702be28128d61835e86e7d72a65607</div>
-      <div><strong>Audit ID:</strong> governance-real-source-overclaimed-causation</div>
+      <div><strong>Replay Ledger Hash:</strong> fca4c395443955e2c04673c58c4133677f81e73ff96fb44f2aa298c65e5b57be</div>
+      <div><strong>Certification Hash:</strong> c6d47f07e055c641447173c1f1181e7dc9ba0b69225c2139d2d9e6c788a75f93</div>
+      <div><strong>Audit ID:</strong> nikunj-agentic-justice-synthetic-sc-bail-partial</div>
     </div>
   </main>
 </body>

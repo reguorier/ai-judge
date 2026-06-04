@@ -2,17 +2,17 @@
   "schema": "citation_audit.v1",
   "product": "AI Judge Citation Audit",
   "version": "3.8.0",
-  "audit_id": "governance-real-source-overclaimed-causation",
-  "title": "Real Source, Unsupported Causal Claim",
-  "question": "Does the cited study prove that the AI review program caused lower churn?",
-  "answer": "The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
+  "audit_id": "nikunj-agentic-justice-synthetic-sc-bail-supported",
+  "title": "Synthetic Indian SC Bail Supported",
+  "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?",
+  "answer": "The Supreme Court of India held that unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026",
   "allow_network": false,
   "grand_judge": {
     "schema": "grand_judge.citation_mvp.v1",
     "phase": "citation_verification_mvp",
-    "run_id": "governance-real-source-overclaimed-causation",
-    "question": "Does the cited study prove that the AI review program caused lower churn?",
-    "certification_id": "CITE-20260522-33F187B654",
+    "run_id": "nikunj-agentic-justice-synthetic-sc-bail-supported",
+    "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?",
+    "certification_id": "CITE-20260523-8FCBC95305",
     "citation_verification": {
       "schema": "citation_validator.summary.v1",
       "status_schema": [
@@ -50,8 +50,8 @@
       },
       "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
       "verification_hash": "c1255e4b420a2810ada1d48320067307be7c930c919ab2b475cee0e8bea7cdcb",
-      "certification_id": "CITE-20260522-33F187B654",
-      "replay_ledger_hash": "9a350eb692631afe886eba104ee9d6e1f0ed80b707cb19da75f64728d32b4192",
+      "certification_id": "CITE-20260523-8FCBC95305",
+      "replay_ledger_hash": "33bc1ea68df53730e71ca4b8315d2a958f0615e485accad1559e596ac9d50ce0",
       "external_evidence_count": 1
     },
     "replay_ledger": [
@@ -60,8 +60,8 @@
         "seat": "submitted_answer",
         "seat_name": "Submitted AI Answer",
         "ok": true,
-        "raw_answer": "The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
-        "raw_answer_hash": "1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403",
+        "raw_answer": "The Supreme Court of India held that unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026",
+        "raw_answer_hash": "85253b9b706bfa6bf9482ca9606b92dcd8202ae0d52cc8de85e56cedc8ee141b",
         "mentor_supplement": "",
         "mentor_supplement_hash": null,
         "citation_verification": {
@@ -102,35 +102,35 @@
           "items": [
             {
               "citation_id": "CITE-001",
-              "raw": "https://example.com/research/ai-review-churn-2026",
+              "raw": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
               "kind": "url",
-              "normalized": "example.com/research/ai-review-churn-2026",
-              "context": "ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
+              "normalized": "example.com/synthetic-indian-sc-bail-discretion-2026",
+              "context": "sing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026",
               "status": "verified",
               "reason": "引用与外部证据强匹配，且与当前问题/上下文相关。",
               "matched_evidence": {
-                "evidence_id": "USR-EVID-001",
-                "url": "https://example.com/research/ai-review-churn-2026",
-                "title": "AI review usage and customer churn study",
-                "snippet": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+                "evidence_id": "SYNTH-INDIA-SC-BAIL-SUPPORTED-001",
+                "url": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
+                "title": "Synthetic Supreme Court of India Bail Discretion Example",
+                "snippet": "In this synthetic public-safe training opinion, the Court says unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. Bail denial is not automatic and remains discre...",
                 "status": "user_supplied",
                 "source_layer": "user_supplied",
                 "provenance": "user_supplied",
                 "match_score": 1.0,
-                "evidence_hash": "3f79930bca8bc3c57f9af4151cbaa69a27267bee29849957bdd87c38d3be5e3e"
+                "evidence_hash": "b40c42577dc27dfb36f11ca08eff870f6cb3b7b4f4f39eb033b00bb2e446ee7b"
               },
-              "relevance_score": 0.45,
-              "verified_at": "2026-05-22T23:18:08.430143+00:00"
+              "relevance_score": 0.6111,
+              "verified_at": "2026-05-23T17:15:15.104795+00:00"
             }
           ],
           "external_evidence_used": 1,
           "unverifiable_explanation": "unverifiable 表示当前外部证据不足，无法确认该引用真实性或相关性；它不是 false，也不等于 contradicted。",
-          "verified_at": "2026-05-22T23:18:08.430143+00:00",
-          "verification_hash": "c7d7446e92a91f0b1c35a9060848b01f43feec9d519a700ead06748201adfec0"
+          "verified_at": "2026-05-23T17:15:15.104795+00:00",
+          "verification_hash": "0ad2c12c1cfa925d9407499144f8884bcd71dd01aa1e527f944db111f30eda87"
         },
         "mentor_citation_verification": null,
         "unverifiable_reasons": [],
-        "verification_timestamp": "2026-05-22T23:18:08.430143+00:00",
+        "verification_timestamp": "2026-05-23T17:15:15.104795+00:00",
         "source_isolation": {
           "raw_answer": "replay_ledger[].raw_answer",
           "mentor_supplement": "replay_ledger[].mentor_supplement",
@@ -139,17 +139,17 @@
         }
       }
     ],
-    "replay_ledger_hash": "9a350eb692631afe886eba104ee9d6e1f0ed80b707cb19da75f64728d32b4192",
+    "replay_ledger_hash": "33bc1ea68df53730e71ca4b8315d2a958f0615e485accad1559e596ac9d50ce0",
     "external_evidence_index": [
       {
-        "evidence_id": "USR-EVID-001",
-        "url": "https://example.com/research/ai-review-churn-2026",
-        "title": "AI review usage and customer churn study",
+        "evidence_id": "SYNTH-INDIA-SC-BAIL-SUPPORTED-001",
+        "url": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
+        "title": "Synthetic Supreme Court of India Bail Discretion Example",
         "status": "user_supplied",
         "source_layer": "user_supplied",
         "provenance": "user_supplied",
         "retrieval_state": "provided",
-        "evidence_hash": "6c0a5cf3d078a9adbd02358fee54cf70195ed594fb083b00c3f6008e18e4b6f0"
+        "evidence_hash": "28e8586714b98ebb13758dd3b60d9194f25c47ad8513159ead7bd92fba05a6b8"
       }
     ],
     "source_isolation": {
@@ -189,12 +189,12 @@
       "统计认证引擎可认证评分质量；事实真实性需 citation-level 外部证据验证。",
       "unverifiable 不是 false，UI 必须解释清楚。"
     ],
-    "created_at": "2026-05-22T23:18:08.430143+00:00",
-    "certification_hash": "59580a9b56b47ed5aff6e2ba6e77f6a03e702be28128d61835e86e7d72a65607",
+    "created_at": "2026-05-23T17:15:15.104795+00:00",
+    "certification_hash": "5fc75829428e5437b3b04b988cdc07a64723c0289abd735479baca026732ba6e",
     "evidence_broker": {
       "schema": "evidence_broker.v1",
-      "created_at": "2026-05-22T23:18:08.430143+00:00",
-      "question": "Does the cited study prove that the AI review program caused lower churn?",
+      "created_at": "2026-05-23T17:15:15.104795+00:00",
+      "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?",
       "allow_network": false,
       "source_policy": {
         "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
@@ -204,34 +204,34 @@
       },
       "items": [
         {
-          "url": "https://example.com/research/ai-review-churn-2026",
-          "title": "AI review usage and customer churn study",
-          "snippet": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "id": "SYNTH-INDIA-SC-BAIL-SUPPORTED-001",
+          "url": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
+          "title": "Synthetic Supreme Court of India Bail Discretion Example",
+          "snippet": "In this synthetic public-safe training opinion, the Court says unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. Bail denial is not automatic and remains discretionary after considering flight risk, tampering risk, custody length, and the facts of the individual case.",
           "provenance": "user_supplied",
-          "id": "USR-EVID-001",
-          "text": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "text": "In this synthetic public-safe training opinion, the Court says unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. Bail denial is not automatic and remains discretionary after considering flight risk, tampering risk, custody length, and the facts of the individual case.",
           "status": "user_supplied",
           "trusted": true,
           "source_layer": "user_supplied",
           "retrieval_state": "provided",
           "provenance_rank": 1,
-          "evidence_hash": "371804f87876c1ff0c400a4556daf731c99b1f0fcc9a5db9a2ef24eb12f8d263"
+          "evidence_hash": "89cd462d1fe8a53817b0f54572433c4cdaae0c5c84bfec591bf7865ff4f6219f"
         }
       ],
       "items_for_validation": [
         {
-          "url": "https://example.com/research/ai-review-churn-2026",
-          "title": "AI review usage and customer churn study",
-          "snippet": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "id": "SYNTH-INDIA-SC-BAIL-SUPPORTED-001",
+          "url": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
+          "title": "Synthetic Supreme Court of India Bail Discretion Example",
+          "snippet": "In this synthetic public-safe training opinion, the Court says unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. Bail denial is not automatic and remains discretionary after considering flight risk, tampering risk, custody length, and the facts of the individual case.",
           "provenance": "user_supplied",
-          "id": "USR-EVID-001",
-          "text": "The study reports a 22% churn reduction associated with AI review usage. The analysis is observational and does not establish causation.",
+          "text": "In this synthetic public-safe training opinion, the Court says unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case. Bail denial is not automatic and remains discretionary after considering flight risk, tampering risk, custody length, and the facts of the individual case.",
           "status": "user_supplied",
           "trusted": true,
           "source_layer": "user_supplied",
           "retrieval_state": "provided",
           "provenance_rank": 1,
-          "evidence_hash": "371804f87876c1ff0c400a4556daf731c99b1f0fcc9a5db9a2ef24eb12f8d263"
+          "evidence_hash": "89cd462d1fe8a53817b0f54572433c4cdaae0c5c84bfec591bf7865ff4f6219f"
         }
       ],
       "counts": {
@@ -247,7 +247,7 @@
           "notarized": 0
         }
       },
-      "broker_hash": "a4726a8e84bb75ee90c34f0d39b9c84f4cb487b68ccd9e49f32fba9757fe14c5"
+      "broker_hash": "b9d77ba3d4b290afd6dbf1e3a6d6d782d16eb9f60229c7de54b00597834549b0"
     },
     "claim_support_audit": {
       "schema": "claim_support.v1",
@@ -276,10 +276,10 @@
       ],
       "item_count": 1,
       "claim_support_counts": {
-        "supported": 0,
+        "supported": 1,
         "partially_supported": 0,
         "unsupported": 0,
-        "contradicted": 1,
+        "contradicted": 0,
         "unknown": 0
       },
       "source_relevance_counts": {
@@ -289,8 +289,8 @@
         "unknown": 0
       },
       "support_failure_counts": {
-        "none": 0,
-        "overclaimed_causation": 1,
+        "none": 1,
+        "overclaimed_causation": 0,
         "overclaimed_absolute": 0,
         "overclaimed_quantified_effect": 0,
         "missing_claim_evidence": 0,
@@ -300,26 +300,26 @@
       },
       "items": [
         {
-          "claim_id": "CLAIM-C64ED23F9D",
+          "claim_id": "CLAIM-19167DBB31",
           "citation_id": "CITE-001",
           "citation_status": "verified",
-          "raw_citation": "https://example.com/research/ai-review-churn-2026",
-          "claim_span": "The AI review program caused a 22% reduction in customer churn, so the company should attribute retention gains to the program.",
-          "source_id": "USR-EVID-001",
-          "source_url": "https://example.com/research/ai-review-churn-2026",
-          "source_title": "AI review usage and customer churn study",
+          "raw_citation": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
+          "claim_span": "The Supreme Court of India held that unexplained source of funds may be considered as one factor when assessing bail in an economic-offence case, while bail denial remains discretionary rather than automatic.",
+          "source_id": "SYNTH-INDIA-SC-BAIL-SUPPORTED-001",
+          "source_url": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
+          "source_title": "Synthetic Supreme Court of India Bail Discretion Example",
           "source_relevance": "relevant",
-          "claim_support": "contradicted",
-          "support_failure_code": "overclaimed_causation",
-          "support_reason": "The claim uses causal language, while the matched source reports association or explicitly disclaims causation.",
-          "matched_evidence_hash": "3f79930bca8bc3c57f9af4151cbaa69a27267bee29849957bdd87c38d3be5e3e",
-          "audited_at": "2026-05-22T23:18:08.430143+00:00"
+          "claim_support": "supported",
+          "support_failure_code": "none",
+          "support_reason": "The citation is strongly matched and no deterministic claim-support failure was detected.",
+          "matched_evidence_hash": "b40c42577dc27dfb36f11ca08eff870f6cb3b7b4f4f39eb033b00bb2e446ee7b",
+          "audited_at": "2026-05-23T17:15:15.104795+00:00"
         }
       ],
       "explanation": "Citation status, source relevance, and claim support are separate. A source can be real and relevant while failing to support the model's exact claim.",
-      "audited_at": "2026-05-22T23:18:08.430143+00:00",
-      "overall_claim_support": "contradicted",
-      "claim_support_hash": "a4900acd66fd8c307a8edf24b94e1bb3660fa38281e39f9455835e14bf58b470"
+      "audited_at": "2026-05-23T17:15:15.104795+00:00",
+      "overall_claim_support": "supported",
+      "claim_support_hash": "74015005bb76552e1ec53a270a87899570b9fef21636ffccaf9c435d1dc23373"
     },
     "evidence_gap_suggestions": {
       "schema": "evidence_gap_filler.suggestion_only.v1",
@@ -346,16 +346,16 @@
     },
     "evidence_gap_queue": {
       "schema": "evidence_gap_queue.v1",
-      "created_at": "2026-05-22T23:18:08.430143+00:00",
+      "created_at": "2026-05-23T17:15:15.104795+00:00",
       "open_count": 0,
       "tasks": [],
       "policy": "证据缺口是待办队列，不会自动改写模型原文或用户正文。",
-      "queue_hash": "a7c83261eaf44e22d5b4088167aa2888afdda20c414995d0f3ebcb60f6141930"
+      "queue_hash": "2965449378e551b95b3eb349a34627d0f97c196769b8768fdf8a253ead548448"
     },
     "blind_cross_validation": {
       "schema": "blind_cross_validation.v1",
       "status": "pending_model_reviews",
-      "created_at": "2026-05-22T23:18:08.430143+00:00",
+      "created_at": "2026-05-23T17:15:15.104795+00:00",
       "reviewer_count": 4,
       "threshold": 0.67,
       "anonymization": {
@@ -368,39 +368,39 @@
           "answer_id": "ANSWER-001",
           "layer": "raw_answer",
           "citation_id": "CITE-001",
-          "citation": "https://example.com/research/ai-review-churn-2026",
+          "citation": "https://example.com/synthetic-indian-sc-bail-discretion-2026",
           "status": "verified",
           "reason": "引用与外部证据强匹配，且与当前问题/上下文相关。",
-          "context_preview": "ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026",
-          "answer_hash": "1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403"
+          "context_preview": "sing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026",
+          "answer_hash": "85253b9b706bfa6bf9482ca9606b92dcd8202ae0d52cc8de85e56cedc8ee141b"
         }
       ],
       "review_prompts": [
         {
           "reviewer": "gemini",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: gemini\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"sing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"answer_hash\": \"85253b9b706bfa6bf9482ca9606b92dcd8202ae0d52cc8de85e56cedc8ee141b\"\n  }\n]"
         },
         {
           "reviewer": "chatgpt",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: chatgpt\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"sing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"answer_hash\": \"85253b9b706bfa6bf9482ca9606b92dcd8202ae0d52cc8de85e56cedc8ee141b\"\n  }\n]"
         },
         {
           "reviewer": "deepseek",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: deepseek\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"sing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"answer_hash\": \"85253b9b706bfa6bf9482ca9606b92dcd8202ae0d52cc8de85e56cedc8ee141b\"\n  }\n]"
         },
         {
           "reviewer": "qwen",
-          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does the cited study prove that the AI review program caused lower churn?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/research/ai-review-churn-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"ed a 22% reduction in customer churn, so the company should attribute retention gains to the program. Source: https://example.com/research/ai-review-churn-2026\",\n    \"answer_hash\": \"1803384fdd1ec709cd007557f8cba2f4610c820fd389cfc4cec85dc2eafb5403\"\n  }\n]"
+          "prompt": "[AIJUDGE_BLIND_CROSS_VALIDATION]\nReviewer: qwen\nOriginal question: Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?\n\n你将看到匿名答案的引用验证条目。不要猜测作者是谁；只判断每条 citation/claim 是否应 confirm、dispute 或 abstain。\n输出 JSON 数组：[{\"citation_id\":\"CITE-001\",\"decision\":\"confirm|dispute|abstain\",\"reason\":\"...\",\"confidence\":0.0-1.0}]\n\nAnonymized packet:\n[\n  {\n    \"answer_id\": \"ANSWER-001\",\n    \"layer\": \"raw_answer\",\n    \"citation_id\": \"CITE-001\",\n    \"citation\": \"https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"status\": \"verified\",\n    \"reason\": \"引用与外部证据强匹配，且与当前问题/上下文相关。\",\n    \"context_preview\": \"sing bail in an economic-offence case, while bail denial remains discretionary rather than automatic. Source: https://example.com/synthetic-indian-sc-bail-discretion-2026\",\n    \"answer_hash\": \"85253b9b706bfa6bf9482ca9606b92dcd8202ae0d52cc8de85e56cedc8ee141b\"\n  }\n]"
         }
       ],
       "rule": "多数模型不记名确认后，引用或 claim 才能从模型共识升级为可信共识。",
-      "packet_hash": "845c65895fb0695ff15577970e3496d2c07f53cc940f87537c3c4613297c7577"
+      "packet_hash": "88c90b0643451a0d974ae9e698ad4f63d78fff1adaeac41fa6a5bf80d38a43e3"
     },
     "eval_case": {
       "schema": "ai_judge_eval_case.v1",
-      "case_id": "EVAL-4E79D5483AF4",
-      "run_id": "governance-real-source-overclaimed-causation",
-      "question": "Does the cited study prove that the AI review program caused lower churn?",
+      "case_id": "EVAL-E8923C730FA4",
+      "run_id": "nikunj-agentic-justice-synthetic-sc-bail-supported",
+      "question": "Does the cited Indian Supreme Court-style source support treating unexplained funds as one discretionary bail factor?",
       "mode": null,
       "engine": null,
       "verdict": null,
@@ -425,25 +425,25 @@
         "hard_evidence_count": 1,
         "trust_gate": "pass"
       },
-      "certification_id": "CITE-20260522-33F187B654",
-      "certification_hash": "59580a9b56b47ed5aff6e2ba6e77f6a03e702be28128d61835e86e7d72a65607",
-      "replay_ledger_hash": "9a350eb692631afe886eba104ee9d6e1f0ed80b707cb19da75f64728d32b4192",
+      "certification_id": "CITE-20260523-8FCBC95305",
+      "certification_hash": "5fc75829428e5437b3b04b988cdc07a64723c0289abd735479baca026732ba6e",
+      "replay_ledger_hash": "33bc1ea68df53730e71ca4b8315d2a958f0615e485accad1559e596ac9d50ce0",
       "human_label": null,
-      "created_at": "2026-05-22T23:18:08.431120+00:00",
-      "case_hash": "e3c293cb4e8229f8ba5a3efc741f79ea9c9b7d9b33da9a750a50dc50ce3c66d8"
+      "created_at": "2026-05-23T17:15:15.107625+00:00",
+      "case_hash": "70d8fafac8b713d25bdeaa253bffdb8f1f453d978dbcea9d655d0a6df8016617"
     }
   },
   "human_review_status": {
     "status": "optional",
     "reason": "引用状态较稳，可选人工签名。"
   },
-  "created_at": "2026-05-22T23:18:08.430143+00:00",
+  "created_at": "2026-05-23T17:15:15.104795+00:00",
   "summary": {
     "overall_status": "verified",
-    "overall_claim_support": "contradicted",
-    "certification_id": "CITE-20260522-33F187B654",
-    "certification_hash": "59580a9b56b47ed5aff6e2ba6e77f6a03e702be28128d61835e86e7d72a65607",
-    "replay_ledger_hash": "9a350eb692631afe886eba104ee9d6e1f0ed80b707cb19da75f64728d32b4192",
+    "overall_claim_support": "supported",
+    "certification_id": "CITE-20260523-8FCBC95305",
+    "certification_hash": "5fc75829428e5437b3b04b988cdc07a64723c0289abd735479baca026732ba6e",
+    "replay_ledger_hash": "33bc1ea68df53730e71ca4b8315d2a958f0615e485accad1559e596ac9d50ce0",
     "item_count": 1,
     "counts": {
       "verified": 1,
@@ -453,15 +453,15 @@
       "contradicted": 0
     },
     "claim_support_counts": {
-      "supported": 0,
+      "supported": 1,
       "partially_supported": 0,
       "unsupported": 0,
-      "contradicted": 1,
+      "contradicted": 0,
       "unknown": 0
     },
     "claim_support_failure_counts": {
-      "none": 0,
-      "overclaimed_causation": 1,
+      "none": 1,
+      "overclaimed_causation": 0,
       "overclaimed_absolute": 0,
       "overclaimed_quantified_effect": 0,
       "missing_claim_evidence": 0,
