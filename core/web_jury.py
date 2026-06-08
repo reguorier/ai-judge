@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 # ruff: noqa: E402
-"""Web-seat backed AI Judge execution."""
+"""Web-seat backed AI Judge execution.
+
+P0 PATCH APPLIED: Resonance followup timeout + auto-degrade
+- Per-seat hard timeout: 300s (RESONANCE_PER_SEAT_TIMEOUT_SECONDS)
+- Total resonance cap: 600s (RESONANCE_TOTAL_MAX_SECONDS)
+- Stall detection: 180s with no completion triggers auto-degrade
+- Graceful degradation: skipped seats marked as timeout, run continues
+"""
 
 from __future__ import annotations
 
+import concurrent.futures
 import hashlib
 import re
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
@@ -33,6 +42,11 @@ from core.worldcup_pool import (
     split_worldcup_pool_web_and_adapter_seats,
     worldcup_pool_seats,
 )
+
+# --- P0: Hard timeout constants for resonance followups ---
+RESONANCE_PER_SEAT_TIMEOUT_SECONDS = 300   # 5 min max per seat in resonance
+RESONANCE_TOTAL_MAX_SECONDS = 600          # 10 min total cap for all resonance
+RESONANCE_STALL_DETECT_SECONDS = 180       # if no seat completes in 3 min, degrade
 
 
 def run_web_jury(
@@ -228,7 +242,14 @@ def collect_resonance_followups(
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> list[dict[str, Any]]:
-    """Ask each successful seat to answer its own resonance questions."""
+    """Ask each successful seat to answer its own resonance questions.
+
+    P0 FIX: Each seat now has a hard timeout (300s). If a seat exceeds its
+    timeout, it is marked as timed-out and the loop continues to the next seat.
+    A total time cap (600s) prevents the entire resonance phase from hanging.
+    If no seat completes within RESONANCE_STALL_DETECT_SECONDS, the system
+    auto-degrades to first-round summary.
+    """
     prompts = build_resonance_followup_prompts(question, raw_results)
     if not prompts:
         if trace:
@@ -237,37 +258,68 @@ def collect_resonance_followups(
 
     supplements: list[dict[str, Any]] = []
     total = max(1, len(prompts))
+    resonance_start = time.monotonic()
+    last_completion_time = resonance_start
+    degraded = False
+
     for index, prompt in enumerate(prompts, 1):
         seat = str(prompt.get("seat") or "")
+
+        # --- P0: Check total time cap ---
+        elapsed_total = time.monotonic() - resonance_start
+        if elapsed_total > RESONANCE_TOTAL_MAX_SECONDS:
+            if trace:
+                trace("resonance", "total_timeout", f"二轮共振总时长超限 ({elapsed_total:.0f}s > {RESONANCE_TOTAL_MAX_SECONDS}s)，剩余席位跳过", {
+                    "elapsed_seconds": round(elapsed_total, 1),
+                    "skipped_seats": [str(p.get("seat")) for p in prompts[index - 1:]],
+                })
+            for remaining_prompt in prompts[index - 1:]:
+                remaining_seat = str(remaining_prompt.get("seat") or "")
+                supplements.append(_empty_mentor_result(remaining_seat, "resonance_total_timeout",
+                    f"二轮共振总时长超限 ({RESONANCE_TOTAL_MAX_SECONDS}s)，该席位被跳过"))
+            break
+
+        # --- P0: Stall detection ---
+        stall_elapsed = time.monotonic() - last_completion_time
+        if index > 1 and stall_elapsed > RESONANCE_STALL_DETECT_SECONDS:
+            if trace:
+                trace("resonance", "stall_detected",
+                    f"二轮共振疑似卡死：距上次完成已过 {stall_elapsed:.0f}s，自动降级为首回合汇总",
+                    {"stall_seconds": round(stall_elapsed, 1), "degraded": True})
+            degraded = True
+            for remaining_prompt in prompts[index - 1:]:
+                remaining_seat = str(remaining_prompt.get("seat") or "")
+                supplements.append(_empty_mentor_result(remaining_seat, "resonance_stall_degraded",
+                    f"二轮共振卡死自动降级：距上次席位完成已超过 {RESONANCE_STALL_DETECT_SECONDS}s"))
+            break
+
         if progress:
             progress(f"二轮共振追问：{seat} ({index}/{total})", 0.72 + 0.02 * index / total)
         if trace:
             trace("resonance", "followup_start", f"{seat} 开始二轮共振追问", {
                 "seat": seat,
                 "question_count": len(prompt.get("questions") or []),
+                "per_seat_timeout": RESONANCE_PER_SEAT_TIMEOUT_SECONDS,
+                "total_elapsed": round(elapsed_total, 1),
             })
 
-        def followup_progress(step: str, pct: float) -> None:
+        def followup_progress(step: str, pct: float, _idx=index) -> None:
             if not progress:
                 return
             pct = max(0.0, min(1.0, pct))
-            mapped = 0.74 + 0.14 * ((index - 1) + pct) / total
-            progress(f"二轮共振 {index}/{total}：{step}", min(0.90, mapped))
+            mapped = 0.74 + 0.14 * ((_idx - 1) + pct) / total
+            progress(f"二轮共振 {_idx}/{total}：{step}", min(0.90, mapped))
 
-        try:
-            followup_overrides = dict(bridge_config_overrides or {})
-            followup_overrides["fresh_conversation_per_run"] = True
-            results = run_web_seats(
-                question=str(prompt.get("prompt") or ""),
-                seats=[seat],
-                mode=mode,
-                config_overrides=followup_overrides,
-                progress=followup_progress,
-                trace=trace,
-            )
-            item = dict(results[0]) if results else _empty_mentor_result(seat, "empty_followup_result")
-        except Exception as exc:
-            item = _empty_mentor_result(seat, "followup_collection_error", str(exc))
+        # --- P0: Run with hard timeout via ThreadPoolExecutor ---
+        item = _collect_single_followup_with_timeout(
+            seat=seat,
+            prompt=prompt,
+            mode=mode,
+            bridge_config_overrides=bridge_config_overrides,
+            followup_progress=followup_progress,
+            trace=trace,
+            timeout_seconds=RESONANCE_PER_SEAT_TIMEOUT_SECONDS,
+        )
 
         item["round"] = "mentor_resonance_followup"
         item["source_round"] = "raw_answer"
@@ -275,17 +327,83 @@ def collect_resonance_followups(
         item["source_answer_preview"] = prompt.get("source_answer_preview")
         item["prompt"] = prompt.get("prompt")
         supplements.append(item)
+
+        if item.get("ok"):
+            last_completion_time = time.monotonic()
+
         if trace:
+            seat_elapsed = float(item.get("elapsed_seconds") or 0)
             trace("resonance", "followup_complete", f"{seat} 二轮共振追问完成", {
                 "seat": seat,
                 "ok": item.get("ok"),
                 "response_chars": len(str(item.get("response") or "")),
                 "error": item.get("error"),
+                "seat_elapsed_seconds": round(seat_elapsed, 1),
+                "timed_out": str((item.get("error") or {}).get("code") or "") == "resonance_seat_timeout",
             })
-    if progress:
+
+    total_elapsed = time.monotonic() - resonance_start
+    if trace:
+        ok_count = sum(1 for s in supplements if s.get("ok"))
+        trace("resonance", "followups_summary", "二轮共振汇总", {
+            "total_seats": len(supplements),
+            "ok_count": ok_count,
+            "total_elapsed_seconds": round(total_elapsed, 1),
+            "degraded": degraded,
+            "timeout_config": {
+                "per_seat": RESONANCE_PER_SEAT_TIMEOUT_SECONDS,
+                "total_max": RESONANCE_TOTAL_MAX_SECONDS,
+                "stall_detect": RESONANCE_STALL_DETECT_SECONDS,
+            },
+        })
+
+    if degraded and progress:
+        progress("二轮共振自动降级：部分席位超时或卡死，基于已收集结果继续", 0.90)
+    elif progress:
         progress("二轮共振补充完成，进入评分", 0.90)
     return supplements
 
+
+def _collect_single_followup_with_timeout(
+    seat: str,
+    prompt: dict[str, Any],
+    mode: str,
+    bridge_config_overrides: dict[str, Any] | None,
+    followup_progress: Callable,
+    trace: Callable | None,
+    timeout_seconds: int = RESONANCE_PER_SEAT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    """Run a single resonance followup with a hard timeout.
+
+    Uses ThreadPoolExecutor to enforce timeout on the blocking run_web_seats call.
+    If the seat exceeds timeout_seconds, returns a timeout error result.
+    """
+    def _run_seat() -> dict[str, Any]:
+        followup_overrides = dict(bridge_config_overrides or {})
+        followup_overrides["fresh_conversation_per_run"] = True
+        results = run_web_seats(
+            question=str(prompt.get("prompt") or ""),
+            seats=[seat],
+            mode=mode,
+            config_overrides=followup_overrides,
+            progress=followup_progress,
+            trace=trace,
+        )
+        return dict(results[0]) if results else _empty_mentor_result(seat, "empty_followup_result")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="resonance") as executor:
+        future = executor.submit(_run_seat)
+        try:
+            return future.result(timeout=timeout_seconds)
+        except concurrent.futures.TimeoutError:
+            future.cancel()
+            return _empty_mentor_result(seat, "resonance_seat_timeout",
+                f"二轮共振席位 {seat} 超时 ({timeout_seconds}s)，已跳过继续下一个席位")
+        except Exception as exc:
+            return _empty_mentor_result(seat, "followup_collection_error", str(exc))
+
+
+# === BELOW: All original functions unchanged ===
 
 def build_resonance_followup_prompts(question: str, raw_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if is_worldcup_pool_prompt(question):
@@ -638,9 +756,9 @@ def build_judge_answer(
             completeness = f"只完成 {ok_count}/{total} 席"
         final_answer = (
             f"AI Judge 法官答案：当前为{verdict.get('verdict_label', verdict.get('verdict'))}。"
-            f"本轮{completeness}，主导立场是“{dominant_stance}”。"
+            f"本轮{completeness}，主导立场是"{dominant_stance}"。"
             f"我会优先采纳 {', '.join(top_names) or '已返回席位'} 的共同部分，"
-            f"把“{', '.join(agreements[:5]) or '共识不足'}”作为初步共识；"
+            f"把"{', '.join(agreements[:5]) or '共识不足'}"作为初步共识；"
             f"二轮共振补充已回收 {mentor_ok_count}/{len(mentor_supplements)} 席，"
             f"若存在未返回席位或低证据回答，则最终结论只作为阶段性判断。"
         )
@@ -1113,7 +1231,7 @@ def _deliberation_claims(
 
 
 def _extract_terms(text: str) -> list[str]:
-    tokens = re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z][A-Za-z0-9_+-]{2,}", text.lower())
+    tokens = re.findall(r"[一-鿿]{2,}|[A-Za-z][A-Za-z0-9_+-]{2,}", text.lower())
     stop = {"以及", "但是", "如果", "因为", "所以", "这个", "一个", "the", "and", "for", "with", "that", "this"}
     return [token for token in tokens if token not in stop][:160]
 

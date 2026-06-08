@@ -6,6 +6,55 @@ from typing import Any
 
 from product.reporting.report_schema import utc_now_iso
 
+# ─── Seat status classification ──────────────────────────────────────
+
+VALID_SEAT_STATUSES: set[str] = {
+    "answered",
+    "completed",
+    "success",
+    "search_completed",
+    "finalized",
+    "valid",
+}
+
+INVALID_SEAT_STATUSES: set[str] = {
+    "skipped",
+    "not_configured",
+    "timeout",
+    "error",
+    "failed",
+    "empty",
+    "no_answer",
+}
+
+
+def compute_valid_seats(seats: list[dict[str, Any]]) -> int:
+    """Count seats that are actually valid: correct status + has substantive answer."""
+    count = 0
+    for s in seats:
+        status = (s.get("status") or "").strip()
+        # Must be in VALID set
+        if status not in VALID_SEAT_STATUSES:
+            continue
+        # Must have substantive answer content
+        answer = (s.get("answer") or s.get("text") or s.get("summary") or "").strip()
+        if not answer:
+            continue
+        count += 1
+    return count
+
+
+def compute_failed_seats(seats: list[dict[str, Any]]) -> int:
+    """Count seats that are in a failed/error/timeout state."""
+    count = 0
+    for s in seats:
+        status = (s.get("status") or "").strip()
+        if status in {"error", "failed", "timeout"}:
+            count += 1
+    return count
+
+
+# ─── Evidence packet ─────────────────────────────────────────────────
 
 def build_evidence_packet(
     *,
@@ -51,6 +100,8 @@ def build_evidence_packet(
     }
 
 
+# ─── Seat matrix ─────────────────────────────────────────────────────
+
 def build_seat_matrix(
     *,
     run_id: str,
@@ -59,18 +110,27 @@ def build_seat_matrix(
     total_seats: int,
     failed_seats: int,
 ) -> dict[str, Any]:
+    """Build seat matrix with accurate status classification.
+
+    Only seats up to valid_seats are marked as valid/answered.
+    Seats beyond valid_seats up to total_seats are marked as skipped.
+    """
     seats: list[dict[str, Any]] = []
     seat_specs = [
-        ("report_builder", "Report Builder", "valid", "压缩问题、证据和行动建议到最终报告。"),
-        ("dissent_reviewer", "Dissent Reviewer", "valid", "保留分歧、失败条件和反方提醒。"),
-        ("human_gate", "Human Final Gate", "valid", "把最终裁决留给本地人工确认。"),
+        ("report_builder", "Report Builder", "压缩问题、证据和行动建议到最终报告。"),
+        ("dissent_reviewer", "Dissent Reviewer", "保留分歧、失败条件和反方提醒。"),
+        ("human_gate", "Human Final Gate", "把最终裁决留给本地人工确认。"),
     ]
-    for seat_id, display_name, status, summary in seat_specs[: max(valid_seats, 0)]:
+
+    # Only mark seats as valid up to the actual valid_seats count
+    actual_valid = min(max(valid_seats, 0), len(seat_specs))
+    for i in range(actual_valid):
+        seat_id, display_name, summary = seat_specs[i]
         seats.append(
             {
                 "seat_id": seat_id,
                 "display_name": display_name,
-                "status": status,
+                "status": "valid",
                 "run_marker_found": True,
                 "structured_answer_found": True,
                 "answer_path": "generated:client_report",
@@ -79,6 +139,8 @@ def build_seat_matrix(
                 "failure_reason": None,
             }
         )
+
+    # Add failed seats
     for index in range(max(failed_seats, 0)):
         seats.append(
             {
@@ -93,6 +155,8 @@ def build_seat_matrix(
                 "failure_reason": "missing_answer_artifact",
             }
         )
+
+    # Fill remaining to total_seats as skipped
     while len(seats) < total_seats:
         seats.append(
             {

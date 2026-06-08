@@ -24,7 +24,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 # ── Constants ────────────────────────────────────────────────────────────────
-DASHBOARD_JS_BUILD_KEY = "p8.7-drift-sentinel-e2e-v1"
+DASHBOARD_JS_BUILD_KEY = "P3.8.12-RC1"
 API_BASE = None  # set dynamically from --port
 
 EXPECTED_RUN_FILES = [

@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: c4c8c10647a8bb7136ce0aa675915c5d_cbd233305fd211f191f65254006c9bbf
+    ReservedCode1: USPIGCy0yMD2XPJyypgXWjRgpOwbFegnbD74VYgGxpE0tu7tgvapfZx/EyM9v09qDIsceQF7oFTxFZ+MriDCOBCdgSEaaasW1KQX76PkalAHYDPiisUUXS5zZ3LuCbg9Ub8RKbcBedpiLLHJQNxTbDlkSR7BRYOUVdiBUIixsC4XdEqoXV9LoR67t7k=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: c4c8c10647a8bb7136ce0aa675915c5d_cbd233305fd211f191f65254006c9bbf
+    ReservedCode2: USPIGCy0yMD2XPJyypgXWjRgpOwbFegnbD74VYgGxpE0tu7tgvapfZx/EyM9v09qDIsceQF7oFTxFZ+MriDCOBCdgSEaaasW1KQX76PkalAHYDPiisUUXS5zZ3LuCbg9Ub8RKbcBedpiLLHJQNxTbDlkSR7BRYOUVdiBUIixsC4XdEqoXV9LoR67t7k=
+---
+
 # P10 Rollback Plan
 
 **Generated**: 2026-06-04T05:03:22Z
@@ -29,3 +40,4 @@ Only revert files modified in P10.2:
 
 - No P0-P9 data products are affected
 - No runs/vault deletions during rollback
+*（内容由AI生成，仅供参考）*

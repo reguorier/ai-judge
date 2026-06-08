@@ -1,0 +1,1043 @@
+/* ═══════════ AI Judge P3.8.1 Client Flow Rehydration — Pre-run confirm + full seats + real upload ═══════════ */
+const AI_JUDGE_CLIENT_BUILD = "P3.8.2-RC1";
+window.__AI_JUDGE_BUILD_ID__ = AI_JUDGE_CLIENT_BUILD;
+window.__AI_JUDGE_SCRIPT_STARTED__ = true;
+if (typeof console !== "undefined" && console.info) {
+  console.info("[AI Judge] dashboard.js started", AI_JUDGE_CLIENT_BUILD);
+}
+
+const API_BASE = typeof window !== "undefined" && window.location?.origin?.startsWith("http")
+  ? window.location.origin : "http://127.0.0.1:8501";
+
+/* ── Mode Config ── */
+const MODE_CONFIG = {
+  flash: {
+    id: "flash", label: "快速裁决", labelShort: "快速",
+    placeholder: "写下你的问题，AI Judge 会先帮你整理意图，再给出快速结论、关键理由和下一步。",
+    guideText: "快速裁决：写下你的问题，AI Judge 会先帮你整理意图，再给出快速结论、关键理由和下一步。",
+    guidePreRun: "快速结论、关键理由、风险、下一步",
+    systemInstruction: "你正在执行快速裁决模式。请优先给出明确结论，用较少轮次完成判断。输出应包含：核心结论、3-5条关键理由、主要风险、最小下一步。",
+    demoSeatCount: 3,
+  },
+  strategic: {
+    id: "strategic", label: "深度裁决", labelShort: "深度",
+    placeholder: "写下复杂问题，AI Judge 会先对齐目标，再组织多个席位交叉验证，形成可审计裁决报告。",
+    guideText: "深度裁决：写下复杂问题，AI Judge 会先对齐目标，再组织多个席位交叉验证，形成可审计裁决报告。",
+    guidePreRun: "多席位、交叉验证、分歧、证据、可审计报告",
+    systemInstruction: "你正在执行深度裁决模式。请按议会式流程处理问题：先拆解目标，再组织多个席位独立发言，进行交叉验证，标注证据、假设、分歧和不确定性，最后形成可审计裁决报告。",
+    demoSeatCount: 9,
+  },
+};
+
+const PARLIAMENT_SEATS = [
+  { id: "chatgpt", name: "GPT-4o", channel: "OpenAI", color: "#10a37f", providerDot: "#00a67e" },
+  { id: "claude", name: "Claude", channel: "Anthropic", color: "#00B67A", providerDot: "#cc785c" },
+  { id: "gemini", name: "Gemini", channel: "Google", color: "#FF8C00", providerDot: "#ea4335" },
+  { id: "deepseek", name: "DeepSeek", channel: "DeepSeek", color: "#4d6bfe", providerDot: "#3563fe" },
+  { id: "qwen", name: "Qwen", channel: "Alibaba", color: "#808080", providerDot: "#ff6a00" },
+  { id: "kimi", name: "Kimi", channel: "Moonshot", color: "#ff5757", providerDot: "#e04040" },
+  { id: "grok", name: "Grok", channel: "xAI", color: "#111827", providerDot: "#111827" },
+  { id: "yuanbao", name: "Yuanbao", channel: "Tencent", color: "#14b8a6", providerDot: "#16a34a" },
+  { id: "doubao", name: "Doubao", channel: "ByteDance", color: "#f97316", providerDot: "#e16510" },
+  { id: "minimax", name: "MiniMax", channel: "MiniMax", color: "#7c3aed", providerDot: "#7c3aed" },
+  { id: "zhipu", name: "Zhipu", channel: "Zhipu", color: "#0ea5e9", providerDot: "#2563eb" },
+  { id: "mimo", name: "MiMo", channel: "Xiaomi", color: "#8b5cf6", providerDot: "#ff6900" },
+  { id: "wenxin", name: "Wenxin", channel: "Baidu", color: "#22c55e", providerDot: "#2932e1" },
+  { id: "meta", name: "Meta AI", channel: "Meta", color: "#1877f2", providerDot: "#1877f2" },
+];
+
+
+const MORE_FEATURES = [
+  { id: "followup", title: "继续追问", status: "context", action: "打开追问上下文", desc: "基于当前或历史 run 的摘要、结论、分歧继续问；重新裁决需回到 Ask。", group: "对话流" },
+  { id: "logs", title: "运行记录", status: "ready", action: "查看最近运行", desc: "普通用户看成功、失败、暂停、终止和报告入口；原始 trace 留在高级详情。", group: "日志" },
+  { id: "evidence", title: "证据", status: "context", action: "查看证据缺口", desc: "围绕当前 run 拉取 evidence gaps 和可解决项。", group: "证据" },
+  { id: "settings", title: "设置", status: "ready", action: "查看席位与模式", desc: "席位、模式、桥接状态和默认可选席位配置。Claude 默认不入普通裁决，可显式选择。", group: "设置" },
+  { id: "werewolf", title: "狼人杀", status: "ready", action: "查看模式", desc: "实验室入口：身份板、发言阶段、席位发言和投票由狼人杀后端承载。", group: "模式实验室" },
+  { id: "sports", title: "赛事预测", status: "ready", action: "查看赛事池", desc: "模拟研究入口，展示任务、席位预测、赔率/证据和结果，不作为现实投注建议。", group: "模式实验室" },
+  { id: "gavel", title: "签字 / 归档", status: "context", action: "查看签字状态", desc: "Human Gavel、历史签字、归档和导出入口。", group: "归档" },
+  { id: "status", title: "系统状态", status: "ready", action: "查看高级详情", desc: "首页只显示一句状态，release / manifest / guard / bridge 细节在这里。", group: "运维" },
+];
+
+const WORKFLOW_STAGE = Object.freeze({
+  IDLE: "idle",
+  ALIGNING_INTENT: "aligning_intent",
+  WAITING_USER_CONFIRM: "waiting_user_confirm",
+  RUNNING: "running",
+  PAUSED: "paused",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+});
+
+/* ── Helpers ── */
+function $(sel, scope) { return (scope || document).querySelector(sel); }
+function $$(sel, scope) { return Array.from((scope || document).querySelectorAll(sel)); }
+function escapeHtml(str) { if (!str) return ""; const d = document.createElement("div"); d.textContent = str; return d.innerHTML; }
+function escapeAttr(str) { return String(str || "").replace(/&/g,"&").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"<").replace(/>/g,">"); }
+function excerpt(text, max) { const s = String(text || ""); return s.length <= max ? s : s.slice(0, max) + "…"; }
+function getModeConfig(mode) { return MODE_CONFIG[mode] || MODE_CONFIG.flash; }
+
+/* ── State ── */
+const state = {
+  selectedMode: "flash",
+  engine: "web",
+  currentRunId: null,
+  currentTask: null,
+  currentVerdict: null,
+  historyRuns: [],
+  pollTimer: null,
+  eventSource: null,
+  bridge: null,
+  seats: [],
+  workflow: {
+    stage: WORKFLOW_STAGE.IDLE,
+    rawUserInput: "",
+    alignedIntent: "",
+    selectedMode: "flash",
+    canPause: false,
+    paused: false,
+    runId: null,
+    completedSeats: new Set(),
+    activeSeatCount: 0,
+    attachments: [],
+  },
+};
+window.__AI_JUDGE_STATE__ = state;
+
+/* ── DOM Helpers ── */
+function setProgress(percent, label) {
+  const fill = $("#room-progress-fill");
+  const phase = $("#room-phase");
+  if (fill) fill.style.width = Math.min(100, Math.max(0, Math.round(percent || 0))) + "%";
+  if (phase) phase.textContent = label || "";
+}
+function cleanupProgress() {
+  const fill = $("#room-progress-fill");
+  if (fill) fill.style.width = "0%";
+}
+
+/* ── Tab Switching ── */
+function switchTab(tabName) {
+  $$("#main-tabs .tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tabName));
+  $$(".workspace .view").forEach(v => v.classList.toggle("active", v.id === "view-" + tabName));
+  if (tabName === "room") renderRoom();
+  if (tabName === "report") renderReport();
+  if (tabName === "memory") renderMemory();
+  if (tabName === "more") renderMore();
+  if (tabName === "align") renderAlign();
+  if (tabName === "ask") renderAsk();
+}
+
+/* ── System Panel ── */
+async function loadSystemInfo() {
+  try {
+    const healthRes = await fetch(API_BASE + "/api/health");
+    const health = await healthRes.json();
+    $("#sys-version").textContent = health.version || "—";
+    $("#sys-integrity").textContent = health.integrity || health.status || "—";
+    $("#status-text").textContent = "系统正常 · " + (health.version || "P3.8.2-RC1") + " · 已封存";
+  } catch (e) {
+    $("#sys-version").textContent = "不可用";
+    $("#status-text").textContent = "系统异常 · 无法连接";
+  }
+  try {
+    const lockRes = await fetch(API_BASE + "/api/release/status");
+    const lock = await lockRes.json();
+    $("#sys-release-lock").textContent = lock.release_id || lock.status || "—";
+    $("#sys-guard-smoke").textContent = lock.guard_smoke || lock.smoke || "—";
+  } catch (e) {
+    $("#sys-release-lock").textContent = "—";
+  }
+  try {
+    const bridgeRes = await fetch(API_BASE + "/api/bridge/status");
+    const bridge = await bridgeRes.json();
+    state.bridge = bridge;
+    const ready = bridge.ready_count || (bridge.seats || []).filter(s => s.ready).length || 0;
+    const total = bridge.seat_count || (bridge.seats || []).length || 0;
+    $("#sys-bridge-status").textContent = `席位 ${ready}/${total} 就绪`;
+  } catch (e) {
+    $("#sys-bridge-status").textContent = "未连接";
+  }
+  $("#sys-api-base").textContent = API_BASE;
+}
+
+function toggleSysPanel() {
+  const panel = $("#sys-panel");
+  panel.classList.toggle("open");
+  if (panel.classList.contains("open")) loadSystemInfo();
+}
+
+/* ── Ask View ── */
+function renderAsk() {
+  const cfg = getModeConfig(state.selectedMode);
+  $("#ask-guide").textContent = cfg.guideText;
+  $("#ask-input").placeholder = cfg.placeholder;
+}
+
+function switchMode(mode) {
+  state.selectedMode = mode;
+  state.workflow.selectedMode = mode;
+  $$(".ask-mode-toggle .seg").forEach(s => s.classList.toggle("active", s.dataset.mode === mode));
+  renderAsk();
+}
+
+/* ── Align View ── */
+function renderAlign() {
+  const q = state.workflow.rawUserInput || state.workflow.alignedIntent || "—";
+  const cfg = getModeConfig(state.selectedMode);
+
+  // Question
+  $("#align-question").textContent = q;
+
+  // Mode + guide text
+  $("#align-mode").textContent = cfg.label + "模式";
+  $("#align-guide").textContent = cfg.guidePreRun;
+
+  // Prompt summary
+  const activeSeats = resolveActiveSeats();
+  const seatCount = activeSeats.length;
+  const seatNames = activeSeats.slice(0, 3).map(s => s.name).join("、");
+  const moreSeats = seatCount > 3 ? ` 等 ${seatCount} 席` : "";
+  let promptSummary = cfg.systemInstruction;
+  if (seatCount > 0) {
+    promptSummary += `\n\n参审席位：${seatNames}${moreSeats}`;
+  }
+  $("#align-prompt").textContent = promptSummary;
+
+  // Attachments
+  const attCard = $("#align-attachments-card");
+  const attDiv = $("#align-attachments");
+  const atts = state.workflow.attachments || [];
+  if (atts.length > 0) {
+    attCard.hidden = false;
+    attDiv.innerHTML = atts.map(a =>
+      `<div class="attach-chip">${escapeHtml(a.name || a.id)}
+        <button class="chip-remove" data-att-id="${escapeAttr(a.id)}" title="移除">&times;</button>
+      </div>`
+    ).join("");
+  } else {
+    attCard.hidden = true;
+  }
+
+  // Seat preview
+  const seatPreviewCard = $("#align-seats-card");
+  const seatPreviewDiv = $("#align-seats-preview");
+  if (seatPreviewCard && seatPreviewDiv) {
+    if (activeSeats.length > 0) {
+      seatPreviewCard.hidden = false;
+      seatPreviewDiv.innerHTML = activeSeats.map(s =>
+        `<span class="seat-preview-chip" style="border-left: 3px solid ${escapeAttr(s.color || '#64748b')}">
+          ${escapeHtml(s.name)} <small>${escapeHtml(s.channel || '')}</small>
+        </span>`
+      ).join("");
+    } else {
+      seatPreviewCard.hidden = true;
+    }
+  }
+}
+
+function showAlignView() {
+  switchTab("align");
+  // Show align tab
+  const alignTab = document.querySelector('[data-tab="align"]');
+  if (alignTab) alignTab.hidden = false;
+}
+
+function hideAlignTab() {
+  const alignTab = document.querySelector('[data-tab="align"]');
+  if (alignTab) alignTab.hidden = true;
+}
+
+/* ── Room View ── */
+function renderRoom() {
+  const task = state.currentTask;
+  const v = state.currentVerdict;
+  const phase = $("#room-phase");
+  const status = $("#room-status");
+  const seatsGrid = $("#room-seats");
+  const controls = $("#room-controls");
+
+  if (!task && !v) {
+    if (phase) phase.textContent = "等待提交问题…";
+    if (status) status.textContent = "等待开庭";
+    if (seatsGrid) seatsGrid.innerHTML = "";
+    $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+    return;
+  }
+
+  // Merge live seat results with pending seat list
+  let liveResults = [];
+  if (v?.web_bridge?.raw_results) {
+    liveResults = v.web_bridge.raw_results;
+  } else if (task) {
+    const diag = task.progress_diagnostics || {};
+    const diagSeats = diag.seats || [];
+    liveResults = diagSeats.map(s => ({
+      seat: s.seat || s.id,
+      seat_name: s.seat_name || s.name || s.seat,
+      status: s.state || s.status || "waiting",
+      ok: s.state === "complete" || s.state === "done" || s.status === "ok" || s.status === "answered",
+    }));
+  }
+
+  // Build full seat list: start from pending, overwrite with live data
+  const pending = state._pendingSeats || resolveActiveSeats();
+  const liveMap = {};
+  liveResults.forEach(s => { liveMap[s.seat] = s; });
+
+  const allSeats = pending.map(ps => {
+    const live = liveMap[ps.id];
+    if (live) {
+      return { ...ps, status: live.status, ok: live.ok, name: live.seat_name || ps.name };
+    }
+    return { ...ps, status: ps.state || "waiting", ok: false };
+  });
+
+  // Also add any live seats not in pending
+  liveResults.forEach(s => {
+    if (!allSeats.find(as => as.id === s.seat)) {
+      const seatInfo = PARLIAMENT_SEATS.find(ps => ps.id === s.seat) || {};
+      allSeats.push({
+        id: s.seat, name: s.seat_name || seatInfo.name || s.seat,
+        channel: seatInfo.channel || "", color: seatInfo.color || "#64748b",
+        status: s.status, ok: s.ok,
+      });
+    }
+  });
+
+  const completed = allSeats.filter(s => s.ok || s.status === "complete" || s.status === "done" || s.status === "answered").length;
+  const total = Math.max(1, allSeats.length);
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  if (task?.status === "running") {
+    if (phase) {
+      if (completed === 0) phase.textContent = "Grand Judge 已开庭，席位正在准备发言…";
+      else if (completed < total) phase.textContent = `${completed}/${total} 席已完成独立发言，${total - completed} 席仍在思考`;
+      else phase.textContent = "全席位发言完毕，正在汇总…";
+    }
+    if (status) status.textContent = `进行中 · ${completed}/${total} 席`;
+    setProgress(pct || (task.progress ? Math.round(task.progress * 100) : 0), "");
+    $("#btn-pause-judge").classList.remove("hidden");
+    $("#btn-stop-judge").classList.remove("hidden");
+    $("#btn-resume-judge").classList.add("hidden");
+  } else if (task?.status === "complete" || v) {
+    if (phase) phase.textContent = "裁决完成，报告已生成";
+    if (status) status.textContent = `已完成 · ${completed}/${total} 席`;
+    setProgress(100, "");
+    $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+  } else if (task?.status === "failed") {
+    if (phase) phase.textContent = "裁决失败：" + (task.error || "未知错误");
+    if (status) status.textContent = "失败";
+    $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+  } else {
+    if (phase) phase.textContent = task?.current_step || "处理中…";
+    if (status) status.textContent = task?.status || "—";
+  }
+
+  // Render all seat cards
+  if (seatsGrid) {
+    seatsGrid.innerHTML = allSeats.map(s => {
+      const name = s.name || s.id;
+      let statusClass = "seat-waiting";
+      let statusLabel = "等待中";
+      if (s.ok || s.status === "complete" || s.status === "done" || s.status === "answered") {
+        statusClass = "seat-answered"; statusLabel = "已回答";
+      } else if (s.status === "submitted" || s.status === "running" || s.status === "speaking") {
+        statusClass = "seat-submitted"; statusLabel = "发言中";
+      } else if (s.status === "timeout" || s.status === "failed") {
+        statusClass = "seat-timeout"; statusLabel = "超时";
+      } else if (s.status === "skipped") {
+        statusClass = "seat-skipped"; statusLabel = "跳过";
+      } else if (s.status === "unavailable") {
+        statusClass = "seat-skipped"; statusLabel = "不可用";
+      }
+      return `
+        <div class="room-seat-card ${s.ok ? 'is-answered' : (s.status==='submitted'||s.status==='running'||s.status==='speaking')?'is-active':''}">
+          <div class="seat-name" style="color:${escapeAttr(s.color || '#64748b')}">${escapeHtml(name)}</div>
+          <div class="seat-channel">${escapeHtml(s.channel || "")}</div>
+          <span class="seat-status ${statusClass}">${statusLabel}</span>
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+/* ── Report View ── */
+function renderReport() {
+  const v = state.currentVerdict;
+  const container = $("#report-content");
+  if (!v) {
+    container.innerHTML = '<div class="report-empty"><h3>尚无裁决报告</h3><p>提交问题并等待裁决完成后，报告将在此显示。</p></div>';
+    return;
+  }
+
+  const conf = v.confidence || 0;
+  const confClass = conf >= 80 ? "confidence-high" : conf >= 60 ? "confidence-mid" : "confidence-low";
+  const reasons = (v.key_reasons || v.reasons || []).slice(0, 5);
+  const divergences = (v.divergences || v.disagreements || []);
+  const nextSteps = (v.next_steps || []);
+  const report = v.final_report || {};
+  const viewUrl = (v.exports?.html) || (v.run_id ? API_BASE + "/api/runs/" + v.run_id + "/index.html" : "");
+
+  container.innerHTML = `
+    <div class="report-hero">
+      <div class="verdict-conclusion">${escapeHtml(v.one_liner || report.title || "裁决结论")}</div>
+      <div class="verdict-meta">
+        <span class="${confClass}">置信度 ${conf}%</span>
+        <span>${v.seat_count || (v.web_bridge?.requested_count) || "—"} 席参审</span>
+        <span>${v.mode || state.selectedMode}</span>
+      </div>
+    </div>
+    ${reasons.length ? `
+    <div class="report-section">
+      <h3>关键理由</h3>
+      <ul>${reasons.map(r => `<li>${escapeHtml(typeof r === "string" ? r : (r.text || r.reason || ""))}</li>`).join("")}</ul>
+    </div>` : ""}
+    ${divergences.length ? `
+    <div class="report-section">
+      <h3>主要分歧</h3>
+      <ul>${divergences.map(d => `<li>${escapeHtml(typeof d === "string" ? d : (d.text || d.description || ""))}</li>`).join("")}</ul>
+    </div>` : ""}
+    ${v.risks || v.uncertainty ? `
+    <div class="report-section">
+      <h3>风险与不确定性</h3>
+      <p>${escapeHtml(v.risks || v.uncertainty || "—")}</p>
+    </div>` : ""}
+    ${nextSteps.length ? `
+    <div class="report-section">
+      <h3>下一步建议</h3>
+      <ul>${nextSteps.map(s => `<li>${escapeHtml(typeof s === "string" ? s : (s.action || s.text || ""))}</li>`).join("")}</ul>
+    </div>` : ""}
+    <div class="report-section">
+      <h3>高级详情</h3>
+      <p style="font-size:12px;">
+        ${v.run_id ? `Run ID: ${escapeHtml(v.run_id)} | ` : ""}
+        ${viewUrl ? `<a href="${escapeAttr(viewUrl)}" target="_blank">Hermes 完整报告</a> | ` : ""}
+        ${v.verdict ? `<a href="#" onclick="openRawVerdict();return false">JSON</a>` : ""}
+      </p>
+    </div>
+    <div class="report-actions">
+      ${viewUrl ? `<a href="${escapeAttr(viewUrl)}" target="_blank" class="btn-primary">打开完整报告</a>` : ""}
+      <button onclick="saveToMemory()">存入记忆</button>
+    </div>
+  `;
+}
+
+function openRawVerdict() {
+  const v = state.currentVerdict;
+  if (!v) return;
+  const w = window.open("", "_blank");
+  w.document.write("<pre>" + escapeHtml(JSON.stringify(v, null, 2)) + "</pre>");
+}
+
+function saveToMemory() {
+  const v = state.currentVerdict;
+  if (!v) return;
+  try {
+    const mem = JSON.parse(localStorage.getItem("ai_judge_memory") || "[]");
+    mem.unshift({
+      question: state.workflow.rawUserInput || v.question || "",
+      verdict: v.one_liner || "",
+      confidence: v.confidence || 0,
+      run_id: v.run_id,
+      time: new Date().toISOString(),
+    });
+    // Keep max 50
+    if (mem.length > 50) mem.length = 50;
+    localStorage.setItem("ai_judge_memory", JSON.stringify(mem));
+    renderMemory();
+  } catch (_) {}
+}
+
+/* ── Memory View ── */
+function renderMemory() {
+  const list = $("#memory-list");
+  if (!list) return;
+  try {
+    const mem = JSON.parse(localStorage.getItem("ai_judge_memory") || "[]");
+    if (!mem.length) {
+      list.innerHTML = '<div class="memory-empty"><p>尚无已保存的裁决记录</p></div>';
+      return;
+    }
+    list.innerHTML = mem.map((item, i) => {
+      const timeStr = item.time ? new Date(item.time).toLocaleString("zh-CN") : "";
+      return `
+        <div class="memory-item" onclick="loadMemoryVerdict('${escapeAttr(item.run_id)}')">
+          <div class="mem-question">${escapeHtml(item.question)}</div>
+          <div class="mem-verdict">${escapeHtml(excerpt(item.verdict, 120))}</div>
+          <div class="mem-meta">
+            <span class="mem-confidence">可信度 ${item.confidence}%</span>
+            <span>${escapeHtml(timeStr)}</span>
+            <span>${escapeHtml(item.run_id || "")}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } catch (_) {
+    list.innerHTML = '<div class="memory-empty"><p>无法读取记忆</p></div>';
+  }
+}
+
+async function loadMemoryVerdict(runId) {
+  if (!runId) return;
+  try {
+    const res = await fetch(API_BASE + "/api/judge/" + runId + "/verdict");
+    const v = await res.json();
+    if (res.ok) {
+      state.currentVerdict = v;
+      state.workflow.rawUserInput = v.question || "";
+      renderVerdict(v);
+      switchTab("report");
+    }
+  } catch (_) {}
+}
+
+
+/* ── More View ── */
+function currentRunId() {
+  return state.workflow.runId || state.currentRunId || state.currentVerdict?.run_id || "";
+}
+
+function moreStatusClass(status) {
+  if (status === "ready") return "ready";
+  if (status === "context") return "context";
+  return "pending";
+}
+
+function moreStatusLabel(feature) {
+  if (feature.status === "ready") return "可用";
+  if (feature.status === "context") return currentRunId() ? "可用" : "需要 run";
+  return "待接入";
+}
+
+function renderMore() {
+  const grid = $("#more-groups");
+  if (!grid) return;
+  grid.innerHTML = MORE_FEATURES.map(feature => `
+    <article class="more-card">
+      <div class="more-card-header">
+        <div>
+          <div class="more-title">${escapeHtml(feature.title)}</div>
+          <div class="more-desc">${escapeHtml(feature.desc)}</div>
+        </div>
+        <span class="more-status ${moreStatusClass(feature.status)}">${escapeHtml(moreStatusLabel(feature))}</span>
+      </div>
+      <button type="button" data-more-action="${escapeAttr(feature.id)}">${escapeHtml(feature.action)}</button>
+    </article>
+  `).join("");
+}
+
+async function fetchJson(path, options) {
+  const res = await fetch(API_BASE + path, options || {});
+  let data = null;
+  try { data = await res.json(); } catch (_) { data = { status: res.status, text: await res.text() }; }
+  if (!res.ok) return { ok: false, status: res.status, data };
+  return { ok: true, status: res.status, data };
+}
+
+function renderMoreDetail(title, summary, payload) {
+  const detail = $("#more-detail");
+  if (!detail) return;
+  detail.classList.remove("hidden");
+  detail.innerHTML = `
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(summary || "")}</p>
+    <pre>${escapeHtml(JSON.stringify(payload || {}, null, 2))}</pre>
+  `;
+}
+
+async function openMoreFeature(id) {
+  const runId = currentRunId();
+  if (id === "followup") {
+    renderMoreDetail("继续追问", runId
+      ? "当前以补充裁决 / rescue / recheck 后端承载，轻量聊天输入不自动重跑全席位。"
+      : "需要先打开一个报告或历史 run，系统才能带入摘要、结论、分歧和附件上下文。",
+      runId ? {
+        run_id: runId,
+        available_routes: [
+          `/api/judge/${runId}/supplement`,
+          `/api/judge/${runId}/rescue`,
+          `/api/judge/${runId}/recheck`
+        ],
+        policy: "follow-up uses existing run context; full rerun stays in Ask"
+      } : { required_context: "run_id" });
+    return;
+  }
+  if (id === "logs") {
+    const recent = await fetchJson("/api/runs/recent");
+    renderMoreDetail("运行记录", "最近运行只展示摘要和报告入口，trace/log 原文留给高级详情。", recent);
+    return;
+  }
+  if (id === "evidence") {
+    if (!runId) {
+      renderMoreDetail("证据", "需要当前 run 才能查看证据缺口。", { required_context: "run_id" });
+      return;
+    }
+    renderMoreDetail("证据", "当前 run 的 evidence gaps。", await fetchJson(`/api/judge/${runId}/evidence-gaps`));
+    return;
+  }
+  if (id === "settings") {
+    const [modes, seats, bridge] = await Promise.all([
+      fetchJson("/api/modes"),
+      fetchJson("/api/seats"),
+      fetchJson("/api/bridge/status")
+    ]);
+    renderMoreDetail("设置", "普通裁决默认不包含 Claude；如需可通过显式席位选择或实验模式启用。", { modes, seats, bridge });
+    return;
+  }
+  if (id === "werewolf") {
+    const [boards, sessions] = await Promise.all([
+      fetchJson("/api/werewolf/boards"),
+      fetchJson("/api/werewolf/sessions")
+    ]);
+    renderMoreDetail("狼人杀", "入口已接真实后端；开局和替补操作保留在实验模式流程。", { boards, sessions });
+    return;
+  }
+  if (id === "sports") {
+    const [health, summary] = await Promise.all([
+      fetchJson("/api/worldcup-pool/health"),
+      fetchJson("/api/worldcup-pool/runtime-summary")
+    ]);
+    renderMoreDetail("赛事预测", "模拟研究，不是现实投注建议。完整页面：/worldcup_pool.html", { health, summary, full_page: "/worldcup_pool.html" });
+    return;
+  }
+  if (id === "gavel") {
+    const digest = await fetchJson("/api/gavel/digest");
+    const runGavel = runId ? await fetchJson(`/api/gavel/${runId}`) : { ok: false, data: { required_context: "run_id" } };
+    renderMoreDetail("签字 / 归档", "Human Gavel 和归档状态。", { digest, current_run: runGavel });
+    return;
+  }
+  if (id === "status") {
+    const [health, release, bridge] = await Promise.all([
+      fetchJson("/api/health"),
+      fetchJson("/api/release/status"),
+      fetchJson("/api/bridge/status")
+    ]);
+    renderMoreDetail("系统状态", "系统正常 · P3.x · 已封存；高级详情如下。", { health, release, bridge });
+  }
+}
+
+/* ── Core: Submit Judge (two-phase: pre-run confirm → actual submit) ── */
+function submitJudge() {
+  const input = $("#ask-input");
+  const question = (input?.value || "").trim();
+  if (!question) return;
+
+  state.workflow.rawUserInput = question;
+  state.workflow.selectedMode = state.selectedMode;
+  state.workflow.stage = WORKFLOW_STAGE.ALIGNING_INTENT;
+
+  // Phase 1: show pre-run confirmation, do NOT call /api/judge yet
+  showAlignView();
+  renderAlign();
+}
+
+async function executeJudge() {
+  const question = state.workflow.rawUserInput;
+  if (!question) return;
+
+  const cfg = getModeConfig(state.selectedMode);
+  state.workflow.stage = WORKFLOW_STAGE.RUNNING;
+  state.workflow.paused = false;
+  state.workflow.canPause = true;
+  state.workflow.completedSeats = new Set();
+  state.workflow.activeSeatCount = 0;
+  state.currentVerdict = null;
+
+  hideAlignTab();
+  switchTab("room");
+  setBusy(true);
+  setProgress(3, "提交中…");
+  $("#room-phase").textContent = "正在开庭…";
+  $("#room-status").textContent = "席位就绪中";
+
+  // Pre-render all seats as waiting before SSE events arrive
+  const activeSeats = resolveActiveSeats();
+  state._pendingSeats = activeSeats;
+  renderRoom();
+
+  try {
+    const res = await fetch(API_BASE + "/api/judge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        mode: state.selectedMode,
+        engine: state.engine,
+        mode_label: cfg.label,
+        system_instruction: cfg.systemInstruction,
+        attachments: (state.workflow.attachments || []).map(att => ({
+          id: att.id, name: att.name, size: att.size, type: att.type,
+          textPreview: att.textPreview || "", textContent: att.textContent || "",
+          contentAvailable: !!att.contentAvailable,
+        })),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+
+    state.currentRunId = data.run_id;
+    state.workflow.runId = data.run_id;
+    state.currentTask = {
+      run_id: data.run_id, question, status: "running", progress: 0.03,
+      current_step: "提交成功，等待席位回应…",
+    };
+    startProgress(data.run_id);
+    loadHistory();
+  } catch (err) {
+    state.workflow.stage = WORKFLOW_STAGE.FAILED;
+    state.workflow.canPause = false;
+    setProgress(0, "提交失败：" + err.message);
+    setBusy(false);
+  }
+}
+
+/* ── Resolve active seats from bridge or PARLIAMENT_SEATS ── */
+function resolveActiveSeats() {
+  if (state.bridge?.seats && state.bridge.seats.length > 0) {
+    return state.bridge.seats.map(s => ({
+      id: s.id || s.seat, name: s.name || s.id || s.seat, channel: s.channel || "",
+      ready: s.ready !== false, state: s.ready !== false ? "waiting" : "unavailable",
+    }));
+  }
+  // Fallback to PARLIAMENT_SEATS, filter by mode
+  const cfg = getModeConfig(state.selectedMode);
+  const count = cfg.id === "flash" ? Math.min(4, PARLIAMENT_SEATS.length) : PARLIAMENT_SEATS.length;
+  // Always exclude Claude unless explicitly selected (per settings policy)
+  let seats = PARLIAMENT_SEATS.filter(s => s.id !== "claude");
+  // For flash mode: keep only top N most reliable seats
+  if (cfg.id === "flash") {
+    const priority = ["chatgpt", "gemini", "deepseek", "qwen", "grok", "kimi"];
+    seats = priority.map(id => seats.find(s => s.id === id)).filter(Boolean).slice(0, count);
+  }
+  return seats.map(s => ({ id: s.id, name: s.name, channel: s.channel, color: s.color, ready: true, state: "waiting" }));
+}
+
+function startProgress(runId) {
+  if (state.eventSource) state.eventSource.close();
+  if (state.pollTimer) clearInterval(state.pollTimer);
+
+  if ("EventSource" in window) {
+    state.eventSource = new EventSource(API_BASE + "/api/judge/" + runId + "/progress");
+    state.eventSource.onmessage = event => handleTask(JSON.parse(event.data));
+    state.eventSource.onerror = () => {
+      if (state.eventSource) state.eventSource.close();
+      state.eventSource = null;
+      startPolling(runId);
+    };
+  } else {
+    startPolling(runId);
+  }
+}
+
+function startPolling(runId) {
+  state.pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(API_BASE + "/api/task/" + runId);
+      handleTask(await res.json());
+    } catch (_) {}
+  }, 1200);
+}
+
+function handleTask(task) {
+  if (task.error && !task.status) {
+    setProgress(0, task.error);
+    setBusy(false);
+    return;
+  }
+  if (state.workflow.stage === WORKFLOW_STAGE.CANCELLED) return;
+  if (state.workflow.stage === WORKFLOW_STAGE.PAUSED) {
+    state.currentTask = task;
+    return;
+  }
+
+  state.currentTask = task;
+  const pct = Math.round((Number(task.progress) || 0) * 100);
+  setProgress(pct, task.current_step || task.status || "运行中");
+
+  // Update room rendering with task data
+  renderRoom();
+
+  if (task.status === "complete") {
+    cleanupProgress();
+    setBusy(false);
+    setProgress(100, "已完成");
+    if (task.result) renderVerdict(task.result);
+    else loadVerdict(task.run_id);
+    loadHistory();
+    state.workflow.stage = WORKFLOW_STAGE.COMPLETED;
+    state.workflow.canPause = false;
+  }
+  if (task.status === "failed" || task.status === "cancelled") {
+    cleanupProgress();
+    setBusy(false);
+    setProgress(pct, task.error || task.status);
+    state.workflow.stage = task.status === "cancelled" ? WORKFLOW_STAGE.CANCELLED : WORKFLOW_STAGE.FAILED;
+    state.workflow.canPause = false;
+    renderRoom();
+  }
+}
+
+async function loadVerdict(runId) {
+  try {
+    const res = await fetch(API_BASE + "/api/judge/" + runId + "/verdict");
+    const v = await res.json();
+    if (res.ok) renderVerdict(v);
+  } catch (_) {}
+}
+
+function renderVerdict(v) {
+  state.currentVerdict = v;
+  renderRoom();
+  renderReport();
+}
+
+/* ── Run Control (Pause/Resume/Stop) ── */
+async function pauseCurrentRun() {
+  const runId = state.workflow.runId || state.currentRunId;
+  if (!runId) return;
+  try {
+    const res = await fetch(API_BASE + "/api/runs/" + runId + "/pause", { method: "POST" });
+    if (res.ok) {
+      state.workflow.stage = WORKFLOW_STAGE.PAUSED;
+      state.workflow.paused = true;
+      $("#btn-pause-judge").classList.add("hidden");
+      $("#btn-resume-judge").classList.remove("hidden");
+      $("#room-phase").textContent = "已暂停 — 不再启动新席位";
+    }
+  } catch (_) {}
+}
+
+async function resumeCurrentRun() {
+  const runId = state.workflow.runId || state.currentRunId;
+  if (!runId) return;
+  try {
+    const res = await fetch(API_BASE + "/api/runs/" + runId + "/resume", { method: "POST" });
+    if (res.ok) {
+      state.workflow.stage = WORKFLOW_STAGE.RUNNING;
+      state.workflow.paused = false;
+      $("#btn-pause-judge").classList.remove("hidden");
+      $("#btn-resume-judge").classList.add("hidden");
+      startProgress(runId);
+    }
+  } catch (_) {}
+}
+
+async function stopCurrentRun() {
+  const runId = state.workflow.runId || state.currentRunId;
+  if (!runId) return;
+  try {
+    const res = await fetch(API_BASE + "/api/runs/" + runId + "/stop", { method: "POST" });
+    if (res.ok) {
+      state.workflow.stage = WORKFLOW_STAGE.CANCELLED;
+      $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+      cleanupProgress();
+      setBusy(false);
+    }
+  } catch (_) {}
+}
+
+/* ── History ── */
+async function loadHistory() {
+  try {
+    const res = await fetch(API_BASE + "/api/runs/recent");
+    const data = await res.json();
+    if (res.ok && Array.isArray(data.runs)) {
+      state.historyRuns = data.runs;
+    }
+  } catch (_) {}
+}
+
+/* ── Busy State ── */
+function setBusy(busy) {
+  const btn = $("#btn-send");
+  if (btn) btn.disabled = busy;
+}
+
+/* ── Init ── */
+document.addEventListener("DOMContentLoaded", async () => {
+  bindUI();
+  switchTab("ask");
+  renderAsk();
+  loadSystemInfo();
+  await loadHistory();
+  renderMemory();
+});
+
+function bindUI() {
+  // Tab clicks
+  $$("#main-tabs .tab").forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
+
+  // Topbar status click
+  $("#topbar-status").addEventListener("click", toggleSysPanel);
+
+  // Mode toggle
+  $$(".ask-mode-toggle .seg").forEach(seg => {
+    seg.addEventListener("click", () => switchMode(seg.dataset.mode));
+  });
+
+  // Send button
+  $("#btn-send").addEventListener("click", () => submitJudge());
+
+  // Enter to submit
+  $("#ask-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitJudge();
+    }
+  });
+
+  // Attach file
+  $("#btn-attach-file").addEventListener("click", () => $("#file-input").click());
+  $("#file-input").addEventListener("change", handleFileAttach);
+
+  // P0-C: Drag-drop file support
+  const askInput = $("#ask-input") || $("#parliament-input");
+  if (askInput) {
+    askInput.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      askInput.classList.add("drag-over");
+    });
+    askInput.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      askInput.classList.remove("drag-over");
+    });
+    askInput.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      askInput.classList.remove("drag-over");
+      const files = e.dataTransfer?.files;
+      if (files && files.length) {
+        handleFileAttach.call({ files: [files] });
+      }
+    });
+  }
+
+
+  // Run controls
+  $("#btn-pause-judge").addEventListener("click", pauseCurrentRun);
+  $("#btn-resume-judge").addEventListener("click", resumeCurrentRun);
+  $("#btn-stop-judge").addEventListener("click", stopCurrentRun);
+
+  // Align buttons
+  $("#btn-start-judge").addEventListener("click", () => {
+    executeJudge();
+  });
+  $("#btn-edit-question").addEventListener("click", () => {
+    hideAlignTab();
+    switchTab("ask");
+    $("#ask-input").focus();
+  });
+  $("#btn-cancel-align").addEventListener("click", () => {
+    hideAlignTab();
+    state.workflow.stage = WORKFLOW_STAGE.IDLE;
+    switchTab("ask");
+  });
+
+  // More cards
+  const moreView = $("#view-more");
+  if (moreView) {
+    moreView.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-more-action]");
+      if (target) openMoreFeature(target.dataset.moreAction);
+    });
+  }
+
+  // Refresh button
+  $("#btn-refresh").addEventListener("click", async () => {
+    await loadHistory();
+    loadSystemInfo();
+    renderMemory();
+  });
+
+  // P0-A: Settings panel binding
+  const settingsBtn = $("#sidebar-settings-btn") || $("#btn-settings") || $("[data-action='settings']");
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", () => {
+      renderSettingsPanel();
+    });
+  }
+
+}
+
+async function handleFileAttach() {
+  const files = $("#file-input").files;
+  if (!files || !files.length) return;
+  for (const file of files) {
+    try {
+      const text = await file.text();
+      state.workflow.attachments.push({
+        id: "att_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        textPreview: text.slice(0, 1000),
+        textContent: text.slice(0, 50000),
+        contentAvailable: true,
+      });
+    } catch (_) {
+      state.workflow.attachments.push({
+        id: "att_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+        name: file.name, size: file.size, type: file.type,
+        contentAvailable: false,
+      });
+    }
+  }
+  $("#file-input").value = "";
+  renderAttachChips();
+}
+
+function renderAttachChips() {
+  const container = $("#attach-chips");
+  if (!container) return;
+  const atts = state.workflow.attachments || [];
+  if (atts.length === 0) {
+    container.innerHTML = "";
+    container.classList.add("hidden");
+    return;
+  }
+  container.classList.remove("hidden");
+  container.innerHTML = atts.map(a =>
+    `<span class="attach-chip-inline">
+      ${escapeHtml(a.name)}
+      <button class="chip-close" data-att-id="${escapeAttr(a.id)}" title="移除">&times;</button>
+    </span>`
+  ).join("");
+
+  // Bind remove handlers
+  container.querySelectorAll(".chip-close").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.attId;
+      state.workflow.attachments = (state.workflow.attachments || []).filter(a => a.id !== id);
+      renderAttachChips();
+    });
+  });
+}
+
+function removeAttachment(attId) {
+  state.workflow.attachments = (state.workflow.attachments || []).filter(a => a.id !== attId);
+  renderAttachChips();
+  renderAlign();
+}
+
+console.info("[AI Judge] P3.8 Client Rehydration loaded", AI_JUDGE_CLIENT_BUILD);
+
+
+// P0-F: Report overlay with null check
+function openParliamentReportOverlay() {
+  if (!state.currentVerdict && !state.workflow?.currentVerdict) {
+    const msg = document.createElement("div");
+    msg.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:24px 32px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;font-size:15px;";
+    msg.innerHTML = "<p>报告尚未生成。请先运行裁决，完成后报告将自动生成。</p><button onclick=\"this.parentElement.remove()\" style=\"margin-top:12px;padding:8px 16px;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer\">知道了</p>";
+    document.body.appendChild(msg);
+    return;
+  }
+  const verdict = state.currentVerdict || state.workflow?.currentVerdict;
+  const runId = verdict?.run_id || state.currentRunId;
+  if (runId) {
+    const url = `${window.location.origin}/api/runs/${runId}/index.html`;
+    window.open(url, "_blank");
+  }
+}

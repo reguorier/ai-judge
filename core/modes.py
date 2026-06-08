@@ -24,6 +24,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+DEFAULT_OPTIONAL_SEATS = {"claude"}
+
 JURY_MODES: dict[str, dict[str, Any]] = {
     "flash": {
         "name": "Flash 快速陪审",
@@ -55,13 +57,13 @@ JURY_MODES: dict[str, dict[str, Any]] = {
         "name": "Standard 标准陪审",
         "name_en": "Standard Jury",
         "emoji": "⚖",
-        "seats": ["gemini", "deepseek", "claude", "kimi", "wenxin", "doubao"],
+        "seats": ["gemini", "deepseek", "kimi", "wenxin", "doubao"],
         "seat_rationale": (
-            "INTJ + INTP + INFJ + ENFP + ESFJ + ENTJ: 覆盖系统性分析、深度推理、"
-            "语义边界、市场叙事、中文合规、决策执行六大维度。6 席平衡裁决。"
+            "INTJ + INTP + ENFP + ESFJ + ENTJ: 覆盖系统性分析、深度推理、"
+            "市场叙事、中文合规、决策执行五大维度。Claude 保留为显式可选席位。"
         ),
         "description": (
-            "6 席平衡裁决，约 2 分钟出结果。"
+            "5 席平衡裁决，约 2 分钟出结果。"
             "适合大多数商业决策：财报分析、政策评估、技术对比。"
             "含证据溯源和共识检验，不包含完整异议分析。"
         ),
@@ -134,11 +136,13 @@ def resolve_mode(
     elif config["seats"] is None:
         # All configured seats for strategic
         from core.seat_personas import SEAT_PERSONAS
-        config["seats"] = list(SEAT_PERSONAS.keys())
+        config["seats"] = [seat for seat in SEAT_PERSONAS.keys() if seat not in DEFAULT_OPTIONAL_SEATS]
         config["_seats_override"] = False
+        config["_optional_seats_excluded"] = sorted(DEFAULT_OPTIONAL_SEATS)
     else:
         config["_seats_override"] = False
 
+    config.setdefault("_optional_seats_excluded", [] if override_seats else sorted(DEFAULT_OPTIONAL_SEATS & set(SEAT_PERSONAS.keys())) if mode == "strategic" else [])
     config["_mode"] = mode
     return config
 

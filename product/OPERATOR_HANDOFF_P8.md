@@ -11,9 +11,9 @@ AIGC:
 
 # Operator Handoff Report — P8.16 (Recovery)
 
-**Generated**: 2026-06-03T15:31 UTC
-**Build ID**: p8.7-drift-sentinel-e2e-v1
-**Run ID**: 1142374c8b6d
+**Generated**: 2026-06-03T15:31 UTC  
+**Build ID**: p8.7-drift-sentinel-e2e-v1  
+**Run ID**: 1142374c8b6d  
 **Handoff Status**: **PASS**
 
 ---
@@ -82,13 +82,13 @@ All stop-line conditions clear → **GO**.
 
 ## 6. Drift Sentinel
 
-**Status**: DRIFT_DETECTED
-**Files checked**: 47
-**Missing**: 0
-**Strict code changed**: 2
-**Generated changed**: 8
-**New untracked**: 45
-**Unexpected**: 0
+**Status**: DRIFT_DETECTED  
+**Files checked**: 47  
+**Missing**: 0  
+**Strict code changed**: 2  
+**Generated changed**: 8  
+**New untracked**: 45  
+**Unexpected**: 0  
 **Readiness**: pass
 
 **Strict code changes explained**:

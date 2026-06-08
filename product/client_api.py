@@ -49,6 +49,7 @@ def post_client_run():
             mode=str(data.get("mode") or "deep_judge"),
             auto_complete=bool(data.get("auto_complete", True)),
             total_seats=int(data.get("total_seats") or 3),
+            engine=str(data.get("engine") or "web"),
         )
     except ValueError as exc:
         return _json_error(str(exc), 400)

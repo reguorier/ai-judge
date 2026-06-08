@@ -1,0 +1,40 @@
+{
+  "name": "ai-judge-desktop-shell",
+  "version": "3.8.0",
+  "description": "AI Judge independent Electron desktop shell",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac dir"
+  },
+  "build": {
+    "appId": "com.aijudge.desktop",
+    "productName": "AI Judge",
+    "asar": true,
+    "mac": {
+      "icon": "../assets/AIJudgeIcon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "files": [
+      "src/**/*",
+      "renderer/**/*",
+      "resources/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/config.json",
+        "to": "config.json"
+      },
+      {
+        "from": "../assets/AIJudgeIcon.icns",
+        "to": "AIJudgeIcon.icns"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "30.5.1",
+    "electron-builder": "26.8.1"
+  }
+}

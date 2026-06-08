@@ -1,8 +1,7 @@
 """Client-first run orchestration for AI Judge.
 
-This is intentionally a thin local layer: it creates backend state, writes report
-artifacts, and exposes real pause/resume/stop state changes without expanding the
-legacy dashboard.
+P0 fix: deep_judge MUST consume real LLM / search-agent / seat_outputs before returning success.
+P0 fix: valid_seats MUST be computed from real seat matrix, not hardcoded to total_seats.
 """
 
 from __future__ import annotations
@@ -12,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from product.archive.vault_exporter import archive_report
+from product.deep_judge_runner import build_deep_judge_metadata_block, run_deep_judge
 from product.followup.followup_api import create_followup
 from product.reporting.final_report_builder import build_client_final_report, default_reports_root, make_run_id, title_from_question, write_report_bundle
 from product.reporting.report_schema import SUMMARY_SCHEMA_VERSION, mode_label, normalize_mode, utc_now_iso
@@ -49,6 +49,10 @@ def create_client_run(
     auto_complete: bool = True,
     reports_root: Path | None = None,
     total_seats: int = 3,
+    engine: str = "local",
+    search_agent_output: dict[str, Any] | None = None,
+    legal_analysis: dict[str, Any] | None = None,
+    seat_outputs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     question = question.strip()
     if not question:
@@ -56,14 +60,15 @@ def create_client_run(
     mode = normalize_mode(mode)
     run_id = make_run_id()
     now = utc_now_iso()
-    summary = {
+    summary: dict[str, Any] = {
         "schema": SUMMARY_SCHEMA_VERSION,
         "run_id": run_id,
         "title": title_from_question(question),
         "mode": mode,
+        "engine": engine,
         "mode_label": mode_label(mode),
         "question": question,
-        "status": "running" if not auto_complete else "reporting",
+        "status": "running" if (not auto_complete or engine == "web") else "reporting",
         "created_at": now,
         "started_at": now,
         "completed_at": "",
@@ -78,19 +83,69 @@ def create_client_run(
         "human_status": "任务已创建。",
     }
     save_summary(summary, reports_root)
-    if auto_complete:
-        report = build_client_final_report(
-            run_id=run_id,
-            question=question,
-            mode=mode,
-            status="completed",
-            total_seats=total_seats,
-            valid_seats=total_seats,
-            failed_seats=0,
-            generated_at=now,
-        )
+    if auto_complete and engine != "web":
+        # ── deep_judge reasoning gate ──
+        if mode == "deep_judge":
+            dj_result = run_deep_judge(
+                question=question,
+                search_agent_output=search_agent_output,
+                legal_analysis=legal_analysis,
+                seat_outputs=seat_outputs,
+            )
+            summary.update(build_deep_judge_metadata_block(dj_result))
+
+            if not dj_result.ok:
+                summary["status"] = "failed"
+                summary["reliability"] = "none"
+                summary["valid_seats"] = 0
+                summary["completed_at"] = now
+                summary["human_status"] = "运行失败：深度裁决缺少实质性推理来源（LLM / search-agent / seat_outputs）。"
+                summary["final_report_path"] = ""
+                summary["html_report_path"] = ""
+                return present_summary(save_summary(summary, reports_root))
+
+            report = build_client_final_report(
+                run_id=run_id,
+                question=question,
+                mode=mode,
+                status="completed",
+                total_seats=total_seats,
+                valid_seats=total_seats,
+                failed_seats=0,
+                generated_at=now,
+                search_agent_output=dj_result.search_agent_output,
+                legal_analysis=dj_result.legal_analysis,
+                seat_outputs=dj_result.seat_outputs,
+            )
+        else:
+            report = build_client_final_report(
+                run_id=run_id,
+                question=question,
+                mode=mode,
+                status="completed",
+                total_seats=total_seats,
+                valid_seats=total_seats,
+                failed_seats=0,
+                generated_at=now,
+                search_agent_output=search_agent_output,
+                legal_analysis=legal_analysis,
+                seat_outputs=seat_outputs,
+            )
+
+        is_failure = report.get("_failure") is not None
+        if is_failure:
+            summary["status"] = "failed"
+            summary["human_status"] = f"运行失败：{report['_failure'].get('reason', '未知原因')}"
+            summary["reliability"] = "none"
+            summary["valid_seats"] = 0
+            summary["completed_at"] = now
+            return present_summary(save_summary(summary, reports_root))
+
         bundle = write_report_bundle(report, reports_root)
-        return present_summary(bundle["summary"])
+        result = present_summary(bundle["summary"])
+        if "deep_judge" in summary:
+            result["deep_judge"] = summary["deep_judge"]
+        return result
     return load_summary(run_id, reports_root)
 
 

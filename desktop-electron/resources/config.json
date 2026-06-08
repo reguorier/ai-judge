@@ -1,0 +1,6 @@
+{
+  "projectRoot": "~/Library/Application Support/AI Judge/runtime",
+  "host": "127.0.0.1",
+  "port": 8501,
+  "startupPath": "/"
+}

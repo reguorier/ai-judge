@@ -9,6 +9,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.closeout_sop import build_closeout_sop
+from core.domain_closeout import (
+    is_legal_domain,
+    render_legal_closeout,
+    render_legal_closeout_markdown,
+)
 
 
 FINAL_REPORT_SCHEMA = "ai_judge.final_report.v1"
@@ -176,16 +181,29 @@ def build_final_report(verdict: dict[str, Any]) -> dict[str, Any]:
         "verification_contract": _verification_contract(coverage, trust, verdict_label),
         "source_trace": {
             "run_id": _text(verdict.get("run_id") or "-"),
+            "question": question,
             "generated_at": generated_at,
             "basis": "模型原始回答、答案总结、席位互评、claim 评分、横纵收口与发布门禁。",
         },
     }
 
 
-def render_final_report_markdown(report: dict[str, Any]) -> str:
+def render_final_report_markdown(report: dict[str, Any], verdict: dict[str, Any] | None = None) -> str:
     """Render a final report payload to Markdown."""
     if not report:
         return ""
+    question = _text(
+        (verdict or {}).get("question")
+        or (report.get("source_trace") or {}).get("question")
+        or ""
+    )
+    if verdict and is_legal_domain(question):
+        return render_legal_closeout_markdown(
+            verdict,
+            report,
+            question,
+            _text(verdict.get("run_id") or report.get("run_id") or ""),
+        )
     executive = report.get("executive_summary") or {}
     sop = report.get("sop_closeout") or {}
     brief = report.get("decision_brief") or {}
@@ -340,10 +358,22 @@ def render_final_report_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines).strip()
 
 
-def render_final_report_html(report: dict[str, Any]) -> str:
+def render_final_report_html(report: dict[str, Any], verdict: dict[str, Any] | None = None) -> str:
     """Render a final report payload to escaped HTML."""
     if not report:
         return ""
+    question = _text(
+        (verdict or {}).get("question")
+        or (report.get("source_trace") or {}).get("question")
+        or ""
+    )
+    if verdict and is_legal_domain(question):
+        return render_legal_closeout(
+            verdict,
+            report,
+            question,
+            _text(verdict.get("run_id") or report.get("run_id") or ""),
+        )
     executive = report.get("executive_summary") or {}
     sop = report.get("sop_closeout") or {}
     meta = "".join(

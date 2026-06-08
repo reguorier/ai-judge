@@ -1,1 +1,1 @@
-"""AI Judge product web server and dashboard assets."""
+"""AI Judge product-facing runtime package."""
