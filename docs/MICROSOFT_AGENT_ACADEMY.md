@@ -17,7 +17,7 @@ Instead of only showing a Copilot/Cowork agent completing a task, the demo shows
 ## Project Summary
 
 ```text
-AI Judge is an open-source, local-first evaluation harness for Microsoft agent outputs. A Copilot/Cowork agent drafts a plan, answer, or code-review recommendation; AI Judge converts that output into a claim ledger, scores it with auditable formulas, attaches evidence objects, challenges weak claims with dissent, routes risk depth, and returns a human-final verdict package with a reasoning tree.
+AI Judge is a closed-core, local-first evaluation harness for Microsoft agent outputs. A Copilot/Cowork agent drafts a plan, answer, or code-review recommendation; AI Judge converts that output into a claim ledger, scores it with auditable formulas, attaches evidence objects, challenges weak claims with dissent, routes risk depth, and returns a human-final verdict package with a reasoning tree.
 ```
 
 ## Microsoft Product Lane
@@ -79,7 +79,7 @@ The Microsoft agent produces a plan or answer. AI Judge ingests the output, extr
 | 1:15-2:15 | AI Judge run | Feed the plan into AI Judge and produce verdict output |
 | 2:15-3:15 | Evidence proof | Show evidence objects, dissent checks, risk route, and reasoning tree |
 | 3:15-4:15 | Architecture | Show the Microsoft agent -> claim ledger -> evidence/dissent -> human verdict flow |
-| 4:15-5:00 | Why it wins | Local-first, auditable, human-final, open-source, useful beyond the demo |
+| 4:15-5:00 | Why it wins | Local-first, auditable, human-final, closed-core, useful beyond the demo |
 
 ## Application Answers
 
@@ -92,7 +92,7 @@ AI Judge for Microsoft Agent Reliability
 Short description:
 
 ```text
-An open-source evaluation harness that turns Microsoft agent outputs into auditable, human-final verdicts.
+A closed-core evaluation harness that turns Microsoft agent outputs into auditable, human-final verdicts.
 ```
 
 Long description:

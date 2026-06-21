@@ -5,7 +5,7 @@
 Title:
 
 ```text
-Show HN: AI Judge - open-source citation auditor for AI-generated answers
+Show HN: AI Judge - closed-core citation auditor for AI-generated answers
 ```
 
 First comment:
@@ -99,7 +99,7 @@ PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/f
 ## X Thread
 
 ```text
-I built AI Judge Citation Audit: an open-source tool that catches fabricated, weak, irrelevant, unverifiable, and contradicted citations in AI-generated answers.
+I built AI Judge Citation Audit: a closed-core tool with a public demo for catching fabricated, weak, irrelevant, unverifiable, and contradicted citations in AI-generated answers.
 
 The key rule: model-mentioned sources do not verify themselves.
 

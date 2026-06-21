@@ -47,3 +47,15 @@ growth/**/mail_outbox_backup_*
 
 # Local OpenReview / submission email backups
 growth/**/openreview_backup_emails_*
+
+# Local/private AI Judge runtime and publication artifacts
+runtime/
+product/runtime/
+reports/runtime/
+trace/
+artifacts/20*/
+CODEX_*.md
+RELEASE_SEAL_*.md
+docs/hackathons/
+docs/superpowers/plans/
+docs/superpowers/specs/

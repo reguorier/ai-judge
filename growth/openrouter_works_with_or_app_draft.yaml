@@ -1,0 +1,14 @@
+# Draft only. Do not submit to OpenRouterTeam/awesome-openrouter until the
+# logo and OpenRouter-backed public demo report are available.
+name: "AI Judge"
+description: "Local-first citation and decision audit layer for LLM outputs. Use OpenRouter models for FDJP semantic review, then generate source-isolated HTML/JSON reports with evidence status, dissent, and human-final gates."
+url: "https://github.com/reguorier/ai-judge"
+docs: "https://github.com/reguorier/ai-judge/blob/main/docs/OPENROUTER.md"
+# Do not submit until OpenRouter allows a closed-core/public-demo listing or
+# the owner creates a separate open-source adapter repo.
+source_available: null
+tags:
+  - research
+  - productivity
+  - developer-tools
+date_added: "2026-06-18"

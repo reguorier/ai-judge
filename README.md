@@ -7,11 +7,12 @@
   <img src="https://img.shields.io/badge/dissent-before%20confidence-orange" alt="dissent before confidence">
   <img src="https://img.shields.io/badge/reasoning-tree%20ready-38bdf8" alt="reasoning tree ready">
   <img src="https://img.shields.io/badge/local--first-macOS%20%2B%20Docker-black" alt="local-first">
-  <img src="https://img.shields.io/badge/license-BSL%201.1-blue" alt="BSL 1.1">
+  <img src="https://img.shields.io/badge/core-closed--core-black" alt="closed-core">
+  <img src="https://img.shields.io/badge/repo-private%20source%20of%20truth-334155" alt="private source of truth">
 </p>
 
 <p align="center">
-  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3 product overview" width="960">
+  <img src="assets/ai-judge-protected-core-hero.png" alt="AI Judge protected-core audit interface" width="960">
 </p>
 
 <h1 align="center">AI Judge v3.8.0</h1>
@@ -19,7 +20,7 @@
 <p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
 <p align="center"><strong>A source can exist and still fail to support the exact generated claim.</strong></p>
 <p align="center"><strong>Built for teams shipping AI agents:</strong> audit the answer, the source, and the judgment path before it reaches a user.</p>
-<p align="center">Star this repo if you want a practical judge layer for LLM outputs, RAG citations, and agent traces instead of another chatbot wrapper.</p>
+<p align="center">AI Judge is a closed-core commercial product. Public demos and benchmark artifacts show the trust protocol; the production runtime and core orchestration stay private.</p>
 
 <p align="center"><strong>Report-first scope:</strong> AI Judge's core product is the auditable report output: claim-level evidence, dissent, traceability, source/citation audit, claim-support and overclaim detection, and a human-final gate. Dashboard/workbench surfaces are optional internal aids, not the main product.</p>
 
@@ -48,6 +49,34 @@
 </p>
 
 ---
+
+## Current Status
+
+AI Judge is now managed as a private full-source repository with a public-safe demo and benchmark surface. The public story is intentionally narrow: **a source can be real and still fail to support the exact claim a model made**. AI Judge catches that gap before the answer is reused in a report, legal memo, README, client deliverable, or agent workflow.
+
+Recent progress:
+
+| Area | Current state |
+|---|---|
+| Product shape | v3.8 report-first flow: submit question, inspect run status, open final report, continue follow-up, archive evidence |
+| Main wedge | Source-isolated citation and claim-support audit, including overclaim detection |
+| Public demo | Hugging Face citation-audit Space remains live for lightweight evaluation |
+| Benchmarks | 100 deterministic citation cases plus hard-mode overclaim cases |
+| Beta signal | Controlled/expanded demo runs covered legal, product, data-audit, decision, and report-review tasks |
+| Readability | Reader-type adaptation improved external-user readability from 3.42 to 3.95 in Week 3 validation |
+| Integration path | Optional OpenRouter BYOK/Fusion route is documented for model-access experiments |
+| Commercial posture | Closed-core runtime; public materials are demos, docs, sanitized examples, and benchmark descriptions |
+
+## Why It Is Different
+
+AI Judge is not another model router or chatbot wrapper. It is a judgment layer around generated answers:
+
+- **Claim-span audit:** checks whether the cited source supports the exact claim, not merely a related topic.
+- **Source isolation:** keeps the raw model answer, model-mentioned sources, supplied evidence, fetched evidence, and audit result separate.
+- **Dissent before confidence:** preserves disagreement and blockers before raising a final confidence label.
+- **Human-final gate:** produces a report package for human signoff instead of silently rewriting the answer.
+- **Closed-core reliability work:** production browser/CDP collection, model-seat orchestration, recovery gates, and commercial workflow code stay private.
+- **Local-first posture:** designed for users who need evidence handling close to their own files, browser sessions, and review process.
 
 
 ## AI Judge Client-first Flow
@@ -101,7 +130,7 @@ Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citat
 
 The current growth strategy is intentionally constrained: prove the citation and claim-support protocol first, collect hard benchmark cases from professional users, and delay full SaaS monetization until there is visible demand. See [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](docs/AI_JUDGE_GROWTH_PLAYBOOK.md).
 
-For the shortest reproducible path, start with [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). For governance and legal-review handoffs, use the [`three-block governance packet`](docs/THREE_BLOCK_GOVERNANCE_PACKET.md): raw model answer, isolated evidence, and audit output stay separate.
+For the shortest reproducible path, start with [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). For governance and legal-review handoffs, use the [`three-block governance packet`](docs/THREE_BLOCK_GOVERNANCE_PACKET.md): raw model answer, isolated evidence, and audit output stay separate. For optional OpenRouter BYOK and Fusion testing, see [`docs/OPENROUTER.md`](docs/OPENROUTER.md).
 
 Try it in the browser first:
 
@@ -322,7 +351,7 @@ The current monetization path is intentionally narrow: prove citation audit valu
 
 ## Support
 
-AI Judge Citation Audit is source-available and free for single-file local evaluation. Support helps maintain citation hallucination benchmarks, demo reports, CI examples, Evidence Broker work, and anonymized AI Decision Audit examples.
+AI Judge Citation Audit has a public demo and free single-file evaluation surface. Support helps maintain citation hallucination benchmarks, demo reports, CI examples, Evidence Broker work, and anonymized AI Decision Audit examples while the production runtime stays closed-core.
 
 Current support paths:
 
@@ -528,15 +557,17 @@ ai-judge/
 └── docker-compose.yml
 ```
 
-## Open-Core Boundary
+## Protected Repository Boundary
 
-| Public in this repo | Paid/private runtime |
+| Public-safe surface | Private closed-core surface |
 |---|---|
-| CLI surface and v2/v3/v3.2/v3.3 demos | Production browser/CDP collector |
-| Scoring formulas, cognitive proxy functions, evidence/dissent demo, persona/trace tools | Managed multi-model runtime |
-| Codex/Hermes-compatible `SKILL.md` | SaaS license server |
-| Docker, schemas, docs, examples | Team deployment and support layer |
-| Swift bridge source | Hosted integrations |
+| Product positioning, screenshots, demo links, sanitized benchmark descriptions | Production browser/CDP collector and fixed-tab adapters |
+| Synthetic examples and public citation-audit cases | Model-seat orchestration, recovery gates, and web collection internals |
+| Public report contract and governance packet descriptions | Commercial runtime, team deployment, and license/support workflows |
+| Partner/investor summaries and public-safe case studies | Raw runs, user facts, seat transcripts, local artifacts, and growth notes |
+| Hugging Face demo and optional OpenRouter BYOK docs | Proprietary implementation, private acceptance artifacts, and operational tooling |
+
+See [`docs/PUBLIC_PRIVATE_BOUNDARY.md`](docs/PUBLIC_PRIVATE_BOUNDARY.md) before publishing any branch, repo, artifact, screenshot, or release.
 
 ## Documentation
 
@@ -555,7 +586,7 @@ ai-judge/
 
 ## License
 
-BSL 1.1. Source available. Production use requires a license.
+AI Judge is not open source. Current repository contents are proprietary/private unless a separate written license says otherwise. Earlier public source-available snapshots may retain the license terms under which they were originally published, but the active product direction is closed-core.
 
 ## Contact
 

@@ -17,7 +17,7 @@ Record the browser window at 1920x1080. The page auto-advances through a 90-seco
 ```text
 AI answers can sound right and still fail judgment.
 
-AI Judge is an open-source, local-first evaluation harness for developers who need more than another confident model response.
+AI Judge is a closed-core, local-first evaluation and audit layer for teams who need more than another confident model response.
 
 Instead of asking one model to judge another, AI Judge turns the answer into a jury workflow.
 
@@ -29,7 +29,7 @@ For the Microsoft Agent Academy lane, a Copilot or Cowork agent can draft a plan
 
 The key design choice is simple: the AI does not take the gavel. The human keeps the final decision, but now sees the evidence, weak spots, disagreement, dissent, and reasoning path.
 
-AI Judge is open source, local-first, and ready to run today.
+AI Judge has a public demo and benchmark surface, while the production runtime and core orchestration remain private.
 
 Clone the repo, run the harness, add your own failure cases, and help define what trustworthy agent judgment should look like.
 ```
@@ -43,7 +43,7 @@ Clone the repo, run the harness, add your own failure cases, and help define wha
 | 30-45s | Evidence and reasoning tree | v3.2 adds evidence objects, dissent, risk routing, and traceable reasoning |
 | 45-60s | Microsoft demo lane | Copilot/Cowork output enters AI Judge for verdicting |
 | 60-75s | Hard Truth Mode | Expose confidence vs judgment-quality gaps |
-| 75-90s | Repo and command | Open-source, local-first, ready to test |
+| 75-90s | Demo and benchmark | Closed-core product, public demo, ready for benchmark feedback |
 
 ## Product Hunt
 
@@ -81,7 +81,7 @@ Gallery asset suggestions:
 Title:
 
 ```text
-Show HN: AI Judge - an open-source jury for evaluating AI answers
+Show HN: AI Judge - a closed-core audit layer for evaluating AI answers
 ```
 
 Post:
@@ -95,8 +95,8 @@ v3.2 adds the auditability layer: evidence objects, dissent challenges, risk rou
 
 The final verdict stays with the human. AI Judge is meant to expose weak evidence and overconfident reasoning, not become another opaque judge model.
 
-Repo: https://github.com/reguorier/ai-judge
-Demo page: product/demo-video.html in the repo
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+Project: https://github.com/reguorier/ai-judge
 
 I would especially like feedback on what benchmark cases should be added and whether claim-level evaluation is the right interface for real decisions.
 ```

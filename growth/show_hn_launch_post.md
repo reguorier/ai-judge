@@ -11,7 +11,7 @@ https://news.ycombinator.com/submit
 ## Title
 
 ```text
-Show HN: AI Judge - open-source citation auditor for AI-generated answers
+Show HN: AI Judge - closed-core citation auditor for AI-generated answers
 ```
 
 ## URL
@@ -79,5 +79,5 @@ Fetching is useful, but it is not enough. A fetched page can exist and still be 
 If someone asks whether this is a business:
 
 ```text
-The open-source wedge is citation-level audit. The paid direction, if demand exists, is batch audit for Markdown/PDF/Docx, historical Replay Ledger, and CI/report export for teams that publish AI-generated research or client documents.
+The public wedge is citation-level audit: a live demo, benchmark cases, and public-safe reports. The paid direction, if demand exists, is batch audit for Markdown/PDF/Docx, historical Replay Ledger, and CI/report export for teams that publish AI-generated research or client documents. The production runtime is closed-core.
 ```

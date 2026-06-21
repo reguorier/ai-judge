@@ -7,7 +7,7 @@ name = "ai-judge"
 version = "3.8.0"
 description = "Local-first citation audit and AI jury skill for evidence-bounded LLM output verification"
 readme = "README.md"
-license = {text = "BSL-1.1"}
+license = {text = "Proprietary"}
 requires-python = ">=3.11"
 authors = [{name = "AI Judge Contributors"}]
 keywords = ["ai", "jury", "multi-model", "verdict", "cross-validation", "llm", "audit", "council", "codex-skill", "scoring", "hard-truth", "cognitive-proxy", "seat-personas", "evidence-tracing", "dissent", "reasoning-tree", "risk-router"]
