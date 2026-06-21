@@ -38,6 +38,41 @@ def _safe_str(val: Any) -> str:
     return str(val)
 
 
+def _audit_summary_lines(audit: dict[str, Any]) -> list[str]:
+    if not isinstance(audit, dict) or not audit:
+        return []
+    pipeline = audit.get("pipeline") if isinstance(audit.get("pipeline"), dict) else {}
+    protocol = audit.get("three_round_protocol") if isinstance(audit.get("three_round_protocol"), dict) else {}
+    board = audit.get("information_board") if isinstance(audit.get("information_board"), dict) else {}
+    round2 = audit.get("round2_scheduler") if isinstance(audit.get("round2_scheduler"), dict) else {}
+    late_evidence = audit.get("late_evidence") if isinstance(audit.get("late_evidence"), dict) else {}
+    scoring = audit.get("scoring") if isinstance(audit.get("scoring"), dict) else {}
+    peach_winners = scoring.get("peach_winners") or []
+    lines = [
+        f"- schema: {audit.get('schema', '')}",
+        f"- pipeline_version: {pipeline.get('version', '')}",
+        f"- scoring_engine: {pipeline.get('scoring_engine', '')}",
+        f"- frame_lock: {audit.get('frame_lock', '')}",
+        f"- protocol_hash: {protocol.get('protocol_hash', '')}",
+        f"- information_board: {board.get('board_hash', '')} / seats={board.get('seat_count', 0)}",
+        (
+            "- round2_scheduler: "
+            f"scheduled={round2.get('scheduled_count', 0)} "
+            f"completed={round2.get('completed_count', 0)} "
+            f"deferred={round2.get('deferred_count', 0)}"
+        ),
+        f"- late_evidence_queue: {late_evidence.get('deferred_count', 0)}",
+        f"- peach_winners: {', '.join(str(x) for x in peach_winners[:8]) if peach_winners else 'None'}",
+    ]
+    phases = pipeline.get("phases") or []
+    if phases:
+        lines.append("- phases:")
+        for phase in phases[:8]:
+            if isinstance(phase, dict):
+                lines.append(f"  - {phase.get('id', '')}: {phase.get('label', '')} ({phase.get('count', 0)})")
+    return lines
+
+
 def write_hermes_outputs(run_dir: Path, vault_dir: Path | None = None) -> dict[str, Any]:
     """
     Generate hermes-output.json, hermes-output.md, and obsidian-run-note.md
@@ -96,6 +131,7 @@ def write_hermes_outputs(run_dir: Path, vault_dir: Path | None = None) -> dict[s
     seats_raw = verdict.get("seats", [])
     seat_roster = verdict.get("seat_roster", [])
     seat_scores = verdict.get("seat_scores", [])
+    audit = verdict.get("audit") if isinstance(verdict.get("audit"), dict) else {}
 
     # Build seats list
     seats: list[dict[str, Any]] = []
@@ -192,6 +228,7 @@ def write_hermes_outputs(run_dir: Path, vault_dir: Path | None = None) -> dict[s
         "top_claims": top_claims,
         "dissent_flags": dissent_flags,
         "evidence_gaps": evidence_gaps,
+        "audit": audit,
         "publish_gate": {
             "verdict_exists": source_artifacts["verdict"],
             "trace_exists": source_artifacts["trace"],
@@ -265,6 +302,11 @@ def write_hermes_outputs(run_dir: Path, vault_dir: Path | None = None) -> dict[s
     else:
         lines.append("None")
     lines.append("")
+    if audit:
+        lines.append("## Protocol Audit")
+        lines.append("")
+        lines.extend(_audit_summary_lines(audit))
+        lines.append("")
     lines.append("## Publish Gate")
     lines.append("")
     pg = hermes_output["publish_gate"]
@@ -355,7 +397,16 @@ def write_hermes_outputs(run_dir: Path, vault_dir: Path | None = None) -> dict[s
     obsidian_lines.append(f"- confidence: {confidence}")
     obsidian_lines.append(f"- seat_count: {seat_count}")
     obsidian_lines.append(f"- top_claims: {len(top_claims)}")
+    if audit:
+        obsidian_lines.append(f"- pipeline_version: {(audit.get('pipeline') or {}).get('version', '')}")
+        obsidian_lines.append(f"- information_board: {((audit.get('information_board') or {}).get('board_hash') or '')}")
+        obsidian_lines.append(f"- frame_lock: {audit.get('frame_lock', '')}")
     obsidian_lines.append("")
+    if audit:
+        obsidian_lines.append("## Protocol Audit")
+        obsidian_lines.append("")
+        obsidian_lines.extend(_audit_summary_lines(audit))
+        obsidian_lines.append("")
     obsidian_lines.append("## 席位表现")
     obsidian_lines.append("")
     obsidian_lines.extend(seat_table_lines)

@@ -52,6 +52,19 @@ def test_cdp_tab_uses_provider_label_as_fallback():
     assert match_cdp_tab(config, [tab]) is tab
 
 
+def test_cdp_tab_matches_chrome_error_page_by_provider_domain_title():
+    config = {
+        "url": "https://chat.qwen.ai/",
+        "fresh_url": "https://chat.qwen.ai/",
+        "match_domains": ["chat.qwen.ai"],
+        "browser_label": "Qwen Studio / chat.qwen.ai",
+        "provider": "Qwen Studio",
+    }
+    tab = CDPTab(title="chat.qwen.ai", url="chrome-error://chromewebdata/")
+
+    assert match_cdp_tab(config, [tab]) is tab
+
+
 def test_cdp_tab_can_disable_label_fallback_for_reused_provider_titles():
     config = {
         "url": "https://agent.minimax.io",

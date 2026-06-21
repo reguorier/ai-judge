@@ -35,9 +35,14 @@ from core.seat_execution_policy import annotate_execution_results
 from core.seat_personas import SEAT_PERSONAS, render_jury_prompt
 from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
-    _deepseek_prepare_verified,
-    _doubao_prepare_verified,
     _humanized_sleep,
+    _quality_mode_failure,
+    _quality_mode_policy_snapshot,
+    _quality_mode_prepare_required,
+    _quality_mode_prepare_verified,
+    _quality_mode_required_mode,
+    _quality_mode_trace_action,
+    _quality_mode_trace_message,
     chrome_apple_events_status,
     list_chrome_tabs,
     run_chrome_fixed_tabs,
@@ -54,15 +59,34 @@ RETRYABLE_WEB_ERROR_CODES = {
     "cdp_unavailable",
     "response_timeout",
     "slow_response_pending",
+    "response_below_minimum",
     "response_not_relevant",
     "model_page_error",
     "page_error",
     "chrome_crash",
     "fixed_tab_not_found",
     "deepseek_expert_mode_not_verified",
+    "doubao_expert_mode_not_verified",
+    "meta_quality_mode_not_verified",
+    "wenxin_quality_mode_not_verified",
+    "minimax_quality_mode_not_verified",
+    "yuanbao_quality_mode_not_verified",
+    "kimi_quality_mode_not_verified",
+    "qwen_quality_mode_not_verified",
+    "gemini_quality_mode_not_verified",
+    "stepfun_quality_mode_not_verified",
+    "xunfei_quality_mode_not_verified",
     "submit_unconfirmed",
     "send_button_not_found",
     "composer_busy",
+}
+
+BLOCKING_LOGIN_STATES = {
+    "missing",
+    "login_required",
+    "challenge_required",
+    "page_error",
+    "provider_account_restricted",
 }
 
 DEFAULT_URLS = {
@@ -80,6 +104,8 @@ DEFAULT_URLS = {
     "wenxin": "https://wenxin.baidu.com/new-chat",
     "mimo": "https://aistudio.xiaomimimo.com/#/chat",
     "meta": "https://www.meta.ai/",
+    "stepfun": "https://chat.stepfun.com/chats/new",
+    "xunfei": "https://xinghuo.xfyun.cn/desk",
 }
 
 DEFAULT_TARGETS = {
@@ -113,6 +139,16 @@ DEFAULT_TARGETS = {
         "provider": "Meta AI",
         "channel": "web",
         "browser_label": "Meta AI / meta.ai",
+    },
+    "stepfun": {
+        "provider": "StepFun",
+        "channel": "web",
+        "browser_label": "阶跃星辰 / chat.stepfun.com",
+    },
+    "xunfei": {
+        "provider": "科大讯飞",
+        "channel": "web",
+        "browser_label": "讯飞星火 / xinghuo.xfyun.cn",
     },
 }
 
@@ -172,6 +208,7 @@ def playwright_installed() -> bool:
 
 def default_config() -> dict[str, Any]:
     """Return a conservative editable bridge config template."""
+    quality_mode_policy = _quality_mode_policy_snapshot()
     return {
         "headless": True,
         "timeout_seconds": 120,
@@ -194,7 +231,7 @@ def default_config() -> dict[str, Any]:
         "chrome_launch_strategy": "open_app",
         "strict_chrome_profile_guard": True,
         "auto_terminate_wrong_cdp_profile": True,
-        "chrome_profile_marker_required": True,
+        "chrome_profile_marker_required": False,
         "chrome_profile_marker_path": str(Path.home() / "Documents/Playground/.omx/ai-judge/chrome-profile/AI_JUDGE_DEDICATED_PROFILE.txt"),
         "login_state_path": str(DATA_DIR / "seat_login_state.json"),
         "login_state_audit": True,
@@ -215,6 +252,7 @@ def default_config() -> dict[str, Any]:
         "input_selectors": DEFAULT_INPUT_SELECTORS,
         "submit_selectors": DEFAULT_SUBMIT_SELECTORS,
         "response_selectors": DEFAULT_RESPONSE_SELECTORS,
+        "quality_mode_policy": quality_mode_policy,
         "seats": {
             seat: {
                 "enabled": False,
@@ -235,6 +273,7 @@ def default_config() -> dict[str, Any]:
                 "execution_required": seat != "grok",
                 "best_effort": seat == "grok",
                 "exclude_from_publish_gate": seat == "grok",
+                "required_quality_mode": _quality_mode_required_mode(seat),
                 "fragile_page": seat in WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS or seat in {"chatgpt", "deepseek"},
                 "notes": "Set enabled=true after logging into this model in its isolated profile.",
             }
@@ -273,6 +312,9 @@ def load_bridge_config(path: str | Path | None = None) -> dict[str, Any]:
         if seat not in seats:
             seats[seat] = {}
         seats[seat].update(seat_config)
+    config["quality_mode_policy"] = _quality_mode_policy_snapshot()
+    for seat, seat_config in seats.items():
+        seat_config["required_quality_mode"] = _quality_mode_required_mode(seat)
 
     config["_config_path"] = str(target)
     config["_config_exists"] = True
@@ -323,8 +365,34 @@ def save_calibration(data: dict[str, Any], path: str | Path | None = None) -> Pa
     return target
 
 
-def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
-    """Return product-facing readiness for the isolated web bridge."""
+def _prefer_wake_cdp_status(cdp_status: dict[str, Any] | None, cdp_wake: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Use the successful wake probe if the immediate follow-up probe races and times out."""
+    if not isinstance(cdp_status, dict) or not isinstance(cdp_wake, dict):
+        return cdp_status
+    wake_status = cdp_wake.get("status")
+    if isinstance(wake_status, dict) and wake_status.get("available") and not cdp_status.get("available"):
+        failed_probe = dict(cdp_status)
+        adopted = dict(wake_status)
+        adopted["wake"] = cdp_wake
+        adopted["pre_wake_probe"] = failed_probe
+        adopted["adopted_from_wake"] = True
+        return adopted
+    cdp_status["wake"] = cdp_wake
+    return cdp_status
+
+
+def bridge_status(
+    path: str | Path | None = None,
+    *,
+    allow_wake: bool = False,
+    open_tabs: bool = False,
+) -> dict[str, Any]:
+    """Return product-facing readiness for the isolated web bridge.
+
+    Status reads are side-effect free by default. Dashboards poll this path
+    often, so waking Chrome CDP from here creates repeated bridge launch loops.
+    Explicit run execution or a dedicated wake action can pass allow_wake=True.
+    """
     config = load_bridge_config(path)
     calibration = load_calibration()
     installed = playwright_installed()
@@ -332,17 +400,17 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
     chrome_status = chrome_apple_events_status() if automation_driver == "chrome_apple_events" else None
     cdp_status = chrome_cdp_status(config) if automation_driver == "chrome_cdp" else None
     cdp_wake = None
-    if automation_driver == "chrome_cdp" and cdp_status and not cdp_status.get("available") and config.get("auto_wake_cdp", True):
-        cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=bool(config.get("auto_wake_open_tabs", True)))
+    if automation_driver == "chrome_cdp" and cdp_status and not cdp_status.get("available") and allow_wake and config.get("auto_wake_cdp", True):
+        cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=bool(open_tabs and config.get("auto_wake_open_tabs", True)))
         cdp_status = chrome_cdp_status(config)
-        cdp_status["wake"] = cdp_wake
-    elif automation_driver == "chrome_cdp" and cdp_status and cdp_status.get("available") and config.get("auto_wake_open_tabs", True):
+        cdp_status = _prefer_wake_cdp_status(cdp_status, cdp_wake)
+    elif automation_driver == "chrome_cdp" and cdp_status and cdp_status.get("available") and allow_wake and open_tabs and config.get("auto_wake_open_tabs", True):
         # A CDP endpoint can survive with zero useful tabs after a crash/restart.
-        # Treat status checks as a light self-heal point so the client does not
-        # report a connected but empty bridge.
+        # Explicit wake/run checks may self-heal so the executor does not report
+        # a connected but empty bridge.
         cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=True)
         cdp_status = chrome_cdp_status(config)
-        cdp_status["wake"] = cdp_wake
+        cdp_status = _prefer_wake_cdp_status(cdp_status, cdp_wake)
     chrome_tabs = []
     if chrome_status and chrome_status.get("available"):
         try:
@@ -392,7 +460,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
         )
         fixed_tab_driver = channel == "web" and automation_driver in {"chrome_apple_events", "chrome_cdp"}
         login_state = _seat_login_state(seat_config, chrome_tabs) if fixed_tab_driver else {"state": "not_applicable"}
-        login_blocked = login_state.get("state") in {"missing", "login_required", "challenge_required", "page_error", "provider_account_restricted"}
+        login_blocked = login_state.get("state") in BLOCKING_LOGIN_STATES
         if fixed_tab_driver:
             ready = bool(
                 configured
@@ -422,7 +490,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 reason = str((chrome_status or {}).get("reason") or "apple_events_js_disabled")
             elif not _fixed_chrome_tab_available(seat_config, chrome_tabs):
                 reason = "fixed_tab_not_found"
-            elif login_state.get("state") in {"login_required", "challenge_required", "page_error", "provider_account_restricted"}:
+            elif login_state.get("state") in BLOCKING_LOGIN_STATES:
                 reason = str(login_state.get("state"))
             else:
                 reason = "ready"
@@ -431,7 +499,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 reason = str((cdp_status or {}).get("reason") or "cdp_unavailable")
             elif not _fixed_chrome_tab_available(seat_config, chrome_tabs):
                 reason = "fixed_tab_not_found"
-            elif login_state.get("state") in {"login_required", "challenge_required", "page_error", "provider_account_restricted"}:
+            elif login_state.get("state") in BLOCKING_LOGIN_STATES:
                 reason = str(login_state.get("state"))
             else:
                 reason = "ready"
@@ -450,6 +518,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
             "execution_required": bool(seat_config.get("execution_required", seat != "grok")),
             "best_effort": bool(seat_config.get("best_effort") or seat_config.get("exclude_from_publish_gate")),
             "exclude_from_publish_gate": bool(seat_config.get("exclude_from_publish_gate")),
+            "required_quality_mode": seat_config.get("required_quality_mode", _quality_mode_required_mode(seat)),
             "provider": seat_config.get("provider", persona["name"]),
             "browser_label": seat_config.get("browser_label", seat_config.get("url", "")),
             "url": seat_config.get("url", ""),
@@ -498,6 +567,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 "reason": seat.get("reason"),
                 "safe_background": seat.get("safe_background"),
                 "execution_required": seat.get("execution_required"),
+                "required_quality_mode": seat.get("required_quality_mode"),
                 "best_effort": seat.get("best_effort"),
                 "exclude_from_publish_gate": seat.get("exclude_from_publish_gate"),
                 "calibration_status": (seat.get("calibration") or {}).get("status"),
@@ -522,6 +592,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
             ),
         },
         "automation_driver": automation_driver,
+        "quality_mode_policy": config.get("quality_mode_policy") or _quality_mode_policy_snapshot(),
         "chrome_apple_events": chrome_status,
         "chrome_cdp": cdp_status,
         "chrome_cdp_wake": cdp_wake,
@@ -962,10 +1033,11 @@ def _retry_attempts(config: dict[str, Any]) -> int:
 
 
 def _should_retry_result(item: dict[str, Any]) -> bool:
-    if item.get("ok"):
+    validity = item.get("execution_validity") if isinstance(item.get("execution_validity"), dict) else {}
+    if item.get("ok") and validity.get("valid", True):
         return False
     error = item.get("error") or {}
-    code = str(error.get("code") or "")
+    code = str(error.get("code") or validity.get("reason") or "")
     if code not in RETRYABLE_WEB_ERROR_CODES:
         return False
     retry_history = item.get("retry_history") or []
@@ -1031,6 +1103,21 @@ def _matching_chrome_tab(seat_config: dict[str, Any], tabs: list[Any]) -> Any | 
     return None
 
 
+def _is_xunfei_seat(seat_config: dict[str, Any], tab_url: str = "") -> bool:
+    fields: list[str] = [
+        str(seat_config.get("id") or ""),
+        str(seat_config.get("seat") or ""),
+        str(seat_config.get("provider") or ""),
+        str(seat_config.get("name") or ""),
+        str(seat_config.get("browser_label") or ""),
+        str(tab_url or ""),
+    ]
+    fields.extend(_url_candidates(seat_config))
+    fields.extend(str(value or "") for value in seat_config.get("match_domains") or [])
+    haystack = " ".join(fields).lower()
+    return any(marker in haystack for marker in ("xunfei", "xinghuo", "xfyun", "讯飞"))
+
+
 def _seat_login_state(seat_config: dict[str, Any], tabs: list[Any]) -> dict[str, Any]:
     """Best-effort visible-tab login marker without reading cookies or private account data."""
     tab = _matching_chrome_tab(seat_config, tabs)
@@ -1038,11 +1125,17 @@ def _seat_login_state(seat_config: dict[str, Any], tabs: list[Any]) -> dict[str,
         return {"state": "missing", "title": "", "url": ""}
     title = str(getattr(tab, "title", "") or "")
     url = str(getattr(tab, "url", "") or "")
+    # Query params can contain benign tracking values such as ``from_login=1``.
+    # Readiness must not treat those as a login wall; only the visible title and
+    # URL path should participate in generic login-marker detection.
+    login_haystack = f"{title} {url.split('?', 1)[0]}".lower()
     haystack = f"{title} {url}".lower()
     error_haystack = f"{title} {url.split('?', 1)[0]}".lower()
     login_markers = (
         "/login", "/signin", "/sign_in", "/sign-in", "/auth", "accounts.google.com",
-        "login", "sign in", "signin", "sign_in", "log in", "logout", "登录", "登陆", "未登录", "请登录",
+        "accounts.x.ai", "exchange-token-error", "/c/guest",
+        "sign in", "signin", "sign_in", "log in", "logout",
+        "登录", "登陆", "注册", "未登录", "请登录", "无法登录", "继续前往xai",
     )
     challenge_markers = ("captcha", "verify", "verification", "验证", "人机", "安全检查")
     error_markers = ("err_connection", "无法访问", "not found", "timeout", "出错了")
@@ -1055,17 +1148,23 @@ def _seat_login_state(seat_config: dict[str, Any], tabs: list[Any]) -> dict[str,
         state = "challenge_required"
     elif any(marker in haystack for marker in restricted_markers):
         state = "provider_account_restricted"
-    elif any(marker in haystack for marker in login_markers):
+    elif any(marker in login_haystack for marker in login_markers):
         state = "login_required"
     elif any(marker in error_haystack for marker in error_markers) or error_404:
         state = "page_error"
+    elif _is_xunfei_seat(seat_config, url) and "/desk" not in url.split("?", 1)[0].lower():
+        state = "desk_auto_recoverable"
     else:
         state = "session_present"
-    return {
+    result = {
         "state": state,
         "title": title[:160],
         "url": url,
     }
+    if state == "desk_auto_recoverable":
+        result["required_url"] = "https://xinghuo.xfyun.cn/desk"
+        result["message"] = "讯飞固定标签当前在首页；AI Judge 会在运行前安装临时路由守门并自动拉回 /desk。"
+    return result
 
 
 def _url_candidates(seat_config: dict[str, Any]) -> list[str]:
@@ -1301,32 +1400,17 @@ def _ask_one_seat(
             trace("browser", "page_loaded", f"{seat} 页面已加载", {"seat": seat, "url": url})
         prompt_id = f"AIJUDGE-{seat}-{time.time_ns()}"
         _humanized_sleep(config, seat_config, seat, "before_submit")
-        if seat == "deepseek":
+        if _quality_mode_prepare_required(seat):
             prepared = _prepare_playwright_submission_ui(page, prompt_id)
-            if not _deepseek_prepare_verified(prepared):
+            if not _quality_mode_prepare_verified(seat, prepared):
+                code, message = _quality_mode_failure(seat)
                 if trace:
-                    trace("seat", "deepseek_expert_mode_blocked", f"{seat} 未确认专家模式，拒绝提交", {
+                    trace("seat", _quality_mode_trace_action(seat), _quality_mode_trace_message(seat), {
                         "seat": seat,
                         "prepared": prepared,
+                        "code": code,
                     })
-                return _failed_result(
-                    seat,
-                    "deepseek_expert_mode_not_verified",
-                    "DeepSeek expert mode, 深度思考, and 智能搜索 were not all verified before submission; the bridge refused to collect a fast-mode answer.",
-                )
-        if seat == "doubao":
-            prepared = _prepare_playwright_submission_ui(page, prompt_id)
-            if not _doubao_prepare_verified(prepared):
-                if trace:
-                    trace("seat", "doubao_expert_mode_blocked", f"{seat} 未确认专家/超能模式，拒绝提交", {
-                        "seat": seat,
-                        "prepared": prepared,
-                    })
-                return _failed_result(
-                    seat,
-                    "doubao_expert_mode_not_verified",
-                    "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
-                )
+                return _failed_result(seat, code, message)
         prompt = _seat_prompt(seat, question, mode)
         input_locator = _find_visible_locator(page, _selectors(config, seat_config, "input_selectors"), min(timeout_ms, 20000))
         if input_locator is None and _recover_playwright_page(page, config, seat_config, seat, "input_not_found", trace):

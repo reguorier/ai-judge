@@ -36,11 +36,16 @@ from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
     _append_prepare_followup,
     _capture_acceptance,
-    _deepseek_prepare_verified,
-    _doubao_prepare_verified,
     _failed_result,
     _humanized_sleep,
     _page_state_needs_reload,
+    _quality_mode_failure,
+    _quality_mode_policy_snapshot,
+    _quality_mode_prepare_required,
+    _quality_mode_prepare_verified,
+    _quality_mode_required_mode,
+    _quality_mode_trace_action,
+    _quality_mode_trace_message,
     _response_text_from_capture,
     _seat_config,
     _seat_prompt,
@@ -82,7 +87,13 @@ def _local_cdp_proxy_bypass():
 class CDPTab:
     title: str
     url: str
+    target_id: str = ""
     page: Any | None = None
+
+
+def _cdp_quality_mode_policy(config: dict[str, Any] | None = None) -> dict[str, Any]:
+    policy = (config or {}).get("quality_mode_policy")
+    return policy if isinstance(policy, dict) else _quality_mode_policy_snapshot()
 
 
 def ensure_chrome_cdp_awake(
@@ -102,12 +113,12 @@ def ensure_chrome_cdp_awake(
         status = chrome_cdp_status(config)
     if status.get("available"):
         opened = _ensure_enabled_cdp_tabs(config, trace) if open_tabs else []
-        result = {"ok": True, "woke": False, "endpoint": endpoint, "opened_tabs": opened, "status": status}
+        result = {"ok": True, "woke": False, "endpoint": endpoint, "opened_tabs": opened, "status": status, "quality_mode_policy": _cdp_quality_mode_policy(config)}
         _write_cdp_state(config, result)
         return result
 
     if config.get("auto_wake_cdp") is False:
-        result = {"ok": False, "woke": False, "endpoint": endpoint, "reason": status.get("reason"), "status": status}
+        result = {"ok": False, "woke": False, "endpoint": endpoint, "reason": status.get("reason"), "status": status, "quality_mode_policy": _cdp_quality_mode_policy(config)}
         _write_cdp_state(config, result)
         return result
 
@@ -118,11 +129,12 @@ def ensure_chrome_cdp_awake(
             "endpoint": endpoint,
             "reason": "wake_cooldown",
             "status": status,
+            "quality_mode_policy": _cdp_quality_mode_policy(config),
         }
         _write_cdp_state(config, result)
         return result
 
-    _write_cdp_state(config, {"ok": False, "woke": False, "endpoint": endpoint, "reason": "wake_starting"})
+    _write_cdp_state(config, {"ok": False, "woke": False, "endpoint": endpoint, "reason": "wake_starting", "quality_mode_policy": _cdp_quality_mode_policy(config)})
     profile_dir = _cdp_profile_dir(config)
     profile_dir.mkdir(parents=True, exist_ok=True)
     parsed = urlparse(endpoint)
@@ -151,9 +163,10 @@ def ensure_chrome_cdp_awake(
                 "profile_dir": str(profile_dir),
                 "launch_strategy": launch_label,
                 "kill_user_chrome": False,
+                "quality_mode_policy": _cdp_quality_mode_policy(config),
             })
     except Exception as exc:
-        result = {"ok": False, "woke": False, "endpoint": endpoint, "reason": "launch_failed", "error": str(exc), "launch_strategy": launch_label}
+        result = {"ok": False, "woke": False, "endpoint": endpoint, "reason": "launch_failed", "error": str(exc), "launch_strategy": launch_label, "quality_mode_policy": _cdp_quality_mode_policy(config)}
         _write_cdp_state(config, result)
         return result
 
@@ -163,10 +176,10 @@ def ensure_chrome_cdp_awake(
         status = chrome_cdp_status(config)
         if status.get("available"):
             opened = _ensure_enabled_cdp_tabs(config, trace) if open_tabs else []
-            result = {"ok": True, "woke": True, "endpoint": endpoint, "opened_tabs": opened, "status": status, "launch_strategy": launch_label}
+            result = {"ok": True, "woke": True, "endpoint": endpoint, "opened_tabs": opened, "status": status, "launch_strategy": launch_label, "quality_mode_policy": _cdp_quality_mode_policy(config)}
             _write_cdp_state(config, result)
             return result
-    result = {"ok": False, "woke": True, "endpoint": endpoint, "reason": "wake_timeout", "status": chrome_cdp_status(config), "launch_strategy": launch_label}
+    result = {"ok": False, "woke": True, "endpoint": endpoint, "reason": "wake_timeout", "status": chrome_cdp_status(config), "launch_strategy": launch_label, "quality_mode_policy": _cdp_quality_mode_policy(config)}
     _write_cdp_state(config, result)
     return result
 
@@ -184,6 +197,7 @@ def chrome_cdp_status(config: dict[str, Any] | None = None) -> dict[str, Any]:
                 "endpoint": endpoint,
                 "process": process,
                 "profile_marker": marker,
+                "quality_mode_policy": _cdp_quality_mode_policy(config),
             }
         if process.get("pid") and process.get("profile_match") is False:
             return {
@@ -193,12 +207,13 @@ def chrome_cdp_status(config: dict[str, Any] | None = None) -> dict[str, Any]:
                 "endpoint": endpoint,
                 "process": process,
                 "profile_marker": marker,
+                "quality_mode_policy": _cdp_quality_mode_policy(config),
             }
     try:
         version = _cdp_get_json(f"{endpoint}/json/version", timeout=2)
         tabs = _cdp_get_json(f"{endpoint}/json/list", timeout=2)
     except Exception as exc:
-        return {"available": False, "reason": "cdp_unavailable", "message": str(exc), "endpoint": endpoint}
+        return {"available": False, "reason": "cdp_unavailable", "message": str(exc), "endpoint": endpoint, "quality_mode_policy": _cdp_quality_mode_policy(config)}
     return {
         "available": True,
         "reason": "ready",
@@ -206,6 +221,7 @@ def chrome_cdp_status(config: dict[str, Any] | None = None) -> dict[str, Any]:
         "browser": version.get("Browser"),
         "tab_count": len(tabs) if isinstance(tabs, list) else 0,
         "process": process,
+        "quality_mode_policy": _cdp_quality_mode_policy(config),
     }
 
 
@@ -213,7 +229,11 @@ def list_cdp_tabs(config: dict[str, Any] | None = None) -> list[CDPTab]:
     endpoint = _endpoint(config)
     tabs = _cdp_get_json(f"{endpoint}/json/list", timeout=3)
     return [
-        CDPTab(title=str(tab.get("title") or ""), url=str(tab.get("url") or ""))
+        CDPTab(
+            title=str(tab.get("title") or ""),
+            url=str(tab.get("url") or ""),
+            target_id=str(tab.get("id") or ""),
+        )
         for tab in tabs
         if tab.get("type") == "page"
     ]
@@ -391,6 +411,13 @@ def _ensure_enabled_cdp_tabs(
     except Exception:
         tabs = []
     endpoint = _endpoint(config)
+    if config.get("dedupe_enabled_cdp_tabs", True):
+        closed = _dedupe_enabled_cdp_tabs(config, tabs, endpoint, trace)
+        if closed:
+            try:
+                tabs = list_cdp_tabs(config)
+            except Exception:
+                pass
     opened: list[str] = []
     for seat, seat_config in (config.get("seats") or {}).items():
         if not seat_config.get("enabled") or str(seat_config.get("channel") or "web") != "web":
@@ -412,12 +439,17 @@ def _ensure_enabled_cdp_tabs(
             except Exception:
                 pass
             if trace:
-                trace("seat", "cdp_fixed_tab_opened", f"{seat} 固定标签已补开", {"seat": seat, "url": url})
+                trace("seat", "cdp_fixed_tab_opened", f"{seat} 固定标签已补开", {
+                    "seat": seat,
+                    "url": url,
+                    "required_quality_mode": _quality_mode_required_mode(seat),
+                })
         except Exception as exc:
             if trace:
                 trace("seat", "cdp_fixed_tab_open_failed", f"{seat} 固定标签补开失败", {
                     "seat": seat,
                     "url": url,
+                    "required_quality_mode": _quality_mode_required_mode(seat),
                     "error": str(exc),
                 })
     return opened
@@ -559,34 +591,18 @@ def run_chrome_cdp_tabs(
                             "seat": seat,
                             "prepared": prepared,
                         })
-                    if seat == "deepseek" and _deepseek_prepare_verified(prepared):
-                        break
-                    if seat == "doubao" and _doubao_prepare_verified(prepared):
+                    if _quality_mode_prepare_required(seat) and _quality_mode_prepare_verified(seat, prepared):
                         break
                     if not followup.get("needs_followup"):
                         break
-                if seat == "deepseek" and not _deepseek_prepare_verified(prepared):
-                    submissions[seat] = _failed_result(
-                        seat,
-                        "deepseek_expert_mode_not_verified",
-                        "DeepSeek expert mode, 深度思考, and 智能搜索 were not all verified before submission; the bridge refused to collect a fast-mode answer.",
-                    )
+                if _quality_mode_prepare_required(seat) and not _quality_mode_prepare_verified(seat, prepared):
+                    code, message = _quality_mode_failure(seat)
+                    submissions[seat] = _failed_result(seat, code, message)
                     if trace:
-                        trace("seat", "deepseek_expert_mode_blocked", f"{seat} 未确认专家模式，拒绝提交", {
+                        trace("seat", _quality_mode_trace_action(seat), _quality_mode_trace_message(seat), {
                             "seat": seat,
                             "prepared": prepared,
-                        })
-                    continue
-                if seat == "doubao" and not _doubao_prepare_verified(prepared):
-                    submissions[seat] = _failed_result(
-                        seat,
-                        "doubao_expert_mode_not_verified",
-                        "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
-                    )
-                    if trace:
-                        trace("seat", "doubao_expert_mode_blocked", f"{seat} 未确认专家/超能模式，拒绝提交", {
-                            "seat": seat,
-                            "prepared": prepared,
+                            "code": code,
                         })
                     continue
                 before = _capture_page(page, prompt_id)
@@ -993,23 +1009,99 @@ def _prepare_submission_ui(page: Any, prompt_id: str) -> dict[str, Any]:
 
 
 def _match_tab(seat_config: dict[str, Any], tabs: list[CDPTab]) -> CDPTab | None:
+    matches = _matching_tabs(seat_config, tabs)
+    return matches[0] if matches else None
+
+
+def _matching_tabs(seat_config: dict[str, Any], tabs: list[CDPTab]) -> list[CDPTab]:
     urls = _url_candidates(seat_config)
     domains = _match_domains(seat_config, urls)
     labels = _match_labels(seat_config)
+    exact: list[CDPTab] = []
+    domain_matches: list[CDPTab] = []
+    label_matches: list[CDPTab] = []
+
     for tab in tabs:
         tab_url = str(tab.url or "")
         if any(url and tab_url.rstrip("/") == url.rstrip("/") for url in urls):
-            return tab
-    for tab in tabs:
-        tab_url = str(tab.url or "").lower()
-        if any(domain and domain in tab_url for domain in domains):
-            return tab
-    if _label_fallback_enabled(seat_config):
-        for tab in tabs:
+            exact.append(tab)
+            continue
+        lower_url = tab_url.lower()
+        if any(domain and domain in lower_url for domain in domains):
+            domain_matches.append(tab)
+            continue
+        if _label_fallback_enabled(seat_config):
             haystack = f"{tab.title} {tab.url}".lower()
             if any(label and label in haystack for label in labels):
-                return tab
-    return None
+                label_matches.append(tab)
+
+    return _unique_tabs([*exact, *domain_matches, *label_matches])
+
+
+def _unique_tabs(tabs: list[CDPTab]) -> list[CDPTab]:
+    seen: set[str] = set()
+    unique: list[CDPTab] = []
+    for tab in tabs:
+        key = _tab_identity(tab)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(tab)
+    return unique
+
+
+def _tab_identity(tab: CDPTab) -> str:
+    return str(tab.target_id or f"{tab.title}\0{tab.url}\0{id(tab)}")
+
+
+def _dedupe_enabled_cdp_tabs(
+    config: dict[str, Any],
+    tabs: list[CDPTab],
+    endpoint: str,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> list[dict[str, Any]]:
+    seat_matches: dict[str, list[CDPTab]] = {}
+    primary_keys: set[str] = set()
+    for seat, seat_config in (config.get("seats") or {}).items():
+        if not seat_config.get("enabled") or str(seat_config.get("channel") or "web") != "web":
+            continue
+        matches = _matching_tabs(seat_config, tabs)
+        if not matches:
+            continue
+        seat_matches[seat] = matches
+        primary_keys.add(_tab_identity(matches[0]))
+
+    closed: list[dict[str, Any]] = []
+    closed_keys: set[str] = set()
+    for seat, matches in seat_matches.items():
+        for tab in matches[1:]:
+            key = _tab_identity(tab)
+            if key in primary_keys or key in closed_keys:
+                continue
+            result = _close_cdp_tab(endpoint, tab)
+            result["seat"] = seat
+            result["url"] = tab.url
+            result["title"] = tab.title
+            closed.append(result)
+            closed_keys.add(key)
+            if trace:
+                event = "cdp_fixed_tab_duplicate_closed" if result.get("ok") else "cdp_fixed_tab_duplicate_close_failed"
+                trace("seat", event, f"{seat} 重复固定标签已处理", result)
+    return closed
+
+
+def _close_cdp_tab(endpoint: str, tab: CDPTab) -> dict[str, Any]:
+    target_id = str(tab.target_id or "").strip()
+    if not target_id:
+        return {"ok": False, "reason": "missing_target_id"}
+    try:
+        session = requests.Session()
+        session.trust_env = False
+        response = session.get(f"{endpoint}/json/close/{target_id}", timeout=5)
+        response.raise_for_status()
+        return {"ok": True, "target_id": target_id}
+    except Exception as exc:
+        return {"ok": False, "target_id": target_id, "error": str(exc)}
 
 
 def _url_candidates(seat_config: dict[str, Any]) -> list[str]:

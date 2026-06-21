@@ -10,7 +10,9 @@ not use the system clipboard, mouse, or keyboard. Chrome must have
 from __future__ import annotations
 
 import json
+import multiprocessing
 import os
+import queue
 import random
 import re
 import subprocess
@@ -43,6 +45,8 @@ FRAGILE_WEB_SEATS = {
     "zhipu",
     "wenxin",
     "claude",
+    "stepfun",
+    "xunfei",
 }
 RECOVERABLE_PAGE_REASONS = {
     "page_error",
@@ -57,8 +61,98 @@ RECOVERABLE_PAGE_REASONS = {
     "chrome_crash",
     "blank_page",
     "chrome_composer_not_ready",
+    "cdp_target_closed",
     "deepseek_expert_mode_not_verified",
     "doubao_expert_mode_not_verified",
+    "xunfei_quality_mode_not_verified",
+}
+
+QUALITY_MODE_REQUIREMENTS: dict[str, dict[str, Any]] = {
+    "deepseek": {
+        "required_mode": "专家模式 + 深度思考 + 智能搜索",
+        "markers": ("deepseek_expert_verified:yes", "deepseek_tools_verified:yes"),
+        "code": "deepseek_expert_mode_not_verified",
+        "message": "DeepSeek expert mode, 深度思考, and 智能搜索 were not all verified before submission; the bridge refused to collect a fast-mode answer.",
+        "trace_action": "deepseek_expert_mode_blocked",
+        "trace_message": "DeepSeek 未确认专家模式，拒绝提交",
+        "strict": False,
+    },
+    "doubao": {
+        "required_mode": "专家/超能模式",
+        "markers": ("doubao_expert_verified:yes",),
+        "code": "doubao_expert_mode_not_verified",
+        "message": "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
+        "trace_action": "doubao_expert_mode_blocked",
+        "trace_message": "Doubao 未确认专家/超能模式，拒绝提交",
+        "strict": False,
+    },
+    "meta": {
+        "required_mode": "思考",
+        "markers": ("meta_thinking_verified:yes",),
+        "code": "meta_quality_mode_not_verified",
+        "message": "Meta AI thinking mode was not verified before submission; the bridge refused to collect a non-thinking answer.",
+        "strict": False,
+    },
+    "wenxin": {
+        "required_mode": "深度思考",
+        "markers": ("wenxin_deep_thinking_verified:yes",),
+        "code": "wenxin_quality_mode_not_verified",
+        "message": "Wenxin deep thinking mode was not verified before submission; the bridge refused to collect a normal-mode answer.",
+        "strict": True,
+    },
+    "minimax": {
+        "required_mode": "MiniMax-M3 + Thinking",
+        "markers": ("minimax_model_verified:yes", "minimax_thinking_verified:yes"),
+        "code": "minimax_quality_mode_not_verified",
+        "message": "MiniMax-M3 and Thinking mode were not both verified before submission; the bridge refused to collect a lower-quality answer.",
+        "strict": False,
+    },
+    "yuanbao": {
+        "required_mode": "深度思考",
+        "markers": ("yuanbao_deep_thinking_verified:yes",),
+        "code": "yuanbao_quality_mode_not_verified",
+        "message": "Yuanbao deep thinking mode was not verified before submission; the bridge refused to collect a normal-mode answer.",
+        "strict": False,
+    },
+    "kimi": {
+        "required_mode": "K2.6 思考",
+        "markers": ("kimi_model_verified:yes", "kimi_thinking_verified:yes"),
+        "code": "kimi_quality_mode_not_verified",
+        "message": "Kimi K2.6 thinking mode was not verified before submission; the bridge refused to collect a normal-mode answer.",
+        "strict": True,
+    },
+    "qwen": {
+        "required_mode": "Qwen3.7-Plus + 思考",
+        "markers": ("qwen_model_verified:yes", "qwen_deep_thinking_verified:yes"),
+        "code": "qwen_quality_mode_not_verified",
+        "message": "Qwen3.7-Plus thinking mode was not verified before submission; the bridge refused to collect an automatic-mode answer.",
+        "strict": False,
+    },
+    "gemini": {
+        "required_mode": "Pro 扩展",
+        "markers": ("gemini_pro_verified:yes", "gemini_expanded_verified:yes"),
+        "code": "gemini_quality_mode_not_verified",
+        "message": "Gemini Pro expanded mode was not verified before submission; the bridge refused to collect a lower-quality answer.",
+        "strict": False,
+    },
+    "stepfun": {
+        "required_mode": "Step 推理模式",
+        "markers": ("stepfun_step_mode_verified:yes",),
+        "code": "stepfun_quality_mode_not_verified",
+        "message": "StepFun Step reasoning mode was not verified before submission.",
+        "trace_action": "stepfun_quality_mode_unverified",
+        "trace_message": "StepFun 未确认 Step 推理模式",
+        "strict": False,
+    },
+    "xunfei": {
+        "required_mode": "推理模式",
+        "markers": ("xunfei_reasoning_mode_verified:yes",),
+        "code": "xunfei_quality_mode_not_verified",
+        "message": "Xunfei Spark reasoning mode was not verified before submission.",
+        "trace_action": "xunfei_quality_mode_unverified",
+        "trace_message": "讯飞星火未确认推理模式",
+        "strict": False,
+    },
 }
 
 
@@ -211,14 +305,12 @@ def run_chrome_fixed_tabs(
             continue
         prompt = _seat_prompt(seat, question, mode)
         prompt_id = f"AIJUDGE-{seat}-{time.time_ns()}"
-        prompt_with_marker = (
-            f"{prompt}\n\n"
-            "重要：不要只进行思考，必须在最终回答区域输出正文。请将你的最终答案完整包裹在以下两行标记之间，"
-            "标记必须原样输出，标记外不要输出正文。不要输出“你的最终答案”这几个占位字，请替换成你的实际回答：\n"
-            f"[AIJUDGE_ANSWER_START:{prompt_id}]\n"
-            "你的最终答案\n"
-            f"[AIJUDGE_ANSWER_END:{prompt_id}]\n\n"
-            f"[trace_id: {prompt_id}]"
+        answer_contract = dict(config.get("answer_contract") or seat_config.get("answer_contract") or {})
+        prompt_with_marker = _prompt_with_answer_marker(
+            prompt,
+            prompt_id,
+            config=config,
+            item={"answer_contract": answer_contract},
         )
         if progress:
             progress(f"Chrome 固定标签提交：{seat} ({index}/{total})", 0.14 + 0.20 * index / total)
@@ -243,10 +335,15 @@ def run_chrome_fixed_tabs(
             if trace:
                 trace("seat", "chrome_blocking_ui_dismissed", f"{seat} 页面阻塞态已清理", {"seat": seat, "blocking": preflight})
         fresh_url = str(seat_config.get("fresh_url") or "").strip()
-        if fresh_url and config.get("fresh_conversation_per_run", False):
+        if fresh_url and _seat_requires_fresh_conversation(config, seat_config, seat):
             fresh = _safe_execute_json(tab, _build_fresh_navigation_js(fresh_url), timeout=8)
             if trace:
-                trace("seat", "chrome_fresh_navigation", f"{seat} 跳转到干净会话入口", {"seat": seat, "fresh_url": fresh_url, "result": fresh})
+                trace("seat", "chrome_fresh_navigation", f"{seat} 跳转到干净会话入口", {
+                    "seat": seat,
+                    "fresh_url": fresh_url,
+                    "result": fresh,
+                    "policy": "seat_forced_fresh_chat" if seat == "grok" else "fresh_conversation_per_run",
+                })
             if fresh.get("navigated") or fresh.get("reloaded"):
                 time.sleep(float(config.get("fresh_load_seconds") or 3.0))
         blocking = _safe_execute_json(tab, _build_clear_blocking_ui_js(), timeout=5)
@@ -280,42 +377,37 @@ def run_chrome_fixed_tabs(
                     f"{seat} 提交前模式第 {prepare_attempt} 次确认",
                     {"seat": seat, "prepared": prepared},
                 )
-            if seat == "deepseek" and _deepseek_prepare_verified(prepared):
-                break
-            if seat == "doubao" and _doubao_prepare_verified(prepared):
+            if _quality_mode_prepare_required(seat) and _quality_mode_prepare_verified(seat, prepared):
                 break
             if not followup.get("needs_followup"):
                 break
-        if seat == "deepseek":
-            if not _deepseek_prepare_verified(prepared):
-                submissions[seat] = _failed_result(
-                    seat,
-                    "deepseek_expert_mode_not_verified",
-                    "DeepSeek expert mode, 深度思考, and 智能搜索 were not all verified before submission; the bridge refused to collect a fast-mode answer.",
+        if (
+            _quality_mode_prepare_required(seat)
+            and not _quality_mode_prepare_verified(seat, prepared)
+            and _quality_mode_strict_required(seat)
+        ):
+            code, message = _quality_mode_failure(seat)
+            submissions[seat] = _failed_result(seat, code, message)
+            if trace:
+                trace(
+                    "seat",
+                    _quality_mode_trace_action(seat),
+                    _quality_mode_trace_message(seat),
+                    {"seat": seat, "prepared": prepared, "code": code},
                 )
-                if trace:
-                    trace(
-                        "seat",
-                        "deepseek_expert_mode_blocked",
-                        f"{seat} 未确认专家模式，拒绝提交",
-                        {"seat": seat, "prepared": prepared},
-                    )
-                continue
-        if seat == "doubao":
-            if not _doubao_prepare_verified(prepared):
-                submissions[seat] = _failed_result(
-                    seat,
-                    "doubao_expert_mode_not_verified",
-                    "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
+            continue
+        if _quality_mode_prepare_required(seat) and not _quality_mode_prepare_verified(seat, prepared):
+            if trace:
+                trace(
+                    "seat",
+                    "quality_mode_unverified_non_strict",
+                    f"{seat} 未确认高质量模式，按非严格策略继续提交",
+                    {
+                        "seat": seat,
+                        "prepared": prepared,
+                        "required_quality_mode": _quality_mode_required_mode(seat),
+                    },
                 )
-                if trace:
-                    trace(
-                        "seat",
-                        "doubao_expert_mode_blocked",
-                        f"{seat} 未确认专家/超能模式，拒绝提交",
-                        {"seat": seat, "prepared": prepared},
-                    )
-                continue
         composer_wait = min(45.0, max(8.0, seat_timeout_seconds / 4))
         readiness = _wait_for_composer(tab, timeout=composer_wait, config=config, seat_config=seat_config, seat=seat)
         if _readiness_can_recover(readiness):
@@ -367,7 +459,15 @@ def run_chrome_fixed_tabs(
                 written["ok"] = True
                 written["prompt_written"] = True
                 written["presence"] = presence
-        clicked = _safe_execute_json(tab, _build_click_send_js(prompt_id), timeout=10) if written.get("ok") else {}
+        clicked: dict[str, Any] = {}
+        keyboard_submit: dict[str, Any] = {}
+        if written.get("ok") and _seat_uses_system_keyboard(config, seat_config, seat):
+            keyboard_submit = _safe_system_keyboard_submit(tab, seat, seat_config, trace)
+            clicked = dict(keyboard_submit)
+        if written.get("ok") and not clicked.get("ok"):
+            clicked = _safe_execute_json(tab, _build_click_send_js(prompt_id), timeout=10)
+            if keyboard_submit:
+                clicked["system_keyboard_attempt"] = keyboard_submit
         submitted = dict(clicked)
         if written.get("ok") and not submitted.get("ok"):
             submitted.setdefault("prompt_written", True)
@@ -406,6 +506,7 @@ def run_chrome_fixed_tabs(
                         all_tabs = list_chrome_tabs()
                         tab = _match_tab(seat_config, all_tabs) or tab
                         written = _safe_execute_json(tab, _build_write_prompt_js(prompt_with_marker, prompt_id), timeout=15)
+                        _humanized_sleep(config, seat_config, seat, "after_write")
                         clicked = _safe_execute_json(tab, _build_click_send_js(prompt_id), timeout=10) if written.get("ok") else {}
                         submitted["retry_after_refresh"] = {"write": written, "click": clicked}
                         if clicked.get("ok"):
@@ -441,6 +542,7 @@ def run_chrome_fixed_tabs(
                 "ok": False,
                 "tab": tab,
                 "prompt_id": prompt_id,
+                "answer_contract": answer_contract,
                 "submitted_at": time.time(),
                 "timeout_seconds": seat_timeout_seconds,
                 "final_nudge_timeout_seconds": final_nudge_timeout_seconds,
@@ -455,7 +557,7 @@ def run_chrome_fixed_tabs(
             if trace:
                 action = "chrome_submit_complete" if submissions[seat]["submission_confirmed"] else "chrome_submit_unconfirmed"
                 detail = f"{seat} 提示词已发送" if submissions[seat]["submission_confirmed"] else f"{seat} 已写入提示词，等待回答确认"
-                trace("seat", action, detail, {"seat": seat, "submit": submitted})
+                trace("seat", action, detail, {"seat": seat, "answer_contract": answer_contract, "submit": submitted})
         else:
             verification = submitted.get("verification") or {}
             submissions[seat] = _failed_result(
@@ -558,7 +660,7 @@ def run_chrome_fixed_tabs(
                 continue
             matches_question = assessment["matches_question"]
             if _should_send_final_answer_nudge(seat, item, capture, assessment):
-                nudge = _send_final_answer_nudge(item["tab"], item["prompt_id"])
+                nudge = _send_final_answer_nudge(item["tab"], item["prompt_id"], config=config, item=item)
                 item["final_answer_nudge"] = nudge
                 item["final_answer_nudge_sent_at"] = time.time()
                 item["deadline"] = min(
@@ -796,7 +898,7 @@ def recover_existing_fixed_tab_answers(
         if not seat_config.get("enabled"):
             results.append(_failed_result(seat, "disabled", "Seat is disabled in web_seats.json."))
             continue
-        tab = _match_tab(seat_config, all_tabs)
+        tab, prefetched_capture = _match_existing_answer_tab(seat_config, all_tabs, seat)
         if tab is None:
             failed = _failed_result(seat, "fixed_tab_not_found", "No open Chrome tab matched this seat URL/title.")
             failed["supplementable"] = True
@@ -804,7 +906,7 @@ def recover_existing_fixed_tab_answers(
             if trace:
                 trace("seat", "existing_answer_tab_not_found", f"{seat} 未找到固定 Chrome 标签", {"seat": seat})
             continue
-        capture = _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=12)
+        capture = prefetched_capture or _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=12)
         if _page_state_needs_reload(capture):
             recovery = _recover_fixed_tab(
                 tab,
@@ -816,8 +918,11 @@ def recover_existing_fixed_tab_answers(
             )
             if not recovery.get("skipped"):
                 all_tabs = list_chrome_tabs()
-                tab = _match_tab(seat_config, all_tabs) or tab
+                rematched, rematched_capture = _match_existing_answer_tab(seat_config, all_tabs, seat)
+                tab = rematched or tab
                 recapture = _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=12)
+                if rematched_capture and rematched_capture.get("ok"):
+                    recapture = rematched_capture
                 recapture["refresh_recovery"] = recovery
                 if recapture.get("ok") or recapture.get("marker_found") or not _page_state_needs_reload(recapture):
                     capture = recapture
@@ -825,7 +930,7 @@ def recover_existing_fixed_tab_answers(
                     capture["refresh_recovery"] = recovery
         prompt_id = str(capture.get("prompt_id") or "")
         response_text = _clean_response_text(str(capture.get("text") or ""), prompt_id)
-        prompt_echo = _capture_is_prompt_echo(response_text, prompt_id)
+        prompt_echo = _capture_is_prompt_echo(response_text, prompt_id, question)
         polluted = _capture_is_polluted(response_text, prompt_id)
         matches_question = _response_matches_question(response_text, question)
         marker_found = bool(capture.get("marker_found"))
@@ -921,6 +1026,155 @@ def recover_existing_fixed_tab_answers(
     return results
 
 
+def _existing_answer_recovery_process_timeout(config: dict[str, Any] | None, seats: list[str]) -> float:
+    config = config or {}
+    value = config.get("existing_answer_recovery_process_timeout_seconds")
+    if value is not None:
+        try:
+            return max(30.0, min(600.0, float(value)))
+        except Exception:
+            pass
+    requested_count = max(1, len([seat for seat in seats if str(seat).lower() in SEAT_PERSONAS]))
+    return max(60.0, min(300.0, 45.0 + requested_count * 35.0))
+
+
+def _existing_answer_timeout_result(seat: str, code: str, message: str) -> dict[str, Any]:
+    result = _failed_result(seat, code, message)
+    result.update({
+        "supplementable": True,
+        "profile_dir": "Chrome fixed tab existing page",
+        "recovered_from_existing_page": False,
+    })
+    return result
+
+
+def _recover_existing_fixed_tab_answers_child(
+    question: str,
+    seats: list[str],
+    config: dict[str, Any],
+    mode: str,
+    event_queue: Any,
+) -> None:
+    def child_progress(step: str, progress_value: float) -> None:
+        event_queue.put(("progress", step, progress_value))
+
+    def child_trace(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
+        event_queue.put(("trace", phase, action, detail, data or {}))
+
+    try:
+        result = recover_existing_fixed_tab_answers(
+            question=question,
+            seats=seats,
+            config=config,
+            mode=mode,
+            progress=child_progress,
+            trace=child_trace,
+        )
+        event_queue.put(("result", result))
+    except BaseException as exc:
+        event_queue.put(("error", type(exc).__name__, str(exc)))
+
+
+def recover_existing_fixed_tab_answers_with_guard(
+    question: str,
+    seats: list[str],
+    config: dict[str, Any],
+    mode: str = "flash",
+    progress: Callable[[str, float], None] | None = None,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> list[dict[str, Any]]:
+    """Read old fixed-tab answers with a process-level deadline.
+
+    The direct Apple Events path has per-call timeouts, but real browser state can
+    still wedge a run at the recovery layer. Keep recovery bounded so the judge
+    can continue with a partial, auditable verdict instead of staying "running".
+    """
+    requested = [str(seat).lower() for seat in seats if str(seat).lower() in SEAT_PERSONAS]
+    if not requested:
+        return []
+    if (config or {}).get("isolated_existing_answer_recovery") is False:
+        return recover_existing_fixed_tab_answers(
+            question=question,
+            seats=requested,
+            config=config,
+            mode=mode,
+            progress=progress,
+            trace=trace,
+        )
+
+    timeout_seconds = _existing_answer_recovery_process_timeout(config, requested)
+    if trace:
+        trace("recovery", "existing_answer_recovery_process_started", "旧页面答案回收子进程已启动", {
+            "seats": requested,
+            "timeout_seconds": timeout_seconds,
+        })
+    ctx = multiprocessing.get_context("spawn")
+    event_queue = ctx.Queue()
+    process = ctx.Process(
+        target=_recover_existing_fixed_tab_answers_child,
+        args=(question, requested, dict(config or {}), mode, event_queue),
+        daemon=True,
+    )
+    process.start()
+    deadline = time.time() + timeout_seconds
+    result: list[dict[str, Any]] | None = None
+    child_error: str | None = None
+
+    def drain_events() -> None:
+        nonlocal result, child_error
+        while True:
+            try:
+                event = event_queue.get_nowait()
+            except queue.Empty:
+                break
+            kind = event[0] if event else ""
+            if kind == "progress" and progress:
+                progress(str(event[1]), float(event[2]))
+            elif kind == "trace":
+                if trace:
+                    trace(str(event[1]), str(event[2]), str(event[3]), event[4] if isinstance(event[4], dict) else {})
+            elif kind == "result":
+                result = event[1] if isinstance(event[1], list) else []
+            elif kind == "error":
+                child_error = f"{event[1]}: {event[2]}"
+
+    while process.is_alive():
+        drain_events()
+        if time.time() >= deadline:
+            process.terminate()
+            process.join(timeout=5)
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=2)
+            message = f"Existing fixed-tab recovery exceeded {timeout_seconds:.0f}s and was terminated."
+            if trace:
+                trace("recovery", "existing_answer_recovery_process_timeout", "旧页面答案回收子进程超时终止", {
+                    "seats": requested,
+                    "timeout_seconds": timeout_seconds,
+                })
+            return [
+                _existing_answer_timeout_result(seat, "existing_answer_recovery_process_timeout", message)
+                for seat in requested
+            ]
+        time.sleep(0.2)
+
+    process.join(timeout=1)
+    drain_events()
+    if result is not None:
+        return result
+    message = child_error or f"Existing fixed-tab recovery exited with code {process.exitcode} before returning results."
+    if trace:
+        trace("recovery", "existing_answer_recovery_process_failed", "旧页面答案回收子进程失败", {
+            "seats": requested,
+            "exitcode": process.exitcode,
+            "error": message,
+        })
+    return [
+        _existing_answer_timeout_result(seat, "existing_answer_recovery_process_failed", message)
+        for seat in requested
+    ]
+
+
 def _safe_execute_json(tab: ChromeTab, javascript: str, timeout: float = 10) -> dict[str, Any]:
     try:
         raw = _execute_tab_js(tab, javascript, timeout=timeout)
@@ -961,6 +1215,95 @@ def _safe_activate_tab(tab: ChromeTab) -> None:
         pass
 
 
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on", "enabled"}
+
+
+def _seat_requires_fresh_conversation(
+    config: dict[str, Any] | None,
+    seat_config: dict[str, Any] | None,
+    seat: str,
+) -> bool:
+    """Return whether this seat must navigate to a clean chat before submit.
+
+    Grok is especially sensitive to stale conversation state. Treat fresh-chat
+    navigation as a seat policy, not only as a global run flag, so a configured
+    Grok seat cannot silently reuse an old `/c/...` conversation.
+    """
+    config = config or {}
+    seat_config = seat_config or {}
+    if seat == "grok":
+        return True
+    if seat == "xunfei":
+        return False
+    if "force_fresh_conversation" in seat_config:
+        return _truthy(seat_config.get("force_fresh_conversation"))
+    if "fresh_conversation_per_run" in seat_config:
+        return _truthy(seat_config.get("fresh_conversation_per_run"))
+    return _truthy(config.get("fresh_conversation_per_run"))
+
+
+def _seat_uses_system_keyboard(
+    config: dict[str, Any] | None,
+    seat_config: dict[str, Any] | None,
+    seat: str,
+) -> bool:
+    """Return whether the bridge should submit via macOS keyboard events."""
+    config = config or {}
+    seat_config = seat_config or {}
+    if seat == "grok":
+        return True
+    for key in ("force_keyboard_submit", "use_system_keyboard", "uses_system_keyboard"):
+        if key in seat_config:
+            return _truthy(seat_config.get(key))
+    return _truthy(config.get("use_system_keyboard"))
+
+
+def _safe_system_keyboard_submit(
+    tab: ChromeTab,
+    seat: str,
+    seat_config: dict[str, Any] | None,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> dict[str, Any]:
+    """Submit the active composer with a real macOS keyboard event.
+
+    Some sites, notably Grok, keep the send affordance in shadow/rich UI state
+    where DOM click heuristics are fragile. This path activates the matched tab
+    and asks System Events to press Return. It is guarded by seat policy and
+    falls back to DOM submit if macOS accessibility/automation permissions block
+    the event.
+    """
+    seat_config = seat_config or {}
+    key_name = str(seat_config.get("system_keyboard_key") or "return").strip().lower()
+    key_code = "36" if key_name in {"return", "enter", "keyboard.enter"} else "36"
+    try:
+        _safe_activate_tab(tab)
+        time.sleep(float(seat_config.get("system_keyboard_focus_delay_seconds") or 0.25))
+        _osascript(
+            [
+                'tell application "System Events"',
+                f"key code {key_code}",
+                "end tell",
+            ],
+            timeout=4,
+        )
+        result = {"ok": True, "method": "system_keyboard.enter", "key_code": int(key_code)}
+    except Exception as exc:
+        result = {"ok": False, "error": "system_keyboard_failed", "message": str(exc), "method": "system_keyboard.enter"}
+    if trace:
+        trace(
+            "seat",
+            "chrome_system_keyboard_submit" if result.get("ok") else "chrome_system_keyboard_submit_failed",
+            f"{seat} 使用系统键盘提交" if result.get("ok") else f"{seat} 系统键盘提交失败，回落 DOM 提交",
+            {"seat": seat, "result": result},
+        )
+    return result
+
+
 def _safe_reload_tab(tab: ChromeTab) -> dict[str, Any]:
     try:
         _osascript(
@@ -985,6 +1328,8 @@ def _human_pacing_window(
     """Return the min/max delay window for humanized model-page operations."""
     config = config or {}
     seat_config = seat_config or {}
+    if seat == "grok" and phase == "after_write":
+        return 1.2, 1.8
     if config.get("humanized_pacing") is False or seat_config.get("humanized_pacing") is False:
         return 0.0, 0.0
     pacing = config.get("human_pacing") if isinstance(config.get("human_pacing"), dict) else {}
@@ -1136,14 +1481,114 @@ def _safe_open_tab(url: str) -> dict[str, Any]:
         return {"ok": False, "error": "open_tab_failed", "message": str(exc), "url": url}
 
 
-def _send_final_answer_nudge(tab: ChromeTab, prompt_id: str) -> dict[str, Any]:
-    nudge_prompt = (
-        "上一轮只显示了思考或空回复。现在请不要继续思考，不要使用深入/思考模式，"
-        "直接输出上一题的最终答案正文。必须完整包含同一组标记：\n"
+def _answer_contract_requires_json(config: dict[str, Any] | None, item: dict[str, Any] | None = None) -> bool:
+    contracts: list[dict[str, Any]] = []
+    if isinstance(item, dict) and isinstance(item.get("answer_contract"), dict):
+        contracts.append(item["answer_contract"])
+    if isinstance(config, dict) and isinstance(config.get("answer_contract"), dict):
+        contracts.append(config["answer_contract"])
+    for contract in contracts:
+        fmt = str(contract.get("response_format") or contract.get("format") or "").strip().lower()
+        kind = str(contract.get("kind") or "").strip().lower()
+        reason = str(contract.get("reason") or "").lower()
+        if fmt in {"json", "json_object", "structured_json"}:
+            return True
+        if contract.get("structured_json_required") is True or contract.get("json_required") is True:
+            return True
+        if kind == "sports_worldcup_pool_prediction_complete_answer" and "json" in reason:
+            return True
+    return False
+
+
+def _answer_contract_requires_compact_line(config: dict[str, Any] | None, item: dict[str, Any] | None = None) -> bool:
+    contracts: list[dict[str, Any]] = []
+    if isinstance(item, dict) and isinstance(item.get("answer_contract"), dict):
+        contracts.append(item["answer_contract"])
+    if isinstance(config, dict) and isinstance(config.get("answer_contract"), dict):
+        contracts.append(config["answer_contract"])
+    for contract in contracts:
+        fmt = str(contract.get("response_format") or contract.get("format") or "").strip().lower()
+        kind = str(contract.get("kind") or "").strip().lower()
+        reason = str(contract.get("reason") or "").strip().lower()
+        if fmt in {"compact_line_receipt", "line_receipt"}:
+            return True
+        if kind == "sports_worldcup_pool_prediction_complete_answer" and "pred_invest_compact_receipt" in reason:
+            return True
+    return False
+
+
+def _prompt_with_answer_marker(
+    prompt: str,
+    prompt_id: str,
+    *,
+    config: dict[str, Any] | None = None,
+    item: dict[str, Any] | None = None,
+) -> str:
+    if _answer_contract_requires_compact_line(config, item):
+        return (
+            f"{prompt}\n\n"
+            "桥接器输出合同：你必须只输出当前轮 PRED_INVEST_RECEIPT 投注单，不要复述题目，不要解释，不要 Markdown。"
+            "最终回答必须完整包裹在以下两行标记之间；标记内第一行必须是 PRED_INVEST_RECEIPT，"
+            "并且必须覆盖题目列出的全部 match_id，AUDIT 行 ready 必须为 true：\n"
+            f"[AIJUDGE_ANSWER_START:{prompt_id}]\n"
+            "PRED_INVEST_RECEIPT\n"
+            f"[AIJUDGE_ANSWER_END:{prompt_id}]\n\n"
+            f"[trace_id: {prompt_id}]"
+        )
+    return (
+        f"{prompt}\n\n"
+        "重要：不要只进行思考，必须在最终回答区域输出正文。请将你的最终答案完整包裹在以下两行标记之间，"
+        "标记必须原样输出，标记外不要输出正文。不要输出“你的最终答案”这几个占位字，请替换成你的实际回答：\n"
         f"[AIJUDGE_ANSWER_START:{prompt_id}]\n"
-        "最终答案正文\n"
-        f"[AIJUDGE_ANSWER_END:{prompt_id}]"
+        "你的最终答案\n"
+        f"[AIJUDGE_ANSWER_END:{prompt_id}]\n\n"
+        f"[trace_id: {prompt_id}]"
     )
+
+
+def _json_receipt_nudge_prompt() -> str:
+    return (
+        "上一轮没有产出可入库的结构化投注单。现在必须只输出一个 JSON 对象，"
+        "不要 Markdown 代码块、不要解释、不要开始/结束标记、不要卡片标题。"
+        "JSON 顶层必须包含：model_account、seat_id、one_sentence_strategy、forecasts、investments、loan_decision、risk_notes、self_audit。"
+        "forecasts 必须覆盖原题赛事清单里的每一个 match_id。"
+        "investments 也必须覆盖每一个 match_id；即使不下注，也要写一条 action 为 no_bet 的记录并说明理由。"
+        "不要替换或改写 match_id，尤其必须保留原题中的葡萄牙/哥伦比亚 match_id。"
+        "self_audit.covered_match_ids 必须列出全部已覆盖 match_id，missing_match_ids 必须是空数组，ready_for_frontend_ingest 必须是 true。"
+    )
+
+
+def _line_receipt_nudge_prompt(prompt_id: str) -> str:
+    return (
+        "上一轮没有产出可入库的 PRED_INVEST_RECEIPT。现在不要解释、不要复述题目、不要 Markdown，"
+        "必须重新输出完整投注单并覆盖原题全部 match_id。最终回答必须包裹在同一组标记内；"
+        "标记内第一行必须是 PRED_INVEST_RECEIPT，包含 model_account、seat_id、STRATEGY、"
+        "每场一条 F|、每场一条 B|，最后一条 AUDIT|...|true。"
+        "不要输出占位字段，不要遗漏 no_bet 场次。"
+        f"开始标记内容是 AIJUDGE_ANSWER_START:{prompt_id}；"
+        f"结束标记内容是 AIJUDGE_ANSWER_END:{prompt_id}。"
+    )
+
+
+def _send_final_answer_nudge(
+    tab: ChromeTab,
+    prompt_id: str,
+    *,
+    config: dict[str, Any] | None = None,
+    item: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if _answer_contract_requires_compact_line(config, item):
+        nudge_prompt = _line_receipt_nudge_prompt(prompt_id)
+    elif _answer_contract_requires_json(config, item):
+        nudge_prompt = _json_receipt_nudge_prompt()
+    else:
+        nudge_prompt = (
+            "上一轮只显示了思考或空回复。现在请不要继续思考，不要使用深入/思考模式，"
+            "直接输出上一题的最终答案正文。必须完整包含同一组标记：\n"
+            f"[AIJUDGE_ANSWER_START:{prompt_id}]\n"
+            "最终答案正文\n"
+            f"[AIJUDGE_ANSWER_END:{prompt_id}]"
+        )
     written = _safe_execute_json(tab, _build_write_prompt_js(nudge_prompt, prompt_id), timeout=15)
     if not written.get("ok"):
         return {"ok": False, "stage": "write", "write": written}
@@ -1222,23 +1667,67 @@ def _osascript(lines: list[str], timeout: float = 10) -> str:
 
 
 def _match_tab(seat_config: dict[str, Any], tabs: list[ChromeTab]) -> ChromeTab | None:
+    matches = _matching_tabs(seat_config, tabs)
+    return matches[0] if matches else None
+
+
+def _matching_tabs(seat_config: dict[str, Any], tabs: list[ChromeTab]) -> list[ChromeTab]:
     urls = _url_candidates(seat_config)
     domains = _match_domains(seat_config, urls)
     labels = _match_labels(seat_config)
+    exact: list[ChromeTab] = []
+    domain_matches: list[ChromeTab] = []
+    label_matches: list[ChromeTab] = []
     for tab in tabs:
         tab_url = str(tab.url or "")
         if any(url and tab_url.rstrip("/") == url.rstrip("/") for url in urls):
-            return tab
-    for tab in tabs:
-        tab_url = str(tab.url or "").lower()
-        if any(domain and domain in tab_url for domain in domains):
-            return tab
-    if _label_fallback_enabled(seat_config):
-        for tab in tabs:
+            exact.append(tab)
+            continue
+        lower_url = tab_url.lower()
+        if any(domain and domain in lower_url for domain in domains):
+            domain_matches.append(tab)
+            continue
+        if _label_fallback_enabled(seat_config):
             haystack = f"{tab.title} {tab.url}".lower()
             if any(label and label in haystack for label in labels):
-                return tab
-    return None
+                label_matches.append(tab)
+    return _unique_tabs([*exact, *domain_matches, *label_matches])
+
+
+def _unique_tabs(tabs: list[ChromeTab]) -> list[ChromeTab]:
+    seen: set[tuple[int, int]] = set()
+    unique: list[ChromeTab] = []
+    for tab in tabs:
+        key = (tab.window_index, tab.tab_index)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(tab)
+    return unique
+
+
+def _match_existing_answer_tab(
+    seat_config: dict[str, Any],
+    tabs: list[ChromeTab],
+    seat: str,
+) -> tuple[ChromeTab | None, dict[str, Any] | None]:
+    candidates = _matching_tabs(seat_config, tabs)
+    if not candidates:
+        return None, None
+    best_tab = candidates[0]
+    best_capture: dict[str, Any] | None = None
+    for tab in candidates:
+        capture = _safe_execute_json(tab, _build_existing_answer_capture_js(seat), timeout=8)
+        has_answer = (
+            bool(capture.get("ok"))
+            and (bool(capture.get("marker_found")) or bool(capture.get("fallback_found")))
+            and len(str(capture.get("text") or "").strip()) >= MIN_MARKER_ANSWER_CHARS
+        )
+        if has_answer:
+            return tab, capture
+        if best_capture is None:
+            best_capture = capture
+    return best_tab, best_capture
 
 
 def _url_candidates(seat_config: dict[str, Any]) -> list[str]:
@@ -1383,6 +1872,191 @@ def _response_text_from_capture(capture: dict[str, Any], item: dict[str, Any]) -
     return text
 
 
+def _receipt_identity_aliases(seat: str) -> set[str]:
+    normalized = str(seat or "").strip().lower()
+    aliases: dict[str, set[str]] = {
+        "doubao": {"doubao", "豆包"},
+        "gemini": {"gemini", "google gemini"},
+        "grok": {"grok", "xai", "xai grok", "xai/grok", "xai-grok"},
+        "kimi": {"kimi", "kimi k2.6", "moonshot"},
+        "mimo": {"mimo", "xiaomi mimo", "小米mimo", "小米 mimo"},
+        "minimax": {"minimax", "minimax agent"},
+        "wenxin": {"wenxin", "文心", "文心一言", "百度文心", "yiyan"},
+        "xunfei": {"xunfei", "iflytek", "xfyun", "讯飞", "科大讯飞", "讯飞星火", "星火"},
+    }
+    return aliases.get(normalized, {normalized})
+
+
+def _extract_required_match_ids_from_question(question: str) -> set[str]:
+    """Return the contracted match ids without letting examples pollute coverage.
+
+    Compact World Cup pool prompts include instructional examples such as
+    ``WC-EXAMPLE``.  A blanket regex across the whole prompt treats those
+    examples as required matches and rejects otherwise complete receipts.  The
+    publish contract is the explicit AUDIT/required-coverage clause, so prefer
+    that and only fall back to a broad scan when the prompt lacks a contract.
+    """
+    text = str(question or "")
+    audit_match = re.search(
+        r"AUDIT\s+第一栏必须等于\s+([^；;\n]+)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if audit_match:
+        return {
+            item.strip()
+            for item in re.split(r"[,，;；]\s*", audit_match.group(1))
+            if item.strip() and item.strip().upper() != "WC-EXAMPLE"
+        }
+    cover_match = re.search(r"必须覆盖\s*[:：]\s*(\[[^\]]+\])", text)
+    if cover_match:
+        try:
+            parsed = json.loads(cover_match.group(1))
+            if isinstance(parsed, list):
+                return {
+                    str(item).strip()
+                    for item in parsed
+                    if str(item).strip() and str(item).strip().upper() != "WC-EXAMPLE"
+                }
+        except Exception:
+            pass
+    return {
+        item
+        for item in re.findall(r"\b(?:WCAPI|WC)-[A-Z0-9][A-Z0-9-]*\b", text)
+        if item.upper() != "WC-EXAMPLE"
+    }
+
+
+def _json_receipt_contract_acceptance(response_text: str, item: dict[str, Any], question: str) -> dict[str, Any]:
+    """Validate compact betting receipts by schema instead of prose similarity.
+
+    PRED-INVEST repair runs ask providers to emit terse JSON.  These answers can
+    fail the generic `_response_matches_question` heuristic even when they are
+    the exact object the downstream pool parser needs.  To avoid accepting a
+    prompt echo, require the current seat identity plus full match coverage in
+    both forecasts and investments.
+    """
+    contract = item.get("answer_contract") if isinstance(item.get("answer_contract"), dict) else {}
+    if not contract:
+        return {"accepted": False, "reason": "no_contract"}
+    fmt = str(contract.get("response_format") or "").strip().lower()
+    kind = str(contract.get("kind") or "").strip().lower()
+    if kind != "sports_worldcup_pool_prediction_complete_answer":
+        return {"accepted": False, "reason": "not_pred_invest"}
+
+    text = str(response_text or "").strip()
+    if not text:
+        return {"accepted": False, "reason": "empty"}
+    seat = str(item.get("seat") or "").strip().lower()
+    aliases = _receipt_identity_aliases(seat)
+    required_ids = _extract_required_match_ids_from_question(question)
+
+    if fmt in {"compact_line_receipt", "line_receipt"} or "PRED_INVEST_RECEIPT" in text:
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        model_account = ""
+        seat_id = ""
+        forecast_ids: set[str] = set()
+        investment_ids: set[str] = set()
+        audit_ids: set[str] = set()
+        ready = False
+        for line in lines:
+            lower = line.lower()
+            if lower.startswith("model_account="):
+                model_account = line.split("=", 1)[1].strip().strip('"').lower()
+            elif lower.startswith("seat_id="):
+                seat_id = line.split("=", 1)[1].strip().strip('"').lower()
+            elif line.startswith("F|"):
+                parts = [part.strip() for part in line.split("|")]
+                if len(parts) > 1 and parts[1]:
+                    forecast_ids.add(parts[1])
+            elif line.startswith("B|"):
+                parts = [part.strip() for part in line.split("|")]
+                if len(parts) > 1 and parts[1]:
+                    investment_ids.add(parts[1])
+            elif line.startswith("AUDIT|"):
+                parts = [part.strip() for part in line.split("|")]
+                if len(parts) >= 4:
+                    audit_ids = {part.strip() for part in re.split(r"[,，;；]", parts[1]) if part.strip()}
+                    ready = parts[3].strip().lower() == "true"
+        if seat and seat_id and seat_id not in aliases:
+            return {"accepted": False, "reason": "line_receipt_seat_mismatch"}
+        if seat and model_account and model_account not in aliases:
+            return {"accepted": False, "reason": "line_receipt_model_mismatch"}
+        if required_ids and (
+            not required_ids.issubset(forecast_ids)
+            or not required_ids.issubset(investment_ids)
+            or (audit_ids and not required_ids.issubset(audit_ids))
+            or not ready
+        ):
+            return {
+                "accepted": False,
+                "reason": "line_receipt_coverage_failed",
+                "forecast_count": len(forecast_ids),
+                "investment_count": len(investment_ids),
+                "audit_count": len(audit_ids),
+                "ready": ready,
+                "missing_forecasts": sorted(required_ids - forecast_ids),
+                "missing_investments": sorted(required_ids - investment_ids),
+                "missing_audit": sorted(required_ids - audit_ids) if audit_ids else [],
+                "required_count": len(required_ids),
+            }
+        if forecast_ids and investment_ids and (ready or not required_ids):
+            return {
+                "accepted": True,
+                "reason": "compact_line_receipt",
+                "covered_match_count": len(required_ids or forecast_ids),
+            }
+        return {"accepted": False, "reason": "line_receipt_missing_fields"}
+
+    if fmt not in {"json", "json_object", "structured_json"} and not contract.get("structured_json_required"):
+        return {"accepted": False, "reason": "not_json_contract"}
+
+    decoder = json.JSONDecoder()
+    parsed: list[dict[str, Any]] = []
+    for index, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            value, _end = decoder.raw_decode(text[index:])
+        except Exception:
+            continue
+        if isinstance(value, dict):
+            parsed.append(value)
+    if not parsed:
+        return {"accepted": False, "reason": "no_json_object"}
+
+    required_fields = contract.get("required_top_level_fields")
+    required_fields = required_fields if isinstance(required_fields, list) else []
+    for value in reversed(parsed):
+        missing_fields = [field for field in required_fields if field not in value]
+        if missing_fields:
+            continue
+        seat_id = str(value.get("seat_id") or "").strip().lower()
+        model_account = str(value.get("model_account") or "").strip().lower()
+        if seat and seat_id and seat_id not in aliases:
+            continue
+        if seat and model_account and model_account not in aliases:
+            continue
+        forecasts = value.get("forecasts")
+        investments = value.get("investments")
+        if not isinstance(forecasts, list) or not isinstance(investments, list):
+            continue
+        forecast_ids = {str(row.get("match_id") or "").strip() for row in forecasts if isinstance(row, dict)}
+        investment_ids = {str(row.get("match_id") or "").strip() for row in investments if isinstance(row, dict)}
+        if required_ids:
+            if not required_ids.issubset(forecast_ids) or not required_ids.issubset(investment_ids):
+                continue
+        elif not forecast_ids or not investment_ids:
+            continue
+        return {
+            "accepted": True,
+            "reason": "structured_json_receipt",
+            "json_top_level_fields": sorted(value.keys()),
+            "covered_match_count": len(required_ids or forecast_ids),
+        }
+    return {"accepted": False, "reason": "json_schema_or_coverage_failed"}
+
+
 def _capture_acceptance(capture: dict[str, Any], item: dict[str, Any], question: str) -> dict[str, Any]:
     """Decide whether a captured transcript is a current, usable answer."""
     text = str(capture.get("text") or "").strip()
@@ -1395,13 +2069,37 @@ def _capture_acceptance(capture: dict[str, Any], item: dict[str, Any], question:
     fallback_min_chars = MIN_FALLBACK_ANSWER_CHARS
     if str(item.get("seat") or "").lower() in {"chatgpt", "qwen"}:
         fallback_min_chars = max(fallback_min_chars, SLOW_SEAT_FALLBACK_ANSWER_CHARS)
-    polluted = _capture_is_polluted(response_text, prompt_id)
-    prompt_echo = _capture_is_prompt_echo(response_text, prompt_id)
+    polluted = _capture_is_polluted(response_text, prompt_id) or _response_is_cross_task_payload(response_text, question)
+    prompt_echo = _capture_is_prompt_echo(response_text, prompt_id, question)
     matches_question = _response_matches_question(response_text, question)
+    json_receipt = _json_receipt_contract_acceptance(response_text, item, question)
+    contract = item.get("answer_contract") if isinstance(item.get("answer_contract"), dict) else {}
+    compact_line_contract = (
+        str(contract.get("response_format") or "").strip().lower() in {"compact_line_receipt", "line_receipt"}
+        or "PRED_INVEST_RECEIPT_ONLY" in str(question or "")
+        or "compact_line_receipt" in str(question or "")
+    )
+    has_structured_json_receipt = (
+        bool(item.get("submission_confirmed"))
+        and not page_busy
+        and not polluted
+        and not prompt_echo
+        and bool(json_receipt.get("accepted"))
+    )
+    has_compact_line_marker_answer = (
+        compact_line_contract
+        and marker_found
+        and not marker_closed
+        and not polluted
+        and not prompt_echo
+        and bool(json_receipt.get("accepted"))
+    )
+    closed_marker_relevance_ok = matches_question or len(response_text) < MIN_FALLBACK_ANSWER_CHARS
     has_closed_marker_answer = (
         marker_closed
         and not polluted
         and not prompt_echo
+        and (closed_marker_relevance_ok or has_structured_json_receipt)
         and len(response_text) >= MIN_MARKER_ANSWER_CHARS
     )
     has_marker_answer = (
@@ -1410,8 +2108,17 @@ def _capture_acceptance(capture: dict[str, Any], item: dict[str, Any], question:
         and not page_busy
         and not polluted
         and not prompt_echo
-        and matches_question
+        and (matches_question or has_structured_json_receipt or has_compact_line_marker_answer)
         and len(response_text) >= fallback_min_chars
+    )
+    has_partial_marker_answer = (
+        marker_found
+        and not marker_closed
+        and page_busy
+        and not polluted
+        and not prompt_echo
+        and (matches_question or has_structured_json_receipt or has_compact_line_marker_answer)
+        and len(response_text) >= max(1200, fallback_min_chars)
     )
     has_new_fallback_answer = (
         bool(item.get("submission_confirmed"))
@@ -1419,26 +2126,41 @@ def _capture_acceptance(capture: dict[str, Any], item: dict[str, Any], question:
         and not page_busy
         and not polluted
         and not prompt_echo
-        and matches_question
+        and (matches_question or has_structured_json_receipt)
         and response_text != before_text
         and len(response_text) >= fallback_min_chars
         and (not before_text or len(text) >= int(item.get("before_length") or 0) + 120 or response_text != text)
     )
+    if compact_line_contract and not has_structured_json_receipt and not has_compact_line_marker_answer:
+        # In compact line mode, generic marker/question similarity accepts
+        # prompt echoes and half-written receipts too easily.  The only
+        # publishable signal is a schema-checked receipt with AUDIT=true.
+        has_closed_marker_answer = False
+        has_marker_answer = False
+        has_partial_marker_answer = False
+        has_new_fallback_answer = False
     mode = ""
-    if has_closed_marker_answer:
+    if has_compact_line_marker_answer:
+        mode = "compact_line_marker"
+    elif has_structured_json_receipt:
+        mode = "structured_json_receipt"
+    elif has_closed_marker_answer:
         mode = "closed_marker"
     elif has_marker_answer:
         mode = "marker_after_trace_id"
+    elif has_partial_marker_answer:
+        mode = "partial_marker_busy"
     elif has_new_fallback_answer:
         mode = "confirmed_fallback_growth"
     return {
-        "accepted": has_closed_marker_answer or has_marker_answer or has_new_fallback_answer,
+        "accepted": has_compact_line_marker_answer or has_structured_json_receipt or has_closed_marker_answer or has_marker_answer or has_partial_marker_answer or has_new_fallback_answer,
         "mode": mode,
         "text": text,
         "response_text": response_text,
         "polluted": polluted,
         "prompt_echo": prompt_echo,
         "matches_question": matches_question,
+        "json_receipt": json_receipt,
         "marker_found": marker_found,
         "marker_closed": marker_closed,
         "page_busy": page_busy,
@@ -1484,10 +2206,51 @@ def _clean_response_text(text: str, prompt_id: str) -> str:
             break
     if prompt_id and cleaned.startswith(f"[AIJUDGE_ANSWER_START:{prompt_id}]"):
         cleaned = cleaned.split("]", 1)[-1].strip()
+    return _strip_provider_page_chrome_tail(cleaned)
+
+
+def _strip_provider_page_chrome_tail(text: str) -> str:
+    """Remove composer/tool chrome accidentally captured after an unclosed answer marker."""
+    cleaned = str(text or "").strip()
+    if not cleaned:
+        return ""
+    lines = cleaned.splitlines()
+    toolbar_tokens = {
+        "快速",
+        "超能模式",
+        "Beta",
+        "PPT 生成",
+        "编程",
+        "图像生成",
+        "视频生成",
+        "更多",
+    }
+    start = max(0, len(lines) - 32)
+    for index in range(start, len(lines)):
+        window = [line.strip() for line in lines[index:index + 10] if line.strip()]
+        if not window:
+            continue
+        hits = {line for line in window if line in toolbar_tokens}
+        if "快速" in hits and "超能模式" in hits and ("更多" in hits or len(hits) >= 4):
+            return "\n".join(lines[:index]).strip()
+    compact_patterns = (
+        " 快速 超能模式 Beta PPT 生成 编程 图像生成 视频生成 更多",
+        "\n快速\n超能模式\nBeta\nPPT 生成\n编程\n图像生成\n视频生成\n更多",
+        "快速\n超能模式\nBeta\nPPT 生成\n编程\n图像生成\n视频生成\n更多",
+    )
+    for pattern in compact_patterns:
+        pos = cleaned.find(pattern)
+        if pos >= 80:
+            cleaned = cleaned[:pos].strip()
+            break
     return cleaned
 
 
-def _capture_is_prompt_echo(text: str, prompt_id: str) -> bool:
+def _compact_for_echo_compare(text: str) -> str:
+    return re.sub(r"\s+", "", str(text or "")).strip()
+
+
+def _capture_is_prompt_echo(text: str, prompt_id: str, question: str = "") -> bool:
     """Reject the original user prompt or page chrome being echoed as an answer."""
     if not text:
         return False
@@ -1497,6 +2260,26 @@ def _capture_is_prompt_echo(text: str, prompt_id: str) -> bool:
         return True
     if "内容由 AI 生成，请仔细甄别" in text and "[QUESTION]" in text and prompt_id and prompt_id in text:
         return True
+    pred_invest_prompt_echo_markers = (
+        "身份硬门禁",
+        "按这个短样例输出",
+        "填入ids之一",
+        "必须把 forecasts/investments 扩展到全部 ids",
+        "必须把 forecasts/investments 扩展到全部",
+        "你的最终答案完整包裹",
+        "不要输出（你的最终答案）这几个占位字",
+    )
+    if sum(1 for marker in pred_invest_prompt_echo_markers if marker in text) >= 2:
+        return True
+    compact_text = _compact_for_echo_compare(text)
+    compact_question = _compact_for_echo_compare(question)
+    if compact_text and compact_question and len(compact_text) >= 180:
+        prefix = compact_text[: min(len(compact_text), 600)]
+        if prefix and prefix in compact_question:
+            return True
+        sample = compact_text[: min(len(compact_text), 360)]
+        if sample and compact_question.find(sample) >= 0:
+            return True
     return False
 
 
@@ -1515,6 +2298,42 @@ def _capture_is_polluted(text: str, prompt_id: str) -> bool:
     return False
 
 
+def _response_is_cross_task_payload(text: str, question: str) -> bool:
+    """Reject structured payloads from another task when the current prompt is unrelated."""
+    if not text:
+        return False
+    normalized_text = text.lower()
+    betting_markers = (
+        '"bet_ledger"',
+        '"loan_decision"',
+        '"no_bet_reason"',
+        '"betting_thought"',
+        '"match_id"',
+        '"market"',
+        '"selection"',
+        '"stake"',
+        '"odds"',
+        "moneyline",
+    )
+    betting_hits = sum(1 for marker in betting_markers if marker in normalized_text)
+    if betting_hits < 4:
+        return False
+    normalized_question = (question or "").lower()
+    sports_terms = (
+        "世界杯",
+        "world cup",
+        "fifa",
+        "投注",
+        "赔率",
+        "盘口",
+        "预测",
+        "bet",
+        "odds",
+        "moneyline",
+    )
+    return not any(term in normalized_question for term in sports_terms)
+
+
 def _seat_prompt(seat: str, question: str, mode: str) -> str:
     if "模型狼人杀娱乐模式" in question or "我的公开发言：" in question:
         seat_guard = ""
@@ -1525,6 +2344,8 @@ def _seat_prompt(seat: str, question: str, mode: str) -> str:
         elif seat == "doubao":
             seat_guard = "\nDoubao 专用要求：不要使用快速闲聊，必须输出最终公开发言正文，并完整保留 AIJUDGE 起止标记。"
         return f"{question}{seat_guard}"
+    if "AI_JUDGE_RERUN_MARKER:POOL_" in str(question or ""):
+        return question
     base = render_jury_prompt(seat, question) or question
     is_resonance_followup = "[AIJUDGE_RESONANCE_FOLLOWUP]" in question
     seat_guard = ""
@@ -1595,6 +2416,30 @@ _STRONG_TOPIC_TERMS = {
     "金靴",
     "积分",
     "赛程",
+    "法律",
+    "律师",
+    "案件",
+    "法院",
+    "执行",
+    "被执行",
+    "失信",
+    "拒执",
+    "判决",
+    "裁定",
+    "刑法",
+    "开发商",
+    "房屋",
+    "抵押",
+    "查封",
+    "过户",
+    "民法典",
+    "债权人",
+    "撤销权",
+    "破产",
+    "担保",
+    "合同",
+    "债务",
+    "债权",
 }
 
 
@@ -1636,6 +2481,30 @@ _DOMAIN_HINTS = (
     "客户端",
     "报告",
     "评分",
+    "法律",
+    "律师",
+    "案件",
+    "法院",
+    "执行",
+    "被执行",
+    "失信",
+    "拒执",
+    "判决",
+    "裁定",
+    "刑法",
+    "开发商",
+    "房屋",
+    "抵押",
+    "查封",
+    "过户",
+    "民法典",
+    "债权人",
+    "撤销权",
+    "破产",
+    "担保",
+    "合同",
+    "债务",
+    "债权",
 )
 
 
@@ -1718,7 +2587,8 @@ def _build_clear_blocking_ui_js() -> str:
   const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText);
   const blankPage = (bodyText || "").trim().length < 8;
   const isMimo = /aistudio\\.xiaomimimo\\.com/i.test(location.hostname);
-  const providerQuota = isMimo && /消息限制|使用上限|用量上限|次数已达|额度不足|usage limit|message limit|rate limit|too many requests|quota/i.test(bodyText + "\\n" + titleText);
+  const isGrok = /grok\\.com/i.test(location.hostname);
+  const providerQuota = (isMimo || isGrok) && /消息限制|使用上限|用量上限|次数已达|额度不足|距离限制重置|等待或升级至\\s*SuperGrok|升级至\\s*SuperGrok|更高上限|立即升级|usage limit|message limit|rate limit|too many requests|quota|limit resets?|limit reset|upgrade to\\s*SuperGrok/i.test(bodyText + "\\n" + titleText);
   if (/chat\\.deepseek\\.com/i.test(location.hostname) && /已选择\\s*\\d+\\s*组对话/.test(bodyText)) {
     const cancel = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
       .find(el => visible(el) && /^(取消|Cancel)$/i.test((el.innerText || el.textContent || "").trim()));
@@ -1791,7 +2661,8 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
   }};
   const clickTarget = el => el?.closest?.("button,[role='button'],label") || el;
   const key = `ai-judge-prepared-${{marker}}`;
-  if (sessionStorage.getItem(key)) return JSON.stringify({{ ok: true, clicked: false, already_prepared: true, title: document.title, url: location.href }});
+  const forceQualityPrepareHost = /deepseek\\.com|doubao\\.com|gemini\\.google\\.com|aistudio\\.google\\.com|chat\\.qwen\\.ai|meta\\.ai|wenxin\\.baidu\\.com|yiyan\\.baidu\\.com|agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io|yuanbao\\.tencent\\.com|kimi\\.com|moonshot\\.cn|chat\\.stepfun\\.com|xinghuo\\.xfyun\\.cn/i.test(location.hostname);
+  if (sessionStorage.getItem(key) && !forceQualityPrepareHost) return JSON.stringify({{ ok: true, clicked: false, already_prepared: true, title: document.title, url: location.href }});
   const clicked = [];
   let needsFollowup = false;
   const click = (name, el) => {{
@@ -1803,6 +2674,50 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
   }};
   const exact = text => Array.from(document.querySelectorAll("button,[role='button'],label,div,span"))
     .filter(el => visible(el) && textOf(el) === text);
+  const queryAllDeep = selector => {{
+    const out = [];
+    const seenRoots = new Set();
+    const roots = [document];
+    for (let i = 0; i < roots.length; i += 1) {{
+      const root = roots[i];
+      if (!root || seenRoots.has(root)) continue;
+      seenRoots.add(root);
+      try {{ out.push(...Array.from(root.querySelectorAll(selector))); }} catch (_) {{}}
+      try {{
+        for (const el of Array.from(root.querySelectorAll("*"))) {{
+          if (el.shadowRoot && !seenRoots.has(el.shadowRoot)) roots.push(el.shadowRoot);
+        }}
+      }} catch (_) {{}}
+    }}
+    return out;
+  }};
+  const allModeElements = () => Array.from(document.querySelectorAll("button,[role='button'],label,div,span,[role='switch'],[role='menuitem'],[role='menuitemradio'],[role='option'],[aria-pressed],[aria-checked],[aria-selected]"))
+    .filter(el => visible(el) && el.getBoundingClientRect().width > 8 && el.getBoundingClientRect().height > 6);
+  const modeLabel = el => labelOf(el).replace(/\\s+/g, " ").trim();
+  const inOpenOverlay = el => !!el?.closest?.("[role='menu'],[role='listbox'],[role='dialog'],[aria-modal='true'],[data-radix-popper-content-wrapper],.ant-select-dropdown,.popover,.Popper,.menu,.Menu");
+  const modeSelected = el => {{
+    const target = clickTarget(el);
+    const ancestor = el?.closest?.("[aria-pressed='true'],[aria-selected='true'],[aria-checked='true'],[class*='selected'],[class*='active'],[class*='checked'],[class*='--on'],[class*='_active']");
+    return selected(el) || selected(target) || !!ancestor;
+  }};
+  const modeNegative = /关闭|未开启|不思考|非思考|普通|快速|标准|自动|默认|No Thinking|None|Off|Disabled|Fast|Flash|Lite|Standard|Auto/i;
+  const hasVisibleModeChip = (pattern, negative = modeNegative) => allModeElements().some(el => {{
+    const label = modeLabel(el);
+    if (!label || label.length > 90 || !pattern.test(label) || negative.test(label)) return false;
+    if (modeSelected(el)) return true;
+    const rect = el.getBoundingClientRect();
+    return !inOpenOverlay(el) && rect.width <= 260 && rect.height <= 72;
+  }});
+  const firstModeElement = (pattern, negative = modeNegative) => allModeElements()
+    .find(el => {{
+      const label = modeLabel(el);
+      return label && label.length <= 90 && pattern.test(label) && !negative.test(label);
+    }});
+  const firstSelectedModeElement = (pattern, negative = modeNegative) => allModeElements()
+    .find(el => {{
+      const label = modeLabel(el);
+      return label && label.length <= 90 && pattern.test(label) && !negative.test(label) && modeSelected(el);
+    }});
   const byDeepseekLabel = text => Array.from(document.querySelectorAll("button,[role='button'],label,div,span"))
     .filter(el => visible(el) && el.getBoundingClientRect().width > 20 && (
       textOf(el) === text || labelOf(el) === text || labelOf(el).includes(text)
@@ -1832,11 +2747,21 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
     }};
     const proLabel = label => /\\bpro\\b|Gemini\\s*2\\.5\\s*Pro|Gemini\\s*1\\.5\\s*Pro|高级版/i.test(label)
       && !/flash|lite|preview|image|veo|imagen/i.test(label);
-    const currentPro = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu'],[role='combobox']"))
-      .some(el => visible(el) && proLabel(shortGeminiLabel(el)) && selected(clickTarget(el)));
+    const geminiExpandedTargetName = "Pro 扩展";
+    const expandedLabel = label => label.includes(geminiExpandedTargetName) || /Pro\\s*扩展|扩展|Extended|Expanded|Deep Think|思考等级\\s*扩展|复杂问题/i.test(label)
+      && !/标准|Standard|Auto|默认|自动|Flash|Lite/i.test(label);
+    const geminiControls = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu'],[role='combobox']"))
+      .filter(el => visible(el) && shortGeminiLabel(el));
+    const currentPro = geminiControls.some(el => proLabel(shortGeminiLabel(el)))
+      || allModeElements().some(el => inOpenOverlay(el) && proLabel(shortGeminiLabel(el)) && modeSelected(el));
+    const currentExpanded = geminiControls.some(el => expandedLabel(shortGeminiLabel(el)))
+      || allModeElements().some(el => inOpenOverlay(el) && expandedLabel(shortGeminiLabel(el)) && modeSelected(el));
     const geminiOptions = Array.from(document.querySelectorAll("[role='menuitemradio'],[role='menuitem'],[role='option'],button"))
       .filter(el => visible(el) && el.getBoundingClientRect().width > 20 && shortGeminiLabel(el));
     const proOption = geminiOptions.find(el => proLabel(shortGeminiLabel(el)) && !selected(clickTarget(el)));
+    const expandedOption = geminiOptions.find(el => expandedLabel(shortGeminiLabel(el)) && !selected(clickTarget(el)))
+      || geminiOptions.find(el => /扩展|Extended|Expanded/i.test(shortGeminiLabel(el)) && !/标准|Standard|Auto|默认|自动/i.test(shortGeminiLabel(el)));
+    const thinkingLevelMenu = geminiOptions.find(el => /思考等级|Thinking\\s*level|推理等级|reasoning/i.test(shortGeminiLabel(el)));
     const modelMenu = Array.from(document.querySelectorAll("button,[role='button'],[aria-haspopup='menu'],[role='combobox']"))
       .find(el => visible(el) && /(Gemini|模型|model|flash|pro)/i.test(shortGeminiLabel(el)));
     if (currentPro) {{
@@ -1851,8 +2776,28 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
       clicked.push("gemini_pro_verified:no");
       needsFollowup = true;
     }}
+    if (currentExpanded) {{
+      clicked.push("gemini_expanded_verified:yes");
+    }} else if (expandedOption) {{
+      click(`gemini_expanded_clicked:${{shortGeminiLabel(expandedOption)}}`, expandedOption);
+      needsFollowup = true;
+    }} else if (thinkingLevelMenu) {{
+      click("gemini_thinking_level_menu_open", thinkingLevelMenu);
+      needsFollowup = true;
+    }} else if (modelMenu) {{
+      click("gemini_thinking_level_menu_open", modelMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("gemini_expanded_verified:no");
+      needsFollowup = true;
+    }}
   }}
   if (/chat\\.qwen\\.ai/i.test(location.hostname)) {{
+    const qwenModelPattern = /Qwen\\s*3\\.7[-\\s]*Plus|Qwen3\\.7[-\\s]*Plus/i;
+    const qwenModelNegative = /Coder|VL|Image|Flash|Turbo|2\\.5|Max/i;
+    const qwenModelSelected = hasVisibleModeChip(qwenModelPattern, qwenModelNegative) || !!firstSelectedModeElement(qwenModelPattern, qwenModelNegative);
+    const qwenModelOption = firstModeElement(qwenModelPattern, qwenModelNegative);
+    const qwenModelMenu = allModeElements().find(el => /Qwen|模型|model|Plus/i.test(modeLabel(el)) && modeLabel(el).length <= 80);
     const qwenModeLabel = () => (document.querySelector(".qwen-thinking-selector")?.innerText
       || document.querySelector(".qwen-select-thinking")?.innerText
       || "").trim();
@@ -1874,6 +2819,18 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
     const currentLabel = qwenModeLabel();
     const deepThinkingSelected = /深入思考|深度思考|强思考|Thinking|Think|思考/i.test(currentLabel)
       && !/非思考|不思考|普通|快速|Instant|None|No Thinking|Fast/i.test(currentLabel);
+    if (qwenModelSelected) {{
+      clicked.push("qwen_model_verified:yes");
+    }} else if (qwenModelOption) {{
+      click(`qwen_model_clicked:${{modeLabel(qwenModelOption)}}`, qwenModelOption);
+      needsFollowup = true;
+    }} else if (qwenModelMenu) {{
+      click("qwen_model_menu_open", qwenModelMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("qwen_model_verified:no");
+      needsFollowup = true;
+    }}
     if (deepThinkingSelected) {{
       clicked.push("qwen_deep_thinking_verified:yes");
     }} else if (deepThinkingOption) {{
@@ -1884,6 +2841,165 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
       needsFollowup = true;
     }} else {{
       clicked.push("qwen_deep_thinking_verified:no");
+      needsFollowup = true;
+    }}
+  }}
+  if (/(^|\\.)meta\\.ai$/i.test(location.hostname) || /www\\.meta\\.ai/i.test(location.hostname)) {{
+    const thinkingPattern = /思考|Thinking|Think/i;
+    const thinkingSelected = hasVisibleModeChip(thinkingPattern);
+    const thinkingCandidate = firstModeElement(thinkingPattern);
+    if (thinkingSelected) {{
+      clicked.push("meta_thinking_verified:yes");
+    }} else if (thinkingCandidate) {{
+      click(`meta_thinking_clicked:${{modeLabel(thinkingCandidate)}}`, thinkingCandidate);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("meta_thinking_verified:no");
+      needsFollowup = true;
+    }}
+  }}
+  if (/chat\\.stepfun\\.com/i.test(location.hostname)) {{
+    const stepPattern = /\\bStep\\b|推理模式|深度推理|Reasoning/i;
+    const stepNegative = /通用|普通|搜索|快速|默认|自动|关闭|Fast|Auto|Default|Off/i;
+    const stepSelected = hasVisibleModeChip(stepPattern, stepNegative) || !!firstSelectedModeElement(stepPattern, stepNegative);
+    const stepCandidate = firstModeElement(stepPattern, stepNegative);
+    const stepMenu = allModeElements().find(el => /\\bStep\\b|推理|模式|mode|reasoning/i.test(modeLabel(el)) && modeLabel(el).length <= 80);
+    if (stepSelected) {{
+      clicked.push("stepfun_step_mode_verified:yes");
+    }} else if (stepCandidate) {{
+      click(`stepfun_step_mode_clicked:${{modeLabel(stepCandidate)}}`, stepCandidate);
+      needsFollowup = true;
+    }} else if (stepMenu) {{
+      click(`stepfun_mode_menu_open:${{modeLabel(stepMenu)}}`, stepMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("stepfun_step_mode_verified:no");
+      needsFollowup = true;
+    }}
+  }}
+  if (/xinghuo\\.xfyun\\.cn/i.test(location.hostname)) {{
+    const xunfeiReasoningPattern = /推理模式|深度推理|思考模式|Reasoning|Think/i;
+    const xunfeiNegative = /通用|普通|写作|分析研究|PPT|解题答疑|搜索|快速|默认|自动|关闭|Fast|Auto|Default|Off/i;
+    const xunfeiSelected = !!firstSelectedModeElement(xunfeiReasoningPattern, xunfeiNegative);
+    const xunfeiCandidate = firstModeElement(xunfeiReasoningPattern, xunfeiNegative);
+    const xunfeiVisibleReasoning = allModeElements()
+      .find(el => /推理模式|深度推理|Reasoning|Think/i.test(modeLabel(el)) && !xunfeiNegative.test(modeLabel(el)));
+    const xunfeiModeMenu = allModeElements()
+      .find(el => /推理模式|推理|模式|Reasoning|reasoning|Think/i.test(modeLabel(el)) && modeLabel(el).length <= 90);
+    if (xunfeiSelected) {{
+      clicked.push("xunfei_reasoning_mode_verified:yes");
+    }} else if (xunfeiCandidate) {{
+      click(`xunfei_reasoning_mode_clicked:${{modeLabel(xunfeiCandidate)}}`, xunfeiCandidate);
+      clicked.push("xunfei_reasoning_mode_verified:yes");
+    }} else if (xunfeiVisibleReasoning) {{
+      click(`xunfei_reasoning_mode_clicked:${{modeLabel(xunfeiVisibleReasoning)}}`, xunfeiVisibleReasoning);
+      clicked.push("xunfei_reasoning_mode_verified:yes");
+    }} else if (xunfeiModeMenu) {{
+      click(`xunfei_reasoning_mode_menu_open:${{modeLabel(xunfeiModeMenu)}}`, xunfeiModeMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("xunfei_reasoning_mode_verified:no");
+      needsFollowup = true;
+    }}
+  }}
+  if (/wenxin\\.baidu\\.com|yiyan\\.baidu\\.com/i.test(location.hostname)) {{
+    const deepPattern = /深度思考|深度思维|思考模式|Think|Thinking/i;
+    const deepSelected = hasVisibleModeChip(deepPattern);
+    const deepCandidate = firstModeElement(deepPattern);
+    const modeMenu = allModeElements()
+      .find(el => /自动模式|模式|mode/i.test(modeLabel(el)) && modeLabel(el).length <= 80);
+    if (deepSelected) {{
+      clicked.push("wenxin_deep_thinking_verified:yes");
+    }} else if (deepCandidate) {{
+      click(`wenxin_deep_thinking_clicked:${{modeLabel(deepCandidate)}}`, deepCandidate);
+      needsFollowup = true;
+    }} else if (modeMenu) {{
+      click(`wenxin_mode_menu_open:${{modeLabel(modeMenu)}}`, modeMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("wenxin_deep_thinking_verified:no");
+      needsFollowup = true;
+    }}
+  }}
+  if (/agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io/i.test(location.hostname)) {{
+    const bodyModeText = (document.body?.innerText || document.body?.textContent || "").replace(/\\s+/g, " ");
+    const minimaxModelPattern = /MiniMax[-\\s]*M3|\\bM3\\b/i;
+    const minimaxModelNegative = /M2\\.7|HighSpeed|高速|Fast|Flash|Lite/i;
+    const minimaxBodyModelSelected = /MiniMax[-\\s]*M3|\\bM3\\b/i.test(bodyModeText);
+    const minimaxModelSelected = minimaxBodyModelSelected || hasVisibleModeChip(minimaxModelPattern, minimaxModelNegative) || !!firstSelectedModeElement(minimaxModelPattern, minimaxModelNegative);
+    const minimaxModelOption = firstModeElement(minimaxModelPattern, minimaxModelNegative);
+    const thinkingPattern = /Thinking|Think|思考/i;
+    const thinkingSwitch = allModeElements().find(el => thinkingPattern.test(modeLabel(el)) && /switch|toggle|checked|ant-switch/i.test(modeLabel(el)));
+    const minimaxBodyThinkingSelected = /Thinking|Think|思考/i.test(bodyModeText);
+    const thinkingSelected = minimaxBodyThinkingSelected || hasVisibleModeChip(thinkingPattern) || (thinkingSwitch && modeSelected(thinkingSwitch));
+    const thinkingCandidate = firstModeElement(thinkingPattern);
+    const modelMenu = allModeElements().find(el => /MiniMax|M3|M2\\.7|模型|model/i.test(modeLabel(el)) && modeLabel(el).length <= 80);
+    if (minimaxModelSelected) {{
+      clicked.push("minimax_model_verified:yes");
+    }} else if (minimaxModelOption) {{
+      click(`minimax_model_clicked:${{modeLabel(minimaxModelOption)}}`, minimaxModelOption);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("minimax_model_verified:no");
+    }}
+    if (thinkingSelected) {{
+      clicked.push("minimax_thinking_verified:yes");
+    }} else if (thinkingCandidate) {{
+      click(`minimax_thinking_clicked:${{modeLabel(thinkingCandidate)}}`, thinkingCandidate);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("minimax_thinking_verified:no");
+    }}
+  }}
+  if (/yuanbao\\.tencent\\.com/i.test(location.hostname)) {{
+    const deepPattern = /深度思考|深度思维|深度推理|思考模式|Think|Thinking/i;
+    const deepSelected = hasVisibleModeChip(deepPattern);
+    const deepCandidate = firstModeElement(deepPattern);
+    const toolsMenu = allModeElements().find(el => /工具|模式|更多|More/i.test(modeLabel(el)) && modeLabel(el).length <= 40);
+    if (deepSelected) {{
+      clicked.push("yuanbao_deep_thinking_verified:yes");
+    }} else if (deepCandidate) {{
+      click(`yuanbao_deep_thinking_clicked:${{modeLabel(deepCandidate)}}`, deepCandidate);
+      needsFollowup = true;
+    }} else if (toolsMenu) {{
+      click("yuanbao_thinking_menu_open", toolsMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("yuanbao_deep_thinking_verified:no");
+      needsFollowup = true;
+    }}
+  }}
+  if (/kimi\\.com|moonshot\\.cn/i.test(location.hostname)) {{
+    const kimiModelPattern = /K2\\.6/i;
+    const kimiModelNegative = /K1|K2\\.5|K2\\.0|快速|普通|标准|Auto|Fast|Default/i;
+    const kimiModelSelected = hasVisibleModeChip(kimiModelPattern, kimiModelNegative) || !!firstSelectedModeElement(kimiModelPattern, kimiModelNegative);
+    const kimiModelOption = firstModeElement(kimiModelPattern, kimiModelNegative);
+    const thinkingPattern = /思考模式|深度思考|思考|Thinking|Think/i;
+    const thinkingSelected = hasVisibleModeChip(thinkingPattern);
+    const thinkingCandidate = firstModeElement(thinkingPattern);
+    const modelMenu = allModeElements().find(el => /K[0-9]|模型|model|模式|思考/i.test(modeLabel(el)) && modeLabel(el).length <= 80);
+    if (kimiModelSelected) {{
+      clicked.push("kimi_model_verified:yes");
+    }} else if (kimiModelOption) {{
+      click(`kimi_model_clicked:${{modeLabel(kimiModelOption)}}`, kimiModelOption);
+      needsFollowup = true;
+    }} else if (modelMenu) {{
+      click("kimi_model_menu_open", modelMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("kimi_model_verified:no");
+      needsFollowup = true;
+    }}
+    if (thinkingSelected) {{
+      clicked.push("kimi_thinking_verified:yes");
+    }} else if (thinkingCandidate) {{
+      click(`kimi_thinking_clicked:${{modeLabel(thinkingCandidate)}}`, thinkingCandidate);
+      needsFollowup = true;
+    }} else if (modelMenu) {{
+      click("kimi_thinking_menu_open", modelMenu);
+      needsFollowup = true;
+    }} else {{
+      clicked.push("kimi_thinking_verified:no");
       needsFollowup = true;
     }}
   }}
@@ -1920,10 +3036,15 @@ def _build_prepare_submission_ui_js(prompt_id: str) -> str:
       const rect = el.getBoundingClientRect();
       return rect.width >= 20 && rect.height >= 8;
     }};
-    const hasComposer = Array.from(document.querySelectorAll("textarea,input,[contenteditable='true'],[role='textbox']")).some(usableInput);
+    const hasComposer = queryAllDeep("textarea,input,[contenteditable='true'],[contenteditable='plaintext-only'],[role='textbox'],[aria-label*='输入'],[placeholder*='输入']").some(usableInput);
     if (!hasComposer && /^#\\/?$/.test(location.hash || "")) {{
-      const newChat = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
-        .find(el => visible(el) && /^(新对话|新建对话|New chat)$/i.test(textOf(el)));
+      const entryPattern = /^(立即创建|创建|新对话|新建对话|开始对话|开始聊天|立即体验|进入对话|新聊天|New chat|Start chat|Start|Create)$/i;
+      const directEntry = queryAllDeep("button,[role='button'],a,[aria-label],[title]")
+        .find(el => visible(el) && entryPattern.test(textOf(el)));
+      const nestedEntry = queryAllDeep("div,span")
+        .map(el => visible(el) && entryPattern.test(textOf(el)) ? el.querySelector?.("button,[role='button'],a") : null)
+        .find(el => el && visible(el));
+      const newChat = directEntry || nestedEntry;
       if (newChat) {{
         click("mimo_new_chat_from_history", newChat);
         needsFollowup = true;
@@ -2042,6 +3163,65 @@ def _doubao_prepare_verified(prepared: dict[str, Any]) -> bool:
     return "doubao_expert_verified:yes" in clicked_names
 
 
+def _quality_mode_prepare_required(seat: str) -> bool:
+    return seat.lower() in QUALITY_MODE_REQUIREMENTS
+
+
+def _quality_mode_strict_required(seat: str) -> bool:
+    requirement = QUALITY_MODE_REQUIREMENTS.get(seat.lower()) or {}
+    return bool(requirement.get("strict"))
+
+
+def _quality_mode_required_mode(seat: str) -> str:
+    requirement = QUALITY_MODE_REQUIREMENTS.get(seat.lower()) or {}
+    return str(requirement.get("required_mode") or "")
+
+
+def _quality_mode_policy_snapshot() -> dict[str, dict[str, Any]]:
+    return {
+        seat: {
+            "required_mode": str(requirement.get("required_mode") or ""),
+            "verification_markers": list(requirement.get("markers") or ()),
+            "failure_code": str(requirement.get("code") or ""),
+            "strict": bool(requirement.get("strict")),
+        }
+        for seat, requirement in QUALITY_MODE_REQUIREMENTS.items()
+    }
+
+
+def _quality_mode_prepare_verified(seat: str, prepared: dict[str, Any]) -> bool:
+    seat = seat.lower()
+    if seat == "deepseek":
+        return _deepseek_prepare_verified(prepared)
+    if seat == "doubao":
+        return _doubao_prepare_verified(prepared)
+    requirement = QUALITY_MODE_REQUIREMENTS.get(seat)
+    if not requirement:
+        return True
+    clicked_names: set[str] = set()
+    for state in _prepared_state_chain(prepared or {}):
+        clicked_names.update(str(name) for name in (state.get("clicked_names") or []))
+    return all(marker in clicked_names for marker in requirement.get("markers") or ())
+
+
+def _quality_mode_failure(seat: str) -> tuple[str, str]:
+    requirement = QUALITY_MODE_REQUIREMENTS.get(seat.lower()) or {}
+    return (
+        str(requirement.get("code") or f"{seat}_quality_mode_not_verified"),
+        str(requirement.get("message") or "Required high-quality answer mode was not verified before submission."),
+    )
+
+
+def _quality_mode_trace_action(seat: str) -> str:
+    requirement = QUALITY_MODE_REQUIREMENTS.get(seat.lower()) or {}
+    return str(requirement.get("trace_action") or "quality_mode_blocked")
+
+
+def _quality_mode_trace_message(seat: str) -> str:
+    requirement = QUALITY_MODE_REQUIREMENTS.get(seat.lower()) or {}
+    return str(requirement.get("trace_message") or f"{seat} 未确认高质量思考模式，拒绝提交")
+
+
 def _build_fresh_navigation_js(fresh_url: str) -> str:
     url_json = json.dumps(fresh_url, ensure_ascii=False)
     return f"""
@@ -2096,6 +3276,23 @@ def _build_write_prompt_js(prompt: str, prompt_id: str) -> str:
     const rect = el.getBoundingClientRect();
     return rect.width >= 20 && rect.height >= 8;
   }};
+  const queryAllDeep = selector => {{
+    const out = [];
+    const seenRoots = new Set();
+    const roots = [document];
+    for (let i = 0; i < roots.length; i += 1) {{
+      const root = roots[i];
+      if (!root || seenRoots.has(root)) continue;
+      seenRoots.add(root);
+      try {{ out.push(...Array.from(root.querySelectorAll(selector))); }} catch (_) {{}}
+      try {{
+        for (const el of Array.from(root.querySelectorAll("*"))) {{
+          if (el.shadowRoot && !seenRoots.has(el.shadowRoot)) roots.push(el.shadowRoot);
+        }}
+      }} catch (_) {{}}
+    }}
+    return out;
+  }};
   const dismissBlockingUi = () => {{
     if (/chat\\.deepseek\\.com/i.test(location.hostname) && /已选择\\s*\\d+\\s*组对话/.test(document.body?.innerText || "")) {{
       const cancel = Array.from(document.querySelectorAll("button,[role='button'],div,span"))
@@ -2104,10 +3301,85 @@ def _build_write_prompt_js(prompt: str, prompt_id: str) -> str:
         try {{ cancel.click(); }} catch (_) {{}}
       }}
     }}
+    if (/chat\\.qwen\\.ai|wenxin\\.baidu\\.com|yiyan\\.baidu\\.com|agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io/i.test(location.hostname)) {{
+      for (const type of ["keydown", "keyup"]) {{
+        try {{ document.dispatchEvent(new KeyboardEvent(type, {{ key: "Escape", code: "Escape", bubbles: true, cancelable: true }})); }} catch (_) {{}}
+        try {{ document.body?.dispatchEvent(new KeyboardEvent(type, {{ key: "Escape", code: "Escape", bubbles: true, cancelable: true }})); }} catch (_) {{}}
+        try {{ document.activeElement?.dispatchEvent(new KeyboardEvent(type, {{ key: "Escape", code: "Escape", bubbles: true, cancelable: true }})); }} catch (_) {{}}
+      }}
+    }}
   }};
   dismissBlockingUi();
+  const activateXunfeiComposer = () => {{
+    if (!/xinghuo\\.xfyun\\.cn/i.test(location.hostname)) return null;
+    const labelOf = el => [
+      el.getAttribute?.("placeholder") || "",
+      el.getAttribute?.("aria-label") || "",
+      el.getAttribute?.("data-placeholder") || "",
+      el.title || "",
+      el.innerText || "",
+      el.textContent || "",
+      String(el.className || "")
+    ].join(" ").replace(/\\s+/g, " ").trim();
+    const existing = queryAllDeep("textarea,input,[contenteditable='true'],[contenteditable='plaintext-only'],[role='textbox']")
+      .find(usableInput);
+    if (existing) return {{ ok: true, already_has_input: true }};
+    const isActionEntry = el => {{
+      const tag = String(el.tagName || "").toUpperCase();
+      const role = String(el.getAttribute?.("role") || "").toLowerCase();
+      const cls = String(el.className || "");
+      const label = labelOf(el);
+      if (label.length > 80 && !/(btn|button|try-now|chat|dialog|conversation)/i.test(cls)) return false;
+      if (/讯飞绘文|讯飞智文|讯飞文书|星火纪要|星火投标|星火陪练|讯飞绘镜/.test(label) && label.length > 60) return false;
+      return tag === "A" || tag === "BUTTON" || role === "button" || /(btn|button|try-now|chat|dialog|conversation)/i.test(cls) || label.length <= 16;
+    }};
+    const scoreEntry = el => {{
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 20 || rect.height < 16) return 0;
+      if (!isActionEntry(el)) return 0;
+      const label = labelOf(el);
+      const text = (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+      const cls = String(el.className || "");
+      if (/^SparkDesk$/i.test(text) && rect.top >= -8 && rect.top <= 140) return 1100;
+      if (/SparkDesk/i.test(label) && label.length <= 120 && rect.top >= -8 && rect.top <= 160) return 1000;
+      if (text === "新建对话" || label === "新建对话") return 850;
+      if (text === "立即对话" || label === "立即对话") return 760 + (/(try-now|hm-content__btn)/i.test(cls) ? 80 : 0);
+      return 0;
+    }};
+    const target = queryAllDeep("a,button,[role='button'],[class*='btn'],[class*='button'],[class*='try-now'],div,span")
+      .filter(visible)
+      .map(el => ({{ el, score: scoreEntry(el) }}))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)[0]?.el || null;
+    if (!target) return {{ ok: false, error: "xunfei_chat_entry_not_found", url: location.href }};
+    const rect = target.getBoundingClientRect();
+    const opts = {{ bubbles: true, cancelable: true, view: window, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 }};
+    for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {{
+      const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+      try {{ target.dispatchEvent(new Ctor(type, opts)); }} catch (_) {{}}
+    }}
+    try {{ target.click(); }} catch (_) {{}}
+    return {{ ok: true, clicked: true, label: labelOf(target).slice(0, 80), text: (target.innerText || target.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 80), url: location.href }};
+  }};
+  const xunfeiActivation = activateXunfeiComposer();
   const inputSelectors = [
+    "[placeholder*='有问必答']",
+    "[placeholder*='可以问']",
+    "[placeholder*='提问']",
+    "[placeholder*='消息']",
+    "[aria-label*='提问']",
+    "[aria-label*='消息']",
+    "[data-placeholder*='输入']",
+    "[data-placeholder*='提问']",
+    "[data-placeholder*='消息']",
+    ".tiptap.ProseMirror[contenteditable='true']",
+    "[class*='rich-text-editor'][contenteditable='true']",
     ".chat-input-editor[contenteditable='true']",
+    "[class*='input'][contenteditable='true']",
+    "[class*='editor'][contenteditable='true']",
+    "[class*='textarea'] textarea",
+    "[class*='input'] textarea",
+    "[class*='editor'] textarea",
     "textarea[data-testid='prompt-textarea']",
     "div[contenteditable='true'][role='textbox']",
     "div[role='textbox'][contenteditable='true']",
@@ -2115,6 +3387,11 @@ def _build_write_prompt_js(prompt: str, prompt_id: str) -> str:
     "[class*='ProseMirror'][contenteditable='true']",
     "[class*='ql-editor'][contenteditable='true']",
     "[class*='cm-content'][contenteditable='true']",
+    "[class*='input'][contenteditable='true']",
+    "[class*='editor'][contenteditable='true']",
+    "[contenteditable='plaintext-only']",
+    "[aria-label*='输入']",
+    "[placeholder*='输入']",
     "div[contenteditable='true']",
     "textarea",
     "[role='textbox']"
@@ -2122,11 +3399,11 @@ def _build_write_prompt_js(prompt: str, prompt_id: str) -> str:
   let input = null;
   let selectorUsed = "";
   for (const selector of inputSelectors) {{
-    const candidates = Array.from(document.querySelectorAll(selector)).filter(usableInput);
+    const candidates = queryAllDeep(selector).filter(usableInput);
     input = candidates[candidates.length - 1];
     if (input) {{ selectorUsed = selector; break; }}
   }}
-  if (!input) return JSON.stringify({{ ok: false, error: "input_not_found", title: document.title, url: location.href }});
+  if (!input) return JSON.stringify({{ ok: false, error: "input_not_found", title: document.title, url: location.href, xunfei_activation: xunfeiActivation }});
   input.focus();
   if (input.tagName === "TEXTAREA" || input.tagName === "INPUT") {{
     const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value")?.set;
@@ -2150,7 +3427,14 @@ def _build_write_prompt_js(prompt: str, prompt_id: str) -> str:
       inserted = false;
     }}
     if (!inserted || !(input.innerText || input.textContent || "").includes(marker)) {{
-      input.textContent = prompt;
+      if (/ProseMirror|rich-text-editor/i.test(String(input.className || ""))) {{
+        input.innerHTML = "";
+        const p = document.createElement("p");
+        p.textContent = prompt;
+        input.appendChild(p);
+      }} else {{
+        input.textContent = prompt;
+      }}
     }}
     input.dispatchEvent(new InputEvent("input", {{ bubbles: true, inputType: "insertText", data: prompt }}));
     input.dispatchEvent(new Event("change", {{ bubbles: true }}));
@@ -2159,7 +3443,7 @@ def _build_write_prompt_js(prompt: str, prompt_id: str) -> str:
   const value = input.value || input.innerText || input.textContent || "";
   const pageText = document.body?.innerText || document.body?.textContent || "";
   const promptWritten = value.includes(marker) || pageText.includes(marker);
-  return JSON.stringify({{ ok: promptWritten, prompt_written: promptWritten, method: "write_then_send", input_selector: selectorUsed, title: document.title, url: location.href }});
+  return JSON.stringify({{ ok: promptWritten, prompt_written: promptWritten, method: "write_then_send", input_selector: selectorUsed, title: document.title, url: location.href, xunfei_activation: xunfeiActivation }});
 }})();
 """
 
@@ -2170,6 +3454,13 @@ def _build_click_send_js(prompt_id: str) -> str:
 (() => {{
   const marker = {marker_json};
   const visible = el => !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  const bodyText = document.body?.innerText || document.body?.textContent || "";
+  if (/输入区字数超限|字数超限|超出字数|内容过长|超过(?:最大)?(?:输入)?(?:长度|字数)|prompt is too long|message is too long|too much text|maximum length/i.test(bodyText)) return JSON.stringify({{
+    ok: true,
+    submitted: false,
+    reason: "prompt_too_long",
+    message: "The provider page reports that the prompt is too long."
+  }});
   const usableInput = el => {{
     if (!visible(el)) return false;
     const rect = el.getBoundingClientRect();
@@ -2181,6 +3472,12 @@ def _build_click_send_js(prompt_id: str) -> str:
         .find(el => visible(el) && (el.innerText || "").trim() === "取消");
       if (cancel) {{
         try {{ cancel.click(); }} catch (_) {{}}
+      }}
+    }}
+    if (/chat\\.qwen\\.ai|wenxin\\.baidu\\.com|yiyan\\.baidu\\.com|agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io/i.test(location.hostname)) {{
+      for (const type of ["keydown", "keyup"]) {{
+        try {{ document.dispatchEvent(new KeyboardEvent(type, {{ key: "Escape", code: "Escape", bubbles: true, cancelable: true }})); }} catch (_) {{}}
+        try {{ document.body?.dispatchEvent(new KeyboardEvent(type, {{ key: "Escape", code: "Escape", bubbles: true, cancelable: true }})); }} catch (_) {{}}
       }}
     }}
   }};
@@ -2203,7 +3500,7 @@ def _build_click_send_js(prompt_id: str) -> str:
     }}
     return false;
   }};
-  const inputs = Array.from(document.querySelectorAll("textarea,input,[contenteditable='true'],[role='textbox']")).filter(usableInput);
+  const inputs = Array.from(document.querySelectorAll("textarea,input,[contenteditable='true'],[contenteditable='plaintext-only'],[role='textbox'],[aria-label*='输入'],[aria-label*='消息'],[aria-label*='提问'],[placeholder*='输入'],[placeholder*='消息'],[placeholder*='提问'],[placeholder*='有问必答'],[placeholder*='可以问'],[data-placeholder*='输入'],[data-placeholder*='消息'],[data-placeholder*='提问']")).filter(usableInput);
   const activeInput = inputs.find(el => ((el.value || el.innerText || el.textContent || "").includes(marker))) || inputs[inputs.length - 1];
   if (!activeInput) return JSON.stringify({{ ok: false, error: "input_not_found", title: document.title, url: location.href }});
   const blockedLabel = /(voice|语音|microphone|mic|听写|dictation|工具|附件|upload|attach|file|文件|深度|思考|联网|model|模型|settings|设置|历史|new chat|新建|menu|菜单|主菜单|more|更多|view|switch|切换|复制|copy|thumb|赞|踩|regenerate|share|分享|sidebar|侧边栏|search|搜索|incognito|learn|write|code|life stuff|choice|stop|停止|pause|暂停|timeline|suggestion|建议|示例|起手式|带入|角色|思路|解决方案)/i;
@@ -2247,6 +3544,8 @@ def _build_click_send_js(prompt_id: str) -> str:
   const clickTarget = el => {{
     if (!el) return el;
     if (el.matches?.("button,[role='button']")) return el;
+    const ancestorButton = el.closest?.("button:not([disabled]),[role='button']:not([aria-disabled='true'])");
+    if (ancestorButton) return ancestorButton;
     const childButton = el.querySelector?.("button:not([disabled]),[role='button']:not([aria-disabled='true'])");
     if (childButton) return childButton;
     return el.closest("button,[role='button'],[class*='send'],[class*='submit'],[class*='Submit'],[class*='Send']") || el;
@@ -2271,6 +3570,21 @@ def _build_click_send_js(prompt_id: str) -> str:
   }}
   const buttons = allCandidates(document);
   sendButton = sendButton || buttons.find(looksLikeSend);
+  if (/chat\\.qwen\\.ai/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const qwenButtons = dedupe(Array.from(document.querySelectorAll("button.send-button,button[class*='send-button'],.chat-prompt-send-button button,.message-input-right-button-send button")).map(clickTarget))
+      .filter(btn => visible(btn) && !hasDisabledAncestor(btn))
+      .filter(btn => {{
+        const rect = btn.getBoundingClientRect();
+        return rect.width > 0
+          && rect.height > 0
+          && rect.top >= inputRect.top - 80
+          && rect.bottom <= inputRect.bottom + 120
+          && rect.left >= inputRect.right - 160
+          && rect.left <= inputRect.right + 120;
+      }});
+    sendButton = qwenButtons[qwenButtons.length - 1] || sendButton;
+  }}
   if (!sendButton && /chat\\.deepseek\\.com/i.test(location.hostname)) {{
     const scopedButtons = [];
     let node = activeInput;
@@ -2321,6 +3635,46 @@ def _build_click_send_js(prompt_id: str) -> str:
       }});
     sendButton = doubaoButtons[doubaoButtons.length - 1] || null;
   }}
+  if (/xinghuo\\.xfyun\\.cn/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const explicitXunfeiButtons = dedupe(Array.from(document.querySelectorAll("#ask_window_send_btn,[id='ask_window_send_btn'],[class*='AskWindow_send'],[class*='send__']")).map(clickTarget))
+      .filter(btn => visible(btn) && !hasDisabledAncestor(btn))
+      .filter(btn => {{
+        const rect = btn.getBoundingClientRect();
+        return rect.width > 0
+          && rect.height > 0
+          && rect.width <= 96
+          && rect.height <= 96
+          && getComputedStyle(btn).pointerEvents !== "none"
+          && rect.top >= inputRect.top - 120
+          && rect.bottom <= inputRect.bottom + 180
+          && rect.left >= inputRect.right - 220
+          && rect.left <= inputRect.right + 280;
+      }});
+    sendButton = explicitXunfeiButtons[explicitXunfeiButtons.length - 1] || sendButton;
+  }}
+  if (!sendButton && /xinghuo\\.xfyun\\.cn/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const xunfeiButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],[aria-label],[class*='send'],[class*='Send'],[class*='submit'],[class*='Submit'],[class*='arrow'],svg,i,span,div")).map(clickTarget))
+      .filter(btn => visible(btn) && !hasDisabledAncestor(btn))
+      .filter(btn => {{
+        const rect = btn.getBoundingClientRect();
+        if (!rect.width || !rect.height || rect.width > 128 || rect.height > 128) return false;
+        const label = buttonLabel(btn);
+        const forceSend = /(send|发送|提交|提问|arrow|up-arrow|arrow-up|icon-send|send-icon|input-send|submit|paper-plane|enter)/i.test(label);
+        if (blockedLabel.test(label) && !forceSend) return false;
+        const closeToComposer = rect.top >= inputRect.top - 120
+          && rect.bottom <= inputRect.bottom + 180
+          && rect.left >= inputRect.left - 120
+          && rect.left <= inputRect.right + 280;
+        const emptyRightIcon = !(btn.innerText || "").trim()
+          && rect.left >= inputRect.right - 220
+          && rect.left <= inputRect.right + 280
+          && /(send|submit|arrow|icon|btn|wrapper|primary)/i.test(label);
+        return (forceSend || emptyRightIcon) && closeToComposer;
+      }});
+    sendButton = xunfeiButtons[xunfeiButtons.length - 1] || null;
+  }}
   if (!sendButton && /agent\\.minimax\\.io|agent\\.minimaxi\\.com|minimax\\.io/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
     const miniMaxButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],svg,i,span,div")).map(clickTarget))
@@ -2340,7 +3694,7 @@ def _build_click_send_js(prompt_id: str) -> str:
     sendButton = miniMaxButtons[miniMaxButtons.length - 1] || null;
   }}
   const pageTextAfterWrite = document.body?.innerText || document.body?.textContent || "";
-  const pageBusyAfterWrite = /停止回答|stop generating|stop response|停止生成/i.test(pageTextAfterWrite);
+  const pageBusyAfterWrite = /停止回答|stop generating|stop generation|stop response|stop-button|停止生成/i.test(pageTextAfterWrite);
   const pageHasMarkerAfterWrite = pageTextAfterWrite.includes(marker);
   if (!sendButton && pageBusyAfterWrite && pageHasMarkerAfterWrite) {{
     return JSON.stringify({{
@@ -2512,7 +3866,7 @@ def _build_composer_probe_js() -> str:
   };
   const bodyText = (document.body && document.body.innerText) || "";
   const titleText = document.title || "";
-  const quotaBlocked = /消息限制已达|使用上限|rate limit|usage limit|message limit|too many requests|升级到\\s*SuperGrok/i.test(bodyText);
+  const quotaBlocked = /消息限制已达|使用上限|距离限制重置|等待或升级至\\s*SuperGrok|升级至\\s*SuperGrok|更高上限|立即升级|rate limit|usage limit|message limit|too many requests|limit resets?|limit reset|upgrade to\\s*SuperGrok/i.test(bodyText);
   const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(bodyText + "\\n" + titleText);
   const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText);
   const blankPage = bodyText.trim().length < 8;
@@ -2533,6 +3887,56 @@ def _build_composer_probe_js() -> str:
     input = candidates[candidates.length - 1];
     if (input) { selectorUsed = selector; break; }
   }
+  let xunfeiActivation = null;
+  if (!input && /xinghuo\\.xfyun\\.cn/i.test(location.hostname)) {
+    const labelOf = el => [
+      el.getAttribute?.("placeholder") || "",
+      el.getAttribute?.("aria-label") || "",
+      el.getAttribute?.("data-placeholder") || "",
+      el.title || "",
+      el.innerText || "",
+      el.textContent || "",
+      String(el.className || "")
+    ].join(" ").replace(/\\s+/g, " ").trim();
+    const isActionEntry = el => {
+      const tag = String(el.tagName || "").toUpperCase();
+      const role = String(el.getAttribute?.("role") || "").toLowerCase();
+      const cls = String(el.className || "");
+      const label = labelOf(el);
+      if (label.length > 80 && !/(btn|button|try-now|chat|dialog|conversation)/i.test(cls)) return false;
+      if (/讯飞绘文|讯飞智文|讯飞文书|星火纪要|星火投标|星火陪练|讯飞绘镜/.test(label) && label.length > 60) return false;
+      return tag === "A" || tag === "BUTTON" || role === "button" || /(btn|button|try-now|chat|dialog|conversation)/i.test(cls) || label.length <= 16;
+    };
+    const scoreEntry = el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 20 || rect.height < 16) return 0;
+      if (!isActionEntry(el)) return 0;
+      const label = labelOf(el);
+      const text = (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+      const cls = String(el.className || "");
+      if (/^SparkDesk$/i.test(text) && rect.top >= -8 && rect.top <= 140) return 1100;
+      if (/SparkDesk/i.test(label) && label.length <= 120 && rect.top >= -8 && rect.top <= 160) return 1000;
+      if (text === "新建对话" || label === "新建对话") return 850;
+      if (text === "立即对话" || label === "立即对话") return 760 + (/(try-now|hm-content__btn)/i.test(cls) ? 80 : 0);
+      return 0;
+    };
+    const target = Array.from(document.querySelectorAll("a,button,[role='button'],[class*='btn'],[class*='button'],[class*='try-now'],div,span"))
+      .filter(visible)
+      .map(el => ({ el, score: scoreEntry(el) }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)[0]?.el || null;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const opts = { bubbles: true, cancelable: true, view: window, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 };
+      for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+        try { target.dispatchEvent(new MouseEvent(type, opts)); } catch (_) {}
+      }
+      try { target.click(); } catch (_) {}
+      xunfeiActivation = { ok: true, clicked: true, label: labelOf(target).slice(0, 80), text: (target.innerText || target.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 80), url: location.href };
+    } else {
+      xunfeiActivation = { ok: false, error: "xunfei_chat_entry_not_found", url: location.href };
+    }
+  }
   return JSON.stringify({
     ok: true,
     title: document.title,
@@ -2541,11 +3945,12 @@ def _build_composer_probe_js() -> str:
     input_selector: selectorUsed,
     input_tag: input ? input.tagName : null,
     input_role: input ? input.getAttribute("role") : null,
-    page_busy: /停止回答|stop generating|stop response|停止生成/i.test(bodyText),
+    page_busy: /停止回答|stop generating|stop generation|stop response|stop-button|停止生成/i.test(bodyText),
     page_blocked: quotaBlocked || pageError || chromeCrash || loginRequired || blankPage,
     reason: quotaBlocked ? "provider_quota_limited" : (chromeCrash ? "chrome_crash" : (pageError ? "page_error" : (loginRequired ? "login_required" : (blankPage ? "blank_page" : null)))),
     message: quotaBlocked ? "The provider page reports a usage/message limit." : (chromeCrash ? "The provider tab appears to have crashed." : (pageError ? "The provider page reports a retryable page error." : (loginRequired ? "The provider page requires login before prompts can be submitted." : (blankPage ? "The provider page did not render usable content." : null)))),
-    body_sample: bodyText.slice(0, 180)
+    body_sample: bodyText.slice(0, 180),
+    xunfei_activation: xunfeiActivation
   });
 })();
 """
@@ -2589,6 +3994,9 @@ def _build_submission_check_js(prompt_id: str) -> str:
   const inputHasLongPrompt = inputValues.some(value => value.length > 80 && (value.includes("[QUESTION]") || value.includes("AI Judge") || value.includes("AIJUDGE_ANSWER_START")));
   const mirrorHasMarker = mirrorValues.some(value => value.includes(marker));
   const mirrorHasLongPrompt = mirrorValues.some(value => value.length > 80 && (value.includes("[QUESTION]") || value.includes("AI Judge") || value.includes("AIJUDGE_ANSWER_START")));
+  const isXunfei = /xinghuo\\.xfyun\\.cn/i.test(location.hostname);
+  const pageText = document.body?.innerText || document.body?.textContent || "";
+  const pageBusy = /停止回答|停止生成|正在生成|生成中|思考中|回答中|stop generating|generating/i.test(pageText);
   if (inputHasMarker || inputHasLongPrompt || mirrorHasMarker || mirrorHasLongPrompt) return JSON.stringify({{
     ok: true,
     submitted: false,
@@ -2596,6 +4004,15 @@ def _build_submission_check_js(prompt_id: str) -> str:
     message: "Prompt is still in the composer, so the bridge did not confirm a real submission."
   }});
   if (nonInputMarker) return JSON.stringify({{ ok: true, submitted: true, reason: "marker_in_conversation" }});
+  if (isXunfei && pageBusy) return JSON.stringify({{ ok: true, submitted: true, reason: "xunfei_page_generating" }});
+  if (isXunfei) return JSON.stringify({{
+    ok: true,
+    submitted: /\\/desk/i.test(location.pathname),
+    reason: /\\/desk/i.test(location.pathname) ? "xunfei_input_cleared_polling" : "xunfei_input_cleared_without_marker",
+    message: /\\/desk/i.test(location.pathname)
+      ? "Xunfei cleared the composer on SparkDesk; continue to answer polling and let relevance gates validate the response."
+      : "Xunfei cleared the composer, but the AI Judge marker was not visible in the conversation yet."
+  }});
   if (!inputHasMarker && !inputHasLongPrompt && !mirrorHasMarker && !mirrorHasLongPrompt) return JSON.stringify({{ ok: true, submitted: true, reason: "input_cleared" }});
   return JSON.stringify({{ ok: true, submitted: false, reason: "submission_unknown" }});
 }})();
@@ -2613,7 +4030,24 @@ def _build_prompt_presence_js(prompt_id: str) -> str:
     const rect = el.getBoundingClientRect();
     return rect.width >= 20 && rect.height >= 8;
   }};
-  const inputs = Array.from(document.querySelectorAll("textarea,input,[contenteditable='true'],[role='textbox']")).filter(usableInput);
+  const queryAllDeep = selector => {{
+    const out = [];
+    const seenRoots = new Set();
+    const roots = [document];
+    for (let i = 0; i < roots.length; i += 1) {{
+      const root = roots[i];
+      if (!root || seenRoots.has(root)) continue;
+      seenRoots.add(root);
+      try {{ out.push(...Array.from(root.querySelectorAll(selector))); }} catch (_) {{}}
+      try {{
+        for (const el of Array.from(root.querySelectorAll("*"))) {{
+          if (el.shadowRoot && !seenRoots.has(el.shadowRoot)) roots.push(el.shadowRoot);
+        }}
+      }} catch (_) {{}}
+    }}
+    return out;
+  }};
+  const inputs = queryAllDeep("textarea,input,[contenteditable='true'],[contenteditable='plaintext-only'],[role='textbox'],[aria-label*='输入'],[aria-label*='消息'],[aria-label*='提问'],[placeholder*='输入'],[placeholder*='消息'],[placeholder*='提问'],[placeholder*='有问必答'],[placeholder*='可以问'],[data-placeholder*='输入'],[data-placeholder*='消息'],[data-placeholder*='提问']").filter(usableInput);
   const inputHasMarker = inputs.some(el => ((el.value || el.innerText || el.textContent || "").includes(marker)));
   const pageHasMarker = (document.body?.innerText || document.body?.textContent || "").includes(marker);
   return JSON.stringify({{
@@ -2641,7 +4075,10 @@ def _build_retry_submit_js(prompt_id: str) -> str:
   }};
   const bodyText = document.body?.innerText || document.body?.textContent || "";
   const titleText = document.title || "";
-  if (/消息限制已达|使用上限|rate limit|usage limit|message limit|too many requests|升级到\\s*SuperGrok/i.test(bodyText)) {{
+  if (/输入区字数超限|字数超限|超出字数|内容过长|超过(?:最大)?(?:输入)?(?:长度|字数)|prompt is too long|message is too long|too much text|maximum length/i.test(bodyText)) {{
+    return JSON.stringify({{ ok: true, submitted: false, reason: "prompt_too_long", message: "The provider page reports that the prompt is too long.", title: document.title, url: location.href }});
+  }}
+  if (/消息限制已达|使用上限|距离限制重置|等待或升级至\\s*SuperGrok|升级至\\s*SuperGrok|更高上限|立即升级|rate limit|usage limit|message limit|too many requests|limit resets?|limit reset|upgrade to\\s*SuperGrok/i.test(bodyText)) {{
     return JSON.stringify({{ ok: false, error: "provider_quota_limited", message: "The provider page reports a usage/message limit.", title: document.title, url: location.href }});
   }}
   if (/Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(bodyText + "\\n" + titleText)) {{
@@ -2690,7 +4127,10 @@ def _build_retry_submit_js(prompt_id: str) -> str:
   }};
   const clickTarget = el => {{
     if (!el) return el;
-    if (el.matches?.("button,[role='button'],[class*='send'],[class*='Send'],[class*='submit'],[class*='Submit'],[class*='icon-send']")) return el;
+    if (el.matches?.("button,[role='button']")) return el;
+    const ancestorButton = el.closest?.("button:not([disabled]),[role='button']:not([aria-disabled='true'])");
+    if (ancestorButton) return ancestorButton;
+    if (el.matches?.("[class*='send'],[class*='Send'],[class*='submit'],[class*='Submit'],[class*='icon-send']")) return el;
     return el.closest("button,[role='button'],[class*='send'],[class*='Send'],[class*='submit'],[class*='Submit'],[class*='icon-send']") || el;
   }};
   const fireClick = el => {{
@@ -2728,6 +4168,21 @@ def _build_retry_submit_js(prompt_id: str) -> str:
     return nearActiveInput(el) || /bigmodel\\.cn|chat\\.qwen\\.ai/i.test(location.hostname);
   }});
   let button = sendCandidates[sendCandidates.length - 1] || null;
+  if (/chat\\.qwen\\.ai/i.test(location.hostname)) {{
+    const inputRect = activeInput.getBoundingClientRect();
+    const qwenButtons = dedupe(Array.from(document.querySelectorAll("button.send-button,button[class*='send-button'],.chat-prompt-send-button button,.message-input-right-button-send button")).map(clickTarget))
+      .filter(btn => visible(btn) && !hasDisabledAncestor(btn))
+      .filter(btn => {{
+        const rect = btn.getBoundingClientRect();
+        return rect.width > 0
+          && rect.height > 0
+          && rect.top >= inputRect.top - 80
+          && rect.bottom <= inputRect.bottom + 120
+          && rect.left >= inputRect.right - 160
+          && rect.left <= inputRect.right + 120;
+      }});
+    button = qwenButtons[qwenButtons.length - 1] || button;
+  }}
   if (!button && /aistudio\\.xiaomimimo\\.com/i.test(location.hostname)) {{
     const inputRect = activeInput.getBoundingClientRect();
     const mimoButtons = dedupe(Array.from(document.querySelectorAll("button,[role='button'],[class*='send'],[class*='Send'],svg,i,span,div")).map(clickTarget))
@@ -2816,6 +4271,7 @@ def _build_capture_js(prompt_id: str) -> str:
   const answerStart = `[AIJUDGE_ANSWER_START:${{marker}}]`;
   const answerEnd = `[AIJUDGE_ANSWER_END:${{marker}}]`;
   const pageRaw = document.body?.innerText || document.body?.textContent || "";
+  const titleText = document.title || "";
   const conversationRoot = document.querySelector("main")
     || document.querySelector("[role='main']")
     || document.body;
@@ -2858,7 +4314,7 @@ def _build_capture_js(prompt_id: str) -> str:
     .filter(el => visible(el))
     .map(el => [el.getAttribute("aria-label") || "", el.innerText || "", el.textContent || "", String(el.className || "")].join(" "))
     .join(" ");
-  const pageBusy = /停止回答|stop generating|stop response|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
+  const pageBusy = /停止回答|stop generating|stop generation|stop response|stop-button|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
   const editableAncestors = node => {{
     for (let el = node.parentElement; el; el = el.parentElement) {{
       const tag = (el.tagName || "").toLowerCase();
@@ -2891,6 +4347,14 @@ def _build_capture_js(prompt_id: str) -> str:
   let knownError = null;
   let markerText = "";
   let markerClosed = false;
+  const fullStateText = pageRaw + "\\n" + bodyRaw + "\\n" + titleText;
+  if (/输入区字数超限|字数超限|超出字数|内容过长|超过(?:最大)?(?:输入)?(?:长度|字数)|发送的消息超过字数|文本超长|prompt is too long|message is too long|too much text|maximum length/i.test(fullStateText)) {{
+    knownError = {{ code: "prompt_too_long", message: "The provider page reports that the prompt is too long." }};
+  }} else if (/余额不足|无可用资源包|前往充值|资源包不足|消息限制已达|使用上限|距离限制重置|等待或升级至\\s*SuperGrok|升级至\\s*SuperGrok|更高上限|立即升级|rate limit|usage limit|message limit|too many requests|limit resets?|limit reset|upgrade to\\s*SuperGrok/i.test(fullStateText)) {{
+    knownError = {{ code: "provider_quota_limited", message: "The provider page reports a balance, resource package, or usage limit." }};
+  }} else if (/已为您创作内容|正在编辑：|编辑文档|导出\\s*$/i.test(fullStateText) && /wenxin\\.baidu\\.com|yiyan\\.baidu\\.com/i.test(location.hostname)) {{
+    knownError = {{ code: "answer_in_document_canvas", message: "Wenxin produced the answer in a document/canvas surface instead of the public chat transcript." }};
+  }}
   const extractWrapped = source => {{
     const candidates = [];
     let searchFrom = 0;
@@ -2904,7 +4368,7 @@ def _build_capture_js(prompt_id: str) -> str:
       const endIndex = relativeEndIndex >= 0 ? contentStart + relativeEndIndex : -1;
       const contentEnd = endIndex >= 0 ? endIndex : (nextStartIndex >= 0 ? nextStartIndex : source.length);
       const wrappedText = clean(source.slice(contentStart, contentEnd));
-      const isPlaceholder = /^(你的最终答案|最终答案正文)\\s*$/i.test(wrappedText);
+      const isPlaceholder = /^(你的最终答案|最终答案正文|JSON|\\(?你的\\s*JSON\\)?)\\s*$/i.test(wrappedText);
       if (wrappedText && !isPlaceholder && wrappedText.length >= 8) {{
         candidates.push({{ text: wrappedText, closed: endIndex >= 0, index: wrappedStartIndex }});
       }}
@@ -2925,7 +4389,7 @@ def _build_capture_js(prompt_id: str) -> str:
   if (answerMarkerInBody || answerMarkerInRaw) {{
     const markerSource = answerMarkerInBody ? bodyText : (bodyRaw.includes(answerStart) ? bodyRaw : pageRaw);
     const afterMarker = clean(markerSource.slice(markerSource.lastIndexOf(answerStart) + answerStart.length));
-    if (/(we couldn.t connect|network connection|please check your network|try again|无法连接|网络错误|请稍后重试|出了点问题|出了些问题|出错了)/i.test(afterMarker)) {{
+    if (!knownError && /(we couldn.t connect|network connection|please check your network|try again|无法连接|网络错误|请稍后重试|出了点问题|出了些问题|出错了)/i.test(afterMarker)) {{
       knownError = {{ code: "model_page_error", message: afterMarker.slice(0, 360) }};
     }}
   }}
@@ -2961,6 +4425,21 @@ def _build_capture_js(prompt_id: str) -> str:
   for (const text of chunks) {{
     if (!unique.includes(text)) unique.push(text);
   }}
+  const jsonReceiptCandidate = list => {{
+    const badPromptEcho = /输出最短\\s*JSON|必须覆盖|身份硬门禁|AIJUDGE_DEALER_PACKET_COMPACT|账号：|赛事：|规则：每个\\s*match_id|answer_contract:\\s*structured_json/i;
+    const candidates = list
+      .map(text => clean(text || ""))
+      .filter(text =>
+        text.length >= 80
+        && /"model_account"\\s*:/.test(text)
+        && /"seat_id"\\s*:/.test(text)
+        && /"forecasts"\\s*:/.test(text)
+        && /"investments"\\s*:/.test(text)
+        && /"loan_decision"\\s*:/.test(text)
+        && !badPromptEcho.test(text)
+      );
+    return candidates[candidates.length - 1] || "";
+  }};
   const pickFallback = list => {{
     const recent = list.slice(-12);
     if (!recent.length) return "";
@@ -2971,10 +4450,11 @@ def _build_capture_js(prompt_id: str) -> str:
       }})
       .sort((a, b) => a.score - b.score)[recent.length - 1].text;
   }};
+  const jsonCandidateText = jsonReceiptCandidate([...assistantTexts, ...unique]);
   const fallbackText = pickFallback(unique);
   const text = markerText && markerText.length >= 80 ? markerText : fallbackText;
-  const finalText = markerClosed ? markerText : (markerText && markerText.length >= 80 ? markerText : fallbackText);
-  return JSON.stringify({{ ok: true, title: document.title, url: location.href, text: finalText, text_length: finalText.length, marker_found: markerFound, marker_closed: markerClosed, marker_in_input: markerInInput, known_error: knownError, blocking_ui_active: blockingUiActive, assistant_empty: assistantEmpty, qwen_thinking_complete_only: qwenThinkingCompleteOnly, thinking_only: thinkingOnly, page_busy: pageBusy }});
+  const finalText = jsonCandidateText || (markerClosed ? markerText : (markerText && markerText.length >= 80 ? markerText : fallbackText));
+  return JSON.stringify({{ ok: true, title: document.title, url: location.href, text: finalText, text_length: finalText.length, marker_found: markerFound, marker_closed: markerClosed, marker_in_input: markerInInput, json_receipt_candidate: !!jsonCandidateText, known_error: knownError, blocking_ui_active: blockingUiActive, assistant_empty: assistantEmpty, qwen_thinking_complete_only: qwenThinkingCompleteOnly, thinking_only: thinkingOnly, page_busy: pageBusy }});
 }})();
 """
 
@@ -3000,8 +4480,12 @@ def _build_existing_answer_capture_js(seat: str) -> str:
     .filter(visible)
     .map(el => [el.getAttribute("aria-label") || "", el.innerText || "", el.textContent || "", String(el.className || "")].join(" "))
     .join(" ");
-  const pageBusy = /停止回答|stop generating|stop response|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
+  const pageBusy = /停止回答|stop generating|stop generation|stop response|stop-button|停止生成|generating|正在生成/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + busyLabel);
   const pageError = /操作出了问题|出了点问题|出了些问题|please try again|try again|网络错误|无法连接|network error|we couldn.t connect/i.test(pageRaw + "\\n" + titleText);
+  const promptTooLong = /输入区字数超限|字数超限|超出字数|内容过长|超过(?:最大)?(?:输入)?(?:长度|字数)|发送的消息超过字数|文本超长|prompt is too long|message is too long|too much text|maximum length/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + titleText);
+  const providerQuotaLimited = /余额不足|无可用资源包|前往充值|资源包不足|消息限制已达|使用上限|距离限制重置|等待或升级至\\s*SuperGrok|升级至\\s*SuperGrok|更高上限|立即升级|rate limit|usage limit|message limit|too many requests|limit resets?|limit reset|upgrade to\\s*SuperGrok/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + titleText);
+  const answerCanvas = /已为您创作内容|正在编辑：|编辑文档|导出\\s*$/i.test(pageRaw + "\\n" + bodyRaw + "\\n" + titleText)
+    && /wenxin\\.baidu\\.com|yiyan\\.baidu\\.com/i.test(location.hostname);
   const chromeCrash = /Aw, Snap|喔唷，崩溃啦|页面无响应|RESULT_CODE|STATUS_ACCESS_VIOLATION|This page isn.t working/i.test(pageRaw + "\\n" + titleText);
   const blankPage = clean(pageRaw).length < 8;
   const editableAncestors = node => {{
@@ -3037,7 +4521,7 @@ def _build_existing_answer_capture_js(seat: str) -> str:
       const nextStart = source.indexOf("[AIJUDGE_ANSWER_START:", contentStart);
       const contentEnd = endIndex >= 0 ? endIndex : (nextStart >= 0 ? nextStart : source.length);
       const text = clean(source.slice(contentStart, contentEnd));
-      const isPlaceholder = /^(你的最终答案|最终答案正文)\\s*$/i.test(text);
+      const isPlaceholder = /^(你的最终答案|最终答案正文|JSON|\\(?你的\\s*JSON\\)?)\\s*$/i.test(text);
       if (isPlaceholder) placeholderFound = true;
       if (text && !isPlaceholder && text.length >= 8) {{
         candidates.push({{ prompt_id: promptId, text, closed: endIndex >= 0, index: match.index }});
@@ -3083,7 +4567,15 @@ def _build_existing_answer_capture_js(seat: str) -> str:
     seen.add(key);
     unique.push(item);
   }}
-  unique.sort((a, b) => a.index - b.index);
+  unique.sort((a, b) => {{
+    const aJson = /^[\\s`]*[\\{{\\[]/.test(a.text) ? 1 : 0;
+    const bJson = /^[\\s`]*[\\{{\\[]/.test(b.text) ? 1 : 0;
+    if (aJson !== bJson) return aJson - bJson;
+    const aLen = Math.min(a.text.length, 4000);
+    const bLen = Math.min(b.text.length, 4000);
+    if (Math.abs(aLen - bLen) > 40) return aLen - bLen;
+    return a.index - b.index;
+  }});
   const latest = unique[unique.length - 1] || null;
   if (latest) {{
     return JSON.stringify({{
@@ -3102,7 +4594,12 @@ def _build_existing_answer_capture_js(seat: str) -> str:
       page_busy: pageBusy
     }});
   }}
-  if (pageError || chromeCrash || blankPage) {{
+  if (promptTooLong || providerQuotaLimited || answerCanvas || pageError || chromeCrash || blankPage) {{
+    const reason = promptTooLong
+      ? "prompt_too_long"
+      : (providerQuotaLimited
+        ? "provider_quota_limited"
+        : (answerCanvas ? "answer_in_document_canvas" : (chromeCrash ? "chrome_crash" : (pageError ? "page_error" : "blank_page"))));
     return JSON.stringify({{
       ok: false,
       title: document.title,
@@ -3113,11 +4610,20 @@ def _build_existing_answer_capture_js(seat: str) -> str:
       fallback_found: false,
       capture_mode: "existing_answer_page_state",
       page_busy: pageBusy,
+      prompt_too_long: promptTooLong,
+      provider_quota_limited: providerQuotaLimited,
+      answer_canvas: answerCanvas,
       page_error: pageError,
       chrome_crash: chromeCrash,
       blank_page: blankPage,
-      reason: chromeCrash ? "chrome_crash" : (pageError ? "page_error" : "blank_page"),
-      message: chromeCrash ? "The provider tab appears to have crashed." : (pageError ? "The provider page reports a retryable page error." : "The provider page did not render usable content.")
+      reason,
+      message: promptTooLong
+        ? "The provider page reports that the prompt is too long."
+        : (providerQuotaLimited
+          ? "The provider page reports a balance, resource package, or usage limit."
+          : (answerCanvas
+            ? "The provider produced a document/canvas instead of a chat answer."
+            : (chromeCrash ? "The provider tab appears to have crashed." : (pageError ? "The provider page reports a retryable page error." : "The provider page did not render usable content."))))
     }});
   }}
   const fallbackUnique = [];

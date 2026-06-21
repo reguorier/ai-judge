@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: c4c8c10647a8bb7136ce0aa675915c5d_9607f50762f711f1832e5254006c9bbf
+    ReservedCode1: rNY5Vjafd3AeKeV2+bmdUkvUlXo9nd+r06/wKB4hNCWAG8j26QdPW20v7fy97zVmoaY0WE/leWR3j3ucobtiJHlkpE09xFfAIphAfq1uDGYVflorI/nn+WIrK+jNZiIbhZBAE4tn688A/uUx3iTBHGPffZXdnrUJ/xJkdgnJs9KekIWmaqypJPMkY6E=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: c4c8c10647a8bb7136ce0aa675915c5d_9607f50762f711f1832e5254006c9bbf
+    ReservedCode2: rNY5Vjafd3AeKeV2+bmdUkvUlXo9nd+r06/wKB4hNCWAG8j26QdPW20v7fy97zVmoaY0WE/leWR3j3ucobtiJHlkpE09xFfAIphAfq1uDGYVflorI/nn+WIrK+jNZiIbhZBAE4tn688A/uUx3iTBHGPffZXdnrUJ/xJkdgnJs9KekIWmaqypJPMkY6E=
+---
+
 # RELEASE SEAL — Deep Judge AJ_REPORT_V1
 
 ## Release Info
@@ -152,3 +163,4 @@ No-reasoning-source request must return:
 
 **Sealed by:** Marvis (AI Judge release agent)
 **Timestamp:** 2026-06-08
+*（内容由AI生成，仅供参考）*

@@ -12,7 +12,9 @@ from product.reporting.final_report_builder import (
     collect_sources,
     fail_no_report,
     SourcePack,
+    write_report_bundle,
 )
+from product.reporting.html_renderer import render_final_report_html
 
 
 class TestReportGroundedInIssue:
@@ -98,6 +100,63 @@ class TestReportGroundedInIssue:
         assert result["status"] == "failed"
         assert result["_failure"]["reason"] == "test_reason"
         assert result["_failure"]["failures"] == ["f1", "f2"]
+
+    def test_write_bundle_persists_noise_audit(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("AI_JUDGE_MODEL_STABILITY_PATH", str(tmp_path / "model_stability_profiles.json"))
+        report = build_client_final_report(
+            run_id="test-noise-bundle",
+            question="product noise audit bundle 验证",
+            mode="deep_judge",
+            total_seats=3,
+            valid_seats=2,
+            failed_seats=1,
+        )
+
+        bundle = write_report_bundle(report, reports_root=tmp_path)
+        summary = bundle["summary"]
+        noise_path = Path(bundle["paths"]["noise_audit"])
+        judge_ir_path = Path(bundle["paths"]["judge_ir"])
+        markdown = Path(bundle["paths"]["final_report"]).read_text(encoding="utf-8")
+        noise = json.loads(noise_path.read_text(encoding="utf-8"))
+        judge_ir = json.loads(judge_ir_path.read_text(encoding="utf-8"))
+
+        assert noise_path.exists()
+        assert judge_ir_path.exists()
+        assert noise["schema"] == "ai_judge.noise_audit.v1"
+        assert judge_ir["schema"] == "ai_judge.judge_ir.v1"
+        assert [section["slot"] for section in judge_ir["sections"]] == [
+            "summary",
+            "metrics",
+            "analysis",
+            "comparison",
+            "risk",
+            "appendix",
+        ]
+        assert summary["noise_score"] == noise["noise_score"]
+        assert summary["judge_ir_path"] == str(judge_ir_path)
+        assert summary["noise_level"] == noise["noise_level"]
+        assert summary["model_stability_profile_count"] >= 1
+        assert "Noise Audit / 噪声审计" in markdown
+        assert "Model Stability / 模型稳定性画像" in markdown
+
+    def test_final_report_html_uses_judge_ir_component_renderer(self):
+        report = build_client_final_report(
+            run_id="test-schema-html",
+            question="product schema-driven client renderer 验证",
+            mode="deep_judge",
+            total_seats=3,
+            valid_seats=3,
+            failed_seats=0,
+        )
+
+        html = render_final_report_html(report)
+
+        assert 'content="judge-ir-component-renderer" name="ai-judge-renderer"' in html
+        assert "审阅目录" in html
+        assert "核心摘要" in html
+        assert "风险矩阵" in html
+        assert "MetricGrid" not in html
+        assert "<script" not in html
 
 
 class TestCollectSources:

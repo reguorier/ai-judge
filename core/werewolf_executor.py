@@ -22,6 +22,7 @@ from typing import Any, Callable
 from bridges.web_seat_bridge import merge_bridge_config_overrides, load_bridge_config, run_web_seats
 from bridges.chrome_fixed_tab_bridge import recover_existing_fixed_tab_answers
 from core.bridge_run_lock import bridge_run_snapshot, release_bridge_run, try_acquire_bridge_run
+from core.run_control import is_cancel_requested, mark_stopped
 from core.seat_personas import SEAT_PERSONAS
 from core.werewolf_game import (
     BOARD_PRESETS,
@@ -397,6 +398,28 @@ def build_public_speech_prompt(
         f"现在轮到{pname}第一天发言。记住：拿高分需要独特观点。"
     )
 
+
+def _werewolf_stop_requested(game_id: str) -> bool:
+    try:
+        return bool(is_cancel_requested(game_id))
+    except Exception:
+        return False
+
+
+def _stop_werewolf_session(game_id: str, phase: str = "stopped") -> None:
+    _append_event(game_id, {
+        "kind": "judge",
+        "phase": phase,
+        "status": "已停止",
+        "text": "用户已请求停止，本局不再派发新的模型发言。",
+    })
+    _mutate(game_id, status="stopped", phase=phase, progress=1.0)
+    try:
+        mark_stopped(game_id)
+    except Exception:
+        pass
+
+
 def _run_session(game_id: str, runner: Runner) -> None:
     """Multi-phase state machine.
 
@@ -431,6 +454,9 @@ def _run_session(game_id: str, runner: Runner) -> None:
             _mutate(game_id, status="running", phase=phase)
             session = _raw_session(game_id)
             if not session:
+                return
+            if _werewolf_stop_requested(game_id):
+                _stop_werewolf_session(game_id, phase)
                 return
 
             if phase == "sheriff-election":
@@ -592,6 +618,9 @@ def _run_day_phase(
     total = max(1, len(alive))
 
     for zero_index in range(phase_start_index, len(alive)):
+        if _werewolf_stop_requested(game_id):
+            _stop_werewolf_session(game_id, phase_key)
+            return "blocked"
         index = zero_index + 1
         player = alive[zero_index]
         packet = packets.get(player.seat, {})
@@ -877,6 +906,9 @@ def _run_vote_phase(
     vote_context = _saved_ctx
 
     for zero_index in range(vote_start_index, len(alive)):
+        if _werewolf_stop_requested(game_id):
+            _stop_werewolf_session(game_id, phase_key)
+            return "blocked"
         index = zero_index + 1
         player = alive[zero_index]
         event_index = _append_event(game_id, {
@@ -2626,6 +2658,9 @@ def _run_sheriff_election(game_id: str, runner: Runner) -> str:
 
     # Step 1: Each player decides to run or not
     for player in alive:
+        if _werewolf_stop_requested(game_id):
+            _stop_werewolf_session(game_id, phase_key)
+            return "blocked"
         pname = SEAT_PERSONAS.get(player.seat, {}).get("name", player.seat)
         event_index = _append_event(game_id, {
             "kind": "seat",
@@ -2681,6 +2716,9 @@ def _run_sheriff_election(game_id: str, runner: Runner) -> str:
 
     # Step 2: Candidates give campaign speeches
     for candidate in candidates:
+        if _werewolf_stop_requested(game_id):
+            _stop_werewolf_session(game_id, phase_key)
+            return "blocked"
         cname = SEAT_PERSONAS.get(candidate.seat, {}).get("name", candidate.seat)
         event_index = _append_event(game_id, {
             "kind": "seat",
@@ -2721,6 +2759,9 @@ def _run_sheriff_election(game_id: str, runner: Runner) -> str:
     sheriff_votes: dict[str, int] = {}
 
     for voter in non_candidates:
+        if _werewolf_stop_requested(game_id):
+            _stop_werewolf_session(game_id, phase_key)
+            return "blocked"
         vname = SEAT_PERSONAS.get(voter.seat, {}).get("name", voter.seat)
         event_index = _append_event(game_id, {
             "kind": "seat",

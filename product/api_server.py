@@ -14,14 +14,17 @@ from __future__ import annotations
 
 import html
 import hashlib
+import copy
 import json
 import mimetypes
 import os
 import re
 import subprocess
 import sys
+import tempfile
 import threading
 import time
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -52,10 +55,25 @@ except Exception:  # pragma: no cover - optional dependency
 
 from bridges.notification_gateway import generate_secure_view_url, notify_verdict_ready, verify_secure_view
 from bridges.chrome_cdp_bridge import ensure_chrome_cdp_awake
-from bridges.chrome_fixed_tab_bridge import recover_existing_fixed_tab_answers
-from bridges.web_seat_bridge import bridge_status, calibrate_bridge, load_bridge_config, write_default_config
+from bridges.chrome_fixed_tab_bridge import recover_existing_fixed_tab_answers_with_guard as _recover_existing_fixed_tab_answers_with_guard
+from bridges.web_seat_bridge import bridge_status, calibrate_bridge, load_bridge_config, merge_bridge_config_overrides, write_default_config
 from core.async_task_manager import TaskManager
 from core.auto_jury import format_verdict_markdown
+from product.reporting.output_contract import normalize as _contract_normalize
+from product.reporting.incomplete_high_risk_report import (
+    build_incomplete_high_risk_report,
+    render_incomplete_high_risk_report_html,
+    render_incomplete_high_risk_report_markdown,
+)
+from product.reporting.public_report_contract import (
+    build_public_report_view_model,
+    build_judge_verdict_document,
+    render_debug_workbench_html,
+    render_public_report_html,
+    render_public_report_markdown,
+    render_judge_verdict_html,
+    render_judge_verdict_markdown,
+)
 from core.blind_cross_validation import aggregate_blind_reviews, build_blind_cross_validation_packet
 from core.cross_temporal_analysis import attach_cross_temporal_analysis
 from core.evidence_broker import build_evidence_broker_report
@@ -65,7 +83,10 @@ from core.eval_dataset import build_eval_case_from_verdict, collect_eval_cases
 from core.eval_metrics import compute_evidence_quality_metrics
 from core.execution_drivers import build_bridge_blocked_verdict, decide_execution
 from core.final_report import attach_final_report, build_final_report, render_final_report_html, render_final_report_markdown
+from core.high_risk_domain_gate import attach_high_risk_domain_gate, evaluate_high_risk_domain_gate, should_apply_high_risk_blocker
+from core.required_seat_recovery_queue import build_required_seat_recovery_queue
 from core.domain_closeout import is_legal_domain
+from core.domain_packs import build_intake_plan, infer_domain_pack
 from core.grand_judge import run_grand_judge_mvp
 from core.human_review import human_review_status, sign_human_review
 from human_gavel_layer import (
@@ -76,6 +97,7 @@ from human_gavel_layer import (
 )
 from run_universe_layer import build_run_universe, write_run_universe
 from trust_calibration_layer import build_trust_calibration, write_trust_calibration, get_seat_trust
+from product.fdjp.service import build_fdjp_client_contract, load_dimension_audit, load_dimension_report_blocks, run_dimension_audit
 from core.bridge_run_lock import bridge_can_queue, bridge_run_snapshot, dequeue_next, enqueue_judge, release_bridge_run, try_acquire_bridge_run
 from core.modes import list_modes, resolve_mode
 from core.prompt_resonance import build_prompt_flow
@@ -103,6 +125,7 @@ from core.run_trace import RunTrace, load_trace
 from core.seat_execution_policy import (
     annotate_execution_results,
     execution_policy_summary,
+    normalize_error,
 )
 from core.seat_personas import SEAT_PERSONAS
 from core.werewolf_executor import (
@@ -120,6 +143,7 @@ from core.werewolf_game import (
     play_mode_public_config,
 )
 from core.web_jury import assemble_web_verdict_from_raw_results, run_web_jury
+from core.five_d_engine import run_five_d_audit
 from product.runtime.events import EventLedger
 from product.runtime.lifecycle import emit_runtime_event, reason_code_from_error
 
@@ -143,7 +167,7 @@ try:
 except Exception as exc:  # pragma: no cover - keeps legacy server bootable
     print(f"[client-api] register failed: {exc}", file=sys.stderr)
 
-PRODUCT_VERSION = "3.8.0-P3.8.13-RC1"
+PRODUCT_VERSION = "3.8.0-P3.8.14-RC1"
 PRODUCT_NAME = "AI Judge Trust Workbench"
 DEFAULT_JUDGE_MODE = "strategic"
 DEFAULT_JUDGE_ENGINE = "web"
@@ -159,6 +183,9 @@ AUTO_REQUIRED_RECOVERY_WAIT_SECONDS = 6
 MAX_LOCAL_FILE_BYTES = 240_000
 MAX_LOCAL_TEXT_CHARS = 16_000
 MAX_LOCAL_CONTEXT_CHARS = 28_000
+MAX_LOCAL_ZIP_MEMBERS = 40
+MAX_LOCAL_ZIP_MEMBER_BYTES = 3_000_000
+MAX_LOCAL_ZIP_TEXT_CHARS = 24_000
 LOCAL_FILE_EXTENSIONS = (
     "png",
     "jpg",
@@ -200,10 +227,37 @@ LOCAL_FILE_EXTENSIONS = (
     "sh",
     "zsh",
     "log",
+    "zip",
 )
+
+
+def _api_error_response(
+    error: str,
+    status_code: int,
+    *,
+    reason: str | None = None,
+    next_action: str | None = None,
+    source: str = "api_server",
+    run_id: str | None = None,
+    **extra: Any,
+):
+    payload: dict[str, Any] = {
+        "ok": False,
+        "status": status_code,
+        "error": error,
+        "reason": reason or error,
+        "next_action": next_action or "检查请求参数或稍后重试。",
+        "trace_id": f"{source}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+        "source": source,
+    }
+    if run_id:
+        payload["run_id"] = run_id
+    payload.update(extra)
+    return jsonify(payload), status_code
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".heic", ".heif"}
 TEXTUTIL_SUFFIXES = {".rtf", ".doc", ".docx", ".html", ".htm"}
 PDF_SUFFIXES = {".pdf"}
+ZIP_SUFFIXES = {".zip"}
 LOCAL_PATH_RE = re.compile(
     r"(?P<path>(?:file://)?/(?:Users|private|tmp|var|Volumes)/[^\n\r\t\"'<>]*?\.(?:"
     + "|".join(re.escape(ext) for ext in LOCAL_FILE_EXTENSIONS)
@@ -214,11 +268,50 @@ LOCAL_OCR_CANDIDATES = [
     _PROJECT_ROOT / "tools" / "image-ocr",
     Path.home() / "Library/Application Support/Claude-3p/hermes-guard-mcp/image-ocr",
 ]
+SEAT_CAPABILITY_TAGS = {
+    "gemini": ["实时信息", "宏观变量", "跨源推理"],
+    "chatgpt": ["结构化输出", "执行方案", "综合表达"],
+    "deepseek": ["深度推理", "反例拆解", "文字输出"],
+    "qwen": ["中文语境", "长材料整合", "本土产品"],
+    "kimi": ["长上下文", "材料阅读", "证据链"],
+    "grok": ["实时信息", "趋势判断", "反共识"],
+    "yuanbao": ["中文生态", "执行路径", "本土信息"],
+    "mimo": ["长上下文", "产品体验", "摘要整合"],
+    "doubao": ["执行步骤", "中文表达", "落地建议"],
+    "claude": ["长文分析", "审慎推理", "风险边界"],
+    "minimax": ["产品体验", "创意表达", "用户视角"],
+    "zhipu": ["中文推理", "政策语境", "结构分析"],
+    "wenxin": ["中文政策", "监管语境", "本土合规"],
+    "xunfei": ["中文语义", "办公教育", "结构执行"],
+}
 WAITING_STEP_RE = re.compile(r"(?:等待\s*(?P<labels>[^，]+)，)?剩余\s*(?P<count>\d+)\s*席，最长等待\s*(?P<seconds>\d+)s")
 RETRY_STEP_RE = re.compile(r"补跑\s*(?P<attempt>\d+)\s*/\s*(?P<total>\d+)")
+
+
+def recover_existing_fixed_tab_answers(**kwargs):
+    """Compatibility wrapper around guarded fixed-tab recovery.
+
+    Older tests and operator hooks patch this product-level name. Production
+    still uses the guarded implementation by default.
+    """
+    return _recover_existing_fixed_tab_answers_with_guard(**kwargs)
+
+
+def _bridge_status_snapshot(**kwargs) -> dict[str, Any]:
+    try:
+        return bridge_status(**kwargs)
+    except TypeError as exc:
+        if "unexpected keyword" not in str(exc):
+            raise
+        return bridge_status()
+
+
 RECOVERABLE_WEB_CODES = {
+    "web_collection_process_timeout",
+    "prompt_write_unconfirmed",
     "slow_response_pending",
     "response_timeout",
+    "response_below_minimum",
     "send_button_not_found",
     "submit_unconfirmed",
     "chrome_submit_unconfirmed",
@@ -241,10 +334,17 @@ RECOVERABLE_WEB_CODES = {
     "composer_not_ready",
     "deepseek_expert_mode_not_verified",
     "doubao_expert_mode_not_verified",
+    "gemini_quality_mode_not_verified",
+    "kimi_quality_mode_not_verified",
+    "yuanbao_quality_mode_not_verified",
+    "wenxin_quality_mode_not_verified",
+    "meta_quality_mode_not_verified",
+    "xunfei_quality_mode_not_verified",
 }
 READ_ONLY_RECOVERY_CODES = {
     "slow_response_pending",
     "response_timeout",
+    "response_below_minimum",
     "composer_busy",
     "existing_answer_not_found",
     "existing_answer_placeholder",
@@ -252,6 +352,9 @@ READ_ONLY_RECOVERY_CODES = {
     "response_not_relevant",
 }
 FRESH_RESCUE_CODES = {
+    "web_collection_process_timeout",
+    "response_below_minimum",
+    "prompt_write_unconfirmed",
     "send_button_not_found",
     "submit_unconfirmed",
     "chrome_submit_unconfirmed",
@@ -269,27 +372,122 @@ FRESH_RESCUE_CODES = {
     "composer_not_ready",
     "deepseek_expert_mode_not_verified",
     "doubao_expert_mode_not_verified",
+    "gemini_quality_mode_not_verified",
+    "kimi_quality_mode_not_verified",
+    "yuanbao_quality_mode_not_verified",
+    "wenxin_quality_mode_not_verified",
+    "meta_quality_mode_not_verified",
+    "xunfei_quality_mode_not_verified",
 }
 CLEAN_SESSION_RESCUE_CODES = {
     "transcript_pollution",
 }
 
 
+RUNTIME_METADATA_FIELDS = (
+    "web_bridge",
+    "grand_judge",
+    "rescue",
+    "recheck",
+    "deep_prompt",
+    "prompt_flow",
+    "execution_plan",
+    "chief_judge",
+    "seat_roster",
+    "roster_sensitivity",
+    "single_judge_baseline",
+    "engine",
+    "execution_trace",
+    "mode_name",
+    "mode_emoji",
+    "seat_count",
+    "seat_scores",
+    "average_score",
+    "average_score_unweighted",
+    "average_score_weighted",
+    "tier_distribution",
+    "total_claims",
+    "judge_answer",
+    "summary",
+    "next_steps",
+    "features",
+    "product_layer",
+    "product_version",
+    "final_report",
+    "cross_temporal_analysis",
+    "five_d_insights",
+    "worldcup_pool",
+    "worldcup_pool_report",
+    "_flash_seat_stats",
+    "_flash_partial",
+    "_strategic_seat_stats",
+)
+
+
+def _preserve_runtime_metadata(canonical: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    for field in RUNTIME_METADATA_FIELDS:
+        if field in source:
+            canonical[field] = source[field]
+    return canonical
+
+
+def _should_render_high_risk_blocker(result: dict[str, Any], gate: dict[str, Any]) -> bool:
+    return should_apply_high_risk_blocker(result, gate)
+
+
 def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
     _attach_rescue_plan(verdict)
     attach_cross_temporal_analysis(verdict)
+    attach_high_risk_domain_gate(verdict)
     attach_final_report(verdict)
+    gate = verdict.get("high_risk_gate") or {}
+    if _should_render_high_risk_blocker(verdict, gate):
+        recovery_queue = build_required_seat_recovery_queue(verdict, gate)
+        incomplete_report = build_incomplete_high_risk_report(verdict, gate, recovery_queue)
+        verdict["recovery_queue"] = recovery_queue
+        verdict["high_risk_formal_verdict_blocker_brief"] = incomplete_report
+        verdict["incomplete_high_risk_report"] = incomplete_report
+    else:
+        verdict.pop("high_risk_formal_verdict_blocker_brief", None)
+        verdict.pop("incomplete_high_risk_report", None)
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "verdict.json").write_text(json.dumps(verdict, indent=2, ensure_ascii=False), encoding="utf-8")
-    (run_dir / "verdict.md").write_text(format_verdict_markdown(verdict), encoding="utf-8")
+    if isinstance(verdict.get("worldcup_pool"), dict):
+        try:
+            from core.worldcup_pool_report import write_worldcup_pool_report
+
+            write_worldcup_pool_report(
+                run_id,
+                verdict,
+                RUNS_DIR,
+                _PROJECT_ROOT / "data" / "worldcup_pool_reports",
+            )
+        except Exception as exc:
+            import traceback as _tb_worldcup
+
+            print(f"[WorldCupPool] write_worldcup_pool_report failed for {run_id}: {exc}", file=sys.stderr)
+            _tb_worldcup.print_exc(file=sys.stderr)
+    canonical = _preserve_runtime_metadata(_contract_normalize(verdict), verdict)
+    (run_dir / "verdict.json").write_text(json.dumps(canonical, indent=2, ensure_ascii=False), encoding="utf-8")
+    blocker_brief = canonical.get("high_risk_formal_verdict_blocker_brief") or canonical.get("incomplete_high_risk_report")
+    if blocker_brief and _should_render_high_risk_blocker(canonical, canonical.get("high_risk_gate") or {}):
+        verdict_markdown = render_incomplete_high_risk_report_markdown(blocker_brief)
+    else:
+        verdict_markdown = format_verdict_markdown(verdict)
+    (run_dir / "verdict.md").write_text(verdict_markdown, encoding="utf-8")
     # Generate static index.html with execution trace for offline/fallback access
     report_data = dict(verdict)
     trace = load_trace(_trace_path(run_id))
     if trace:
         report_data["execution_trace"] = trace
     try:
-        (run_dir / "index.html").write_text(_render_html_report(report_data), encoding="utf-8")
+        public_model = build_public_report_view_model(report_data, surface="public")
+        (run_dir / "index.html").write_text(render_public_report_html(public_model), encoding="utf-8")
+        (run_dir / "public-report.md").write_text(render_public_report_markdown(public_model), encoding="utf-8")
+        (run_dir / "public-report-view-model.json").write_text(
+            json.dumps(public_model, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
     except Exception:
         pass  # don't block verdict save if HTML render fails
 
@@ -303,6 +501,20 @@ def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
         print(f"[Hermes] write_hermes_outputs failed for {run_id}: {exc}", file=sys.stderr)
         _tb.print_exc(file=sys.stderr)
 
+    # --- FDJP unified assertion/constraint audit ---
+    try:
+        fdjp_audit = run_dimension_audit(
+            run_id=run_id,
+            task_type=_fdjp_task_type_from_question(str(verdict.get("question") or "")),
+            force=True,
+            audit_mode="heuristic_only",
+        )
+        verdict["fdjp_audit"] = fdjp_audit
+    except Exception as exc:
+        import traceback as _tb_fdjp
+        print(f"[FDJP] run_dimension_audit failed for {run_id}: {exc}", file=sys.stderr)
+        _tb_fdjp.print_exc(file=sys.stderr)
+
     # --- Hermes Index refresh ---
     try:
         from hermes_index_layer import write_hermes_index
@@ -312,6 +524,44 @@ def _save_run(run_id: str, verdict: dict[str, Any]) -> None:
         import traceback as _tb2
         print(f"[HermesIndex] write_hermes_index failed: {exc}", file=sys.stderr)
         _tb2.print_exc(file=sys.stderr)
+
+
+def _save_derived_run_snapshot(
+    derived_run_id: str,
+    source_run_id: str,
+    verdict: dict[str, Any],
+    *,
+    kind: str,
+    trace: RunTrace | None = None,
+) -> dict[str, Any]:
+    """Persist a rescue/recheck/supplement run as its own reportable artifact."""
+    snapshot = copy.deepcopy(verdict)
+    source_view_url = str(snapshot.get("view_url") or f"{_base_url()}/api/runs/{source_run_id}/index.html")
+    snapshot["run_id"] = derived_run_id
+    snapshot["source_run_id"] = source_run_id
+    snapshot["derived_from_run_id"] = source_run_id
+    snapshot["derived_run_kind"] = kind
+    snapshot["source_view_url"] = source_view_url
+    snapshot["view_url"] = f"{_base_url()}/api/runs/{derived_run_id}/index.html"
+    snapshot["legacy_view_url"] = generate_secure_view_url(derived_run_id)
+    if trace is not None:
+        snapshot["execution_trace"] = trace.to_dict()
+    else:
+        existing_trace = load_trace(_trace_path(derived_run_id))
+        if existing_trace:
+            snapshot["execution_trace"] = existing_trace
+    _save_run(derived_run_id, snapshot)
+    return snapshot
+
+
+def _fdjp_task_type_from_question(question: str) -> str:
+    if any(token in question for token in ("法律", "法院", "合同", "债权", "破产", "诉讼")):
+        return "legal"
+    if any(token in question for token in ("产品", "代码", "系统", "架构", "API", "插件", "MVP")):
+        return "product"
+    if any(token in question for token in ("研究", "论文", "证据", "假设")):
+        return "research"
+    return "general"
 
 
 def _trace_path(run_id: str) -> Path:
@@ -402,18 +652,280 @@ def _task_payload(run_id: str) -> dict[str, Any] | None:
     if status is None:
         return None
     payload = dict(status)
-    result = TASKS.get_result(run_id)
+    payload["source"] = "task_api"
+    payload["trace_id"] = _task_trace_id()
+    payload["ok"] = payload.get("status") not in {"failed", "cancelled"}
+    payload["recoverable"] = payload.get("status") in {"pending", "running", "complete"}
+    result = None
+    try:
+        result = TASKS.get_result(run_id)
+    except Exception as exc:
+        payload["result_error"] = {
+            "type": type(exc).__name__,
+            "reason": "任务结果反序列化失败。",
+            "next_action": "请从 Report 打开该 run，或重新执行该任务。",
+        }
     if result:
         payload["result"] = result
-    payload["progress_diagnostics"] = _progress_diagnostics(payload)
+        payload["report_url"] = f"/api/runs/{run_id}/report"
+        if payload.get("status") == "complete":
+            payload["recoverable"] = _run_requires_required_recovery(result)
+    error_detail = _decode_task_error(payload.get("error"))
+    if error_detail:
+        payload["failure_status"] = error_detail.get("status") or error_detail.get("code")
+        payload["reason"] = error_detail.get("reason") or error_detail.get("error") or payload.get("error")
+        payload["next_action"] = error_detail.get("next_action") or "请稍后重试，或从 Report 查看结构化诊断。"
+        payload["recoverable"] = bool(error_detail.get("recoverable", False))
+        payload["bridge_diagnostics"] = {
+            "status": error_detail.get("status") or error_detail.get("code"),
+            "seat": error_detail.get("seat"),
+            "bridge": error_detail.get("bridge"),
+            "reason": payload["reason"],
+            "next_action": payload["next_action"],
+            "recoverable": payload["recoverable"],
+        }
+    try:
+        payload["progress_diagnostics"] = _progress_diagnostics(payload)
+    except Exception as exc:
+        payload["progress_diagnostics"] = {
+            "schema": "ai_judge.progress_diagnostics.v1",
+            "run_id": run_id,
+            "status": payload.get("status"),
+            "stage": "unknown",
+            "seats": [],
+            "error": {
+                "type": type(exc).__name__,
+                "reason": "任务进度诊断暂时不可恢复。",
+                "next_action": "可以继续查看 Room 基础状态或打开 Report。",
+            },
+        }
     return payload
+
+
+def _task_trace_id() -> str:
+    return f"task-api-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+
+
+def _task_json_error(
+    status: str,
+    http_status: int,
+    *,
+    run_id: str,
+    reason: str,
+    next_action: str,
+    recoverable: bool = False,
+    **extra: Any,
+):
+    payload: dict[str, Any] = {
+        "ok": False,
+        "status": status,
+        "run_id": run_id,
+        "reason": reason,
+        "next_action": next_action,
+        "trace_id": _task_trace_id(),
+        "recoverable": recoverable,
+        "source": "task_api",
+    }
+    payload.update(extra)
+    return jsonify(payload), http_status
+
+
+def _decode_task_error(raw: Any) -> dict[str, Any] | None:
+    if isinstance(raw, dict):
+        return raw
+    if not raw:
+        return None
+    try:
+        value = json.loads(str(raw))
+    except Exception:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _recover_task_payload_from_run(run_id: str) -> tuple[dict[str, Any] | None, int]:
+    safe_id = run_id.strip().replace("/", "").replace("\\", "").replace("..", "")
+    run_dir = RUNS_DIR / safe_id
+    verdict_path = run_dir / "verdict.json"
+    if verdict_path.exists():
+        try:
+            result = json.loads(verdict_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            return {
+                "ok": False,
+                "status": "task_not_recoverable",
+                "run_id": run_id,
+                "reason": f"已找到 run 产物，但 verdict.json 无法读取：{type(exc).__name__}",
+                "next_action": "请打开 Report 或重新执行该 run。",
+                "trace_id": _task_trace_id(),
+                "recoverable": False,
+                "source": "task_api",
+            }, 409
+        payload: dict[str, Any] = {
+            "ok": True,
+            "status": "complete",
+            "run_id": run_id,
+            "phase": "completed",
+            "progress": 1.0,
+            "current_step": "done",
+            "result": result,
+            "report_url": f"/api/runs/{safe_id}/report",
+            "reason": "任务状态已从持久化 run 产物恢复。",
+            "next_action": "可以继续打开 Report，或从 History 找回该 run。",
+            "trace_id": _task_trace_id(),
+            "recoverable": True,
+            "recovered": True,
+            "source": "task_api",
+        }
+        try:
+            payload["progress_diagnostics"] = _progress_diagnostics(payload)
+        except Exception as exc:
+            payload["progress_diagnostics"] = {
+                "schema": "ai_judge.progress_diagnostics.v1",
+                "run_id": run_id,
+                "status": "complete",
+                "stage": "recovered",
+                "seats": [],
+                "error": {
+                    "type": type(exc).__name__,
+                    "reason": "已恢复任务摘要，但席位诊断暂时不可恢复。",
+                    "next_action": "打开 Report 查看已落盘诊断区。",
+                },
+            }
+        return payload, 200
+
+    control = load_control_state(safe_id)
+    if control:
+        phase = str(control.get("phase") or control.get("state") or "unknown")
+        progress = 1.0 if phase in {"complete", "completed"} else 0.0
+        return {
+            "ok": True,
+            "status": "complete" if phase == "completed" else phase,
+            "run_id": run_id,
+            "phase": phase,
+            "progress": progress,
+            "reason": "任务状态已从 run control 恢复。",
+            "next_action": "继续查看 Room；如果需要完整结论，请打开 Report。",
+            "trace_id": _task_trace_id(),
+            "recoverable": phase in {"running", "queued", "stopped"},
+            "recovered": True,
+            "source": "task_api",
+        }, 200
+
+    if run_dir.exists():
+        return {
+            "ok": False,
+            "status": "task_not_recoverable",
+            "run_id": run_id,
+            "reason": "该 run 存在目录，但没有可恢复的 task 状态或 verdict 产物。",
+            "next_action": "请从 History 打开 Report；如仍不可用，请重新执行该 run。",
+            "trace_id": _task_trace_id(),
+            "recoverable": False,
+            "source": "task_api",
+        }, 409
+
+    return None, 404
+
+
+def _recover_run_state_from_disk(run_id: str) -> dict[str, Any] | None:
+    safe_id = run_id.strip().replace("/", "").replace("\\", "").replace("..", "")
+    run_dir = RUNS_DIR / safe_id
+    verdict_path = run_dir / "verdict.json"
+    control = load_control_state(safe_id)
+    if verdict_path.exists():
+        try:
+            result = json.loads(verdict_path.read_text(encoding="utf-8"))
+        except Exception:
+            result = {}
+        seats = _run_recovery_seats(result)
+        return {
+            "run_id": safe_id,
+            "mode": "meeting",
+            "phase": "completed",
+            "progress": 1.0,
+            "progress_label": "完成",
+            "active_seat": None,
+            "paused": False,
+            "cancel_requested": False,
+            "bridge_claim": None,
+            "artifacts": _run_recovery_artifacts(safe_id, run_dir),
+            "events": [{"type": "run_recovered", "source": "disk", "ts": datetime.now(timezone.utc).isoformat()}],
+            "label": f"已恢复运行: {safe_id}",
+            "metadata": {
+                "client_run": str(safe_id).startswith("client-"),
+                "mode": str(result.get("mode") or "flash"),
+                "question": str(result.get("question") or ""),
+                "seats": seats,
+                "recovered": True,
+            },
+            "started_at": str(result.get("created_at") or result.get("started_at") or ""),
+            "updated_at": str(result.get("completed_at") or result.get("generated_at") or ""),
+            "recovered": True,
+            "source": "run_api",
+        }
+    if control:
+        phase = str(control.get("phase") or control.get("state") or "unknown")
+        return {
+            "run_id": safe_id,
+            "mode": "meeting",
+            "phase": phase,
+            "progress": 1.0 if phase in {"complete", "completed"} else 0.0,
+            "progress_label": "完成" if phase in {"complete", "completed"} else "已从控制状态恢复",
+            "active_seat": None,
+            "paused": bool(control.get("paused")),
+            "cancel_requested": bool(control.get("stop_requested")),
+            "bridge_claim": None,
+            "artifacts": _run_recovery_artifacts(safe_id, run_dir),
+            "events": [{"type": "run_recovered", "source": "control", "ts": datetime.now(timezone.utc).isoformat()}],
+            "label": f"已恢复运行: {safe_id}",
+            "metadata": {"client_run": str(safe_id).startswith("client-"), "recovered": True},
+            "started_at": "",
+            "updated_at": str(control.get("updated_at") or ""),
+            "recovered": True,
+            "source": "run_api",
+        }
+    return None
+
+
+def _run_recovery_seats(result: dict[str, Any]) -> list[str]:
+    seats: list[str] = []
+    for item in result.get("seats") or []:
+        if isinstance(item, dict):
+            value = item.get("seat") or item.get("id") or item.get("seat_name")
+        else:
+            value = item
+        seat = str(value or "").strip().lower()
+        if seat and seat not in seats:
+            seats.append(seat)
+    if seats:
+        return seats
+    bridge = result.get("web_bridge") or {}
+    for item in bridge.get("raw_results") or []:
+        if not isinstance(item, dict):
+            continue
+        seat = str(item.get("seat") or item.get("provider_id") or item.get("seat_name") or "").strip().lower()
+        if seat and seat not in seats:
+            seats.append(seat)
+    return seats
+
+
+def _run_recovery_artifacts(run_id: str, run_dir: Path) -> list[dict[str, Any]]:
+    artifacts: list[dict[str, Any]] = []
+    for filename, kind in [
+        ("index.html", "html"),
+        ("verdict.json", "verdict_json"),
+        ("verdict.md", "verdict_markdown"),
+        ("trace.json", "trace"),
+    ]:
+        if (run_dir / filename).exists():
+            artifacts.append({"filename": filename, "kind": kind, "url": f"/api/runs/{run_id}/{filename}"})
+    return artifacts
 
 
 def _progress_diagnostics(status: dict[str, Any]) -> dict[str, Any]:
     run_id = str(status.get("run_id") or "")
     step = str(status.get("current_step") or "")
     seconds_since_update = _seconds_since_iso(status.get("updated_at"))
-    trace = load_trace(_trace_path(run_id)) or {}
+    trace = _normalise_trace_for_progress(load_trace(_trace_path(run_id)))
     seats = _seat_progress_from_trace(trace)
     waiting_match = WAITING_STEP_RE.search(step)
     retry_match = RETRY_STEP_RE.search(step)
@@ -427,7 +939,12 @@ def _progress_diagnostics(status: dict[str, Any]) -> dict[str, Any]:
         seats.sort(key=lambda item: (label_order.get(str(item.get("name", "")).lower(), 99), item.get("state") != "waiting"))
     else:
         seats.sort(key=lambda item: {"waiting": 0, "submitting": 1, "nudge": 2, "blocked": 3, "done": 4}.get(str(item.get("state")), 9))
-    diagnostic_rescue_plan = _diagnostic_rescue_plan(seats)
+    completed_rescue_plan = _completed_rescue_plan_from_status(status)
+    if completed_rescue_plan:
+        diagnostic_rescue_plan = completed_rescue_plan
+        seats = []
+    else:
+        diagnostic_rescue_plan = _diagnostic_rescue_plan(seats)
     return {
         "schema": "ai_judge.progress_diagnostics.v1",
         "run_id": run_id,
@@ -445,6 +962,20 @@ def _progress_diagnostics(status: dict[str, Any]) -> dict[str, Any]:
         "stale": bool(status.get("status") == "running" and seconds_since_update is not None and seconds_since_update > STALE_TASK_SECONDS),
         "stale_after_seconds": STALE_TASK_SECONDS,
     }
+
+
+def _completed_rescue_plan_from_status(status: dict[str, Any]) -> dict[str, Any] | None:
+    if status.get("status") != "complete":
+        return None
+    result = status.get("result") if isinstance(status.get("result"), dict) else {}
+    bridge = result.get("web_bridge") if isinstance(result.get("web_bridge"), dict) else {}
+    plan = bridge.get("rescue_plan") if isinstance(bridge.get("rescue_plan"), dict) else {}
+    if plan.get("status") == "complete" or plan.get("collection_complete"):
+        return plan
+    policy = bridge.get("execution_policy") if isinstance(bridge.get("execution_policy"), dict) else {}
+    if policy.get("collection_complete"):
+        return _build_rescue_plan(result)
+    return None
 
 
 def _diagnostic_rescue_plan(seats: list[dict[str, Any]]) -> dict[str, Any]:
@@ -471,6 +1002,20 @@ def _diagnostic_rescue_plan(seats: list[dict[str, Any]]) -> dict[str, Any]:
         "sends_prompt": any(item["sends_prompt"] for item in actions),
         "summary": _rescue_plan_summary(actions, {"collection_complete": False}),
     }
+
+
+def _run_requires_required_recovery(verdict: dict[str, Any]) -> bool:
+    bridge = verdict.get("web_bridge") if isinstance(verdict.get("web_bridge"), dict) else {}
+    raw_results = bridge.get("raw_results") if isinstance(bridge.get("raw_results"), list) else []
+    policy = bridge.get("execution_policy") if isinstance(bridge.get("execution_policy"), dict) else {}
+    if not policy:
+        policy = execution_policy_summary(
+            raw_results,
+            requested_seats=verdict.get("seats") or [str(item.get("seat") or "") for item in raw_results if isinstance(item, dict)],
+        )
+    if policy.get("collection_complete"):
+        return False
+    return bool(policy.get("required_supplementable_seats") or policy.get("required_failures"))
 
 
 def _seconds_since_iso(value: Any) -> int | None:
@@ -503,7 +1048,30 @@ def _progress_stage(step: str, progress: float) -> str:
     return "accept"
 
 
-def _seat_progress_from_trace(trace: dict[str, Any]) -> list[dict[str, Any]]:
+def _normalise_trace_for_progress(trace: Any) -> dict[str, Any]:
+    if isinstance(trace, dict):
+        events = trace.get("events")
+        if isinstance(events, list):
+            return trace
+        normalized = dict(trace)
+        normalized["events"] = []
+        return normalized
+    if isinstance(trace, list):
+        events: list[dict[str, Any]] = []
+        for item in trace:
+            if not isinstance(item, dict):
+                continue
+            nested = item.get("events")
+            if isinstance(nested, list):
+                events.extend(event for event in nested if isinstance(event, dict))
+            elif item.get("phase") or item.get("action"):
+                events.append(item)
+        return {"events": events, "segments": len(trace)}
+    return {"events": []}
+
+
+def _seat_progress_from_trace(trace: Any) -> list[dict[str, Any]]:
+    trace = _normalise_trace_for_progress(trace)
     states: dict[str, dict[str, Any]] = {}
     for event in trace.get("events") or []:
         if event.get("phase") != "seat":
@@ -561,14 +1129,18 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
         "chrome_composer_not_ready",
         "fixed_tab_not_found",
         "chrome_response_page_error",
+        "deepseek_expert_mode_blocked",
         "doubao_expert_mode_blocked",
+        "quality_mode_blocked",
     }:
         submit = data.get("submit") or {}
         verification = submit.get("verification") or {}
         code = str(
+            data.get("code") or
             submit.get("error")
             or verification.get("reason")
             or ((data.get("known_error") or {}).get("code"))
+            or ("deepseek_expert_mode_not_verified" if action == "deepseek_expert_mode_blocked" else "")
             or ("doubao_expert_mode_not_verified" if action == "doubao_expert_mode_blocked" else "")
             or action
         )
@@ -578,6 +1150,7 @@ def _next_seat_progress_state(seat: str, previous: dict[str, Any] | None, event:
 
 def _seat_error_label(code: str) -> str:
     return {
+        "bridge_busy": "桥接占用",
         "slow_response_pending": "慢生成",
         "response_timeout": "超时",
         "response_not_relevant": "疑似旧回答",
@@ -595,7 +1168,19 @@ def _seat_error_label(code: str) -> str:
         "chrome_crash": "标签崩溃",
         "blank_page": "页面空白",
         "page_recovery_failed": "恢复失败",
+        "deepseek_expert_mode_not_verified": "专家模式未确认",
         "doubao_expert_mode_not_verified": "专家模式未确认",
+        "meta_quality_mode_not_verified": "思考模式未确认",
+        "wenxin_quality_mode_not_verified": "深度思考未确认",
+        "minimax_quality_mode_not_verified": "M3/Thinking 未确认",
+        "yuanbao_quality_mode_not_verified": "深度思考未确认",
+        "kimi_quality_mode_not_verified": "K2.6 思考未确认",
+        "qwen_quality_mode_not_verified": "Qwen 思考未确认",
+        "gemini_quality_mode_not_verified": "Pro 扩展未确认",
+        "xunfei_quality_mode_not_verified": "推理模式未确认",
+        "xunfei_desk_bounced_to_home": "讯飞回弹首页",
+        "xunfei_desk_input_not_ready": "讯飞输入框未稳定",
+        "xunfei_desk_ready_failed": "讯飞会话未稳定",
         "fixed_tab_not_found": "标签缺失",
         "transcript_pollution": "历史串流",
         "existing_answer_not_found": "旧页未返回",
@@ -606,6 +1191,7 @@ def _seat_error_label(code: str) -> str:
 
 def _seat_error_reason(code: str) -> str:
     return {
+        "bridge_busy": "固定 Chrome 桥接正在被其他流程使用，本轮没有提交新问题",
         "slow_response_pending": "页面可能仍在生成，或回答未包含本轮可验证标记",
         "response_timeout": "等待窗口内没有读到可用回答",
         "response_not_relevant": "捕获内容没有匹配本轮问题，已避免把旧页面内容当作答案",
@@ -623,7 +1209,19 @@ def _seat_error_reason(code: str) -> str:
         "chrome_crash": "Chrome 标签页疑似崩溃，系统会刷新后补跑",
         "blank_page": "模型页面没有渲染有效内容，系统会刷新后补跑",
         "page_recovery_failed": "刷新恢复后仍没有可用输入框，需要人工查看该标签",
+        "deepseek_expert_mode_not_verified": "DeepSeek 未确认专家模式、深度思考和智能搜索，系统已拒绝提交低质量模式",
         "doubao_expert_mode_not_verified": "豆包未能确认专家/超能模式，系统已拒绝快速模式提交",
+        "meta_quality_mode_not_verified": "Meta AI 未确认思考模式，系统已拒绝提交普通模式",
+        "wenxin_quality_mode_not_verified": "文心未确认深度思考模式，系统已拒绝提交普通模式",
+        "minimax_quality_mode_not_verified": "MiniMax 未确认 M3 和 Thinking 模式，系统已拒绝提交低质量模式",
+        "yuanbao_quality_mode_not_verified": "腾讯元宝未确认深度思考模式，系统已拒绝提交普通模式",
+        "kimi_quality_mode_not_verified": "Kimi 未确认 K2.6 思考模式，系统已拒绝提交普通模式",
+        "qwen_quality_mode_not_verified": "Qwen 未确认 Qwen3.7-Plus 和思考模式，系统已拒绝提交自动/快速模式",
+        "gemini_quality_mode_not_verified": "Gemini 未确认 Pro 扩展模式，系统已拒绝提交低质量模式",
+        "xunfei_quality_mode_not_verified": "讯飞星火未确认推理模式，系统已拒绝提交普通模式",
+        "xunfei_desk_bounced_to_home": "讯飞星火 /desk 曾短暂渲染输入框，但稳定窗口内回到首页，系统已拒绝把瞬时页面当作可提交会话",
+        "xunfei_desk_input_not_ready": "讯飞星火 /desk 没有稳定暴露可写入输入框，需要重新进入对话页后再校准",
+        "xunfei_desk_ready_failed": "讯飞星火 /desk 会话稳定性检查失败，需要查看页面路由或登录态",
         "fixed_tab_not_found": "没有找到该模型对应的 Chrome 固定标签",
         "transcript_pollution": "捕获内容混入旧 AI Judge 标记，已拒绝评分",
         "existing_answer_not_found": "已打开页面中没有找到该席位的 AI Judge 答案标记",
@@ -668,6 +1266,20 @@ def _normalize_seat_list(value: Any) -> list[str]:
     else:
         raw = []
     return [seat.lower() for seat in raw if seat.lower() in SEAT_PERSONAS]
+
+
+def _normalize_judge_mode_alias(value: Any) -> str:
+    mode = str(value or DEFAULT_JUDGE_MODE).lower().strip() or DEFAULT_JUDGE_MODE
+    aliases = {
+        "quick": "flash",
+        "quick_judge": "flash",
+        "flash_judge": "flash",
+        "deep": "strategic",
+        "deep_judge": "strategic",
+        "strategic_judge": "strategic",
+        "standard_judge": "standard",
+    }
+    return aliases.get(mode, mode)
 
 
 def _normalize_external_evidence_payload(value: Any) -> list[dict[str, Any]]:
@@ -768,6 +1380,8 @@ def _read_local_path(path: Path, index: int) -> dict[str, Any]:
             item.update(_read_textutil_file(path))
         elif suffix in PDF_SUFFIXES:
             item.update(_read_pdf_text(path))
+        elif suffix in ZIP_SUFFIXES:
+            item.update(_read_zip_summary(path))
         else:
             item.update(_read_plain_text_file(path))
     except Exception as exc:
@@ -848,6 +1462,57 @@ def _read_pdf_text(path: Path) -> dict[str, Any]:
         "kind": "pdf_text",
         "text": "",
         "error": (proc.stderr or "PDF text extraction unavailable").strip()[:800],
+    }
+
+
+def _read_zip_summary(path: Path) -> dict[str, Any]:
+    rows: list[str] = []
+    extracted = 0
+    skipped = 0
+    errors: list[str] = []
+    try:
+        with zipfile.ZipFile(path) as archive, tempfile.TemporaryDirectory(prefix="ai-judge-zip-") as tmp:
+            infos = [info for info in archive.infolist() if not info.is_dir()]
+            rows.append(f"ZIP 文件清单：共 {len(infos)} 个文件；最多抽取 {MAX_LOCAL_ZIP_MEMBERS} 个可读文件。")
+            for info in infos[:MAX_LOCAL_ZIP_MEMBERS]:
+                name = info.filename
+                suffix = Path(name).suffix.lower()
+                rows.append(f"\n[ZIP-ENTRY] {name} | {info.file_size} bytes")
+                if info.file_size > MAX_LOCAL_ZIP_MEMBER_BYTES:
+                    skipped += 1
+                    rows.append("跳过：单文件过大。")
+                    continue
+                if suffix not in {".txt", ".md", ".markdown", ".json", ".jsonl", ".csv", ".tsv", ".rtf", ".pdf", ".doc", ".docx", ".html", ".htm", ".xml", ".yaml", ".yml"}:
+                    skipped += 1
+                    rows.append("跳过：暂不抽取该文件类型，仅记录清单。")
+                    continue
+                target = Path(tmp) / f"entry-{extracted}{suffix}"
+                try:
+                    target.write_bytes(archive.read(info))
+                    extracted_item = _read_local_path(target, extracted + 1)
+                    if extracted_item.get("ok"):
+                        rows.append(_limit_text(str(extracted_item.get("text") or ""), 3000))
+                        extracted += 1
+                    else:
+                        skipped += 1
+                        rows.append(f"抽取失败：{extracted_item.get('error') or 'unknown error'}")
+                except Exception as exc:
+                    skipped += 1
+                    errors.append(f"{name}: {type(exc).__name__}: {exc}")
+                    rows.append(f"抽取失败：{type(exc).__name__}: {exc}")
+            if len(infos) > MAX_LOCAL_ZIP_MEMBERS:
+                rows.append(f"\n另有 {len(infos) - MAX_LOCAL_ZIP_MEMBERS} 个文件未展开。")
+    except Exception as exc:
+        return {"ok": False, "kind": "zip_summary", "text": "", "error": f"{type(exc).__name__}: {exc}"}
+
+    text = _limit_text("\n".join(rows), MAX_LOCAL_ZIP_TEXT_CHARS)
+    return {
+        "ok": bool(text.strip()),
+        "kind": "zip_summary",
+        "text": text,
+        "zip_extracted_count": extracted,
+        "zip_skipped_count": skipped,
+        "error": "; ".join(errors[:5]),
     }
 
 
@@ -981,7 +1646,7 @@ def _build_attachment_context(attachments: list[dict[str, Any]], run_id: str) ->
 def _is_supplementable_result(item: dict[str, Any]) -> bool:
     if item.get("ok"):
         return False
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     code = str(error.get("code") or "")
     return bool(item.get("supplementable")) or code in RECOVERABLE_WEB_CODES
 
@@ -1014,7 +1679,7 @@ def _supplementable_run_seats(verdict: dict[str, Any], requested: list[str] | No
 
 
 def _failure_error_code(item: dict[str, Any]) -> str:
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     validity = item.get("execution_validity") or {}
     return str(error.get("code") or validity.get("reason") or item.get("reason") or "")
 
@@ -1137,6 +1802,16 @@ def _rescue_bridge_overrides() -> dict[str, Any]:
         "fresh_load_seconds": 4,
         "retry_failed_seats": True,
         "retry_attempts": 1,
+        "timeout_seconds": 180,
+        "retry_timeout_seconds": 180,
+        "required_timeout_seconds": 180,
+        "required_retry_timeout_seconds": 180,
+        "web_collection_process_timeout_seconds": 360,
+        "existing_answer_recovery_process_timeout_seconds": 180,
+        "final_nudge_timeout_seconds": 45,
+        "required_final_nudge_timeout_seconds": 45,
+        "seat_submit_timeout_seconds": 60,
+        "humanized_pacing": False,
     }
 
 
@@ -1198,6 +1873,13 @@ def _merge_supplement_raw_results(
             merged.append(next_item)
             continue
         next_item = dict(replacement)
+        if not next_item.get("answer_contract") and isinstance(item.get("answer_contract"), dict):
+            next_item["answer_contract"] = dict(item["answer_contract"])
+        if not next_item.get("min_response_chars") and item.get("min_response_chars"):
+            next_item["min_response_chars"] = item.get("min_response_chars")
+        previous_validity = item.get("execution_validity") if isinstance(item.get("execution_validity"), dict) else {}
+        if not next_item.get("min_response_chars") and previous_validity.get("min_response_chars"):
+            next_item["min_response_chars"] = previous_validity.get("min_response_chars")
         next_item["supplement_history"] = history
         next_item["supplemented_from_run_id"] = supplement_run_id
         if not item.get("ok") and replacement.get("ok"):
@@ -1416,6 +2098,7 @@ def _auto_recover_required_web_seats(
     seats: list[str],
     external_evidence: list[dict[str, Any]],
     evidence_options: dict[str, Any],
+    answer_contract: dict[str, Any] | None,
     trace_event: Any,
     update_progress: Any,
 ) -> dict[str, Any]:
@@ -1451,7 +2134,12 @@ def _auto_recover_required_web_seats(
         supplement_raw = recover_existing_fixed_tab_answers(
             question=prompt_question,
             seats=recovery_seats,
-            config=load_bridge_config(),
+            config=merge_bridge_config_overrides(load_bridge_config(), _bridge_overrides_for_mode(
+                mode=mode,
+                seats=recovery_seats,
+                run_id=run_id,
+                answer_contract=answer_contract,
+            ) or {}),
             mode=mode,
             progress=lambda step, pct: update_progress(
                 f"自动回收 {attempt}/{AUTO_REQUIRED_RECOVERY_ATTEMPTS}：{step}",
@@ -1727,6 +2415,7 @@ def _try_start_deferred_run() -> None:
             "seats": payload.get("seats", []),
             "report_style": payload.get("report_style", ""),
             "partial_policy": payload.get("partial_policy", ""),
+            "round2_policy": payload.get("round2_policy", ""),
         },
     )
 
@@ -1743,6 +2432,7 @@ def _try_start_deferred_run() -> None:
         payload.get("external_evidence", []),
         payload.get("evidence_options", {}),
         attachments=payload.get("attachments", []),
+        round2_policy=payload.get("round2_policy", "priority_blocking_with_late_evidence_queue"),
     )
 
     # Also pop from the bridge queue
@@ -1765,6 +2455,7 @@ def _start_worker(
     external_evidence: list[dict[str, Any]] | None = None,
     evidence_options: dict[str, Any] | None = None,
     attachments: list[dict[str, Any]] | None = None,
+    round2_policy: str = "priority_blocking_with_late_evidence_queue",
 ) -> None:
     thread = threading.Thread(
         target=_run_worker,
@@ -1781,10 +2472,140 @@ def _start_worker(
             external_evidence or [],
             evidence_options or {},
             attachments or [],
+            round2_policy,
         ),
         daemon=True,
     )
     thread.start()
+
+
+def _normalize_round2_policy(value: Any) -> str:
+    policy = str(value or "").strip().lower().replace("-", "_")
+    if policy in {"all", "full", "full_round2", "all_seats", "all_configured", "all_first_round"}:
+        return "all_seats"
+    if policy in {"all_valid", "all_successful", "all_valid_first_round"}:
+        return "all_valid_first_round"
+    return "priority_blocking_with_late_evidence_queue"
+
+
+def _bridge_overrides_for_mode(
+    *,
+    mode: str,
+    seats: list[str],
+    run_id: str,
+    stop_event: Any | None = None,
+    round2_policy: str = "priority_blocking_with_late_evidence_queue",
+    answer_contract: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Bound web-bridge long tails so a single slow seat cannot hold the run forever."""
+    seats = [str(seat).lower() for seat in seats if str(seat).lower() in SEAT_PERSONAS]
+    answer_contract = answer_contract if isinstance(answer_contract, dict) else {}
+    if mode == "flash":
+        overrides = {
+            "_run_id": run_id,
+            "_stop_event": stop_event,
+            "round2_policy": _normalize_round2_policy(round2_policy),
+            "timeout_seconds": 75,
+            "retry_timeout_seconds": 105,
+            "required_timeout_seconds": 75,
+            "required_retry_timeout_seconds": 105,
+            "seat_submit_timeout_seconds": 60,
+            "seats": {s: {"timeout_seconds": 75, "retry_timeout_seconds": 105, "required_timeout_seconds": 75, "required_retry_timeout_seconds": 105} for s in seats},
+        }
+        _apply_answer_contract(overrides, seats, answer_contract)
+        return overrides
+    if mode == "strategic":
+        overrides = {
+            "_run_id": run_id,
+            "_stop_event": stop_event,
+            "round2_policy": _normalize_round2_policy(round2_policy),
+            "timeout_seconds": 540,
+            "retry_timeout_seconds": 660,
+            "required_timeout_seconds": 540,
+            "required_retry_timeout_seconds": 660,
+            "required_final_nudge_timeout_seconds": 120,
+            "required_post_timeout_grace_seconds": 90,
+            "web_collection_process_timeout_seconds": 900,
+            "existing_answer_recovery_process_timeout_seconds": 240,
+            "round2_total_max_seconds": 1200,
+            "seat_submit_timeout_seconds": 120,
+            "fresh_conversation_per_run": True,
+            "fresh_load_seconds": 2.5,
+            "fresh_navigation_timeout_seconds": 12,
+            "humanized_pacing": False,
+            "cdp_default_timeout_seconds": 8,
+            "cdp_navigation_timeout_seconds": 14,
+            "mode_prepare_max_attempts": 5,
+            "isolated_web_collection": True,
+            "emit_captured_response_in_trace": True,
+            "seats": {
+                s: {
+                    "timeout_seconds": 540,
+                    "retry_timeout_seconds": 660,
+                    "required_timeout_seconds": 540,
+                    "required_retry_timeout_seconds": 660,
+                    "required_final_nudge_timeout_seconds": 120,
+                    "required_post_timeout_grace_seconds": 90,
+                    "web_collection_process_timeout_seconds": 900,
+                    "existing_answer_recovery_process_timeout_seconds": 240,
+                    "round2_total_max_seconds": 1200,
+                    "seat_submit_timeout_seconds": 120,
+                    "fresh_conversation_per_run": True,
+                    "fresh_load_seconds": 2.5,
+                    "fresh_navigation_timeout_seconds": 12,
+                    "humanized_pacing": False,
+                    "isolated_web_collection": True,
+                    "emit_captured_response_in_trace": True,
+                }
+                for s in seats
+            },
+        }
+        _apply_answer_contract(overrides, seats, answer_contract)
+        return overrides
+    overrides = {"_run_id": run_id, "round2_policy": _normalize_round2_policy(round2_policy)}
+    _apply_answer_contract(overrides, seats, answer_contract)
+    return overrides
+
+
+def _answer_contract_for_question(question: str, mode: str) -> dict[str, Any]:
+    """Return collection completeness requirements for structure-heavy runs."""
+    if mode != "strategic":
+        return {}
+    pack = infer_domain_pack(question)
+    text = str(question or "").lower()
+    if pack.domain_id != "finance_market_timing":
+        return {}
+    asks_seat_forecasts = any(token in text for token in ("13个席位", "13席", "分别", "预判", "预测性", "投资建议", "贷款计划"))
+    min_chars = 900 if asks_seat_forecasts else 700
+    return {
+        "kind": "finance_market_prediction_complete_answer",
+        "min_required_response_chars": min_chars,
+        "min_response_chars_by_seat": {
+            "wenxin": min_chars,
+            "yuanbao": min(800, min_chars),
+            "zhipu": min(800, min_chars),
+        },
+        "reason": "金融市场预测/贷款操作问题需要席位给出方向判断、概率、操作、替代方案和风险边界，短答案不得进入正式报告。",
+    }
+
+
+def _apply_answer_contract(overrides: dict[str, Any], seats: list[str], contract: dict[str, Any]) -> None:
+    if not contract:
+        return
+    overrides["answer_contract"] = dict(contract)
+    min_chars = contract.get("min_required_response_chars")
+    if min_chars is not None:
+        overrides["min_required_response_chars"] = min_chars
+    seats_cfg = overrides.setdefault("seats", {})
+    if not isinstance(seats_cfg, dict):
+        return
+    by_seat = contract.get("min_response_chars_by_seat") if isinstance(contract.get("min_response_chars_by_seat"), dict) else {}
+    for seat in seats:
+        seat_cfg = seats_cfg.setdefault(seat, {})
+        if not isinstance(seat_cfg, dict):
+            continue
+        seat_cfg["answer_contract"] = dict(contract)
+        seat_cfg["min_required_response_chars"] = by_seat.get(seat, min_chars)
 
 
 def _run_worker(
@@ -1800,12 +2621,14 @@ def _run_worker(
     external_evidence: list[dict[str, Any]] | None = None,
     evidence_options: dict[str, Any] | None = None,
     attachments: list[dict[str, Any]] | None = None,
+    round2_policy: str = "priority_blocking_with_late_evidence_queue",
 ) -> None:
     trace = RunTrace(run_id)
     abstained_seats = abstained_seats or []
     external_evidence = external_evidence or []
     evidence_options = evidence_options or {}
     attachments = attachments or []
+    round2_policy = _normalize_round2_policy(round2_policy)
     local_context = _prepare_local_file_context(question)
     effective_external_evidence = [*external_evidence, *local_context.get("external_evidence", [])]
     model_question = _question_with_local_context(question, local_context)
@@ -1863,10 +2686,23 @@ def _run_worker(
                         seat_id=seat,
                         reason_code="browser_unavailable",
                     )
-                TASKS.fail(
-                    run_id,
-                    f"bridge_busy: 固定 Chrome 桥接正在被 {busy.get('label') or busy.get('run_id') or '其他流程'} 使用，请等待当前流程结束后重试。",
-                )
+                owner = busy.get("label") or busy.get("run_id") or "其他流程"
+                bridge_busy_error = {
+                    "status": "bridge_busy",
+                    "reason": f"固定 Chrome 桥接正在被 {owner} 使用，本轮没有提交新问题。",
+                    "next_action": "等待当前流程结束后重试，或从 Room/History 打开已有运行查看状态。",
+                    "trace_id": _task_trace_id(),
+                    "seat": seats[0] if seats else None,
+                    "bridge": "chrome_cdp",
+                    "recoverable": True,
+                    "busy": busy,
+                }
+                TASKS.fail(run_id, json.dumps(bridge_busy_error, ensure_ascii=False))
+                try:
+                    mark_failed(run_id, bridge_busy_error["reason"])
+                    save_control_state(run_id)
+                except Exception:
+                    pass
                 return
             # P59: back-sync bridge claim to run control so stop endpoint can release it
             try:
@@ -1886,6 +2722,7 @@ def _run_worker(
             "chief_judge": chief_judge,
             "abstained_seats": abstained_seats,
             "external_evidence_count": len(effective_external_evidence),
+            "round2_policy": round2_policy,
             "local_file_context": {
                 "path_count": local_context.get("path_count", 0),
                 "ok_count": local_context.get("ok_count", 0),
@@ -1912,7 +2749,7 @@ def _run_worker(
             trace_event("evidence", "local_files_resolved", "本地文件和图片已在后端解析并注入提示词", _public_local_file_context(local_context))
         TASKS.update_progress(run_id, "受理完成，网页提示词对齐", 0.06)
         if engine == "web":
-            status = bridge_status()
+            status = _bridge_status_snapshot(allow_wake=True, open_tabs=True)
             prompt_flow = build_prompt_flow(model_question, mode=mode, engine=engine, seats=seats, bridge_summary=status)
             trace_event("resonance", "prompt_flow_built", "网页执行前置对齐已生成专业提示词", {
                 "intent": prompt_flow.get("intent"),
@@ -1992,13 +2829,17 @@ def _run_worker(
                 if check_pause():
                     return
 
+                answer_contract = _answer_contract_for_question(question, mode)
+
                 # P1.7: flash total timeout — create stop_event to prevent single-seat hang
                 flash_stop_event = None
                 if mode == "flash":
                     import threading
                     flash_stop_event = threading.Event()
                     flash_timeout_seconds = 180
-                    threading.Timer(flash_timeout_seconds, lambda: flash_stop_event.set()).start()
+                    flash_watchdog = threading.Timer(flash_timeout_seconds, lambda: flash_stop_event.set())
+                    flash_watchdog.daemon = True
+                    flash_watchdog.start()
                     trace_event("flash", "timeout_configured", f"Flash 总时限 {flash_timeout_seconds}s，启动 watchdog", {
                         "timeout_seconds": flash_timeout_seconds,
                     })
@@ -2012,14 +2853,17 @@ def _run_worker(
                     external_evidence=effective_external_evidence,
                     evidence_options=evidence_options,
                     collect_followups=True,
+                    three_round_plan=prompt_flow.get("three_round_protocol"),
                     progress=web_progress,
                     trace=trace_event,
-                    bridge_config_overrides={
-                        "_stop_event": flash_stop_event,
-                        "timeout_seconds": 75,
-                        "retry_timeout_seconds": 105,
-                        "seats": {s: {"timeout_seconds": 75, "retry_timeout_seconds": 105} for s in runnable_seats},
-                    } if mode == "flash" else None,
+                    bridge_config_overrides=_bridge_overrides_for_mode(
+                        mode=mode,
+                        seats=runnable_seats,
+                        run_id=run_id,
+                        stop_event=flash_stop_event,
+                        round2_policy=round2_policy,
+                        answer_contract=answer_contract,
+                    ),
                 )
                 verdict["question"] = question
                 verdict["deep_prompt"] = prompt_flow["professional_prompt"]
@@ -2034,10 +2878,29 @@ def _run_worker(
                     seats=runnable_seats,
                     external_evidence=effective_external_evidence,
                     evidence_options=evidence_options,
+                    answer_contract=answer_contract,
                     trace_event=trace_event,
                     update_progress=lambda step, pct: TASKS.update_progress(run_id, step, pct),
                 )
                 _emit_harness_seat_collection_events(run_id, _raw_results_from_verdict(verdict))
+                # ── Five-Dimension Audit (unified pipeline step) ──
+                try:
+                    _raw_for_audit = _raw_results_from_verdict(verdict)
+                    _five_d_insights = run_five_d_audit(
+                        question=question,
+                        raw_results=_raw_for_audit,
+                        verdict=verdict,
+                        mode=mode,
+                    )
+                    if _five_d_insights:
+                        verdict["five_d_insights"] = _five_d_insights
+                        trace_event("five_d", "audit_complete", f"五维审计完成: {len(_five_d_insights)} 条洞察", {
+                            "insight_count": len(_five_d_insights),
+                            "types": list(set(i["type"] for i in _five_d_insights)),
+                        })
+                except Exception as _five_d_err:
+                    trace_event("five_d", "audit_error", f"五维审计异常: {_five_d_err}", None)
+
         else:
             raise ValueError("local AI Judge engine is disabled; submit with engine='web' for full web-seat collection")
 
@@ -2446,11 +3309,18 @@ def _run_rescue_worker(
         (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
         _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
         _save_run(source_run_id, merged)
+        rescue_snapshot = _save_derived_run_snapshot(
+            rescue_run_id,
+            source_run_id,
+            merged,
+            kind="rescue",
+            trace=trace,
+        )
         TASKS.complete(source_run_id, merged)
-        TASKS.complete(rescue_run_id, merged)
+        TASKS.complete(rescue_run_id, rescue_snapshot)
         trace_event("rescue", "complete", "一键修复并回收答案已完成并写回原 run", {
             "source_run_id": source_run_id,
-            "view_url": view_url,
+            "view_url": canonical_view_url,
             "ok_count": (merged.get("web_bridge") or {}).get("ok_count"),
             "failed_count": (merged.get("web_bridge") or {}).get("failed_count"),
             "fresh_seats": fresh_seats,
@@ -2465,7 +3335,7 @@ def _run_rescue_worker(
                 score=float(merged.get("average_score", 0.0) or 0.0),
                 channels=channels,
                 summary=merged.get("one_liner", ""),
-                view_url=view_url,
+                view_url=canonical_view_url,
                 to=notify_config.get("email"),
                 webhook_url=notify_config.get("webhook_url"),
                 feishu_webhook=notify_config.get("feishu_webhook"),
@@ -2588,11 +3458,18 @@ def _run_fresh_recheck_worker(
         (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
         _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
         _save_run(source_run_id, merged)
+        recheck_snapshot = _save_derived_run_snapshot(
+            recheck_run_id,
+            source_run_id,
+            merged,
+            kind="fresh_recheck",
+            trace=trace,
+        )
         TASKS.complete(source_run_id, merged)
-        TASKS.complete(recheck_run_id, merged)
+        TASKS.complete(recheck_run_id, recheck_snapshot)
         trace_event("recheck", "complete", "必需席位重新提交已完成并写回原 run", {
             "source_run_id": source_run_id,
-            "view_url": view_url,
+            "view_url": canonical_view_url,
             "ok_count": (merged.get("web_bridge") or {}).get("ok_count"),
             "failed_count": (merged.get("web_bridge") or {}).get("failed_count"),
         })
@@ -2606,7 +3483,7 @@ def _run_fresh_recheck_worker(
                 score=float(merged.get("average_score", 0.0) or 0.0),
                 channels=channels,
                 summary=merged.get("one_liner", ""),
-                view_url=view_url,
+                view_url=canonical_view_url,
                 to=notify_config.get("email"),
                 webhook_url=notify_config.get("webhook_url"),
                 feishu_webhook=notify_config.get("feishu_webhook"),
@@ -2732,11 +3609,18 @@ def _run_recheck_worker(
         (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
         _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
         _save_run(source_run_id, verdict)
+        recheck_snapshot = _save_derived_run_snapshot(
+            recheck_run_id,
+            source_run_id,
+            verdict,
+            kind="recheck",
+            trace=trace,
+        )
         TASKS.complete(source_run_id, verdict)
-        TASKS.complete(recheck_run_id, verdict)
+        TASKS.complete(recheck_run_id, recheck_snapshot)
         trace_event("recheck", "complete", "席位回收已完成并写回原 run", {
             "source_run_id": source_run_id,
-            "view_url": view_url,
+            "view_url": canonical_view_url,
             "ok_count": (verdict.get("web_bridge") or {}).get("ok_count"),
             "failed_count": (verdict.get("web_bridge") or {}).get("failed_count"),
         })
@@ -2750,7 +3634,7 @@ def _run_recheck_worker(
                 score=float(verdict.get("average_score", 0.0) or 0.0),
                 channels=channels,
                 summary=verdict.get("one_liner", ""),
-                view_url=view_url,
+                view_url=canonical_view_url,
                 to=notify_config.get("email"),
                 webhook_url=notify_config.get("webhook_url"),
                 feishu_webhook=notify_config.get("feishu_webhook"),
@@ -2871,11 +3755,18 @@ def _run_supplement_worker(
         (RUNS_DIR / source_run_id).mkdir(parents=True, exist_ok=True)
         _trace_path(source_run_id).write_text(json.dumps(combined_trace, ensure_ascii=False, indent=2), encoding="utf-8")
         _save_run(source_run_id, merged)
+        supplement_snapshot = _save_derived_run_snapshot(
+            supplement_run_id,
+            source_run_id,
+            merged,
+            kind="supplement",
+            trace=trace,
+        )
         TASKS.complete(source_run_id, merged)
-        TASKS.complete(supplement_run_id, merged)
+        TASKS.complete(supplement_run_id, supplement_snapshot)
         trace_event("supplement", "complete", "旧页面答案已合并回原报告", {
             "source_run_id": source_run_id,
-            "view_url": view_url,
+            "view_url": canonical_view_url,
             "ok_count": (merged.get("web_bridge") or {}).get("ok_count"),
             "failed_count": (merged.get("web_bridge") or {}).get("failed_count"),
         })
@@ -2889,7 +3780,7 @@ def _run_supplement_worker(
                 score=float(merged.get("average_score", 0.0) or 0.0),
                 channels=channels,
                 summary=merged.get("one_liner", ""),
-                view_url=view_url,
+                view_url=canonical_view_url,
                 to=notify_config.get("email"),
                 webhook_url=notify_config.get("webhook_url"),
                 feishu_webhook=notify_config.get("feishu_webhook"),
@@ -2919,6 +3810,11 @@ def health():
     # P3.3-RC1 runtime parity patch: release integrity follows current.lock.
     release_context = _p33_release_context()
     release_integrity = release_context.get("integrity", "unknown")
+    try:
+        bridge = bridge_status()
+    except Exception:
+        bridge = {}
+    seats_configured = int(bridge.get("configured_count") or bridge.get("enabled_count") or len(SEAT_PERSONAS))
 
     return jsonify({
         "status": "ok",
@@ -2926,15 +3822,23 @@ def health():
         "product": PRODUCT_NAME,
         "release_id": release_context.get("release_id", "unknown"),
         "release_integrity": release_integrity,
-        "seats_available": len(SEAT_PERSONAS),
+        "seats_available": seats_configured,
+        "seats_configured": seats_configured,
+        "seats_enabled": int(bridge.get("enabled_count") or seats_configured),
+        "seats_ready": int(bridge.get("ready_count") or 0),
+        "seats_persona_total": len(SEAT_PERSONAS),
         "engines": ["web"],
         "execution_drivers": ["web_dom", "chrome_apple_events", "chrome_cdp", "desktop_operator_pending", "api_provider_pending"],
         "client_ask_entrypoint": "p5_1_main_thread_subprocess_web_bridge",
-        "api_judge_policy": "legacy_debug_only",
+        "api_judge_policy": "search_agent_enabled",
         "grand_judge_mvp": "citation_verification",
         "evidence_os": ["evidence_broker", "blind_cross_validation", "evidence_gap_queue", "human_review", "eval_dataset"],
         "product_layers": ["stable_closeout", "lab_reliability_console", "human_gavel", "benchmark_summary", "p5_home_memory_center", "p5_1_client_daily_loop"],
         "web_requires_calibration": True,
+        "fdjp_enabled": True,
+        "fdjp_version": "FDJP-1.0",
+        "fdjp_schema_version": "1.0",
+        "fdjp_mode": "heuristic",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
@@ -3430,6 +4334,15 @@ def ai_judge_icon_png():
 def worldcup_pool():
     return send_from_directory(PRODUCT_DIR, "worldcup_pool.html")
 
+# P2.5: Local worldcup pool panel
+@app.route("/worldcup_pool_local.html")
+def worldcup_pool_local():
+    local_file = PRODUCT_DIR / "worldcup_pool_local.html"
+    if local_file.exists():
+        return send_from_directory(PRODUCT_DIR, "worldcup_pool_local.html")
+    else:
+        return "<h3>本地预测池面板尚未部署</h3><p>请使用 deploy 脚本或手动放置 worldcup_pool_local.html。</p><p><a href='/worldcup_pool.html'>跳转到在线版</a></p>", 404
+
 
 def _pool_python() -> str:
     candidates = [
@@ -3695,6 +4608,7 @@ def _start_worldcup_pool_model_round(date: str, round_id: str) -> tuple[dict[str
         [],
         {},
         attachments=[],
+        round2_policy="priority_blocking_with_late_evidence_queue",
     )
     return {
         "ok": True,
@@ -3851,26 +4765,22 @@ def citation_dashboard():
 @app.route("/api/modes")
 def modes():
     mode_list = list_modes()
-    # P1.9: Patch flash seats with reliability-filtered defaults
-    reliability_path = _PROJECT_ROOT / "data" / "seat_reliability.json"
-    reliability_data: dict[str, Any] = {}
-    if reliability_path.exists():
-        try:
-            reliability_data = json.loads(reliability_path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    bridge = bridge_status()
+    bridge_seats = _bridge_seat_map(bridge)
+    reliability_data = _load_seat_reliability()
+    defaults = _mode_default_seats(bridge_seats, reliability_data)
     for m in mode_list:
         if m.get("mode") == "flash":
-            raw_seats = m.get("seats", [])
-            filtered = [s for s in raw_seats if reliability_data.get(s, {}).get("recent_timeouts", 0) < 2]
-            if filtered:
-                m["seats"] = filtered
-                m["seat_count"] = len(filtered)
-                m["_reliability_filtered"] = True
-                excluded = [s for s in raw_seats if s not in filtered]
-                if excluded:
-                    m["_excluded_seats"] = excluded
-                    m["_excluded_reason"] = "连续 2+ 次超时，暂从 Flash 默认池剔除"
+            raw_seats = list(m.get("seats", []))
+            flash_defaults = defaults["flash"] if isinstance(defaults.get("flash"), list) else []
+            if flash_defaults:
+                m["seats"] = flash_defaults
+                m["seat_count"] = len(flash_defaults)
+            m["_reliability_filtered"] = True
+            excluded = [s for s in raw_seats if s not in flash_defaults]
+            if excluded:
+                m["_excluded_seats"] = excluded
+                m["_excluded_reason"] = "连续 2+ 次超时，暂从 Flash 默认池剔除"
     return jsonify({"modes": mode_list})
 
 
@@ -3893,6 +4803,55 @@ def seats():
 
 # ── P1.5 Settings & Seat Control ──────────────────────────────────────────
 
+def _load_seat_reliability() -> dict[str, Any]:
+    reliability_path = _PROJECT_ROOT / "data" / "seat_reliability.json"
+    if not reliability_path.exists():
+        return {}
+    try:
+        data = json.loads(reliability_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _bridge_seat_map(bridge: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    bridge_seats: dict[str, dict[str, Any]] = {}
+    for s in (bridge.get("seat_browser_matrix") or bridge.get("seats") or []):
+        if not isinstance(s, dict):
+            continue
+        sid = s.get("seat") or s.get("id")
+        if sid and sid in SEAT_PERSONAS:
+            bridge_seats[str(sid)] = s
+    return bridge_seats
+
+
+def _flash_default_candidates() -> list[str]:
+    from core.modes import JURY_MODES
+
+    candidates = list(JURY_MODES.get("flash", {}).get("seats") or ["gemini", "wenxin", "doubao"])
+    for extra in ["qwen", "deepseek", "yuanbao"]:
+        if extra not in candidates:
+            candidates.append(extra)
+    return [sid for sid in candidates if sid in SEAT_PERSONAS]
+
+
+def _mode_default_seats(bridge_seats: dict[str, dict[str, Any]], reliability_data: dict[str, Any]) -> dict[str, Any]:
+    flash_candidates = _flash_default_candidates()
+    flash_ready = [
+        sid for sid in flash_candidates
+        if bridge_seats.get(sid, {}).get("ready")
+        and reliability_data.get(sid, {}).get("recent_timeouts", 0) < 2
+    ]
+    strategic_ready = [
+        sid for sid in SEAT_PERSONAS
+        if bridge_seats.get(sid, {}).get("ready")
+    ]
+    return {
+        "flash": flash_ready[:6] if flash_ready else flash_candidates,
+        "strategic": strategic_ready if len(strategic_ready) >= 3 else "all_ready",
+    }
+
+
 @app.route("/api/seats/status")
 def seats_status():
     """Return live seat availability, readiness, driver info, mode defaults, and reliability stats.
@@ -3900,23 +4859,16 @@ def seats_status():
     P1.9: Flash default pool excludes seats with 2+ consecutive timeouts.
     Excluded seats remain selectable in custom mode.
     """
-    from core.modes import JURY_MODES
-
     bridge = bridge_status()
-    bridge_seats = {}
-    for s in bridge.get("seat_browser_matrix") or []:
-        sid = s.get("seat")
-        if sid and sid in SEAT_PERSONAS:
-            bridge_seats[sid] = s
+    bridge_seats = _bridge_seat_map(bridge)
 
     # ── P1.9: Load seat reliability history ──
-    reliability_path = _PROJECT_ROOT / "data" / "seat_reliability.json"
-    reliability_data: dict[str, Any] = {}
-    if reliability_path.exists():
-        try:
-            reliability_data = json.loads(reliability_path.read_text(encoding="utf-8"))
-        except Exception:
-            reliability_data = {}
+    reliability_data = _load_seat_reliability()
+    try:
+        scoreboard = _build_seat_scoreboard(verdicts=list(_iter_saved_verdicts(limit=80)), bridge=bridge)
+        scorecard_by_seat = {str(item.get("seat")): item for item in scoreboard.get("seats") or []}
+    except Exception:
+        scorecard_by_seat = {}
 
     seats_out = []
     for sid, persona in SEAT_PERSONAS.items():
@@ -3939,6 +4891,23 @@ def seats_status():
         else:
             rel_status = "reliable" if ready else "unknown"
 
+        # P2.9: Wenxin explicit downgrade
+        is_wenxin = sid == "wenxin"
+        if is_wenxin and recent_timeouts >= 2:
+            flash_rec = False
+            beta_flash_rec = False
+            exclusion_reason = "submit_or_resonance_timeout"
+            diagnostic_phase = "cdp_submit_or_resonance_timeout"
+        else:
+            flash_rec = ready and recent_timeouts < 2
+            beta_flash_rec = ready and recent_timeouts < 2
+            exclusion_reason = (
+                "连续 {} 次超时，已从 Flash 默认席位池临时移除".format(recent_timeouts)
+                if recent_timeouts >= 2
+                else ("" if ready else reason or "席位未就绪")
+            )
+            diagnostic_phase = ""
+
         seats_out.append({
             "id": sid,
             "name": persona["name"],
@@ -3951,27 +4920,18 @@ def seats_status():
                 "recent_timeouts": recent_timeouts,
                 "status": rel_status,
             },
-            # P2.1: Flash seat strategy - reliability-based recommendation
-            "flash_recommended": ready and recent_timeouts < 2,
-            "exclusion_reason": (
-                "连续 {} 次超时，已从 Flash 默认席位池临时移除".format(recent_timeouts)
-                if recent_timeouts >= 2
-                else ("" if ready else reason or "席位未就绪")
-            ),
+            "capability_tags": SEAT_CAPABILITY_TAGS.get(sid, []),
+            "scorecard": _public_seat_scorecard(scorecard_by_seat.get(sid, {}), ready=ready, rel_status=rel_status),
+            # P2.1/P2.9: Flash seat strategy - reliability-based recommendation
+            "flash_recommended": flash_rec,
+            "beta_flash_recommended": beta_flash_rec,
+            "exclusion_reason": exclusion_reason,
+            "diagnostic_phase": diagnostic_phase,
+            "manual_select_allowed": True,  # P2.9: all seats remain manually selectable
         })
 
-    # Build defaults: Flash excludes slow seats
-    # P2.1: Derive candidates from modes.py config
-    flash_defaults_candidates = JURY_MODES.get("flash", {}).get("seats", ["gemini", "wenxin", "doubao"])
-    # Also include seats from guard_smoke defaults
-    for extra in ["qwen", "deepseek", "yuanbao"]:
-        if extra not in flash_defaults_candidates:
-            flash_defaults_candidates.append(extra)
-    flash_ready = [
-        sid for sid in flash_defaults_candidates
-        if bridge_seats.get(sid, {}).get("ready")
-        and reliability_data.get(sid, {}).get("recent_timeouts", 0) < 2
-    ]
+    defaults = _mode_default_seats(bridge_seats, reliability_data)
+    flash_ready = defaults["flash"] if isinstance(defaults.get("flash"), list) else []
     strategic_ready = [s["id"] for s in seats_out if s["ready"]]
 
     # P2.1: Excluded seats detail - check all seats with timeouts, not just candidates
@@ -3995,10 +4955,7 @@ def seats_status():
     return jsonify({
         "ok": True,
         "seats": seats_out,
-        "defaults": {
-            "flash": flash_ready[:6] if flash_ready else flash_defaults_candidates,
-            "strategic": strategic_ready if len(strategic_ready) >= 3 else "all_ready",
-        },
+        "defaults": defaults,
         "flash_excluded": excluded_from_flash,
         "flash_align_hint": flash_align_hint,
         "total": len(seats_out),
@@ -4072,26 +5029,66 @@ def web_bridge_status():
         active_run = get_run(snap["run_id"])
         if active_run:
             status["current_seat"] = active_run.get("active_seat")
+    # P2.7: expose phase / elapsed / recoverable at top level for monitoring
+    status["current_phase"] = snap.get("current_phase", "idle")
+    status["last_cdp_phase"] = snap.get("last_cdp_phase", "idle")  # P2.9
+    status["elapsed_sec"] = snap.get("elapsed_seconds", 0.0)
+    status["recoverable"] = snap.get("recoverable", False)
     return jsonify(status)
+
+
+@app.route("/api/bridge/wake", methods=["POST"])
+def web_bridge_wake():
+    """Explicitly wake the Chrome CDP bridge.
+
+    Passive status endpoints must not launch Chrome or open tabs. This route is
+    the manual product action for users who intentionally want to prepare the
+    web-seat bridge before a run.
+    """
+    data = request.get_json(silent=True) or {}
+    open_tabs = bool(data.get("open_tabs", True))
+    config = load_bridge_config()
+    wake = ensure_chrome_cdp_awake(config, open_tabs=open_tabs)
+    status = bridge_status()
+    snap = bridge_run_snapshot()
+    status["bridge_run"] = snap
+    status["busy"] = snap.get("busy", False)
+    return jsonify({"ok": bool(wake.get("ok")), "wake": wake, "status": status})
 
 
 @app.route("/api/prompt/resonate", methods=["POST"])
 def prompt_resonate():
     data = request.get_json(silent=True) or {}
     question = str(data.get("question", "")).strip()
-    mode = str(data.get("mode", "flash")).lower().strip() or "flash"
+    mode = _normalize_judge_mode_alias(data.get("mode") or "flash")
     engine = str(data.get("engine", DEFAULT_JUDGE_ENGINE)).lower().strip() or DEFAULT_JUDGE_ENGINE
     if engine != "web":
-        return jsonify({"error": "local AI Judge engine is disabled; use engine='web'"}), 400
+        return _api_error_response(
+            "local AI Judge engine is disabled; use engine='web'",
+            400,
+            reason="本阶段只允许真实 web backend，不允许 local engine。",
+            next_action="把请求中的 engine 改为 'web' 后重试。",
+            source="prompt_resonate",
+        )
     seats = data.get("seats") or []
     if isinstance(seats, str):
         seats = [s.strip() for s in seats.split(",") if s.strip()]
     if not question:
-        return jsonify({"error": "question is required"}), 400
+        return _api_error_response(
+            "question is required",
+            400,
+            reason="问题不能为空。",
+            next_action="填写问题后重新提交。",
+            source="prompt_resonate",
+        )
     bridge = bridge_status() if engine == "web" else {}
+    prompt_flow = build_prompt_flow(question, mode=mode, engine=engine, seats=seats, bridge_summary=bridge)
+    intake_plan = build_intake_plan(question=question, seats=seats, bridge_summary=bridge)
     return jsonify({
         "ok": True,
-        "prompt_flow": build_prompt_flow(question, mode=mode, engine=engine, seats=seats, bridge_summary=bridge),
+        "prompt_flow": prompt_flow,
+        "intake_plan": intake_plan,
+        "domain_pack": intake_plan.get("domain_pack"),
         "execution_plan": decide_execution(engine=engine, mode=mode, requested_seats=seats, bridge_status=bridge),
     })
 
@@ -4112,6 +5109,64 @@ def calibrate_web_bridge():
     timeout_seconds = float(data.get("timeout_seconds") or 12)
     result = calibrate_bridge(seats=seats, timeout_seconds=timeout_seconds)
     return jsonify(result)
+
+
+# ── P2.7: Bridge Stuck Recovery ─────────────────────────────────────────────
+
+@app.route("/api/bridge/recover", methods=["POST"])
+def bridge_recover():
+    """Force-release the fixed Chrome bridge lock for a stuck run.
+
+    POST body (optional):
+        run_id: target run to cancel (defaults to active)
+        reason: "timeout" | "stuck" | "manual" (default "manual")
+
+    P2.9: Returns ok/no_active_run when no run is active (no more 500).
+    """
+    from core.bridge_run_lock import force_release_bridge_run
+    from core.run_control import mark_cancelled
+
+    data = request.get_json(silent=True) or {}
+    run_id = str(data.get("run_id") or "").strip()
+    reason = str(data.get("reason") or "manual").strip() or "manual"
+
+    snap = bridge_run_snapshot()
+    target_run_id = run_id or snap.get("run_id") or ""
+
+    # P2.9: handle idle bridge gracefully
+    if not target_run_id:
+        return jsonify({
+            "ok": True,
+            "result": "no_active_run",
+            "detail": "Bridge is idle; no run to recover.",
+            "bridge_snapshot": snap,
+        })
+
+    result = force_release_bridge_run(reason=reason, cancelled_run_id=target_run_id)
+
+    # Mark the run as cancelled if we have a run_id
+    trace_entries: list[dict[str, Any]] = []
+    if target_run_id:
+        try:
+            cancelled = mark_cancelled(target_run_id, reason=reason)
+            result["run_cancelled"] = bool(cancelled)
+            if cancelled:
+                trace_entries.append({
+                    "run_id": target_run_id,
+                    "action": "bridge_recovery_force_released",
+                    "reason": reason,
+                    "elapsed_seconds": result.get("elapsed_seconds"),
+                })
+        except Exception as e:
+            result["run_cancelled"] = False
+            result["cancel_error"] = str(e)
+
+    return jsonify({
+        "ok": True,
+        "recovery": result,
+        "bridge_snapshot": bridge_run_snapshot(),
+        "trace": trace_entries,
+    })
 
 
 @app.route("/api/trace", methods=["POST"])
@@ -6400,6 +7455,27 @@ def action_pack(run_id: str):
 
 # ── P1.9 Report Endpoint ─────────────────────────────────────────────────
 
+def _report_seat_id(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        for key in ("seat", "id", "seat_id", "name", "provider"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+    return ""
+
+
+def _dedupe_ordered(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if item and item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+
 @app.route("/api/runs/<run_id>/report")
 def run_report(run_id: str):
     """P1.9 Runtime Report — structured run report with verdict_status and seat stats.
@@ -6412,9 +7488,23 @@ def run_report(run_id: str):
     """
     safe_id = run_id.strip().replace("/", "").replace("\\", "").replace("..", "")
     run_dir = RUNS_DIR / safe_id
+    requested_surface = str(request.args.get("surface") or "public").strip().lower()
+    surface = requested_surface if requested_surface in {"public", "review", "debug", "internal"} else "public"
+    include_internal = str(request.args.get("include_internal") or "").strip().lower() in {"1", "true", "yes", "debug"}
+    expose_internal = include_internal and _is_local_request()
+    response_surface = "internal" if expose_internal else ("public" if surface == "internal" else surface)
 
     if not run_dir.exists():
-        return jsonify({"ok": False, "error": "run_not_found", "run_id": safe_id}), 404
+        return jsonify({
+            "ok": False,
+            "status": 404,
+            "error": "run_not_found",
+            "run_id": safe_id,
+            "reason": "No run directory exists for this run_id.",
+            "next_action": "Check the run_id or create a new run before requesting a report.",
+            "trace_id": f"run-report-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+            "source": "run_report",
+        }), 404
 
     # Load verdict
     verdict: dict[str, Any] = {}
@@ -6463,14 +7553,29 @@ def run_report(run_id: str):
     # Seat analysis
     seat_scores = verdict.get("seat_scores") or hermes.get("seat_scores") or []
     raw_results = verdict.get("web_bridge", {}).get("raw_results") or []
-    expected_seats = verdict.get("seats") or []
+    expected_seats_raw = verdict.get("seats") or []
+    expected_seats = _dedupe_ordered([sid for sid in (_report_seat_id(s) for s in expected_seats_raw) if sid])
+
+    if not verdict and not (run_dir / "index.html").exists():
+        return jsonify({
+            "ok": False,
+            "status": 202,
+            "error": "report_pending",
+            "run_id": safe_id,
+            "verdict_status": "incomplete",
+            "reason": "Report artifacts are not available yet for this run.",
+            "next_action": "Wait for the run to finish or inspect run status before opening the report.",
+            "trace_id": f"run-report-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+            "source": "run_report",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }), 202
 
     completed_seats: list[str] = []
     timeout_seats: list[str] = []
     all_seat_ids: set[str] = set()
 
     for ss in seat_scores:
-        sid = ss.get("seat", "")
+        sid = _report_seat_id(ss)
         if sid:
             all_seat_ids.add(sid)
             if ss.get("score") is not None or ss.get("verdict"):
@@ -6481,7 +7586,7 @@ def run_report(run_id: str):
                 completed_seats.append(sid)  # has seat_score entry = participated
 
     for rr in raw_results:
-        sid = rr.get("seat", "")
+        sid = _report_seat_id(rr)
         if sid:
             all_seat_ids.add(sid)
             if rr.get("timeout") or rr.get("error"):
@@ -6490,9 +7595,21 @@ def run_report(run_id: str):
             elif sid not in completed_seats:
                 completed_seats.append(sid)
 
+    # Backward-compatible fallback for verdicts normalized before runtime
+    # metadata was preserved. Claims prove a seat produced usable output.
+    if not seat_scores and not raw_results:
+        for claim in verdict.get("claims") or []:
+            sid = _report_seat_id(claim)
+            if sid and (not expected_seats or sid in expected_seats):
+                all_seat_ids.add(sid)
+                if sid not in completed_seats:
+                    completed_seats.append(sid)
+
     # Expected seats that didn't show up at all
     missing_seats = [s for s in expected_seats if s not in all_seat_ids]
-    timeout_seats = list(set(timeout_seats + missing_seats))
+    timeout_seats = _dedupe_ordered(timeout_seats + missing_seats)
+    timeout_seat_set = set(timeout_seats)
+    completed_seats = _dedupe_ordered([sid for sid in completed_seats if sid not in timeout_seat_set])
 
     # Evidence gaps
     evidence_gaps = []
@@ -6506,6 +7623,55 @@ def run_report(run_id: str):
     question = verdict.get("question") or hermes.get("question") or ""
     main_conclusion = verdict.get("one_liner") or verdict.get("verdict_label") or ""
     overall_score = verdict.get("overall_score")
+    public_document: dict[str, Any] = {}
+    public_model: dict[str, Any] = {}
+    public_identity: dict[str, Any] = {}
+    public_verdict: dict[str, Any] = {}
+    public_gate: dict[str, Any] = {}
+    public_council: dict[str, Any] = {}
+    public_audit: dict[str, Any] = {}
+    try:
+        public_model = build_public_report_view_model(verdict or hermes or {"run_id": safe_id}, surface="public")
+        public_document = build_judge_verdict_document(verdict or hermes or {"run_id": safe_id}, surface="public")
+        public_identity = public_document.get("reportIdentity") if isinstance(public_document.get("reportIdentity"), dict) else {}
+        public_verdict = public_document.get("executiveVerdict") if isinstance(public_document.get("executiveVerdict"), dict) else {}
+        public_gate = public_document.get("verdictGate") if isinstance(public_document.get("verdictGate"), dict) else {}
+        public_council = public_document.get("council") if isinstance(public_document.get("council"), dict) else {}
+        public_audit = public_document.get("audit") if isinstance(public_document.get("audit"), dict) else {}
+    except Exception:
+        public_document = {}
+        public_model = {}
+    public_question = str(public_identity.get("subtitle") or "")
+    public_main_conclusion = str(
+        public_verdict.get("oneLine")
+        or public_verdict.get("decision")
+        or public_identity.get("title")
+        or main_conclusion
+        or ""
+    )
+    public_artifact_candidates = [
+        ("html", "index.html"),
+        ("public_markdown", "public-report.md"),
+    ]
+    internal_artifact_candidates = [
+        ("html", "index.html"),
+        ("verdict_json", "verdict.json"),
+        ("verdict_markdown", "verdict.md"),
+        ("hermes_json", "hermes-output.json"),
+        ("hermes_markdown", "hermes-output.md"),
+        ("control", "control.json"),
+        ("trace", "trace.json"),
+    ]
+    artifact_candidates = internal_artifact_candidates if expose_internal else public_artifact_candidates
+    artifacts = [
+        {
+            "kind": kind,
+            "filename": filename,
+            "url": f"/api/runs/{safe_id}/{filename}",
+        }
+        for kind, filename in artifact_candidates
+        if (run_dir / filename).exists()
+    ]
 
     # P1.9: Follow-up explanation for incomplete runs
     followup_note = ""
@@ -6518,9 +7684,10 @@ def run_report(run_id: str):
     report = {
         "ok": True,
         "run_id": safe_id,
-        "question": question[:500] if question else "",
+        "surface": response_surface,
+        "question": (question[:500] if question else "") if expose_internal else public_question,
         "verdict_status": verdict_status,
-        "main_conclusion": main_conclusion,
+        "main_conclusion": main_conclusion if expose_internal else public_main_conclusion,
         "overall_score": overall_score,
         "seats": {
             "expected": len(expected_seats),
@@ -6533,6 +7700,56 @@ def run_report(run_id: str):
         "followup_note": followup_note,
         "control_state": control_state,
         "has_verdict": bool(verdict),
+        "public_report": {
+            "schema": public_model.get("schema") or public_document.get("schema") or "",
+            "compat_schema": public_document.get("schema") or "",
+            "product_renderer": public_document.get("productRenderer") or "",
+            "view_model_kind": public_model.get("kind") or "",
+            "view_model_url": f"/api/runs/{safe_id}/public-report-view-model.json",
+            "title": str(public_identity.get("title") or ""),
+            "report_kind": str(public_identity.get("reportKind") or ""),
+            "verdict_gate": public_gate,
+            "council": public_council,
+            "audit": public_audit,
+            "public_html_url": f"/api/runs/{safe_id}/index.html",
+            "public_markdown_url": f"/api/runs/{safe_id}/public-report.md",
+        },
+        "business_report": {
+            "question": (question[:500] if question else "") if expose_internal else public_question,
+            "main_conclusion": main_conclusion if expose_internal else public_main_conclusion,
+            "overall_score": overall_score,
+            "verdict_status": verdict_status,
+            "followup_note": followup_note,
+        },
+        "runtime_trace": (
+            {
+                "available": (run_dir / "trace.json").exists() or bool(control),
+                "route": f"/api/runs/{safe_id}/trace",
+                "control_state": control_state,
+            }
+            if expose_internal
+            else {"available": False, "surface": "debug", "control_state": control_state}
+        ),
+        "bridge_diagnostics": (
+            {
+                "available": bool(verdict.get("web_bridge")),
+                "requested_count": (verdict.get("web_bridge") or {}).get("requested_count"),
+                "ok_count": (verdict.get("web_bridge") or {}).get("ok_count"),
+                "failed_count": (verdict.get("web_bridge") or {}).get("failed_count"),
+            }
+            if expose_internal
+            else {"available": False, "surface": "debug"}
+        ),
+        "raw_seat_outputs": (
+            {
+                "available": bool(raw_results),
+                "count": len(raw_results),
+                "route": f"/api/runs/{safe_id}/verdict.json" if verdict_path.exists() else "",
+            }
+            if expose_internal
+            else {"available": False, "surface": "debug"}
+        ),
+        "artifacts": artifacts,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -6582,8 +7799,12 @@ def upload_attachment_api():
         return jsonify({"ok": False, "error": f"write failed: {e}"}), 500
 
     stat = file_path.stat()
-    text_preview = content[:300] if content else ""
-    is_text = mime_type.startswith("text/") or mime_type in ("application/json", "application/x-yaml", "application/xml")
+    parsed: dict[str, Any] = {}
+    if _is_allowed_local_file(file_path):
+        parsed = _read_local_path(file_path, 1)
+    parsed_text = str(parsed.get("text") or content or "")
+    text_preview = _limit_text(parsed_text, 1200)
+    content_available = bool(parsed.get("ok") and parsed_text.strip())
 
     return jsonify({
         "ok": True,
@@ -6593,7 +7814,18 @@ def upload_attachment_api():
         "size": stat.st_size,
         "type": mime_type,
         "text_preview": text_preview,
-        "content_available": bool(is_text and content),
+        "text_content": _limit_text(parsed_text, 50000),
+        "content_available": content_available,
+        "parsed": {
+            "schema": "ai_judge.attachment_evidence_packet.v1",
+            "ok": bool(parsed.get("ok")),
+            "kind": parsed.get("kind") or ("text" if content else "binary"),
+            "mime_type": mime_type,
+            "size_bytes": stat.st_size,
+            "text_chars": len(parsed_text),
+            "truncated": len(parsed_text) > 50000,
+            "error": parsed.get("error", ""),
+        },
     })
 
 
@@ -6605,7 +7837,18 @@ def get_run_api(run_id: str):
         safe_id = run_id.strip().replace("/", "").replace("\\", "").replace("..", "")
         if "text/html" in request.headers.get("Accept", "") and (RUNS_DIR / safe_id / "index.html").exists():
             return redirect(f"/api/runs/{safe_id}/index.html", code=302)
-        return jsonify({"error": "run not found"}), 404
+        recovered = _recover_run_state_from_disk(run_id)
+        if recovered:
+            return jsonify({"run": recovered})
+        return _task_json_error(
+            "run_not_found",
+            404,
+            run_id=run_id,
+            reason="找不到该 run_id 的运行状态或持久化运行产物。",
+            next_action="确认 run_id，或从 History 选择已有运行。",
+            recoverable=False,
+            source="run_api",
+        )
     return jsonify({"run": run})
 
 
@@ -6799,16 +8042,116 @@ ALLOWED_RUN_EXPORT_FILES = {
     "hermes-output.json",
     "hermes-output.md",
     "obsidian-run-note.md",
+    "public-report.md",
+    "public-report-view-model.json",
     "verdict.json",
     "verdict.md",
     "trace.json",
+    "worldcup_pool_report.html",
+    "worldcup_pool_report.json",
+    "worldcup_pool_report.md",
+    "worldcup_pool_report.pdf",
 }
+
+
+INTERNAL_RUN_EXPORT_FILES = {
+    "hermes-output.json",
+    "hermes-output.md",
+    "obsidian-run-note.md",
+    "trace.json",
+    "verdict.json",
+    "verdict.md",
+}
+
+
+WORLDCUP_POOL_REPORT_EXPORTS = {
+    "html": ("worldcup_pool_report.html", "text/html"),
+    "json": ("worldcup_pool_report.json", "application/json"),
+    "markdown": ("worldcup_pool_report.md", "text/markdown"),
+    "md": ("worldcup_pool_report.md", "text/markdown"),
+    "pdf": ("worldcup_pool_report.pdf", "application/pdf"),
+}
+
+
+@app.route("/api/worldcup-pool/report/<run_id>/<artifact>")
+def worldcup_pool_report_export(run_id: str, artifact: str):
+    export = WORLDCUP_POOL_REPORT_EXPORTS.get(str(artifact or "").lower())
+    if not export:
+        return jsonify({"error": "artifact_not_allowed", "allowed": sorted(WORLDCUP_POOL_REPORT_EXPORTS)}), 403
+    filename, mimetype = export
+    safe_id = run_id.strip().replace("/", "").replace("\\", "").replace("..", "")
+    if not safe_id:
+        return jsonify({"error": "invalid_run_id"}), 400
+    target = RUNS_DIR / safe_id / filename
+    if not target.exists():
+        return jsonify({"error": "file_not_found", "run_id": safe_id, "filename": filename}), 404
+    force_download = request.args.get("download") == "1" or artifact.lower() == "pdf"
+    return send_file(str(target), mimetype=mimetype, as_attachment=force_download)
+
+
+def _safe_run_id(run_id: str) -> str:
+    return str(run_id or "").strip().replace("/", "").replace("\\", "").replace("..", "")
+
+
+def _load_run_report_data(run_id: str) -> tuple[str, dict[str, Any] | None, tuple[Any, int] | None]:
+    safe_id = _safe_run_id(run_id)
+    if not safe_id:
+        return "", None, (jsonify({"error": "invalid_run_id"}), 400)
+    result = _load_run(safe_id)
+    if not isinstance(result, dict):
+        return safe_id, None, (jsonify({"error": "run_not_found", "run_id": safe_id}), 404)
+    trace = load_trace(_trace_path(safe_id))
+    if trace:
+        result = dict(result)
+        result["execution_trace"] = trace
+    return safe_id, result, None
+
+
+def _is_local_request() -> bool:
+    remote = str(request.remote_addr or "")
+    host = str(request.host or "")
+    return remote in {"127.0.0.1", "::1", "localhost"} or host.startswith(("127.0.0.1", "localhost", "[::1]"))
+
+
+@app.route("/api/runs/<run_id>/review.html")
+def run_review_report(run_id: str):
+    safe_id, result, error = _load_run_report_data(run_id)
+    if error:
+        return error
+    html_report = _render_html_report(result or {}, surface="review")
+    return Response(
+        html_report,
+        mimetype="text/html",
+        headers={"X-AI-Judge-Surface": "review", "X-AI-Judge-Run": safe_id},
+    )
+
+
+@app.route("/api/runs/<run_id>/debug.html")
+def run_debug_report(run_id: str):
+    safe_id, result, error = _load_run_report_data(run_id)
+    if error:
+        return error
+    if not _is_local_request():
+        return jsonify({"error": "debug_route_requires_local_request", "surface": "debug"}), 403
+    html_report = _render_html_report(result or {}, surface="debug")
+    return Response(
+        html_report,
+        mimetype="text/html",
+        headers={
+            "X-AI-Judge-Surface": "debug",
+            "X-AI-Judge-Run": safe_id,
+            "X-Robots-Tag": "noindex, nofollow",
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @app.route("/api/runs/<run_id>/<path:filename>")
 def run_export_file(run_id: str, filename: str):
     if filename not in ALLOWED_RUN_EXPORT_FILES:
         return jsonify({"error": "file_not_allowed", "allowed": sorted(ALLOWED_RUN_EXPORT_FILES)}), 403
+    if filename in INTERNAL_RUN_EXPORT_FILES and not _is_local_request():
+        return jsonify({"error": "internal_export_requires_local_request", "filename": filename}), 403
     try:
         safe_id = run_id.strip().replace("/", "").replace("\\", "").replace("..", "")
     except Exception:
@@ -7137,6 +8480,7 @@ def _resume_jury_run(run_id: str, run: dict[str, Any]) -> None:
                     notify_config=None,
                     chief_judge="auto",
                     abstained_seats=[],
+                    round2_policy=meta.get("round2_policy", "priority_blocking_with_late_evidence_queue"),
                 )
     except Exception:
         mark_failed(run_id, "jury resume failed")
@@ -7164,7 +8508,7 @@ def _resume_worldcup_run(run_id: str, run: dict[str, Any]) -> None:
 def submit_judge():
     data = request.get_json(silent=True) or {}
     question = str(data.get("question", "")).strip()
-    raw_mode = str(data.get("mode", DEFAULT_JUDGE_MODE)).lower().strip() or DEFAULT_JUDGE_MODE
+    raw_mode = _normalize_judge_mode_alias(data.get("mode") or DEFAULT_JUDGE_MODE)
     engine = str(data.get("engine", DEFAULT_JUDGE_ENGINE)).lower().strip() or DEFAULT_JUDGE_ENGINE
     override_seats = _normalize_seat_list(data.get("seats"))
     abstained_seats = _normalize_seat_list(data.get("abstained_seats"))
@@ -7180,13 +8524,32 @@ def submit_judge():
     report_style = str(data.get("report_style") or "concise").lower().strip()
     if report_style not in ("concise", "detailed", "audit"):
         report_style = "concise"
+    round2_policy = _normalize_round2_policy(data.get("round2_policy") or seat_config.get("round2_policy"))
 
     if not question:
-        return jsonify({"error": "question is required"}), 400
+        return _api_error_response(
+            "question is required",
+            400,
+            reason="问题不能为空。",
+            next_action="填写问题后重新提交。",
+            source="submit_judge",
+        )
     if engine != "web":
-        return jsonify({"error": "local AI Judge engine is disabled; engine must be 'web'"}), 400
+        return _api_error_response(
+            "local AI Judge engine is disabled; engine must be 'web'",
+            400,
+            reason="本阶段只允许真实 web backend，不允许 local engine。",
+            next_action="把请求中的 engine 改为 'web' 后重试。",
+            source="submit_judge",
+        )
     if chief_judge != "auto" and chief_judge not in SEAT_PERSONAS:
-        return jsonify({"error": "chief_judge must be 'auto' or a valid seat id"}), 400
+        return _api_error_response(
+            "chief_judge must be 'auto' or a valid seat id",
+            400,
+            reason="chief_judge 参数无效。",
+            next_action="使用 'auto' 或有效 seat id。",
+            source="submit_judge",
+        )
 
     # ── P1.5: Resolve seat availability from live bridge ──
     bridge = bridge_status()
@@ -7208,7 +8571,13 @@ def submit_judge():
         excluded_req = _normalize_seat_list(seat_config.get("excluded"))
         partial_policy = str(seat_config.get("partial_policy") or "allow")
         if not selected:
-            return jsonify({"error": "custom mode requires at least one seat in seat_config.selected"}), 400
+            return _api_error_response(
+                "custom mode requires at least one seat in seat_config.selected",
+                400,
+                reason="自定义模式至少需要一个席位。",
+                next_action="在本轮设置中选择至少一个可用席位。",
+                source="submit_judge",
+            )
         requested_seats_raw = [s for s in selected if s in SEAT_PERSONAS]
 
         for sid in selected:
@@ -7224,21 +8593,32 @@ def submit_judge():
                 excluded_seats_detail.append({"id": sid, "reason": reason})
 
         if not runnable_seats_raw:
-            return jsonify({
-                "error": "no_ready_seats",
-                "requested": selected,
-                "excluded": excluded_seats_detail,
-            }), 400
+            return _api_error_response(
+                "no_ready_seats",
+                400,
+                reason="所选席位当前都不可运行。",
+                next_action="打开 More/System 查看 bridge 状态，完成登录或校准后重试。",
+                source="submit_judge",
+                requested=selected,
+                excluded=excluded_seats_detail,
+            )
 
-        # custom mode uses seat_config as seats override
-        config = resolve_mode("strategic", override_seats=runnable_seats_raw)
+        # P2.7: custom mode uses flash execution path + explicit seat_config
+        config = resolve_mode("flash", override_seats=runnable_seats_raw)
         seats = runnable_seats_raw
+        raw_mode = "flash"  # P2.7: normalize to flash so worker doesn't reject "custom"
     else:
         # flash / strategic: use normal mode resolution
         try:
             config = resolve_mode(raw_mode, override_seats=override_seats or None)
         except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+            return _api_error_response(
+                str(exc),
+                400,
+                reason="裁决模式参数无效。",
+                next_action="选择快速或深度裁决后重试。",
+                source="submit_judge",
+            )
 
         seats = [s for s in config["seats"] if s in SEAT_PERSONAS]
 
@@ -7285,7 +8665,13 @@ def submit_judge():
             seats = runnable_seats_raw[:]
 
     if not seats:
-        return jsonify({"error": "No valid seats selected"}), 400
+        return _api_error_response(
+            "No valid seats selected",
+            400,
+            reason="没有可用于真实执行的席位。",
+            next_action="检查席位配置、bridge 状态和登录状态后重试。",
+            source="submit_judge",
+        )
 
     busy = bridge_run_snapshot()
     if engine == "web" and busy.get("busy"):
@@ -7293,11 +8679,14 @@ def submit_judge():
             run_id = TASKS.submit(question=question, mode=raw_mode, seats=seats)
             queue_info = enqueue_judge(run_id, question, raw_mode, seats)
             if queue_info is None:
-                return jsonify({
-                    "error": "bridge_busy",
-                    "message": "固定 Chrome 桥接正在运行其他 AI Judge 流程，且队列已满（上限10）。请稍后重试。",
-                    "bridge_run": busy,
-                }), 409
+                return _api_error_response(
+                    "bridge_busy",
+                    409,
+                    reason="固定 Chrome 桥接正在运行其他流程，且队列已满。",
+                    next_action="等待当前流程结束后重试。",
+                    source="submit_judge",
+                    bridge_run=busy,
+                )
 
             # P1.9: Store deferred submission for auto-start on bridge release
             deferred_path = _PROJECT_ROOT / "data" / "deferred_runs" / f"{run_id}.json"
@@ -7317,6 +8706,7 @@ def submit_judge():
                 "attachments": attachments,
                 "report_style": report_style,
                 "partial_policy": partial_policy,
+                "round2_policy": round2_policy,
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
             deferred_path.write_text(json.dumps(deferred_payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -7330,14 +8720,14 @@ def submit_judge():
                 "bridge_run": busy,
             }), 202
 
-        return jsonify({
-            "error": "bridge_busy",
-            "message": (
-                "固定 Chrome 桥接正在运行其他 AI Judge 流程。"
-                "请等当前流程结束后再提交，避免网页席位串台。"
-            ),
-            "bridge_run": busy,
-        }), 409
+        return _api_error_response(
+            "bridge_busy",
+            409,
+            reason="固定 Chrome 桥接正在运行其他 AI Judge 流程。",
+            next_action="等待当前流程结束后再提交，避免网页席位串台。",
+            source="submit_judge",
+            bridge_run=busy,
+        )
 
     run_id = TASKS.submit(question=question, mode=raw_mode, seats=seats)
 
@@ -7352,6 +8742,7 @@ def submit_judge():
         "excluded_count": len(excluded_seats_detail),
         "report_style": report_style,
         "partial_policy": partial_policy,
+        "round2_policy": round2_policy,
     }
     for event_type in ("settings_updated", "seat_config_resolved", "custom_seats_selected" if raw_mode == "custom" else "report_style_selected"):
         evt = dict(trace_entry)
@@ -7369,6 +8760,7 @@ def submit_judge():
         metadata={
             "question": question, "mode": raw_mode, "seats": seats,
             "report_style": report_style, "partial_policy": partial_policy,
+            "round2_policy": round2_policy,
         },
     )
 
@@ -7386,6 +8778,7 @@ def submit_judge():
         external_evidence,
         evidence_options,
         attachments=attachments,
+        round2_policy=round2_policy,
     )
 
     response_data = {
@@ -7404,6 +8797,7 @@ def submit_judge():
         "seat_count": len(seats),
         "estimated_seconds": config["timeout_seconds"],
         "report_style": report_style,
+        "round2_policy": round2_policy,
         "progress_url": f"/api/judge/{run_id}/progress",
         "verdict_url": f"/api/judge/{run_id}/verdict",
     }
@@ -7581,9 +8975,36 @@ def recheck_judge(run_id: str):
 
 @app.route("/api/task/<run_id>")
 def task_status(run_id: str):
-    payload = _task_payload(run_id)
+    try:
+        payload = _task_payload(run_id)
+    except Exception as exc:
+        recovered, code = _recover_task_payload_from_run(run_id)
+        if recovered:
+            if recovered.get("ok") is False:
+                recovered.setdefault("error", type(exc).__name__)
+                recovered.setdefault("debug_error", str(exc))
+            return jsonify(recovered), code
+        return _task_json_error(
+            "task_not_recoverable",
+            409,
+            run_id=run_id,
+            reason=f"任务状态读取失败：{type(exc).__name__}",
+            next_action="请从 History 打开 Report；如仍不可用，请重新执行该 run。",
+            recoverable=False,
+            error_type=type(exc).__name__,
+        )
     if payload is None:
-        return jsonify({"error": "task not found"}), 404
+        recovered, code = _recover_task_payload_from_run(run_id)
+        if recovered:
+            return jsonify(recovered), code
+        return _task_json_error(
+            "run_not_found",
+            404,
+            run_id=run_id,
+            reason="找不到该 run_id 的任务状态或持久化运行产物。",
+            next_action="确认 run_id，或从 Memory/History 打开已有运行。",
+            recoverable=False,
+        )
     return jsonify(payload)
 
 
@@ -7593,8 +9014,23 @@ def verdict(run_id: str):
     if not result:
         status = TASKS.get_status(run_id)
         if status:
-            return jsonify({"error": "verdict not ready", "status": status}), 409
-        return jsonify({"error": "run not found"}), 404
+            return _api_error_response(
+                "verdict not ready",
+                409,
+                reason="裁决结果尚未生成。",
+                next_action="继续轮询 Room 状态，或稍后打开 Report。",
+                source="verdict",
+                run_id=run_id,
+                task_status=status,
+            )
+        return _api_error_response(
+            "run not found",
+            404,
+            reason="找不到该 run_id。",
+            next_action="确认 run_id 是否来自真实创建接口。",
+            source="verdict",
+            run_id=run_id,
+        )
 
     # Hermes × Obsidian exports
     run_dir = RUNS_DIR / run_id
@@ -7793,7 +9229,8 @@ def secure_view():
     if trace:
         result = dict(result)
         result["execution_trace"] = trace
-    return Response(_render_html_report(result), mimetype="text/html")
+    surface = request.args.get("surface") or "public"
+    return Response(_render_html_report(result, surface=surface), mimetype="text/html")
 
 
 def _iter_saved_verdicts(limit: int = 80):
@@ -7936,6 +9373,31 @@ def _safe_float(value: Any) -> float | None:
         return None
 
 
+def _public_seat_scorecard(row: dict[str, Any], *, ready: bool, rel_status: str) -> dict[str, Any]:
+    average = row.get("average_score")
+    stability = row.get("r_stability")
+    if average is None:
+        base = 72 if ready else 55
+    else:
+        base = int(round(float(average) * 100 if float(average) <= 1 else float(average)))
+    if stability is not None:
+        base = int(round(base * 0.75 + float(stability) * 100 * 0.25))
+    if rel_status in {"slow", "degraded"}:
+        base = max(0, base - (10 if rel_status == "slow" else 5))
+    return {
+        "overall": max(0, min(100, base)),
+        "average_score": average,
+        "stability": stability,
+        "run_count": int(row.get("run_count") or 0),
+        "success_count": int(row.get("success_count") or 0),
+        "failure_count": int(row.get("failure_count") or 0),
+        "latest_score": row.get("latest_score"),
+        "q_avg": row.get("q_avg"),
+        "raw_answer_avg": row.get("k_avg"),
+        "peer_review_avg": row.get("c_avg"),
+    }
+
+
 def _compact_report_text(value: Any, limit: int = 360) -> str:
     text = " ".join(str(value or "").split())
     if len(text) <= limit:
@@ -7987,7 +9449,7 @@ def _render_seat_answers(result: dict[str, Any]) -> str:
         seat_name = str(item.get("seat_name") or score_by_seat.get(seat, {}).get("seat_name") or seat)
         ok = bool(item.get("ok"))
         response = str(item.get("response") or "")
-        error = item.get("error") or {}
+        error = normalize_error(item.get("error"))
         retry_attempts = int(item.get("retry_attempts") or 0)
         retry_note = f" · 补跑 {retry_attempts} 次" if retry_attempts else ""
         score = score_by_seat.get(seat, {})
@@ -8071,14 +9533,31 @@ def _render_mentor_supplements(result: dict[str, Any]) -> str:
         questions = item.get("source_questions") or []
         question_items = "".join(f"<li>{html.escape(str(q))}</li>" for q in questions) or "<li>该席位未显式返回问题，系统使用了兜底共振问题。</li>"
         response = str(item.get("response") or "")
-        error = item.get("error") or {}
-        status = "已补充" if ok else "未完成"
-        status_class = "is-ok" if ok else "is-failed"
-        state_class = "good" if ok else "bad"
+        error = normalize_error(item.get("error"))
+        late = bool(item.get("late_evidence"))
+        priority = item.get("round2_priority") or {}
+        if ok:
+            status = "已补充"
+            status_class = "is-ok"
+            state_class = "good"
+        elif late:
+            status = "延迟证据"
+            status_class = "is-pending"
+            state_class = "warn"
+        else:
+            status = "优先席位未完成"
+            status_class = "is-failed"
+            state_class = "bad"
         normalized_response = _normalize_stored_answer(response)
         detail = _render_stored_answer_html(normalized_response) if ok else html.escape(f"{error.get('code', 'unknown')}: {error.get('message', 'No response captured.')}")
         raw_detail = html.escape(normalized_response) if ok else detail
         preview = _compact_report_text(response if ok else error.get("message", ""), 180)
+        priority_meta = ""
+        if isinstance(priority, dict) and priority:
+            priority_meta = (
+                f' · rank {html.escape(str(priority.get("rank", "-")))}'
+                f' · priority {html.escape(str(priority.get("score", "-")))}'
+            )
         answer_body = (
             f'<div class="answer readable-answer">{detail}</div>'
             f'<details class="raw-log"><summary>查看纯文本二轮日志</summary><pre class="answer raw-answer">{raw_detail}</pre></details>'
@@ -8090,7 +9569,7 @@ def _render_mentor_supplements(result: dict[str, Any]) -> str:
             "<summary>"
             f"<strong>{html.escape(seat_name)}</strong>"
             f'<span class="seat-state {state_class}">{html.escape(status)}</span>'
-            f'<span class="seat-meta">{len(questions)} 个问题 · {html.escape(str(item.get("elapsed_seconds", "-")))}s</span>'
+            f'<span class="seat-meta">{len(questions)} 个问题 · {html.escape(str(item.get("elapsed_seconds", "-")))}s{priority_meta}</span>'
             "</summary>"
             f'<ul class="compact-list">{question_items}</ul>'
             f'<p class="seat-preview">{html.escape(preview)}</p>'
@@ -8099,11 +9578,14 @@ def _render_mentor_supplements(result: dict[str, Any]) -> str:
         )
     ok_count = sum(1 for item in supplements if item.get("ok"))
     question_count = sum(len(item.get("source_questions") or []) for item in supplements)
+    scheduler = bridge.get("round2_scheduler") if isinstance(bridge.get("round2_scheduler"), dict) else {}
+    scheduled_count = int(scheduler.get("scheduled_count") or sum(1 for item in supplements if item.get("round2_scheduled")))
+    deferred_count = int(scheduler.get("deferred_count") or sum(1 for item in supplements if item.get("late_evidence")))
     return (
         '<section class="band" id="mentor-supplements">'
         '<div class="section-head"><div>'
         "<h2>共振提问与二轮方案</h2>"
-        f'<p class="muted">每个模型先提出补强问题，再带入用户角色回答自己的问题。已回收 {ok_count}/{len(supplements)} 席，问题 {question_count} 个。</p>'
+        f'<p class="muted">第二轮采用优先级调度：阻塞追问 {scheduled_count} 席，已回收 {ok_count} 席，late evidence 队列 {deferred_count} 席，问题 {question_count} 个。</p>'
         "</div></div>"
         f'<div class="seat-answer-list">{"".join(cards)}</div>'
         "</section>"
@@ -8890,7 +10372,19 @@ def _render_p33_runtime_harness(result: dict[str, Any]) -> str:
     )
 
 
-def _render_html_report(result: dict[str, Any]) -> str:
+def _render_debug_workbench_report(result: dict[str, Any]) -> str:
+    gate = result.get("high_risk_gate") if isinstance(result.get("high_risk_gate"), dict) else evaluate_high_risk_domain_gate(result)
+    if _should_render_high_risk_blocker(result, gate):
+        recovery_queue = result.get("recovery_queue") if isinstance(result.get("recovery_queue"), dict) else build_required_seat_recovery_queue(result, gate)
+        incomplete_report = (
+            result.get("high_risk_formal_verdict_blocker_brief")
+            if isinstance(result.get("high_risk_formal_verdict_blocker_brief"), dict)
+            else result.get("incomplete_high_risk_report")
+            if isinstance(result.get("incomplete_high_risk_report"), dict)
+            else build_incomplete_high_risk_report(result, gate, recovery_queue)
+        )
+        return render_incomplete_high_risk_report_html(incomplete_report)
+
     reasons = "".join(
         f"<li>{html.escape(_compact_report_text(r, 260))}</li>"
         for r in result.get("reasons", [])
@@ -9359,6 +10853,16 @@ if (new URLSearchParams(window.location.search).get("print") === "1") {{
 </body></html>"""
 
 
+def _render_html_report(result: dict[str, Any], surface: str = "public") -> str:
+    normalized_surface = str(surface or "public").lower()
+    if normalized_surface == "debug":
+        return render_debug_workbench_html(_render_debug_workbench_report(result))
+    if normalized_surface not in {"public", "review"}:
+        normalized_surface = "public"
+    public_document = build_judge_verdict_document(result, surface=normalized_surface)
+    return render_judge_verdict_html(public_document)
+
+
 # ─── P7: Decision Intelligence aggregate endpoint ───
 @app.route("/api/decision/intelligence", methods=["GET"])
 def decision_intelligence():
@@ -9754,6 +11258,18 @@ def _p33_sha256_file(path: Path) -> str:
     return hasher.hexdigest()
 
 
+def _release_next_action(context: dict[str, Any]) -> str:
+    if context.get("missing"):
+        return "restore_missing_files_from_release_manifest_or_rebuild_runtime"
+    if context.get("drift"):
+        return "reconcile_active_runtime_with_release_manifest_or_reseal_after_review"
+    if context.get("errors"):
+        return "fix_release_status_read_errors"
+    if context.get("integrity") == "pass":
+        return "no_action_required"
+    return "inspect_release_manifest_and_runtime_source"
+
+
 def _p33_release_context() -> dict[str, Any]:
     """P3.3-RC1 runtime parity patch: derive release status from current.lock."""
     release_dir = RUNS_DIR.parent / "release"
@@ -9764,6 +11280,8 @@ def _p33_release_context() -> dict[str, Any]:
         "sealed": False,
         "integrity": "fail",
         "manifest_path": None,
+        "runtime_root": str(runtime_root),
+        "current_lock_path": str(current_lock_path),
         "drift": [],
         "missing": [],
         "errors": [],
@@ -9836,18 +11354,41 @@ def release_status():
     Used by operator_check.py to verify release health.
     """
     release_context = _p33_release_context()
+    drift = list(release_context.get("drift", []))
+    missing = list(release_context.get("missing", []))
+    errors = list(release_context.get("errors", []))
+    failed_checks: list[dict[str, Any]] = []
+    if missing:
+        failed_checks.append({"check": "manifest_files_present", "status": "fail", "count": len(missing)})
+    if drift:
+        failed_checks.append({"check": "manifest_hash_match", "status": "fail", "count": len(drift)})
+    if errors:
+        failed_checks.append({"check": "release_status_read", "status": "fail", "errors": errors})
+    trace_id = f"release-status-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
 
     return jsonify({
         "ok": True,
+        "version": PRODUCT_VERSION,
         "release_id": release_context.get("release_id", "unknown"),
         "sealed": release_context.get("sealed", False),
         "integrity": release_context.get("integrity", "fail"),
         "manifest_path": release_context.get("manifest_path"),
-        "drift_count": len(release_context.get("drift", [])),
-        "missing_count": len(release_context.get("missing", [])),
+        "runtime_source": str(_PROJECT_ROOT),
+        "expected_source": release_context.get("manifest_path"),
+        "current_lock_path": release_context.get("current_lock_path"),
+        "drift_detected": bool(drift),
+        "drift_count": len(drift),
+        "drift_files": drift,
+        "missing_count": len(missing),
+        "missing_files": missing,
+        "failed_checks": failed_checks,
+        "errors": errors,
+        "next_action": _release_next_action(release_context),
+        "last_checked_at": datetime.now(timezone.utc).isoformat(),
+        "trace_id": trace_id,
         "product_version": PRODUCT_VERSION,
         "client_ask_entrypoint": "p5_1_main_thread_subprocess_web_bridge",
-        "api_judge_policy": "legacy_debug_only",
+        "api_judge_policy": "search_agent_enabled",
     }), 200, {"Content-Type": "application/json"}
 
 
@@ -9949,6 +11490,62 @@ def api_operator_doc(doc_id):
         return jsonify({"ok": False, "error": str(_e), "reason": "read_failed"}), 500
 
 
+# ── FDJP Five-Dimension Audit API ────────────────────────────────────
+
+@app.route("/api/runs/<run_id>/dimension-audit", methods=["POST"])
+def api_fdjp_dimension_audit(run_id):
+    """Trigger or re-run FDJP five-dimension audit for a run."""
+    data = request.get_json(silent=True) or {}
+    task_type = str(data.get("task_type", "general"))
+    force = bool(data.get("force", False))
+    try:
+        audit = run_dimension_audit(run_id=run_id, task_type=task_type, force=force)
+        return jsonify({
+            "ok": True,
+            "run_id": run_id,
+            "status": audit.get("status"),
+            "mode": audit.get("mode"),
+            "overall_score": audit.get("overall_score"),
+            "dimension_scores": audit.get("dimension_scores"),
+            "artifact_path": audit.get("artifact_dir", ""),
+            "cached": audit.get("_cached", False),
+            "contract": build_fdjp_client_contract(audit),
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "run_id": run_id, "error": str(e)}), 500
+
+
+@app.route("/api/runs/<run_id>/dimension-audit", methods=["GET"])
+def api_fdjp_get_audit(run_id):
+    """Retrieve FDJP dimension audit for a run."""
+    audit = load_dimension_audit(run_id=run_id)
+    if audit:
+        return jsonify({
+            "ok": True,
+            "run_id": run_id,
+            "status": audit.get("status"),
+            "mode": audit.get("mode"),
+            "overall_score": audit.get("overall_score"),
+            "dimension_scores": audit.get("dimension_scores"),
+            "dimensions": audit.get("dimensions"),
+            "gates": audit.get("gates"),
+            "artifact_path": audit.get("artifact_dir", ""),
+            "contract": build_fdjp_client_contract(audit),
+        })
+    return jsonify({
+        "ok": False,
+        "error": "FDJP_AUDIT_NOT_FOUND",
+        "suggestion": f"POST /api/runs/{run_id}/dimension-audit",
+    })
+
+
+@app.route("/api/runs/<run_id>/report-blocks", methods=["GET"])
+def api_fdjp_report_blocks(run_id):
+    """Retrieve FDJP report blocks for a run."""
+    result = load_dimension_report_blocks(run_id=run_id)
+    return jsonify(result)
+
+
 def main():
     import argparse
 
@@ -9978,14 +11575,21 @@ def main():
     except Exception as _e:
         print(f"  Trust Calibration build failed: {_e}")
 
-    # Auto-wake the dedicated AI Judge Chrome CDP bridge.
-    # Never kill the user's ordinary Chrome; keep one persistent profile so logins survive restarts.
+    # Chrome CDP is no longer auto-woken by server startup. Passive launches
+    # caused repeated bridge wake-ups whenever the desktop app/API restarted.
+    # Set AI_JUDGE_AUTO_WAKE_ON_STARTUP=1 or config auto_wake_on_startup=true
+    # to restore the old eager behavior.
     try:
-        _wake = ensure_chrome_cdp_awake(load_bridge_config(), open_tabs=True)
-        if _wake.get("ok"):
-            print(f"  Chrome CDP ready at {_wake.get('endpoint')} · woke={_wake.get('woke')} · opened={len(_wake.get('opened_tabs') or [])}")
+        _startup_config = load_bridge_config()
+        _startup_wake = os.environ.get("AI_JUDGE_AUTO_WAKE_ON_STARTUP") == "1" or bool(_startup_config.get("auto_wake_on_startup"))
+        if _startup_wake:
+            _wake = ensure_chrome_cdp_awake(_startup_config, open_tabs=True)
+            if _wake.get("ok"):
+                print(f"  Chrome CDP ready at {_wake.get('endpoint')} · woke={_wake.get('woke')} · opened={len(_wake.get('opened_tabs') or [])}")
+            else:
+                print(f"  Chrome CDP wake skipped/failed: {_wake.get('reason') or _wake.get('error')}")
         else:
-            print(f"  Chrome CDP wake skipped/failed: {_wake.get('reason') or _wake.get('error')}")
+            print("  Chrome CDP auto-wake disabled on startup; use POST /api/bridge/wake or start a web run.")
     except Exception as _e:
         print(f"  Chrome auto-launch skipped: {_e}")
 

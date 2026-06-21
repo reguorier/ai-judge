@@ -11,8 +11,11 @@ P0 PATCH APPLIED: Resonance followup timeout + auto-degrade
 
 from __future__ import annotations
 
-import concurrent.futures
 import hashlib
+import json
+import multiprocessing
+import os
+import queue
 import re
 import sys
 import time
@@ -28,12 +31,21 @@ from bridges.web_seat_bridge import run_web_seats
 from core.auto_jury import assemble_verdict
 from core.final_report import attach_final_report
 from core.modes import resolve_mode
+from core.model_stability import model_stability_summary, update_model_stability_profiles
+from core.noise_audit import build_noise_audit, noise_summary
 from core.scoring_v2 import score_claim_v2
 from core.seat_execution_policy import (
     annotate_execution_results,
     execution_policy_summary,
+    normalize_error,
 )
 from core.seat_personas import SEAT_PERSONAS
+from core.three_round_protocol import (
+    SEAT_INFORMATION_PROFILES,
+    build_round2_revision_prompts,
+    build_scoring_context,
+    build_three_round_plan,
+)
 from core.worldcup_pool import (
     attach_worldcup_pool_state,
     build_worldcup_pool_adapter_results,
@@ -44,9 +56,197 @@ from core.worldcup_pool import (
 )
 
 # --- P0: Hard timeout constants for resonance followups ---
-RESONANCE_PER_SEAT_TIMEOUT_SECONDS = 300   # 5 min max per seat in resonance
-RESONANCE_TOTAL_MAX_SECONDS = 600          # 10 min total cap for all resonance
-RESONANCE_STALL_DETECT_SECONDS = 180       # if no seat completes in 3 min, degrade
+RESONANCE_PER_SEAT_TIMEOUT_SECONDS = 180   # 3 min max per seat in resonance
+RESONANCE_TOTAL_MAX_SECONDS = 420          # 7 min total cap for priority resonance
+RESONANCE_STALL_DETECT_SECONDS = 120       # if no seat completes in 2 min, degrade
+RESONANCE_PRIORITY_MAX_SEATS = 5           # Round 2 only blocks on highest-value seats
+RESONANCE_PRIORITY_MIN_SEATS = 3           # Keep a useful minimum when enough seats exist
+ROUND2_SCHEDULER_SCHEMA = "ai_judge.round2_scheduler.v1"
+
+
+def _web_collection_timeout_result(seat: str, reason: str, message: str) -> dict[str, Any]:
+    return {
+        "seat": seat,
+        "seat_name": SEAT_PERSONAS.get(seat, {}).get("name", seat),
+        "ok": False,
+        "response": "",
+        "error": normalize_error(reason, fallback_code=reason, fallback_message=message),
+        "error_code": reason,
+        "message": message,
+        "execution_validity": {"valid": False, "reason": reason},
+    }
+
+
+def _jsonable(value: Any) -> Any:
+    return json.loads(json.dumps(value, ensure_ascii=False, default=str))
+
+
+def _bridge_config_for_child(config_overrides: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(config_overrides, dict):
+        return config_overrides
+    child_config = dict(config_overrides)
+    child_config.pop("_stop_event", None)
+    return child_config
+
+
+def _web_collection_process_timeout(config_overrides: dict[str, Any] | None, seats: list[str]) -> float:
+    config = config_overrides if isinstance(config_overrides, dict) else {}
+    key = "round2_web_collection_process_timeout_seconds" if len(seats) <= 1 else "web_collection_process_timeout_seconds"
+    value = config.get(key)
+    if value is None and len(seats) <= 1:
+        value = config.get("web_collection_process_timeout_seconds")
+    try:
+        timeout = float(value)
+    except Exception:
+        timeout = 260.0 if len(seats) <= 1 else 420.0
+    return max(60.0, timeout)
+
+
+def _run_web_seats_child(
+    question: str,
+    seats: list[str],
+    mode: str,
+    config_overrides: dict[str, Any] | None,
+    event_queue: Any,
+) -> None:
+    def child_progress(step: str, progress_value: float) -> None:
+        event_queue.put(("progress", step, progress_value))
+
+    def child_trace(phase: str, action: str, detail: str, data: dict[str, Any] | None = None) -> None:
+        event_queue.put(("trace", phase, action, detail, data))
+
+    try:
+        result = run_web_seats(
+            question=question,
+            seats=seats,
+            mode=mode,
+            config_overrides=config_overrides,
+            progress=child_progress,
+            trace=child_trace,
+        )
+        event_queue.put(("result", _jsonable(result)))
+    except BaseException as exc:  # child must report hard failures instead of killing the parent worker
+        event_queue.put(("error", type(exc).__name__, str(exc)))
+
+
+def _run_web_seats_with_process_guard(
+    *,
+    question: str,
+    seats: list[str],
+    mode: str,
+    config_overrides: dict[str, Any] | None,
+    progress: Callable[[str, float], None] | None = None,
+    trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
+) -> list[dict[str, Any]]:
+    seats = [seat for seat in seats if seat in SEAT_PERSONAS]
+    if not seats:
+        return []
+    config_for_child = _bridge_config_for_child(config_overrides)
+    if (
+        os.environ.get("PYTEST_CURRENT_TEST")
+        or (isinstance(config_for_child, dict) and config_for_child.get("isolated_web_collection") is False)
+    ):
+        return run_web_seats(
+            question=question,
+            seats=seats,
+            mode=mode,
+            config_overrides=config_overrides,
+            progress=progress,
+            trace=trace,
+        )
+
+    timeout_seconds = _web_collection_process_timeout(config_for_child, seats)
+    if trace:
+        trace("bridge", "web_collection_process_started", "网页席位采集子进程已启动", {
+            "seats": seats,
+            "timeout_seconds": timeout_seconds,
+        })
+    ctx = multiprocessing.get_context("spawn")
+    event_queue = ctx.Queue()
+    process = ctx.Process(
+        target=_run_web_seats_child,
+        args=(question, seats, mode, config_for_child, event_queue),
+        daemon=True,
+    )
+    process.start()
+    deadline = time.time() + timeout_seconds
+    result: list[dict[str, Any]] | None = None
+    child_error: str | None = None
+    partial_results: dict[str, dict[str, Any]] = {}
+
+    def drain_events() -> None:
+        nonlocal result, child_error
+        while True:
+            try:
+                event = event_queue.get_nowait()
+            except queue.Empty:
+                break
+            kind = event[0] if event else ""
+            if kind == "progress" and progress:
+                progress(str(event[1]), float(event[2]))
+            elif kind == "trace":
+                phase = str(event[1])
+                action = str(event[2])
+                detail = str(event[3])
+                data = event[4] if isinstance(event[4], dict) else {}
+                if action in {"cdp_response_captured", "cdp_partial_response_captured"}:
+                    seat = str(data.get("seat") or "")
+                    response = str(data.get("response") or "")
+                    if seat and response:
+                        partial_results[seat] = {
+                            "seat": seat,
+                            "seat_name": SEAT_PERSONAS.get(seat, {}).get("name", seat),
+                            "ok": True,
+                            "url": str(data.get("url") or ""),
+                            "profile_dir": "Chrome CDP fixed tab",
+                            "elapsed_seconds": float(data.get("elapsed_seconds") or 0),
+                            "response": response,
+                            "error": None,
+                        }
+                if trace:
+                    trace(phase, action, detail, data)
+            elif kind == "result":
+                result = event[1]
+            elif kind == "error":
+                child_error = f"{event[1]}: {event[2]}"
+
+    while process.is_alive():
+        drain_events()
+        if time.time() >= deadline:
+            process.terminate()
+            process.join(timeout=5)
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=2)
+            message = f"Web collection subprocess exceeded {timeout_seconds:.0f}s and was terminated."
+            if trace:
+                trace("bridge", "web_collection_process_timeout", "网页席位采集子进程超时终止", {
+                    "seats": seats,
+                    "timeout_seconds": timeout_seconds,
+                    "partial_count": len(partial_results),
+                })
+            return [
+                partial_results.get(seat) or _web_collection_timeout_result(seat, "web_collection_process_timeout", message)
+                for seat in seats
+            ]
+        time.sleep(0.2)
+
+    process.join(timeout=1)
+    drain_events()
+    if result is not None:
+        return result
+    message = child_error or f"Web collection subprocess exited with code {process.exitcode} before returning results."
+    if trace:
+        trace("bridge", "web_collection_process_failed", "网页席位采集子进程失败", {
+            "seats": seats,
+            "exitcode": process.exitcode,
+            "error": message,
+            "partial_count": len(partial_results),
+        })
+    return [
+        partial_results.get(seat) or _web_collection_timeout_result(seat, "web_collection_process_failed", message)
+        for seat in seats
+    ]
 
 
 def run_web_jury(
@@ -59,6 +259,7 @@ def run_web_jury(
     evidence_options: dict[str, Any] | None = None,
     bridge_config_overrides: dict[str, Any] | None = None,
     collect_followups: bool = False,
+    three_round_plan: dict[str, Any] | None = None,
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> dict[str, Any]:
@@ -87,7 +288,7 @@ def run_web_jury(
             progress("赛事预测池平台限制席位已透明适配", 0.13)
     raw_results = []
     if web_seats:
-        raw_results = run_web_seats(
+        raw_results = _run_web_seats_with_process_guard(
             question=question,
             seats=web_seats,
             mode=mode,
@@ -99,10 +300,11 @@ def run_web_jury(
     mentor_supplements: list[dict[str, Any]] = []
     if collect_followups:
         mentor_supplements = collect_resonance_followups(
-            question=question,
+            question=(display_question or question),
             mode=mode,
             raw_results=raw_results,
             bridge_config_overrides=bridge_config_overrides,
+            three_round_plan=three_round_plan,
             progress=progress,
             trace=trace,
         )
@@ -120,6 +322,7 @@ def run_web_jury(
         external_evidence=external_evidence,
         run_id=run_id,
         display_question=display_question,
+        three_round_plan=three_round_plan,
         trace=trace,
     )
     if evidence_options:
@@ -142,6 +345,7 @@ def assemble_web_verdict_from_raw_results(
     external_evidence: list[dict[str, Any]] | None = None,
     run_id: str | None = None,
     display_question: str | None = None,
+    three_round_plan: dict[str, Any] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> dict[str, Any]:
     """Score already-collected web-seat responses into a verdict."""
@@ -156,7 +360,22 @@ def assemble_web_verdict_from_raw_results(
     ok_count = sum(1 for item in raw_results if item.get("ok"))
     failed_count = sum(1 for item in raw_results if not item.get("ok"))
     mentor_ok_count = sum(1 for item in mentor_supplements if item.get("ok"))
+    round2_scheduler = _round2_scheduler_summary(mentor_supplements)
+    late_evidence_queue = _late_evidence_queue(mentor_supplements)
     execution_policy = execution_policy_summary(raw_results, requested_seats=resolved_seats)
+    report_question = (display_question or question).strip()
+    protocol_plan = three_round_plan or build_three_round_plan(
+        question=report_question,
+        mode=mode,
+        seats=resolved_seats,
+    )
+    scoring_context = build_scoring_context(
+        question=report_question,
+        mode=mode,
+        raw_results=raw_results,
+        deliberation=deliberation,
+        plan=protocol_plan,
+    )
     if trace:
         trace("jury", "web_jury_collected", "网页席位收集完成，进入答案总结与互评", {
             "ok_count": ok_count,
@@ -164,20 +383,24 @@ def assemble_web_verdict_from_raw_results(
             "primary_claim_count": len(primary_claims),
             "mentor_supplement_count": len(mentor_supplements),
             "mentor_ok_count": mentor_ok_count,
+            "round2_scheduled_count": round2_scheduler.get("scheduled_count", 0),
+            "round2_deferred_count": round2_scheduler.get("deferred_count", 0),
         })
         trace("jury", "web_deliberation_built", "答案总结、交叉互评与评分 claims 已生成", {
             "summary_claim_count": deliberation.get("summary_claim_count"),
             "peer_review_count": deliberation.get("peer_review_count"),
             "total_claim_count": len(claims),
+            "three_round_protocol_hash": protocol_plan.get("protocol_hash"),
+            "information_board_hash": (scoring_context.get("information_board") or {}).get("board_hash"),
         })
-    report_question = (display_question or question).strip()
     verdict = assemble_verdict(
         question=report_question,
         mode=mode,
         seats=resolved_seats,
         claims=claims,
         run_id=run_id,
-        engine="isolated-web-seat-bridge-v3.4",
+        engine="isolated-web-seat-bridge-v3.5-three-round",
+        scoring_context=scoring_context,
         extra={
             "web_bridge": {
                 "raw_results": raw_results,
@@ -193,8 +416,17 @@ def assemble_web_verdict_from_raw_results(
                 "supplementable_seats": _supplementable_seats(raw_results),
                 "required_supplementable_seats": execution_policy["required_supplementable_seats"],
                 "mentor_supplements": _public_mentor_supplements(mentor_supplements),
+                "round2_scheduler": round2_scheduler,
+                "late_evidence_queue": late_evidence_queue,
                 "external_evidence": external_evidence,
                 "deliberation": _public_deliberation(deliberation),
+                "three_round_protocol": protocol_plan,
+                "information_board": scoring_context.get("information_board") or {},
+                "scoring_context": {
+                    "schema": scoring_context.get("schema"),
+                    "seat_vectors": scoring_context.get("seat_vectors") or {},
+                    "seat_performance": scoring_context.get("seat_performance") or {},
+                },
                 "isolation": {
                     "uses_system_mouse": False,
                     "uses_system_keyboard": False,
@@ -208,28 +440,56 @@ def assemble_web_verdict_from_raw_results(
                     "judge_role": "summarize_stat_score_only",
                     "model_role": "participant_and_peer_supervisor",
                     "trust_gate": "majority_confirmation_after_blind_cross_validation",
+                    "frame_lock": (protocol_plan.get("frame_lock") or {}).get("name"),
                     "blind_review": {
                         "status": "contract_recorded",
                         "rule": "最终可信源必须先保留席位原文，再进入不记名交叉验证；多数席位确认后才提升为可信共识。",
                     },
                 },
                 "pipeline": {
-                    "version": "web-jury-v3.4-full",
+                    "version": "web-jury-v3.6-three-round-priority-resonance",
                     "phases": [
-                        {"id": "collect_web_answers", "label": "网页席位收集", "count": len(raw_results)},
-                        {"id": "extract_resonance_questions", "label": "席位共振提问", "count": _mentor_question_count(mentor_supplements)},
-                        {"id": "collect_mentor_supplements", "label": "二轮共振方案", "count": mentor_ok_count},
-                        {"id": "summarize_answers", "label": "答案总结", "count": deliberation.get("summary_claim_count", 0)},
-                        {"id": "peer_review", "label": "席位互评", "count": deliberation.get("peer_review_count", 0)},
-                        {"id": "score_claims_v2", "label": "评分引擎 v2", "count": len(claims)},
+                        {"id": "round0_judge_frame", "label": "第0轮：框架锁定与信息差分配", "count": len(protocol_plan.get("seat_mandates") or [])},
+                        {"id": "round1_independent_answer", "label": "第一轮：网页席位独立作答", "count": len(raw_results)},
+                        {
+                            "id": "round2_information_feedback",
+                            "label": "第二轮：信息反哺与共振修订",
+                            "count": mentor_ok_count,
+                            "scheduled_count": round2_scheduler.get("scheduled_count", 0),
+                            "completed_count": round2_scheduler.get("completed_count", 0),
+                            "deferred_count": round2_scheduler.get("deferred_count", 0),
+                            "late_evidence_count": len(late_evidence_queue),
+                        },
+                        {"id": "answer_summary", "label": "答案总结", "count": deliberation.get("summary_claim_count", 0)},
+                        {"id": "peer_review", "label": "席位互评监督", "count": deliberation.get("peer_review_count", 0)},
+                        {"id": "round3_judge_settlement", "label": "第三轮：法官完整评分结算", "count": len(claims)},
                     ],
-                    "scoring_engine": "core.scoring_v2.score_jury_v2",
+                    "scoring_engine": "core.scoring_v2.score_jury_full_pipeline",
                 },
             }
         },
     )
     if not execution_policy["collection_complete"]:
         verdict.update(_bridge_incomplete_fields(raw_results, ok_count, failed_count, execution_policy=execution_policy))
+    noise_audit = build_noise_audit(
+        run_id=str(run_id or verdict.get("run_id") or ""),
+        question=report_question,
+        mode=mode,
+        verdict=verdict,
+        raw_results=raw_results,
+    )
+    verdict["noise_audit"] = noise_audit
+    verdict.setdefault("web_bridge", {})["noise_audit"] = noise_summary(noise_audit)
+    stability_store = update_model_stability_profiles(
+        run_id=str(run_id or verdict.get("run_id") or ""),
+        question=report_question,
+        mode=mode,
+        noise_audit=noise_audit,
+        verdict=verdict,
+    )
+    stability = model_stability_summary(stability_store, seats=resolved_seats)
+    verdict["model_stability"] = stability
+    verdict.setdefault("web_bridge", {})["model_stability"] = stability
     _attach_web_judge_explainability(verdict, report_question, raw_results, deliberation)
     return verdict
 
@@ -239,6 +499,7 @@ def collect_resonance_followups(
     mode: str,
     raw_results: list[dict[str, Any]],
     bridge_config_overrides: dict[str, Any] | None = None,
+    three_round_plan: dict[str, Any] | None = None,
     progress: Callable[[str, float], None] | None = None,
     trace: Callable[[str, str, str, dict[str, Any] | None], None] | None = None,
 ) -> list[dict[str, Any]]:
@@ -250,19 +511,48 @@ def collect_resonance_followups(
     If no seat completes within RESONANCE_STALL_DETECT_SECONDS, the system
     auto-degrades to first-round summary.
     """
-    prompts = build_resonance_followup_prompts(question, raw_results)
+    policy_name = _round2_policy_name(bridge_config_overrides)
+    prompts = build_resonance_followup_prompts(
+        question,
+        raw_results,
+        mode=mode,
+        plan=three_round_plan,
+        include_failed=policy_name == "all_seats",
+    )
     if not prompts:
         if trace:
             trace("resonance", "no_followup_prompts", "没有可进入二轮共振的席位", {})
         return []
 
+    schedule = schedule_round2_followups(
+        prompts=prompts,
+        raw_results=raw_results,
+        plan=three_round_plan,
+        max_priority_seats=_round2_priority_limit(bridge_config_overrides, len(prompts)),
+        policy_name=policy_name,
+    )
+    active_prompts = schedule.get("scheduled_prompts") or []
+    deferred_prompts = schedule.get("deferred_prompts") or []
+    if trace:
+        trace("resonance", "round2_schedule_built", "二轮共振优先级调度完成", {
+            "schema": schedule.get("schema"),
+            "policy": schedule.get("policy"),
+            "prompt_count": len(prompts),
+            "scheduled_count": len(active_prompts),
+            "deferred_count": len(deferred_prompts),
+            "priority_order": [
+                {"seat": item.get("seat"), "rank": item.get("rank"), "score": item.get("score")}
+                for item in schedule.get("priority_order", [])[:12]
+            ],
+        })
+
     supplements: list[dict[str, Any]] = []
-    total = max(1, len(prompts))
+    total = max(1, len(active_prompts))
     resonance_start = time.monotonic()
     last_completion_time = resonance_start
     degraded = False
 
-    for index, prompt in enumerate(prompts, 1):
+    for index, prompt in enumerate(active_prompts, 1):
         seat = str(prompt.get("seat") or "")
 
         # --- P0: Check total time cap ---
@@ -271,12 +561,15 @@ def collect_resonance_followups(
             if trace:
                 trace("resonance", "total_timeout", f"二轮共振总时长超限 ({elapsed_total:.0f}s > {RESONANCE_TOTAL_MAX_SECONDS}s)，剩余席位跳过", {
                     "elapsed_seconds": round(elapsed_total, 1),
-                    "skipped_seats": [str(p.get("seat")) for p in prompts[index - 1:]],
+                    "skipped_seats": [str(p.get("seat")) for p in active_prompts[index - 1:]],
                 })
-            for remaining_prompt in prompts[index - 1:]:
+            for remaining_prompt in active_prompts[index - 1:]:
                 remaining_seat = str(remaining_prompt.get("seat") or "")
-                supplements.append(_empty_mentor_result(remaining_seat, "resonance_total_timeout",
-                    f"二轮共振总时长超限 ({RESONANCE_TOTAL_MAX_SECONDS}s)，该席位被跳过"))
+                supplements.append(_scheduled_followup_failure(
+                    remaining_prompt,
+                    "resonance_total_timeout",
+                    f"二轮共振总时长超限 ({RESONANCE_TOTAL_MAX_SECONDS}s)，该席位被跳过",
+                ))
             break
 
         # --- P0: Stall detection ---
@@ -287,10 +580,13 @@ def collect_resonance_followups(
                     f"二轮共振疑似卡死：距上次完成已过 {stall_elapsed:.0f}s，自动降级为首回合汇总",
                     {"stall_seconds": round(stall_elapsed, 1), "degraded": True})
             degraded = True
-            for remaining_prompt in prompts[index - 1:]:
+            for remaining_prompt in active_prompts[index - 1:]:
                 remaining_seat = str(remaining_prompt.get("seat") or "")
-                supplements.append(_empty_mentor_result(remaining_seat, "resonance_stall_degraded",
-                    f"二轮共振卡死自动降级：距上次席位完成已超过 {RESONANCE_STALL_DETECT_SECONDS}s"))
+                supplements.append(_scheduled_followup_failure(
+                    remaining_prompt,
+                    "resonance_stall_degraded",
+                    f"二轮共振卡死自动降级：距上次席位完成已超过 {RESONANCE_STALL_DETECT_SECONDS}s",
+                ))
             break
 
         if progress:
@@ -323,13 +619,19 @@ def collect_resonance_followups(
 
         item["round"] = "mentor_resonance_followup"
         item["source_round"] = "raw_answer"
-        item["source_questions"] = prompt.get("questions") or []
+        item["source_questions"] = prompt.get("source_questions") or prompt.get("questions") or []
         item["source_answer_preview"] = prompt.get("source_answer_preview")
         item["prompt"] = prompt.get("prompt")
+        item["round2_scheduled"] = True
+        item["late_evidence"] = False
+        item["round2_priority"] = prompt.get("round2_priority")
+        item["round2_scheduler_policy"] = schedule.get("policy")
         supplements.append(item)
 
-        if item.get("ok"):
-            last_completion_time = time.monotonic()
+        # A terminal failed seat is still progress. Without this, one timed-out
+        # priority seat can make the next iteration look like a global stall and
+        # prematurely degrade the rest of Round 2.
+        last_completion_time = time.monotonic()
 
         if trace:
             seat_elapsed = float(item.get("elapsed_seconds") or 0)
@@ -339,8 +641,22 @@ def collect_resonance_followups(
                 "response_chars": len(str(item.get("response") or "")),
                 "error": item.get("error"),
                 "seat_elapsed_seconds": round(seat_elapsed, 1),
-                "timed_out": str((item.get("error") or {}).get("code") or "") == "resonance_seat_timeout",
+                "timed_out": str(normalize_error(item.get("error")).get("code") or "") == "resonance_seat_timeout",
             })
+
+    completed_scheduled_seats = {str(item.get("seat") or "").lower() for item in supplements}
+    for prompt in active_prompts:
+        seat = str(prompt.get("seat") or "").lower()
+        if seat and seat not in completed_scheduled_seats:
+            supplements.append(_scheduled_followup_failure(
+                prompt,
+                "resonance_loop_incomplete",
+                "二轮共振循环提前结束，该优先席位未完成采补。",
+            ))
+            completed_scheduled_seats.add(seat)
+
+    for prompt in deferred_prompts:
+        supplements.append(_late_evidence_deferred_result(prompt))
 
     total_elapsed = time.monotonic() - resonance_start
     if trace:
@@ -348,6 +664,8 @@ def collect_resonance_followups(
         trace("resonance", "followups_summary", "二轮共振汇总", {
             "total_seats": len(supplements),
             "ok_count": ok_count,
+            "scheduled_count": len(active_prompts),
+            "deferred_count": len(deferred_prompts),
             "total_elapsed_seconds": round(total_elapsed, 1),
             "degraded": degraded,
             "timeout_config": {
@@ -373,15 +691,15 @@ def _collect_single_followup_with_timeout(
     trace: Callable | None,
     timeout_seconds: int = RESONANCE_PER_SEAT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
-    """Run a single resonance followup with a hard timeout.
-
-    Uses ThreadPoolExecutor to enforce timeout on the blocking run_web_seats call.
-    If the seat exceeds timeout_seconds, returns a timeout error result.
-    """
-    def _run_seat() -> dict[str, Any]:
-        followup_overrides = dict(bridge_config_overrides or {})
-        followup_overrides["fresh_conversation_per_run"] = True
-        results = run_web_seats(
+    """Run a single resonance followup with process isolation."""
+    followup_overrides = dict(bridge_config_overrides or {})
+    followup_overrides["fresh_conversation_per_run"] = True
+    followup_overrides["round2_web_collection_process_timeout_seconds"] = min(
+        float(followup_overrides.get("round2_web_collection_process_timeout_seconds") or timeout_seconds),
+        float(timeout_seconds),
+    )
+    try:
+        results = _run_web_seats_with_process_guard(
             question=str(prompt.get("prompt") or ""),
             seats=[seat],
             mode=mode,
@@ -390,44 +708,328 @@ def _collect_single_followup_with_timeout(
             trace=trace,
         )
         return dict(results[0]) if results else _empty_mentor_result(seat, "empty_followup_result")
+    except Exception as exc:
+        return _empty_mentor_result(seat, "followup_collection_error", str(exc))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="resonance") as executor:
-        future = executor.submit(_run_seat)
+
+def schedule_round2_followups(
+    *,
+    prompts: list[dict[str, Any]],
+    raw_results: list[dict[str, Any]] | None = None,
+    plan: dict[str, Any] | None = None,
+    max_priority_seats: int | None = None,
+    policy_name: str = "priority_blocking_with_late_evidence_queue",
+) -> dict[str, Any]:
+    """Choose the seats that may block Round 2 and defer the rest.
+
+    Round 2 is most valuable when it extracts scarce information and dissent,
+    but it becomes fragile if every successful model must complete another
+    full web round. This scheduler keeps the protocol three-round while making
+    the blocking part bounded and auditable.
+    """
+    raw_by_seat = {
+        str(item.get("seat") or "").lower(): item
+        for item in (raw_results or [])
+        if isinstance(item, dict)
+    }
+    unique_prompts: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for prompt in prompts:
+        seat = str(prompt.get("seat") or "").lower()
+        if not seat or seat in seen:
+            continue
+        seen.add(seat)
+        row = dict(prompt)
+        row["seat"] = seat
+        unique_prompts.append(row)
+
+    total = len(unique_prompts)
+    limit = _bounded_round2_limit(total, max_priority_seats)
+    scored_rows: list[dict[str, Any]] = []
+    for prompt in unique_prompts:
+        seat = str(prompt.get("seat") or "").lower()
+        priority = _round2_priority_entry(prompt, raw_by_seat.get(seat, {}), plan=plan)
+        row = dict(prompt)
+        row["round2_priority"] = priority
+        scored_rows.append(row)
+
+    scored_rows.sort(
+        key=lambda item: (
+            -float((item.get("round2_priority") or {}).get("score") or 0.0),
+            str(item.get("seat") or ""),
+        )
+    )
+    for rank, row in enumerate(scored_rows, 1):
+        priority = dict(row.get("round2_priority") or {})
+        priority["rank"] = rank
+        priority["scheduled"] = rank <= limit
+        row["round2_priority"] = priority
+
+    scheduled = [row for row in scored_rows if (row.get("round2_priority") or {}).get("scheduled")]
+    deferred = [row for row in scored_rows if not (row.get("round2_priority") or {}).get("scheduled")]
+    for row in deferred:
+        priority = dict(row.get("round2_priority") or {})
+        priority["deferred_reason"] = "below_round2_priority_cutoff"
+        row["round2_priority"] = priority
+
+    policy = {
+        "name": policy_name,
+        "reason": "只让最高信息差、反共识和强证据席位阻塞最终裁决，其余席位进入可审计延迟证据队列。",
+        "max_priority_seats": limit,
+        "min_priority_seats": min(RESONANCE_PRIORITY_MIN_SEATS, total),
+        "input_count": total,
+    }
+    if policy_name == "all_seats":
+        policy["reason"] = "用户要求全席位二轮共振；首轮失败席位也进入恢复型二轮提交，完成与失败均进入审计记录。"
+    elif policy_name == "all_valid_first_round":
+        policy["reason"] = "用户要求首轮有效席位全部进入二轮共振，不按优先级截断。"
+
+    return {
+        "schema": ROUND2_SCHEDULER_SCHEMA,
+        "policy": policy,
+        "scheduled_prompts": scheduled,
+        "deferred_prompts": deferred,
+        "priority_order": [
+            {
+                "seat": row.get("seat"),
+                "seat_name": row.get("seat_name"),
+                "rank": (row.get("round2_priority") or {}).get("rank"),
+                "score": (row.get("round2_priority") or {}).get("score"),
+                "lanes": (row.get("round2_priority") or {}).get("lanes") or [],
+                "scheduled": bool((row.get("round2_priority") or {}).get("scheduled")),
+                "reason": (row.get("round2_priority") or {}).get("reason"),
+            }
+            for row in scored_rows
+        ],
+    }
+
+
+def _round2_policy_name(overrides: dict[str, Any] | None) -> str:
+    overrides = overrides or {}
+    nested = overrides.get("round2") if isinstance(overrides.get("round2"), dict) else {}
+    policy = str(overrides.get("round2_policy") or nested.get("policy") or "").strip().lower().replace("-", "_")
+    if policy in {"all", "full", "full_round2", "all_seats", "all_configured", "all_first_round"}:
+        return "all_seats"
+    if policy in {"all_valid", "all_successful", "all_valid_first_round"}:
+        return "all_valid_first_round"
+    return "priority_blocking_with_late_evidence_queue"
+
+
+def _round2_priority_limit(overrides: dict[str, Any] | None, prompt_count: int) -> int:
+    overrides = overrides or {}
+    if _round2_policy_name(overrides) in {"all_seats", "all_valid_first_round"}:
+        return max(0, prompt_count)
+    candidates = [
+        overrides.get("round2_priority_max_seats"),
+        overrides.get("resonance_priority_max_seats"),
+        (overrides.get("round2") or {}).get("priority_max_seats") if isinstance(overrides.get("round2"), dict) else None,
+    ]
+    for value in candidates:
+        if value is None:
+            continue
         try:
-            return future.result(timeout=timeout_seconds)
-        except concurrent.futures.TimeoutError:
-            future.cancel()
-            return _empty_mentor_result(seat, "resonance_seat_timeout",
-                f"二轮共振席位 {seat} 超时 ({timeout_seconds}s)，已跳过继续下一个席位")
-        except Exception as exc:
-            return _empty_mentor_result(seat, "followup_collection_error", str(exc))
+            return _bounded_round2_limit(prompt_count, int(value))
+        except (TypeError, ValueError):
+            continue
+    return _bounded_round2_limit(prompt_count, RESONANCE_PRIORITY_MAX_SEATS)
+
+
+def _bounded_round2_limit(prompt_count: int, requested: int | None) -> int:
+    if prompt_count <= 0:
+        return 0
+    if prompt_count <= RESONANCE_PRIORITY_MIN_SEATS:
+        return prompt_count
+    requested_limit = RESONANCE_PRIORITY_MAX_SEATS if requested is None else int(requested)
+    requested_limit = max(RESONANCE_PRIORITY_MIN_SEATS, requested_limit)
+    return max(1, min(prompt_count, requested_limit))
+
+
+def _round2_priority_entry(
+    prompt: dict[str, Any],
+    raw_result: dict[str, Any],
+    *,
+    plan: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    seat = str(prompt.get("seat") or "").lower()
+    source = str(raw_result.get("response") or prompt.get("source_answer_preview") or "")
+    lanes = list(SEAT_INFORMATION_PROFILES.get(seat) or ["deep_reasoning"])
+    lane_weights = {
+        "real_time_web": 0.18,
+        "dissent": 0.16,
+        "deep_reasoning": 0.14,
+        "chinese_context": 0.11,
+        "long_context": 0.10,
+        "execution": 0.09,
+        "product_experience": 0.06,
+    }
+    lane_score = min(0.34, sum(lane_weights.get(lane, 0.05) for lane in lanes))
+    evidence_score = min(0.18, _evidence_count(source) * 0.03)
+    risk_score = min(0.12, _risk_count(source) * 0.025)
+    question_bonus = min(0.10, len(prompt.get("questions") or []) * 0.025)
+    mandate_bonus = 0.0
+    for mandate in (plan or {}).get("seat_mandates") or []:
+        if str(mandate.get("seat") or "").lower() == seat:
+            mandate_bonus = 0.04 if mandate.get("mandate") else 0.0
+            break
+    dissent_bonus = 0.06 if "dissent" in lanes else 0.0
+    live_bonus = 0.05 if "real_time_web" in lanes else 0.0
+    source_length = min(len(source), 2200) / 2200 * 0.10
+    stable = _stable_float(seat, source[:500]) * 0.04
+    score = _clamp(0.18 + lane_score + evidence_score + risk_score + question_bonus + mandate_bonus + dissent_bonus + live_bonus + source_length + stable)
+    reasons = []
+    if "real_time_web" in lanes:
+        reasons.append("联网信息差")
+    if "dissent" in lanes:
+        reasons.append("反共识/失败条件")
+    if "deep_reasoning" in lanes:
+        reasons.append("机制推理")
+    if _evidence_count(source) >= 3:
+        reasons.append("证据密度较高")
+    if _risk_count(source) >= 2:
+        reasons.append("风险/假设较多")
+    return {
+        "seat": seat,
+        "score": round(score, 4),
+        "lanes": lanes,
+        "reason": "、".join(reasons[:5]) or "基础代表性席位",
+        "evidence_count": _evidence_count(source),
+        "risk_count": _risk_count(source),
+        "question_count": len(prompt.get("questions") or []),
+        "prompt_hash": _stable_id(str(prompt.get("prompt") or "")),
+    }
+
+
+def _scheduled_followup_failure(prompt: dict[str, Any], code: str, message: str) -> dict[str, Any]:
+    seat = str(prompt.get("seat") or "")
+    item = _empty_mentor_result(seat, code, message)
+    item.update({
+        "round": "mentor_resonance_followup",
+        "source_round": "raw_answer",
+        "source_questions": prompt.get("source_questions") or prompt.get("questions") or [],
+        "source_answer_preview": prompt.get("source_answer_preview"),
+        "prompt": prompt.get("prompt"),
+        "round2_scheduled": True,
+        "late_evidence": False,
+        "round2_priority": prompt.get("round2_priority"),
+    })
+    return item
+
+
+def _late_evidence_deferred_result(prompt: dict[str, Any]) -> dict[str, Any]:
+    seat = str(prompt.get("seat") or "")
+    priority = dict(prompt.get("round2_priority") or {})
+    item = _empty_mentor_result(
+        seat,
+        "round2_late_evidence_deferred",
+        "该席位未进入阻塞式二轮共振，已放入 late evidence 队列；最终报告先基于优先席位结算。",
+    )
+    item.update({
+        "round": "mentor_resonance_followup",
+        "source_round": "raw_answer",
+        "source_questions": prompt.get("source_questions") or prompt.get("questions") or [],
+        "source_answer_preview": prompt.get("source_answer_preview"),
+        "prompt": prompt.get("prompt"),
+        "round2_scheduled": False,
+        "late_evidence": True,
+        "late_evidence_status": "queued",
+        "deferred_reason": priority.get("deferred_reason") or "below_round2_priority_cutoff",
+        "round2_priority": priority,
+    })
+    return item
 
 
 # === BELOW: All original functions unchanged ===
 
-def build_resonance_followup_prompts(question: str, raw_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def build_resonance_followup_prompts(
+    question: str,
+    raw_results: list[dict[str, Any]],
+    mode: str = "standard",
+    plan: dict[str, Any] | None = None,
+    include_failed: bool = False,
+) -> list[dict[str, Any]]:
     if is_worldcup_pool_prompt(question):
         return build_worldcup_pool_resonance_prompts(question, raw_results)
+    protocol_prompts: dict[str, dict[str, Any]] = {}
+    try:
+        protocol_prompts = {
+            str(item.get("seat") or "").lower(): item
+            for item in build_round2_revision_prompts(
+                question=question,
+                mode=mode,
+                raw_results=raw_results,
+                plan=plan,
+            )
+        }
+    except Exception:
+        protocol_prompts = {}
     prompts: list[dict[str, Any]] = []
     for item in raw_results:
-        if not item.get("ok"):
-            continue
         seat = str(item.get("seat") or "").lower()
         if seat not in SEAT_PERSONAS:
+            continue
+        if not item.get("ok"):
+            if include_failed:
+                prompts.append(_build_failed_seat_round2_prompt(question, item, mode))
             continue
         response = str(item.get("response") or "")
         questions = extract_resonance_questions(response)
         if not questions:
             questions = _fallback_resonance_questions(question, response)
-        prompt = _build_resonance_followup_prompt(question, seat, response, questions)
-        prompts.append({
+        source_questions = list(questions)
+        protocol_prompt = protocol_prompts.get(seat) or {}
+        if protocol_prompt.get("questions"):
+            questions = list(dict.fromkeys(list(protocol_prompt.get("questions") or []) + questions))[:5]
+        prompt = str(protocol_prompt.get("prompt") or "") or _build_resonance_followup_prompt(question, seat, response, questions)
+        row = {
             "seat": seat,
             "seat_name": item.get("seat_name") or SEAT_PERSONAS[seat]["name"],
             "questions": questions,
+            "source_questions": source_questions,
             "source_answer_preview": _compact(response, 420),
             "prompt": prompt,
-        })
+        }
+        if protocol_prompt.get("information_board"):
+            row["information_board"] = protocol_prompt.get("information_board")
+        prompts.append(row)
     return prompts
+
+
+def _build_failed_seat_round2_prompt(question: str, item: dict[str, Any], mode: str) -> dict[str, Any]:
+    seat = str(item.get("seat") or "").lower()
+    seat_name = str(item.get("seat_name") or SEAT_PERSONAS.get(seat, {}).get("name") or seat)
+    error = normalize_error(item.get("error"))
+    error_code = str(error.get("code") or item.get("error_code") or "first_round_uncollected")
+    error_message = str(error.get("message") or item.get("message") or "首轮未采集到可用答案。")
+    questions = [
+        "首轮未能采集时，你对原问题的独立结论是什么？",
+        "你认为最关键的法律依据、事实前提和执行路径分别是什么？",
+        "其他席位可能遗漏的失败条件或反例是什么？",
+    ]
+    preview = f"首轮未采集：{error_code} - {_compact(error_message, 180)}"
+    prompt = (
+        "[AIJUDGE_RESONANCE_FOLLOWUP]\n"
+        "[AIJUDGE_ROUND2_RECOVERY]\n"
+        f"模式：{mode}\n"
+        f"席位：{seat_name}\n"
+        f"原始问题：{question}\n\n"
+        f"你的第一轮没有形成可采集答案，记录原因为：{preview}\n"
+        "现在进入全席位二轮恢复共振。请不要解释网页或工具故障，也不要复述失败原因；"
+        "请直接给出你对原问题的独立专业判断，并补充其他席位可能遗漏的证据、约束和失败条件。\n\n"
+        "请输出以下结构：\n"
+        "1. conclusion：明确结论。\n"
+        "2. major_premise：适用规则、法条或权威依据；没有把握时标注 unknown。\n"
+        "3. minor_premise：本案事实如何落入规则。\n"
+        "4. reasoning：推理过程、反例和风险边界。\n"
+        "5. final_delta：你相对第一轮全局讨论新增了什么。"
+    )
+    return {
+        "seat": seat,
+        "seat_name": seat_name,
+        "questions": questions,
+        "source_answer_preview": preview,
+        "prompt": prompt,
+        "round2_recovery": True,
+    }
 
 
 def extract_resonance_questions(response: str, limit: int = 5) -> list[str]:
@@ -487,7 +1089,7 @@ def build_mentor_supplement_claims(
                 f"{_compact(response)}"
             )
         else:
-            error = item.get("error") or {}
+            error = normalize_error(item.get("error"))
             claim_text = (
                 f"{persona['name']} 二轮共振方案未完成：{error.get('code', 'unknown')} - "
                 f"{error.get('message', 'No response captured.')}"
@@ -529,7 +1131,7 @@ def build_web_claims(question: str, mode: str, results: list[dict[str, Any]]) ->
         if ok:
             claim_text = f"{persona['name']} 网页席位：{_compact(response)}"
         else:
-            error = item.get("error") or {}
+            error = normalize_error(item.get("error"))
             status = "慢生成待回收" if _is_slow_supplementable(item) else "未完成"
             claim_text = (
                 f"{persona['name']} 网页席位{status}：{error.get('code', 'unknown')} - "
@@ -745,6 +1347,8 @@ def build_judge_answer(
     disagreements = deliberation.get("disagreements") or []
     mentor_supplements = mentor_supplements or []
     mentor_ok_count = sum(1 for item in mentor_supplements if item.get("ok"))
+    mentor_scheduled_count = sum(1 for item in mentor_supplements if item.get("round2_scheduled"))
+    mentor_deferred_count = sum(1 for item in mentor_supplements if item.get("late_evidence"))
     if ok_count <= 0:
         final_answer = "AI Judge 法官答案：信息不足。网页席位没有返回可用答案，因此不能给出问题本身的实质判决。"
     else:
@@ -755,12 +1359,13 @@ def build_judge_answer(
         else:
             completeness = f"只完成 {ok_count}/{total} 席"
         final_answer = (
-            f"AI Judge 法官答案：当前为{verdict.get('verdict_label', verdict.get('verdict'))}。"
-            f"本轮{completeness}，主导立场是"{dominant_stance}"。"
-            f"我会优先采纳 {', '.join(top_names) or '已返回席位'} 的共同部分，"
-            f"把"{', '.join(agreements[:5]) or '共识不足'}"作为初步共识；"
-            f"二轮共振补充已回收 {mentor_ok_count}/{len(mentor_supplements)} 席，"
-            f"若存在未返回席位或低证据回答，则最终结论只作为阶段性判断。"
+            "AI Judge 法官答案：当前为" + str(verdict.get('verdict_label', verdict.get('verdict'))) + "。"
+            + "本轮" + str(completeness) + "，主导立场是\"" + str(dominant_stance) + "\"。"
+            + "我会优先采纳 " + (', '.join(top_names) or '已返回席位') + " 的共同部分，"
+            + "把\"" + (', '.join(agreements[:5]) or '共识不足') + "\"作为初步共识；"
+            + "二轮共振优先追问 " + str(mentor_scheduled_count) + " 席，已回收 " + str(mentor_ok_count)
+            + " 席，late evidence 队列 " + str(mentor_deferred_count) + " 席，"
+            + "若存在未返回席位或低证据回答，则最终结论只作为阶段性判断。"
         )
     return {
         "label": "AI Judge 法官综合答案",
@@ -774,6 +1379,8 @@ def build_judge_answer(
         "disagreements": disagreements[:8],
         "mentor_supplement_count": len(mentor_supplements),
         "mentor_supplement_ok_count": mentor_ok_count,
+        "mentor_supplement_scheduled_count": mentor_scheduled_count,
+        "late_evidence_deferred_count": mentor_deferred_count,
         "limits": _judge_limits(failed_count, total, ranked, pending_count=pending_count),
     }
 
@@ -866,7 +1473,7 @@ def _round_top_claims(claims: list[dict[str, Any]], limit: int = 8) -> list[dict
 
 
 def _error_summary(item: dict[str, Any]) -> str:
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     if _is_slow_supplementable(item):
         return f"慢席待回收: {error.get('message', '仍在生成或等待旧页面答案回收。')}"
     return f"{error.get('code', 'unknown')}: {error.get('message', 'No response captured.')}"
@@ -952,7 +1559,7 @@ def _judge_limits(
 def _is_slow_supplementable(item: dict[str, Any]) -> bool:
     if item.get("ok"):
         return False
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     return bool(item.get("supplementable")) or str(error.get("code") or "") == "slow_response_pending"
 
 
@@ -1021,9 +1628,99 @@ def _empty_mentor_result(seat: str, code: str, message: str = "No resonance foll
     }
 
 
+def _round2_scheduler_summary(supplements: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = []
+    for item in supplements:
+        priority = item.get("round2_priority")
+        if not isinstance(priority, dict):
+            continue
+        row = {
+            "seat": str(item.get("seat") or priority.get("seat") or ""),
+            "seat_name": str(item.get("seat_name") or SEAT_PERSONAS.get(str(item.get("seat") or ""), {}).get("name", "")),
+            "rank": int(priority.get("rank") or 0),
+            "score": round(float(priority.get("score") or 0.0), 4),
+            "scheduled": bool(item.get("round2_scheduled")),
+            "completed": bool(item.get("ok")),
+            "late_evidence": bool(item.get("late_evidence")),
+            "status": "completed" if item.get("ok") else ("queued" if item.get("late_evidence") else "failed_or_skipped"),
+            "reason": str(priority.get("reason") or ""),
+            "deferred_reason": str(item.get("deferred_reason") or priority.get("deferred_reason") or ""),
+            "lanes": [str(x) for x in (priority.get("lanes") or [])[:6]],
+            "prompt_hash": str(priority.get("prompt_hash") or ""),
+        }
+        rows.append(row)
+    rows.sort(key=lambda row: (row["rank"] or 999, row["seat"]))
+    if not rows:
+        return {
+            "schema": ROUND2_SCHEDULER_SCHEMA,
+            "policy": {
+                "name": "priority_blocking_with_late_evidence_queue",
+                "max_priority_seats": 0,
+                "input_count": 0,
+            },
+            "scheduled_count": 0,
+            "completed_count": 0,
+            "deferred_count": 0,
+            "failed_count": 0,
+            "priority_order": [],
+        }
+    scheduled_rows = [row for row in rows if row["scheduled"]]
+    policy = _round2_summary_policy(supplements, scheduled_count=len(scheduled_rows), input_count=len(rows))
+    return {
+        "schema": ROUND2_SCHEDULER_SCHEMA,
+        "policy": policy,
+        "scheduled_count": len(scheduled_rows),
+        "completed_count": sum(1 for row in scheduled_rows if row["completed"]),
+        "deferred_count": sum(1 for row in rows if row["late_evidence"]),
+        "failed_count": sum(1 for row in scheduled_rows if not row["completed"]),
+        "priority_order": rows,
+    }
+
+
+def _round2_summary_policy(supplements: list[dict[str, Any]], *, scheduled_count: int, input_count: int) -> dict[str, Any]:
+    for item in supplements:
+        policy = item.get("round2_scheduler_policy")
+        if isinstance(policy, dict):
+            result = dict(policy)
+            result.setdefault("name", "priority_blocking_with_late_evidence_queue")
+            result["max_priority_seats"] = scheduled_count
+            result["input_count"] = input_count
+            return result
+    return {
+        "name": "priority_blocking_with_late_evidence_queue",
+        "max_priority_seats": scheduled_count,
+        "input_count": input_count,
+        "reason": "阻塞式二轮只追问高价值席位，其他席位转入 late evidence 队列。",
+    }
+
+
+def _late_evidence_queue(supplements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    queue: list[dict[str, Any]] = []
+    for item in supplements:
+        if not item.get("late_evidence"):
+            continue
+        priority = item.get("round2_priority") if isinstance(item.get("round2_priority"), dict) else {}
+        queue.append({
+            "seat": str(item.get("seat") or ""),
+            "seat_name": str(item.get("seat_name") or item.get("seat") or ""),
+            "status": str(item.get("late_evidence_status") or "queued"),
+            "deferred_reason": str(item.get("deferred_reason") or priority.get("deferred_reason") or ""),
+            "rank": int(priority.get("rank") or 0),
+            "score": round(float(priority.get("score") or 0.0), 4),
+            "reason": str(priority.get("reason") or ""),
+            "lanes": [str(x) for x in (priority.get("lanes") or [])[:6]],
+            "prompt_hash": str(priority.get("prompt_hash") or ""),
+            "source_questions": [str(q) for q in (item.get("source_questions") or [])[:5]],
+            "source_answer_preview": _compact(str(item.get("source_answer_preview") or ""), 260),
+        })
+    queue.sort(key=lambda row: (row["rank"] or 999, row["seat"]))
+    return queue
+
+
 def _public_mentor_supplements(supplements: list[dict[str, Any]]) -> list[dict[str, Any]]:
     public: list[dict[str, Any]] = []
     for item in supplements:
+        priority = item.get("round2_priority") if isinstance(item.get("round2_priority"), dict) else {}
         public.append({
             "seat": item.get("seat"),
             "seat_name": item.get("seat_name"),
@@ -1035,6 +1732,18 @@ def _public_mentor_supplements(supplements: list[dict[str, Any]]) -> list[dict[s
             "response": item.get("response") or "",
             "elapsed_seconds": item.get("elapsed_seconds"),
             "error": item.get("error"),
+            "round2_scheduled": bool(item.get("round2_scheduled")),
+            "late_evidence": bool(item.get("late_evidence")),
+            "late_evidence_status": item.get("late_evidence_status"),
+            "deferred_reason": item.get("deferred_reason"),
+            "round2_priority": {
+                "rank": priority.get("rank"),
+                "score": priority.get("score"),
+                "scheduled": priority.get("scheduled"),
+                "reason": priority.get("reason"),
+                "lanes": priority.get("lanes") or [],
+                "prompt_hash": priority.get("prompt_hash"),
+            } if priority else {},
         })
     return public
 
@@ -1086,7 +1795,7 @@ def _bridge_incomplete_fields(
     execution_policy = execution_policy or execution_policy_summary(results)
     reasons: list[str] = []
     for failure in execution_policy.get("required_failures") or []:
-        error = failure.get("error") or {}
+        error = normalize_error(failure.get("error"))
         seat_name = failure.get("seat_name") or failure.get("seat")
         code = error.get("code", "unknown")
         message = error.get("message") or failure.get("reason") or "No response captured."
@@ -1348,3 +2057,8 @@ def _stable_float(*parts: str) -> float:
     raw = "::".join(parts).encode("utf-8")
     digest = hashlib.sha256(raw).hexdigest()[:12]
     return int(digest, 16) / float(0xFFFFFFFFFFFF)
+
+
+def _stable_id(value: Any, length: int = 16) -> str:
+    raw = repr(value).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()[:length]

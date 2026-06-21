@@ -22,114 +22,68 @@ def test_dashboard_exposes_report_link_in_result_area_and_allows_human_confirmat
     html = (root / "product" / "dashboard.html").read_text(encoding="utf-8")
     js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
 
-    assert 'id="result-view-link"' in html
-    assert "打开网站完整报告" in html
-    assert ".executive-report" in html
-    assert ".sop-preview" in html
-    assert ".single-report" in html
-    assert ".manuscript-report" in html
-    assert "color-scheme: light" in html
-    assert "--app: #F5F5F7" in html
-    assert "--side-bg: #F1F5F9" in html
-    assert "--paper: #FFFFFF" in html
-    assert "background: #F8FAFC" in html
-    assert 'id="mentorPromptPreview"' in html
-    assert 'id="btn-confirm-mentor"' in html
-    assert 'id="report-lang-en"' in html
-    assert 'id="btn-report-pdf"' in html
-    assert 'id="btn-copy-share"' in html
-    assert 'id="btn-view-pdf"' in html
-    assert 'id="btn-share-link"' in html
-    assert "$(\"#verdict-title\").textContent = reportHeaderTitle(v);" in js
-    assert "$(\"#verdict-question\").textContent = reportHeaderSummary(v);" in js
-    assert "brief.title || longform.title || report.title" in js
-    assert "function unifiedFinalReportHtml" in js
-    assert "function manuscriptReportHtml" in js
-    assert "function schedulePromptPreview" in js
-    assert "function refreshPromptPreview" in js
-    assert "professional_prompt" in js
-    assert "api/prompt/resonate" in js
-    assert "function setReportLanguage" in js
-    assert "function updateReportToolbarLabels" in js
-    assert "function openPrintableReport" in js
-    assert "async function copyCurrentShareLink" in js
-    assert "Open Full Web Report" in js
-    assert 'id="simple-autopilot-page"' in html
-    assert 'id="autopilot-queue-list"' in html
-    assert 'id="autopilot-synthesis-details"' in html
-    assert "人类裁决必需" in html
-    assert "证据完整度" in html
-    assert "优先增长动作" in html
-    assert "过夜预计" in html
-    assert "议会会议室" in html
-    assert "让每个模型像议员一样发言" in html
-    assert "Parliament Record" in html
-    assert "marvis-parliament-mode" in html
-    assert "width: 1440px" in html
-    assert "min-width: 1440px" in html
-    assert "--sidebar-w: 272px" in html
-    assert "--right-w: 0px" in html
-    assert "--v2-bg-deep: #08080f" in html
-    assert "--v2-bg-surface: #0e0e1a" in html
-    assert "--v2-accent: #7c6ff7" in html
-    assert "Parliament of Models" in html
-    assert "Member Seats" in html
-    assert "Grand Judge" in html
-    assert "Parliament Record" in html
-    assert "Submit Motion" in html
-    assert "Work Progress" in html
-    assert "Evidence Board" in html
-    assert 'id="parliament-seat-search"' in html
-    assert 'id="parliament-seat-rail"' in html
-    assert 'id="parliament-workbench"' in html
-    assert 'id="parliament-question-input"' in html
-    assert 'id="parliament-report-overlay"' in html
-    assert 'id="parliament-report-content"' in html
-    assert "+ 选择议题类型" in html
-    assert "+ 定义评分维度" in html
-    assert 'id="council-roundtable"' not in html
-    assert 'id="council-speech-grid"' not in html
-    assert 'id="conference-score-flow"' in html
-    assert 'id="conference-memory-panel"' in html
-    assert "正式裁决报告" in html
-    assert "任务队列" in html
-    assert "当前没有运行任务" in html
-    assert "最小交付：阶段报告" in html
-    assert "打开完整报告" in js
-    assert "审计附录" in js
-    assert "Codex 执行模板" in js
-    assert "function renderAutopilotWorkbench" in js
+    assert 'id="topbar-status"' in html
+    assert 'id="sys-integrity"' in html
+    assert 'id="main-tabs"' in html
+    assert 'id="view-ask"' in html
+    assert 'id="view-room"' in html
+    assert 'id="view-report"' in html
+    assert 'id="view-memory"' in html
+    assert 'id="view-more"' in html
+    assert 'id="ask-input"' in html
+    assert 'id="btn-settings-toggle"' in html
+    assert 'id="btn-tool"' in html
+    assert 'id="btn-send"' in html
+    assert 'id="btn-start-judge"' in html
+    assert 'id="btn-room-open-report"' in html
+    assert 'id="room-thread-messages"' in html
+    assert 'id="report-content"' in html
+    assert 'id="memory-list"' in html
+    assert 'id="more-groups"' in html
+    assert "--bg: #fafbfc" in html
+    assert "--bg-card: #ffffff" in html
+    assert "Ask AI Judge" in html
+    assert "会议室" in html
+    assert "尚无裁决报告" in html
+    assert "历史重要裁决记录" in html
+    assert "普通裁决仍从 Ask 开始" in html
+    assert "const AI_JUDGE_CLIENT_BUILD" in js
+    assert "const MODE_CONFIG" in js
     assert "const PARLIAMENT_SEATS" in js
-    assert "function renderParliamentSeatRail" in js
-    assert "function parliamentMessages" in js
-    assert "function parliamentSpeakers" in js
-    assert "function parliamentBubbleHtml" in js
-    assert "function openParliamentReportOverlay" in js
-    assert "function selectParliamentSeat" in js
-    assert "function parliamentStatusDotClass" in js
-    assert "function parliamentEmptyStateHtml" in js
-    assert "data-seat-message" in js
-    assert "member-badge" in js
-    assert "msg-wrapper" in js
-    assert "function renderConferenceScoreFlow" in js
-    assert "function renderConferenceResonanceRibbon" in js
-    assert "function updateAppChromeForTab" in js
-    assert '"#10a37f"' in js
-    assert '"#4d6bfe"' in js
-    assert "function autopilotSynthesisSummary" in js
-    assert "function buildSimpleTaskItems" in js
-    assert "function renderHistoryFromState" in js
-    assert "加权共识 + 共振追问 + 证据门禁" in js
-    assert "function autopilotQueueRows" in js
-    assert "app.simple-mode #verdict-card" in html
-    assert '$$("#view-link, #result-view-link")' in js
-    assert "const canConfirm = hasVerdict;" in js
-    assert "等待报告生成" in js
-    assert 'state: !hasVerdict ? "block" : state.publishCleared ? "ok" : "block"' in js
+    assert "const MORE_FEATURES" in js
+    assert "function submitJudge" in js
+    assert "async function executeJudge" in js
+    assert "function renderRoom" in js
+    assert "function renderMemory" in js
+    assert "function renderMore" in js
+    assert "generateAlignment" in js
+    assert 'API_BASE + "/api/client/runs"' in js
+    assert '"/api/prompt/resonate"' in js
+    assert '"/execute"' in js
+    assert "fetchJsonContract" in js
+    assert 'API_BASE + "/api/judge"' in js
+    assert 'new EventSource(API_BASE + "/api/judge/" + runId + "/progress")' in js
+    assert 'API_BASE + "/api/runs/" + runId + "/index.html"' in js
+    assert "/api/runs/recent" in js
+    assert "history_unavailable" in js
+    assert "ai_judge_memory" not in js
+    assert "/api/werewolf" in js
 
     desktop = (root / "desktop" / "AIJudgeDesktop.swift").read_text(encoding="utf-8")
     assert "width: 1440, height: 900" in desktop
     assert "window.minSize = NSSize(width: 1280, height: 800)" in desktop
+
+
+def test_dashboard_drag_drop_persists_uploaded_attachments():
+    root = Path(__file__).resolve().parents[1]
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    marker = 'askArea.addEventListener("drop", async (e) => {'
+    assert marker in js, "drop handler must remain wired on ask input area"
+    body = js.split(marker, 1)[1].split("// ── P2.3: Agent turn card", 1)[0]
+
+    assert "state.currentThread.attachments.push(await uploadAttachmentToServer(f));" in body
+    assert "state.currentThread.attachments.push(await uploadAttachmentToServer(f, { forceBinary: true }));" in body
 
 
 def test_product_capabilities_and_health_are_v38():
@@ -139,7 +93,7 @@ def test_product_capabilities_and_health_are_v38():
     health = client.get("/api/health").get_json()
     capabilities = client.get("/api/product/capabilities").get_json()
 
-    assert health["version"] == "3.8.0"
+    assert health["version"] == api_server.PRODUCT_VERSION
     assert health["engines"] == ["web"]
     assert "stable_closeout" in health["product_layers"]
     assert capabilities["stable_mode"]["label"] == "简约版"
@@ -156,7 +110,7 @@ def test_judge_submission_defaults_to_full_web_council(monkeypatch):
             captured["submitted"] = {"question": question, "mode": mode, "seats": seats}
             return "run-default-web"
 
-    def fake_start_worker(*args):
+    def fake_start_worker(*args, **kwargs):
         (
             run_id,
             question,
@@ -182,11 +136,18 @@ def test_judge_submission_defaults_to_full_web_council(monkeypatch):
             "mentor_preflight": mentor_preflight,
             "external_evidence": external_evidence,
             "evidence_options": evidence_options,
+            "attachments": kwargs.get("attachments"),
         }
 
     old_tasks = api_server.TASKS
     try:
         api_server.TASKS = FakeTasks()
+        monkeypatch.setattr(api_server, "bridge_status", lambda: {
+            "seat_browser_matrix": [
+                {"seat": seat, "ready": True, "reason": "ready"}
+                for seat in api_server.SEAT_PERSONAS
+            ]
+        })
         monkeypatch.setattr(api_server, "_start_worker", fake_start_worker)
         response = api_server.app.test_client().post(
             "/api/judge",
@@ -199,7 +160,11 @@ def test_judge_submission_defaults_to_full_web_council(monkeypatch):
     assert response.status_code == 202
     assert data["mode"] == "strategic"
     assert data["engine"] == "web"
-    assert data["seat_count"] == len(api_server.SEAT_PERSONAS)
+    expected_default_seats = api_server.resolve_mode("strategic")["seats"]
+    assert data["seat_count"] == len(expected_default_seats)
+    assert data["seats"] == expected_default_seats
+    assert "claude" in api_server.SEAT_PERSONAS
+    assert "claude" not in data["seats"]
     assert captured["submitted"]["mode"] == "strategic"
     assert captured["worker"]["engine"] == "web"
     assert captured["worker"]["seats"] == data["seats"]
@@ -222,13 +187,33 @@ def test_wenxin_is_default_fixed_chrome_council_seat():
     assert "grok" not in resolve_mode("standard")["seats"]
 
 
+def test_xunfei_is_registered_as_reasoning_mode_web_seat():
+    from bridges.web_seat_bridge import default_config
+    from core.modes import resolve_mode
+    from core.seat_personas import SEAT_PERSONAS
+
+    config = default_config()
+    xunfei = config["seats"]["xunfei"]
+
+    assert SEAT_PERSONAS["xunfei"]["name"] == "科大讯飞"
+    assert "xinghuo.xfyun.cn" in xunfei["url"]
+    assert "xinghuo.xfyun.cn" in xunfei["match_domains"]
+    assert xunfei["channel"] == "web"
+    assert xunfei["execution_required"] is True
+    assert xunfei["fragile_page"] is True
+    assert xunfei["required_quality_mode"] == "推理模式"
+    assert "xunfei" in resolve_mode("strategic")["seats"]
+
+
 def test_worldcup_prediction_flow_uses_fourteen_seats_with_zhipu():
     root = Path(__file__).resolve().parents[1]
     js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
 
-    assert "const WORLDCUP_EXCLUDED_SEATS = new Set([]);" in js
-    assert "14 席全部参审，Zhipu 必须进入赛事预测" in js
-    assert "Zhipu 已纳入" in js
+    assert 'id: "sports"' in js
+    assert "赛事预测" in js
+    assert "查看赛事池" in js
+    assert "/api/worldcup-pool" in js
+    assert '"zhipu"' in js
 
 
 def test_worldcup_pool_keeps_all_fourteen_live_web_seats():
@@ -243,6 +228,48 @@ def test_worldcup_pool_keeps_all_fourteen_live_web_seats():
     assert adapter_seats == []
 
 
+def test_flash_mode_defaults_are_shared_between_modes_and_seat_status(monkeypatch):
+    api_server = _load_api_server()
+    bridge = {
+        "seat_browser_matrix": [
+            {"seat": "kimi", "ready": True},
+            {"seat": "deepseek", "ready": True},
+            {"seat": "doubao", "ready": True},
+            {"seat": "wenxin", "ready": True},
+        ],
+        "automation_driver": "chrome_cdp",
+    }
+    reliability = {
+        "doubao": {"recent_timeouts": 2},
+        "wenxin": {"recent_timeouts": 3},
+    }
+    monkeypatch.setattr(api_server, "bridge_status", lambda: bridge)
+    monkeypatch.setattr(api_server, "_load_seat_reliability", lambda: reliability)
+
+    client = api_server.app.test_client()
+    modes = client.get("/api/modes").get_json()["modes"]
+    seat_status = client.get("/api/seats/status").get_json()
+    flash_mode = next(m for m in modes if m["mode"] == "flash")
+
+    assert flash_mode["seats"] == seat_status["defaults"]["flash"]
+    assert flash_mode["seat_count"] == len(seat_status["defaults"]["flash"])
+    assert "doubao" not in flash_mode["seats"]
+    assert "wenxin" not in flash_mode["seats"]
+
+
+def test_dashboard_uses_mode_defaults_before_bridge_and_client_followup_endpoint():
+    root = Path(__file__).resolve().parents[1]
+    js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
+
+    assert "await getSeatStatus();" in js
+    assert "function followupEndpoint(runId)" in js
+    assert "/api/client/runs/${encoded}/followup" in js
+    assert "body: JSON.stringify({ prompt: question, question, mode: \"\" })" in js
+    assert "等待确认裁决" in js
+    assert "裁决尚未开始、报告尚未生成" in js
+    assert js.index("const rawModeDefault = cachedDefaults[mode];") < js.index("if (state.bridge?.seats")
+
+
 def test_werewolf_mode_is_exposed_in_meeting_room():
     root = Path(__file__).resolve().parents[1]
     html = (root / "product" / "dashboard.html").read_text(encoding="utf-8")
@@ -253,27 +280,18 @@ def test_werewolf_mode_is_exposed_in_meeting_room():
     data = response.get_json()
 
     assert response.status_code == 200
-    assert 'id="composer-werewolf-toggle"' in html
-    assert "标准竞技" in js
-    assert "AI实验" in js
-    assert "const WEREWOLF_CANDIDATE_SEAT_IDS" in js
-    assert "const DEFAULT_WEREWOLF_SEAT_IDS" in js
-    assert "standard_14" in js
-    assert "white_wolf_14" in js
-    assert "quick_6" in js
-    assert "classic_12" in js
-    assert "thirteen" in js
-    assert "spectatorRoleMap" in js
-    assert "ww-guide-box" in js
-    assert "ww-roster-grid" in js
-    assert "data-werewolf-play-toggle" in js
-    assert "function recoverWerewolfRawResultEvents" in js
-    assert "后台回收同步" in js
-    assert "window.setWerewolfBoard" in js
-    assert "ww-mode-toggle" in html
-    assert "ww-roster-card" in html
+    assert 'id="view-more"' in html
+    assert 'id="more-groups"' in html
+    assert 'id: "werewolf"' in js
+    assert "狼人杀模式" in js
+    assert "13 个 AI 模型" in js
+    assert "/api/werewolf/start" in js
+    assert "/api/werewolf/boards" in js
+    assert "/api/werewolf/sessions" in js
     assert '"wenxin"' in js
-    assert '"grok"' in js[js.index("const WEREWOLF_CANDIDATE_SEAT_IDS"):js.index("const WEREWOLF_ROLE_LABELS")]
+    assert '"grok"' in js
+    assert data["board_name"] == "标准竞技"
+    assert "classic_12" in data["board_options"]
     assert len(data["candidate_seats"]) == 14
     assert len(data["seats"]) == 9
     assert "wenxin" in data["candidate_seats"]
@@ -281,10 +299,6 @@ def test_werewolf_mode_is_exposed_in_meeting_room():
     assert "meta" in data["candidate_seats"]
     assert "grok" in data["seats"]
     assert data["mode"] == "werewolf_14_pool_9p_standard"
-    assert "werewolf-game-running #werewolf-seat-picker:not(.is-replacement-pending)" in html
-    assert "const needsReplacementPicker = state.werewolfGame?.status === \"blocked\" && Boolean(pendingReplacement);" in js
-    assert "const shouldShowPicker = isMeetingRoom && isWerewolfMode && !isPreRun && needsReplacementPicker;" in js
-    assert "node.classList.remove(\"is-replacement-pending\");" in js
 
     boards = api_server.app.test_client().get("/api/werewolf/boards").get_json()
     assert boards["boards"]["quick_6"]["seat_count"] == 6
@@ -514,7 +528,7 @@ def test_benchmark_summary_returns_four_reliability_cards(monkeypatch):
 
     data = api_server.app.test_client().get("/api/benchmarks/summary").get_json()
 
-    assert data["version"] == "3.8.0"
+    assert data["version"] == api_server.PRODUCT_VERSION
     assert [card["id"] for card in data["cards"]] == [
         "citation",
         "decision",
@@ -541,7 +555,7 @@ def test_chief_judge_metadata_attaches_to_local_verdict():
 
     api_server._attach_product_run_metadata(verdict, chief_judge="deepseek", abstained_seats=["grok"])
 
-    assert verdict["product_version"] == "3.8.0"
+    assert verdict["product_version"] == api_server.PRODUCT_VERSION
     assert verdict["product_layer"]["stable_mode"] == "5-minute trustworthy closeout"
     assert verdict["chief_judge"]["id"] == "deepseek"
     assert verdict["seat_roster"]["selected"] == ["chatgpt", "deepseek"]
@@ -805,7 +819,7 @@ def test_rescue_plan_marks_transcript_pollution_as_clean_session_resubmit():
 def test_rescue_plan_treats_mode_and_composer_failures_as_fresh_resubmit():
     api_server = _load_api_server()
     verdict = {
-        "seats": ["deepseek", "doubao", "claude", "minimax", "qwen", "grok"],
+        "seats": ["deepseek", "doubao", "claude", "minimax", "qwen", "gemini", "kimi", "yuanbao", "wenxin", "meta", "xunfei", "grok"],
         "web_bridge": {
             "raw_results": [
                 {"seat": "deepseek", "ok": False, "error": {"code": "deepseek_expert_mode_not_verified"}},
@@ -813,6 +827,12 @@ def test_rescue_plan_treats_mode_and_composer_failures_as_fresh_resubmit():
                 {"seat": "claude", "ok": False, "error": {"code": "apple_events_execute_failed"}},
                 {"seat": "minimax", "ok": False, "error": {"code": "chrome_composer_not_ready"}},
                 {"seat": "qwen", "ok": False, "error": {"code": "prompt_still_in_input"}},
+                {"seat": "gemini", "ok": False, "error": {"code": "gemini_quality_mode_not_verified"}},
+                {"seat": "kimi", "ok": False, "error": {"code": "kimi_quality_mode_not_verified"}},
+                {"seat": "yuanbao", "ok": False, "error": {"code": "yuanbao_quality_mode_not_verified"}},
+                {"seat": "wenxin", "ok": False, "error": {"code": "wenxin_quality_mode_not_verified"}},
+                {"seat": "meta", "ok": False, "error": {"code": "meta_quality_mode_not_verified"}},
+                {"seat": "xunfei", "ok": False, "error": {"code": "xunfei_quality_mode_not_verified"}},
                 {"seat": "grok", "ok": False, "error": {"code": "chrome_composer_not_ready"}},
             ],
         },
@@ -821,7 +841,7 @@ def test_rescue_plan_treats_mode_and_composer_failures_as_fresh_resubmit():
     plan = api_server._build_rescue_plan(verdict)
 
     assert plan["status"] == "ready"
-    assert plan["fresh_seats"] == ["deepseek", "doubao", "claude", "minimax", "qwen"]
+    assert plan["fresh_seats"] == ["deepseek", "doubao", "claude", "minimax", "qwen", "gemini", "kimi", "yuanbao", "wenxin", "meta", "xunfei"]
     assert "grok" not in plan["seats"]
     assert all(action["method"] == "fresh_web_submission" for action in plan["actions"])
 
@@ -936,6 +956,14 @@ def test_web_worker_enables_second_round_resonance_collection(monkeypatch):
     assert captured["display_question"] == "修复二次共振互动"
     assert captured["collect_followups"] is True
     assert "run-web-followup" in fake_tasks.completed
+
+
+def test_round2_policy_full_maps_to_all_seats():
+    api_server = _load_api_server()
+
+    assert api_server._normalize_round2_policy("full") == "all_seats"
+    assert api_server._normalize_round2_policy("all") == "all_seats"
+    assert api_server._normalize_round2_policy("all_valid") == "all_valid_first_round"
 
 
 def test_progress_diagnostics_names_waiting_and_stale_seats():
@@ -1689,25 +1717,25 @@ def test_dashboard_preflights_selected_web_seats_before_creating_run():
     root = Path(__file__).resolve().parents[1]
     js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
 
-    assert "async function preflightExecutionGate" in js
-    assert "/api/prompt/resonate" in js
-    assert "selectedSeatIds()" in js
-    assert "showExecutionGateDiagnostic(gate.plan, gate.bridge)" in js
-    assert "await submitJudge({ skipPreflight: true })" in js
-    assert "if (!options.skipPreflight)" in js
-    assert "executionGateMessage(gate.plan)" in js
-    assert "provider_account_restricted" in js
+    assert "function submitJudge" in js
+    assert "function generateAlignment" in js
+    assert "async function executeJudge" in js
+    assert 'API_BASE + "/api/client/runs"' in js
+    assert '"/api/prompt/resonate"' in js
+    assert '"/api/client/runs/" + encodeURIComponent(existingRunId) + "/execute"' in js
+    assert "resolveActiveSeats()" in js
+    assert "renderAlign" in js
+    assert "waiting_confirm" in js
+    assert 'runId: "(提交中...)"' not in js
 
 
 def test_dashboard_run_controls_call_unified_backend_api():
     root = Path(__file__).resolve().parents[1]
     js = (root / "product" / "dashboard.js").read_text(encoding="utf-8")
 
-    assert "async function postRunControl" in js
-    assert "/api/runs/${encodeURIComponent(runId)}/${action}" in js
     assert "async function pauseCurrentRun" in js
-    assert 'await postRunControl(runId, "stop")' in js
+    assert 'API_BASE + "/api/runs/" + runId + "/stop"' in js
     assert "async function resumeCurrentRun" in js
-    assert 'await postRunControl(runId, "resume")' in js
-    assert "停止新席位" in js
-    assert "state.workflow.stage === WORKFLOW_STAGE.CANCELLED" in js
+    assert 'API_BASE + "/api/runs/" + runId + "/resume"' in js
+    assert 'API_BASE + "/api/runs/" + runId + "/pause"' in js
+    assert "state.workflow.stage = WORKFLOW_STAGE.CANCELLED" in js

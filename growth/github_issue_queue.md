@@ -200,3 +200,39 @@ Acceptance:
 ```text
 Add at least 2 new public-safe demo inputs and generated HTML/JSON reports.
 ```
+
+## Issue 5
+
+URL: https://github.com/reguorier/ai-judge/issues/10
+
+Title:
+
+```text
+Add OpenRouter BYOK integration and prepare Works With OR submission
+```
+
+Labels:
+
+```text
+not set at creation; intended labels: launch feedback, help wanted
+```
+
+Body summary:
+
+```markdown
+Track the OpenRouter integration work required before submitting AI Judge to OpenRouter's official Works With OpenRouter directory.
+
+The issue records that the current public citation-audit demo intentionally runs without model APIs, so AI Judge should not be listed as OpenRouter-compatible until it has:
+
+- OpenRouter provider path for multi-seat/model collection
+- BYOK support via OPENROUTER_API_KEY
+- docs/OPENROUTER.md setup guide
+- one public-safe OpenRouter-backed demo report
+- logo/app.yaml preparation for OpenRouterTeam/awesome-openrouter
+```
+
+Acceptance:
+
+```text
+OpenRouter-backed audit works with a user-provided API key, docs and demo report are public, and Works With OR PR is prepared only after the integration is visible.
+```

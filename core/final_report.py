@@ -14,6 +14,7 @@ from core.domain_closeout import (
     render_legal_closeout,
     render_legal_closeout_markdown,
 )
+from core.seat_execution_policy import normalize_error
 
 
 FINAL_REPORT_SCHEMA = "ai_judge.final_report.v1"
@@ -1308,13 +1309,13 @@ def _failure_seat_name(item: dict[str, Any]) -> str:
 
 
 def _failure_code(item: dict[str, Any]) -> str:
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     validity = item.get("execution_validity") or {}
     return _text(error.get("code") or validity.get("reason") or item.get("code") or item.get("reason") or "")
 
 
 def _failure_message(item: dict[str, Any]) -> str:
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     validity = item.get("execution_validity") or {}
     return _text(error.get("message") or validity.get("message") or item.get("message") or item.get("detail") or "")
 

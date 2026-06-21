@@ -9,6 +9,10 @@ from bridges.chrome_fixed_tab_bridge import (
     _deepseek_prepare_verified,
     _doubao_prepare_verified,
     _page_state_needs_reload,
+    _quality_mode_failure,
+    _quality_mode_policy_snapshot,
+    _quality_mode_prepare_verified,
+    _quality_mode_required_mode,
     _response_matches_question,
     _readiness_can_recover,
     _should_send_final_answer_nudge,
@@ -71,11 +75,105 @@ def test_doubao_prepare_requires_expert_mode_verified():
 def test_qwen_prepare_requires_deep_thinking_mode_for_bridge_output():
     js = _build_prepare_submission_ui_js("AIJUDGE-qwen-test")
 
+    assert "qwen_model_verified:yes" in js
+    assert "qwen_model_clicked" in js
     assert "qwen_deep_thinking_clicked" in js
     assert "qwen_thinking_menu_open" in js
     assert "qwen_deep_thinking_verified:yes" in js
+    assert "Qwen3\\.7[-\\s]*Plus" in js
     assert "深入思考" in js
     assert "qwen_reliable_mode" not in js
+
+
+def test_xunfei_prepare_requires_reasoning_mode_for_bridge_output():
+    js = _build_prepare_submission_ui_js("AIJUDGE-xunfei-test")
+
+    assert "xunfei_reasoning_clicked" in js
+    assert "xunfei_reasoning_verified:yes" in js
+    assert "xunfei_reasoning_verified:no" in js
+    assert "推理模式" in js
+    assert "xinghuo\\.xfyun\\.cn" in js
+
+
+def test_prepare_enforces_high_quality_modes_for_required_bridge_seats():
+    js = _build_prepare_submission_ui_js("AIJUDGE-quality-modes-test")
+
+    assert "meta_thinking_clicked" in js
+    assert "meta_thinking_verified:yes" in js
+    assert "wenxin_deep_thinking_clicked" in js
+    assert "wenxin_deep_thinking_verified:yes" in js
+    assert "xunfei_reasoning_clicked" in js
+    assert "xunfei_reasoning_verified:yes" in js
+    assert "minimax_model_clicked" in js
+    assert "minimax_model_verified:yes" in js
+    assert "minimax_thinking_clicked" in js
+    assert "minimax_thinking_verified:yes" in js
+    assert "yuanbao_deep_thinking_clicked" in js
+    assert "yuanbao_deep_thinking_verified:yes" in js
+    assert "kimi_model_clicked" in js
+    assert "kimi_model_verified:yes" in js
+    assert "kimi_thinking_clicked" in js
+    assert "kimi_thinking_verified:yes" in js
+    assert "gemini_expanded_clicked" in js
+    assert "gemini_expanded_verified:yes" in js
+    assert "Pro 扩展" in js
+    assert "深度思考" in js
+    assert "Thinking" in js
+
+
+def test_quality_mode_verifier_blocks_unverified_required_modes():
+    positive = {
+        "meta": ["meta_thinking_verified:yes"],
+        "wenxin": ["wenxin_deep_thinking_verified:yes"],
+        "minimax": ["minimax_model_verified:yes", "minimax_thinking_verified:yes"],
+        "yuanbao": ["yuanbao_deep_thinking_verified:yes"],
+        "kimi": ["kimi_model_verified:yes", "kimi_thinking_verified:yes"],
+        "qwen": ["qwen_model_verified:yes", "qwen_deep_thinking_verified:yes"],
+        "gemini": ["gemini_pro_verified:yes", "gemini_expanded_verified:yes"],
+        "xunfei": ["xunfei_reasoning_verified:yes"],
+        "deepseek": ["deepseek_expert_verified:yes", "deepseek_tools_verified:yes"],
+        "doubao": ["doubao_expert_verified:yes"],
+    }
+
+    for seat, clicked_names in positive.items():
+        assert _quality_mode_prepare_verified(seat, {"clicked_names": clicked_names})
+
+    assert _quality_mode_prepare_verified("qwen", {
+        "clicked_names": ["qwen_deep_thinking_verified:no"],
+        "followup": {"clicked_names": ["qwen_model_verified:yes", "qwen_deep_thinking_verified:yes"]},
+    })
+    assert not _quality_mode_prepare_verified("qwen", {"clicked_names": ["qwen_deep_thinking_verified:no"]})
+    assert not _quality_mode_prepare_verified("gemini", {"clicked_names": ["gemini_pro_verified:yes"]})
+    assert _quality_mode_failure("kimi")[0] == "kimi_quality_mode_not_verified"
+
+
+def test_quality_mode_policy_snapshot_pins_current_choices():
+    policy = _quality_mode_policy_snapshot()
+
+    assert policy["meta"]["required_mode"] == "思考"
+    assert policy["wenxin"]["required_mode"] == "深度思考"
+    assert policy["minimax"]["required_mode"] == "MiniMax-M3 + Thinking"
+    assert policy["yuanbao"]["required_mode"] == "深度思考"
+    assert policy["kimi"]["required_mode"] == "K2.6 思考"
+    assert policy["qwen"]["required_mode"] == "Qwen3.7-Plus + 思考"
+    assert policy["gemini"]["required_mode"] == "Pro 扩展"
+    assert policy["xunfei"]["required_mode"] == "推理模式"
+    assert policy["gemini"]["verification_markers"] == ["gemini_pro_verified:yes", "gemini_expanded_verified:yes"]
+    assert policy["xunfei"]["verification_markers"] == ["xunfei_reasoning_verified:yes"]
+    assert policy["xunfei"]["strict"] is True
+    assert policy["gemini"]["strict"] is True
+    assert _quality_mode_required_mode("chatgpt") == ""
+
+
+def test_required_quality_mode_hosts_bypass_prepare_short_circuit():
+    js = _build_prepare_submission_ui_js("AIJUDGE-quality-hosts-test")
+
+    assert "forceQualityPrepareHost" in js
+    assert "sessionStorage.getItem(key) && !forceQualityPrepareHost" in js
+    assert "chat\\.qwen\\.ai" in js
+    assert "agent\\.minimax\\.io" in js
+    assert "gemini\\.google\\.com" in js
+    assert "xinghuo\\.xfyun\\.cn" in js
 
 
 def test_existing_answer_capture_reports_retryable_page_state():
@@ -94,12 +192,15 @@ def test_existing_answer_capture_prioritizes_answer_marker_before_page_error():
     assert "existing_answer_marker" in js
 
 
-def test_gemini_prepare_prefers_pro_model():
+def test_gemini_prepare_prefers_pro_expanded_model():
     js = _build_prepare_submission_ui_js("AIJUDGE-gemini-test")
 
     assert "gemini_pro_clicked" in js
     assert "gemini_pro_verified:yes" in js
+    assert "gemini_expanded_clicked" in js
+    assert "gemini_expanded_verified:yes" in js
     assert "gemini_model_menu_open" in js
+    assert "gemini_thinking_level_menu_open" in js
     assert "Gemini\\s*2\\.5\\s*Pro" in js
 
 

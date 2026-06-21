@@ -48,16 +48,34 @@ def main(argv: list[str] | None = None) -> int:
         run = submit_direct(question, args.mode, auto_complete=not args.no_auto_complete)
     print(notify("AI Judge", run.get("human_status", "run submitted")))
     print(report_summary(run))
+    if run.get("noise_score") is not None:
+        print(
+            "noise: "
+            f"{run.get('noise_score')}/100 "
+            f"level={run.get('noise_level', 'unknown')} "
+            f"action={run.get('noise_recommended_action', 'unknown')}"
+        )
     if run.get("status") == "completed":
         report = get_client_report(str(run["run_id"]))
         print(f"final_report.md: {report.get('final_report_path')}")
         print(f"final_report.html: {report.get('html_report_path')}")
     if args.followup:
         followup = followup_client_run(str(run["run_id"]), args.followup)
-        print(f"followup: {followup['followup_path']}")
+        if followup.get("followup_path"):
+            print(f"followup: {followup['followup_path']}")
+        else:
+            print(
+                "followup: not_generated "
+                f"reason={followup.get('reason', 'unknown')} "
+                f"message={followup.get('message', '')}"
+            )
     if args.archive:
-        archive = archive_client_run(str(run["run_id"]))
-        print(f"archive: {archive['archive_path']}")
+        try:
+            archive = archive_client_run(str(run["run_id"]))
+        except Exception as exc:
+            print(f"archive: not_generated reason={type(exc).__name__} message={exc}")
+        else:
+            print(f"archive: {archive.get('archive_path', '')}")
     if args.smoke:
         print("[PASS] client can start")
         print("[PASS] client can submit run")

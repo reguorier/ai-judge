@@ -13,6 +13,8 @@ import hashlib
 import re
 from typing import Any
 
+from core.fdjp_preframe import build_fdjp_preframe
+from core.three_round_protocol import build_three_round_plan, inject_three_round_protocol
 from core.worldcup_pool import build_worldcup_pool_prompt_flow, is_worldcup_pool_prompt
 
 
@@ -61,6 +63,7 @@ def build_prompt_flow(
     assumptions = _assumptions(normalized)
     seat_count = len(seats or [])
     bridge_summary = bridge_summary or {}
+    trace_id = _stable_id(original, mode, engine)
 
     professional_prompt = _professional_prompt(
         original=original,
@@ -73,6 +76,31 @@ def build_prompt_flow(
 
     ready_count = int(bridge_summary.get("ready_count") or 0)
     configured_count = int(bridge_summary.get("configured_count") or bridge_summary.get("enabled_count") or 0)
+
+    # ── Five-Dimension Pre-Frame (unified pipeline step) ──
+    _fdjp = build_fdjp_preframe(
+        question=original,
+        mode=mode,
+        intent=intent,
+        required_output=required_output,
+        assumptions=assumptions,
+    )
+    if _fdjp.get("preframe_lines"):
+        professional_prompt = professional_prompt + "\n\n[五维预拆解]\n" + "\n".join(_fdjp["preframe_lines"])
+
+    _three_round_protocol = build_three_round_plan(
+        question=original,
+        mode=mode,
+        seats=seats,
+        prompt_flow={
+            "version": "prompt-resonance-v1",
+            "trace_id": trace_id,
+            "intent": intent,
+        },
+        bridge_summary=bridge_summary,
+    )
+    professional_prompt = inject_three_round_protocol(professional_prompt, _three_round_protocol)
+
     quick_response = (
         f"我先把任务对齐为：{intent}。"
         f"本轮采用{MODE_LABELS.get(mode, mode)}，目标席位 {seat_count} 个。"
@@ -93,7 +121,8 @@ def build_prompt_flow(
         "professional_prompt": professional_prompt,
         "assumptions_to_check": assumptions,
         "required_output": required_output,
-        "trace_id": _stable_id(original, mode, engine),
+        "trace_id": trace_id,
+        "three_round_protocol": _three_round_protocol,
     }
 
 

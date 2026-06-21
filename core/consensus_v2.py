@@ -85,7 +85,13 @@ def cluster_strategy_vectors(
     Returns clusters for private reflection (not public punishment).
     """
     if len(seat_vectors) < 2:
-        return {"clusters": [], "alignment_warnings": []}
+        return {
+            "cluster_count": 0,
+            "largest_cluster_size": 0,
+            "clusters": [],
+            "alignment_warnings": [],
+            "threshold": threshold,
+        }
 
     seats = list(seat_vectors.keys())
 

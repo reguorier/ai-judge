@@ -22,8 +22,14 @@ from core.cross_temporal_analysis import cross_temporal_markdown
 from core.domain_closeout import is_legal_domain
 from core.final_report import attach_final_report, build_final_report, render_final_report_markdown
 from core.modes import resolve_mode
+from core.model_influence import (
+    apply_runtime_model_weights,
+    load_runtime_model_weights,
+    meta_weighted_average,
+)
 from core.scoring_v2 import score_jury_v2
 from core.seat_personas import SEAT_PERSONAS
+from core.three_round_protocol import run_three_round_scoring
 
 
 RISK_PENALTY = {
@@ -78,17 +84,37 @@ def assemble_verdict(
     claims: list[dict[str, Any]],
     run_id: str | None = None,
     engine: str = "local-auto-jury-v3.4",
+    scoring_context: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Score structured claims and return the product-ready verdict object."""
     config = resolve_mode(mode, override_seats=seats)
     resolved_seats = _valid_seats(config["seats"])
-    score_result = score_jury_v2(claims)
+    three_round_scoring = (
+        run_three_round_scoring(claims=claims, scoring_context=scoring_context)
+        if scoring_context
+        else None
+    )
+    score_result = (
+        (three_round_scoring or {}).get("phase1_scoring")
+        if three_round_scoring
+        else score_jury_v2(claims)
+    ) or score_jury_v2(claims)
     scored_claims = _merge_scored_claims(claims, score_result.get("claims", []))
-    verdict = _derive_verdict(score_result)
-    average_score = float(score_result.get("average_score", 0.0) or 0.0)
-    confidence = _derive_confidence(score_result, resolved_seats)
     seat_scores = _seat_scores(scored_claims)
+    seat_scores = _apply_peach_weights(seat_scores, three_round_scoring)
+    model_weights = load_runtime_model_weights()
+    meta_weighted = meta_weighted_average(seat_scores, model_weights)
+    seat_scores = apply_runtime_model_weights(seat_scores, model_weights)
+    effective_score_result = dict(score_result)
+    weighted_average = _peach_weighted_average(seat_scores, three_round_scoring)
+    if weighted_average is not None:
+        effective_score_result["average_score"] = weighted_average
+    if meta_weighted is not None:
+        effective_score_result["average_score"] = meta_weighted
+    verdict = _derive_verdict(effective_score_result)
+    average_score = float(effective_score_result.get("average_score", 0.0) or 0.0)
+    confidence = _derive_confidence(effective_score_result, resolved_seats)
     reasons = _top_reasons(scored_claims, verdict)
 
     result = {
@@ -108,6 +134,7 @@ def assemble_verdict(
         "tier_distribution": score_result.get("tier_distribution", {}),
         "total_claims": len(scored_claims),
         "seat_scores": seat_scores,
+        "model_weights": model_weights,
         "reasons": reasons,
         "next_steps": _next_steps(verdict, mode),
         "claims": scored_claims,
@@ -116,6 +143,13 @@ def assemble_verdict(
         "engine": engine,
         "features": config.get("features", {}),
     }
+    if three_round_scoring:
+        result["scoring_pipeline"] = three_round_scoring
+        result["average_score_unweighted"] = round(float(score_result.get("average_score", 0.0) or 0.0), 4)
+        result["average_score_weighted"] = round(weighted_average, 4) if weighted_average is not None else None
+        result["peach_winners"] = ((three_round_scoring.get("phase3_peach_projection") or {}).get("winners") or [])
+    if meta_weighted is not None:
+        result["average_score_meta_weighted"] = round(meta_weighted, 4)
     if extra:
         result.update(extra)
     attach_final_report(result)
@@ -322,6 +356,55 @@ def _seat_scores(claims: list[dict[str, Any]]) -> list[dict[str, Any]]:
         })
     rows.sort(key=lambda r: r["average_score"], reverse=True)
     return rows
+
+
+def _apply_peach_weights(
+    seat_scores: list[dict[str, Any]],
+    three_round_scoring: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    peach = (three_round_scoring or {}).get("phase3_peach_projection") or {}
+    weights = peach.get("weights") or {}
+    merits = peach.get("merits") or {}
+    winners = set(peach.get("winners") or [])
+    if not weights:
+        return seat_scores
+    rows = []
+    for row in seat_scores:
+        seat = str(row.get("seat") or "")
+        item = dict(row)
+        item["influence_weight"] = round(float(weights.get(seat, 0.0) or 0.0), 6)
+        item["peach_merit"] = round(float(merits.get(seat, 0.0) or 0.0), 6)
+        item["peach_winner"] = seat in winners
+        rows.append(item)
+    rows.sort(
+        key=lambda item: (
+            float(item.get("influence_weight") or 0.0),
+            float(item.get("average_score") or 0.0),
+        ),
+        reverse=True,
+    )
+    return rows
+
+
+def _peach_weighted_average(
+    seat_scores: list[dict[str, Any]],
+    three_round_scoring: dict[str, Any] | None,
+) -> float | None:
+    weights = ((three_round_scoring or {}).get("phase3_peach_projection") or {}).get("weights") or {}
+    if not weights:
+        return None
+    total_weight = 0.0
+    weighted = 0.0
+    for row in seat_scores:
+        seat = str(row.get("seat") or "")
+        if seat not in weights:
+            continue
+        weight = float(weights.get(seat) or 0.0)
+        total_weight += weight
+        weighted += float(row.get("average_score") or 0.0) * weight
+    if total_weight <= 0:
+        return None
+    return round(weighted / total_weight, 4)
 
 
 def _top_reasons(claims: list[dict[str, Any]], verdict: str) -> list[str]:

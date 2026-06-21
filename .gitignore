@@ -38,6 +38,7 @@ assets/*.iconset/
 # Local debug / backup files
 *.bak
 *.bak-*
+*.bak.*
 *.tmp
 temp_debug*.py
 
@@ -54,6 +55,7 @@ product/runtime/
 reports/runtime/
 trace/
 artifacts/20*/
+artifacts/20*
 CODEX_*.md
 RELEASE_SEAL_*.md
 docs/hackathons/

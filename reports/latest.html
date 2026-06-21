@@ -1,99 +1,471 @@
 <!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Judge 最终报告</title>
-  <style>
-    :root { color-scheme: light; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1f2933; background: #f6f7f9; }
-    main { max-width: 880px; margin: 0 auto; padding: 40px 24px 64px; background: #fff; min-height: 100vh; }
-    h1 { font-size: 30px; margin: 0 0 18px; }
-    h2 { font-size: 20px; margin: 30px 0 10px; padding-top: 16px; border-top: 1px solid #d8dee8; }
-    h3 { font-size: 16px; margin: 18px 0 8px; }
-    p, li { line-height: 1.65; font-size: 15px; }
-    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
-  </style>
-</head>
-<body><main><h1>AI Judge 最终报告</h1>
-<p>Run ID: <code>both-002</code></p>
-<p>模式: 深度裁决</p>
-<h2>1. 核心结论</h2>
-<h2>核心结论</h2>
-<p>非本村村民之间的宅基地房屋买卖合同**无效**。</p>
-<h2>丁的权利救济</h2>
-<p>丁可向甲主张：</p>
-<p>1. **不当得利返还**（《民法典》第985条）：甲无法律根据取得拆迁补偿利益</p>
-<p>2. **合同无效后财产返还**（《民法典》第157条）</p>
-<h2>案由、被告、诉讼请求</h2>
-<p>| 项目 | 内容 |</p>
-<p>|------|------|</p>
-<p>| 案由 | 确认合同无效纠纷 + 不当得利纠纷 |</p>
-<p>| 被告 | 甲 |</p>
-<p>| 第三人 | 拆迁方（征收主体）|</p>
-<p>| 诉讼请求1 | 确认1989-2009年系列转售行为无效 |</p>
-<p>| 诉讼请求2 | 确认补偿款中房屋价值部分归丁所有 |</p>
-<p>| 诉讼请求3 | 判令甲</p>
-<h2>2. 适用边界</h2>
-<p>本报告基于多源分析生成，用于把议题分析、席位观点、证据强度和风险压缩为可审计结论；不替代人工最终判断。</p>
-<h2>3. 已验证事实</h2>
-<ul>
-<li>run_id 已生成：both-002（来源：summary.json）</li>
-<li>本次模式为 深度裁决。（来源：summary.json）</li>
-<li>分析来源：search_agent（来源：source_pack）</li>
-</ul>
-<h2>4. 推断与判断</h2>
-<ul>
-<li>报告围绕用户议题「案例：甲乙丙丁都不是本村村民。1989年，甲与乙在农村宅基地合作开发共建房屋，甲作为宅基地登记的权利人。1993年，乙将」展开分析。（强度：medium）（来源：source_pack）</li>
-</ul>
-<h2>5. 席位观点摘要</h2>
-<ul>
-<li>Report Builder: 压缩问题、证据和行动建议到最终报告。（强度：medium）</li>
-<li>Dissent Reviewer: 保留分歧、失败条件和反方提醒。（强度：medium）</li>
-<li>Human Final Gate: 把最终裁决留给本地人工确认。（强度：medium）</li>
-</ul>
-<h2>6. 共识与分歧</h2>
-<h3>共识</h3>
-<ul>
-<li>报告基于可用的分析来源生成。</li>
-<li>若分析来源不足，结论应标记为低置信度。</li>
-</ul>
-<h3>分歧</h3>
-<ul>
-<li>当分析来源不充分时，不应伪造未执行的席位或检索结果。</li>
-</ul>
-<h2>7. 证据强度</h2>
-<p>整体强度：medium</p>
-<ul>
-<li>实质性分析来源：search_agent（强度：medium）</li>
-<li>席位有效性：3/5（强度：medium）</li>
-</ul>
-<h2>8. 风险与失败条件</h2>
-<h3>风险</h3>
-<ul>
-<li>当前分析可能未覆盖全部司法辖区的观点差异。</li>
-<li>法律议题的时效性可能影响结论的准确性。</li>
-</ul>
-<h3>失败条件</h3>
-<ul>
-<li>无 LLM / search-agent / seat_outputs 等实质性推理来源。</li>
-<li>最终报告未经 report_quality_gate 验证通过。</li>
-<li>席位矩阵与实际执行状态不一致。</li>
-</ul>
-<h2>9. 推荐行动</h2>
-<ul>
-<li>若结论置信度不足，建议补充联网检索或专业法律数据库查询。</li>
-<li>重要法律决策应咨询持证律师。</li>
-</ul>
-<h2>10. 审计附件</h2>
-<ul>
-<li>生成时间：2026-06-08T05:01:28+00:00</li>
-<li>有效席位：3</li>
-<li>失败席位：0</li>
-<li>artifact: <code>/Users/audimacmini/Documents/ai-judge-skill/reports/runs/both-002/final_report.md</code></li>
-<li>artifact: <code>/Users/audimacmini/Documents/ai-judge-skill/reports/runs/both-002/final_report.html</code></li>
-<li>artifact: <code>/Users/audimacmini/Documents/ai-judge-skill/reports/runs/both-002/summary.json</code></li>
-<li>artifact: <code>/Users/audimacmini/Documents/ai-judge-skill/reports/runs/both-002/evidence_packet.json</code></li>
-<li>artifact: <code>/Users/audimacmini/Documents/ai-judge-skill/reports/runs/both-002/seat_matrix.json</code></li>
-</ul>
-</main></body></html>
+<html lang="zh-Hans"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta content="judge-ir-component-renderer" name="ai-judge-renderer"><title>Check system health</title><style>
+:root {
+  color-scheme: light;
+  --canvas:#e4ebe7;
+  --paper:#fffdf8;
+  --paper-2:#f6f4ef;
+  --ink:#171717;
+  --ink-2:#35302a;
+  --muted:#766f63;
+  --line:#d8cdbc;
+  --line-strong:#b8ad9b;
+  --accent:#9b3728;
+  --accent-2:#164b43;
+  --accent-soft:#f4dfd8;
+  --green-soft:#dfe9e4;
+  --shadow:0 24px 80px rgba(42,34,24,.10);
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  margin:0;
+  font-family:"Avenir Next","PingFang SC","SF Pro Text","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    linear-gradient(90deg, rgba(23,23,23,.026) 1px, transparent 1px) 0 0/30px 30px,
+    linear-gradient(180deg, #f5f4ef, #e5ebe7 46%, var(--canvas));
+  color:var(--ink);
+  letter-spacing:0;
+  font-size:15px;
+}
+body::before {
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle at 18% 8%, rgba(155,55,40,.08), transparent 34%),
+             radial-gradient(circle at 82% 10%, rgba(22,75,67,.09), transparent 30%);
+  opacity:.9;
+}
+a { color:inherit; }
+.topbar {
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+  height:58px;
+  padding:0 24px;
+  background:rgba(255,253,248,.90);
+  border-bottom:1px solid rgba(74,60,44,.14);
+  backdrop-filter:blur(18px);
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+  font-weight:820;
+}
+.brand-mark {
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  display:grid;
+  place-items:center;
+  background:var(--ink);
+  color:var(--paper);
+  font-size:11px;
+  letter-spacing:0;
+}
+.brand-title {
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.actions { display:flex; align-items:center; gap:8px; }
+.actions a, .actions button {
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:rgba(255,253,248,.76);
+  padding:8px 11px;
+  font:inherit;
+  font-weight:760;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .45s var(--ease), background .45s var(--ease), border-color .45s var(--ease);
+}
+.actions a:hover, .actions button:hover {
+  transform:translateY(-1px);
+  background:var(--paper);
+  border-color:var(--line-strong);
+}
+.workspace {
+  position:relative;
+  width:min(1480px, calc(100vw - 28px));
+  margin:22px auto 64px;
+  display:grid;
+  grid-template-columns:216px minmax(0, 1fr) 300px;
+  gap:18px;
+  align-items:start;
+}
+.side, .rail {
+  position:sticky;
+  top:78px;
+  border:1px solid rgba(74,60,44,.14);
+  border-radius:10px;
+  background:rgba(255,253,248,.68);
+  box-shadow:0 16px 52px rgba(42,34,24,.06);
+  backdrop-filter:blur(16px);
+  overflow:hidden;
+}
+.side-head, .rail-head {
+  padding:14px 15px;
+  border-bottom:1px solid var(--line);
+  font-size:11px;
+  color:var(--muted);
+  font-weight:900;
+  letter-spacing:0;
+}
+.toc { display:grid; padding:8px; gap:2px; }
+.toc a {
+  display:grid;
+  grid-template-columns:30px 1fr;
+  gap:8px;
+  align-items:start;
+  padding:10px 8px;
+  border-radius:8px;
+  text-decoration:none;
+  color:var(--ink-2);
+  line-height:1.35;
+  font-weight:720;
+}
+.toc a:hover { background:rgba(155,55,40,.08); }
+.toc-index { color:var(--accent); font-size:11px; font-weight:900; letter-spacing:0; }
+.doc {
+  min-width:0;
+  border:1px solid rgba(74,60,44,.16);
+  border-radius:8px;
+  background:linear-gradient(180deg, rgba(255,253,248,.98), rgba(253,248,238,.98));
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.doc-head {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 218px;
+  gap:28px;
+  padding:34px 42px 22px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(135deg, rgba(255,253,248,.94), rgba(246,244,239,.92));
+}
+.kicker {
+  margin:0 0 14px;
+  color:var(--accent-2);
+  font-size:11px;
+  letter-spacing:0;
+  font-weight:950;
+}
+h1 {
+  margin:0;
+  max-width:26ch;
+  font-family:"Avenir Next","PingFang SC","SF Pro Display","Microsoft YaHei",system-ui,sans-serif;
+  font-size:36px;
+  line-height:1.18;
+  font-weight:820;
+  letter-spacing:0;
+  word-break:keep-all;
+}
+.subtitle {
+  margin:16px 0 0;
+  color:var(--muted);
+  line-height:1.7;
+  font-size:16px;
+  max-width:58ch;
+}
+.cover-lead {
+  margin:20px 0 0;
+  padding:16px 18px;
+  border-left:4px solid var(--accent);
+  background:linear-gradient(135deg, rgba(244,223,216,.74), rgba(255,253,248,.72));
+  font-size:16px;
+  line-height:1.72;
+  font-weight:680;
+  color:var(--ink);
+}
+.meta-card {
+  align-self:end;
+  border-left:3px solid var(--accent);
+  padding-left:16px;
+  display:grid;
+  gap:12px;
+  font-size:12px;
+}
+.meta-card div { display:grid; gap:3px; }
+.meta-card span { color:var(--muted); font-weight:850; }
+.meta-card strong { overflow-wrap:anywhere; }
+.metric-band {
+  padding:0 42px 24px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(135deg, rgba(255,253,248,.94), rgba(246,244,239,.88));
+}
+.section-kicker {
+  padding:16px 0 10px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:860;
+}
+.headline-metrics {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.headline-metric {
+  min-width:0;
+  padding:12px 14px;
+  border-right:1px solid var(--line);
+}
+.headline-metric:last-child { border-right:0; }
+.headline-metric span {
+  display:block;
+  margin-bottom:5px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:820;
+}
+.headline-metric strong {
+  display:block;
+  font-size:16px;
+  line-height:1.32;
+  overflow-wrap:anywhere;
+}
+.reader { padding:10px 42px 20px; }
+.reader-section {
+  display:grid;
+  grid-template-columns:170px minmax(0, 1fr);
+  gap:34px;
+  padding:28px 0;
+  border-bottom:1px solid var(--line);
+  scroll-margin-top:78px;
+}
+.reader-section:last-child { border-bottom:0; }
+.section-label {
+  display:grid;
+  gap:8px;
+  align-content:start;
+}
+.section-index {
+  color:var(--accent);
+  font-size:11px;
+  letter-spacing:0;
+  font-weight:950;
+}
+.section-label h2 {
+  margin:0;
+  font-size:20px;
+  line-height:1.24;
+  font-weight:820;
+}
+.reader-content { max-width:780px; }
+.wide-content { max-width:900px; }
+.reader-content p {
+  margin:0;
+  font-size:17px;
+  line-height:1.78;
+  font-weight:680;
+  color:var(--ink);
+}
+ul { margin:0; padding-left:19px; line-height:1.84; }
+li + li { margin-top:8px; }
+.reader-content li { font-size:15px; }
+.risk-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.risk-card {
+  display:grid;
+  gap:8px;
+  min-width:0;
+  padding:15px;
+  border:1px solid var(--line);
+  border-left:4px solid var(--accent);
+  background:rgba(255,253,248,.76);
+}
+.risk-card strong { line-height:1.45; }
+.risk-card p { font-size:13px; color:var(--muted); }
+.risk-index {
+  color:var(--accent);
+  font-size:11px;
+  font-weight:900;
+}
+.appendix-panel {
+  border-top:1px solid var(--line);
+}
+details.appendix {
+  border-bottom:1px solid var(--line);
+  background:rgba(255,253,248,.86);
+  scroll-margin-top:78px;
+}
+details.appendix > summary {
+  list-style:none;
+  cursor:pointer;
+  padding:21px 42px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  font-size:18px;
+  font-weight:900;
+}
+details.appendix > summary::-webkit-details-marker { display:none; }
+details.appendix > summary::after {
+  content:"展开";
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:0;
+}
+details.appendix[open] > summary::after { content:"收起"; }
+.appendix-body {
+  border-top:1px solid var(--line);
+  padding:30px 42px 42px;
+  background:var(--paper-2);
+}
+.report-block {
+  padding:22px 0;
+  border-bottom:1px solid var(--line);
+}
+.report-block:first-child { padding-top:0; }
+.report-block:last-child { border-bottom:0; padding-bottom:0; }
+.report-block h3 {
+  margin:0 0 10px;
+  color:var(--accent-2);
+  font-size:18px;
+  line-height:1.35;
+}
+.report-block p, .card p {
+  margin:0;
+  line-height:1.76;
+  color:var(--ink-2);
+}
+.metric-grid, .card-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:1px;
+  background:var(--line);
+  border:1px solid var(--line);
+  margin:14px 0;
+}
+.card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.metric, .card {
+  background:rgba(255,253,248,.82);
+  padding:14px;
+  min-width:0;
+}
+.metric span, .card span {
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:0;
+  font-weight:950;
+  margin-bottom:8px;
+}
+.metric strong {
+  display:block;
+  font-size:20px;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.card-value { font-weight:850; margin-bottom:7px; }
+.table-wrap {
+  overflow:auto;
+  border-top:2px solid var(--ink);
+  margin-top:14px;
+  background:rgba(255,253,248,.68);
+}
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th, td {
+  border-bottom:1px solid var(--line);
+  padding:11px 10px;
+  text-align:left;
+  vertical-align:top;
+  line-height:1.62;
+}
+th {
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:0;
+  font-weight:950;
+  background:rgba(246,244,239,.92);
+}
+.rail-section {
+  padding:15px;
+  border-bottom:1px solid var(--line);
+}
+.rail-section:last-child { border-bottom:0; }
+.rail-label {
+  margin:0 0 8px;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:0;
+  font-weight:950;
+}
+.rail-lead {
+  margin:0;
+  font-size:14px;
+  line-height:1.66;
+  font-weight:780;
+}
+.rail-metrics { display:grid; gap:9px; }
+.rail-metric {
+  display:grid;
+  gap:3px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(216,205,188,.7);
+}
+.rail-metric:last-child { border-bottom:0; }
+.rail-metric span { color:var(--muted); font-size:11px; font-weight:820; }
+.rail-metric strong { font-size:18px; line-height:1.25; overflow-wrap:anywhere; }
+.status-pill {
+  display:inline-flex;
+  width:max-content;
+  align-items:center;
+  border:1px solid rgba(22,75,67,.18);
+  border-radius:999px;
+  background:var(--green-soft);
+  color:var(--accent-2);
+  padding:6px 10px;
+  font-size:12px;
+  font-weight:850;
+}
+@media print {
+  body { background:#fff; }
+  body::before, .topbar, .side, .rail { display:none; }
+  .workspace { display:block; width:100%; margin:0; }
+  .doc { border:0; box-shadow:none; border-radius:0; }
+  details.appendix:not([open]) .appendix-body { display:block; }
+  details.appendix > summary::after { display:none; }
+}
+@media (max-width:1180px) {
+  .workspace { grid-template-columns:180px minmax(0,1fr); }
+  .rail { position:relative; top:auto; grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .rail-head { display:none; }
+  h1 { font-size:32px; }
+}
+@media (max-width:860px) {
+  .workspace { width:min(100% - 18px, 760px); grid-template-columns:1fr; }
+  .side { position:relative; top:auto; }
+  .toc { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .doc-head, .reader-section { grid-template-columns:1fr; }
+  .doc-head, .metric-band, .reader, details.appendix > summary, .appendix-body { padding-left:22px; padding-right:22px; }
+  .headline-metrics, .risk-grid, .metric-grid, .card-grid, .rail { grid-template-columns:1fr; }
+  .headline-metric { border-right:0; border-bottom:1px solid var(--line); }
+  .headline-metric:last-child { border-bottom:0; }
+  .actions { flex-wrap:wrap; justify-content:flex-end; }
+  h1 { max-width:none; font-size:28px; word-break:normal; overflow-wrap:anywhere; }
+}
+</style></head><body><header class="topbar"><div class="brand"><span class="brand-mark">AJ</span><span class="brand-title">Check system health</span></div><nav aria-label="report actions" class="actions"><a href="#section-analysis">正文</a><a href="#section-appendix">延伸材料</a><button onclick="window.print()" type="button">打印 / 导出 PDF</button></nav></header><div class="workspace"><aside aria-label="审阅目录" class="side"><div class="side-head">审阅目录</div><nav class="toc"><a href="#section-summary"><span class="toc-index">01</span><span>核心摘要</span></a><a href="#section-metrics"><span class="toc-index">02</span><span>关键指标</span></a><a href="#section-analysis"><span class="toc-index">03</span><span>专业分析</span></a><a href="#section-comparison"><span class="toc-index">04</span><span>模型比较</span></a><a href="#section-risk"><span class="toc-index">05</span><span>风险矩阵</span></a><a href="#section-appendix"><span class="toc-index">06</span><span>延伸材料</span></a></nav></aside><main class="doc"><section class="doc-head" id="section-summary"><div class="doc-head-main"><p class="kicker">AI Judge 专业审阅</p><h1>Check system health</h1><p class="subtitle">面向决策的 AI Judge 阅读版</p><p class="cover-lead">针对议题「Check system health」，本报告基于  进行分析。</p></div><aside aria-label="report metadata" class="meta-card"><div><span>领域</span><strong>通用决策</strong></div><div><span>Run ID</span><strong>client-8699a9696674</strong></div><div><span>生成时间</span><strong>2026-06-17T18:24:08+00:00</strong></div></aside></section><section class="metric-band" id="section-metrics"><div class="section-kicker">关键指标</div><div class="headline-metrics"><div class="headline-metric"><span>有效席位</span><strong>3/3</strong></div><div class="headline-metric"><span>Noise Score</span><strong>18/100</strong></div><div class="headline-metric"><span>噪声等级</span><strong>low</strong></div><div class="headline-metric"><span>证据强度</span><strong>high</strong></div></div></section><section class="reader reader-analysis" id="section-analysis"><article class="reader-section evidence-block" id="section-analysis-1"><div class="section-label"><span class="section-index">01</span><h2>当前建议</h2></div><div class="reader-content"><ul><li>若结论置信度不足，建议补充联网检索或专业法律数据库查询。</li><li>重要法律决策应咨询持证律师。</li></ul></div></article><article class="reader-section evidence-block" id="section-analysis-2"><div class="section-label"><span class="section-index">02</span><h2>关键依据</h2></div><div class="reader-content"><ul><li>报告基于可用的分析来源生成。</li><li>若分析来源不足，结论应标记为低置信度。</li></ul></div></article></section><section class="reader reader-comparison" id="section-comparison"><article class="reader-section comparison-block" id="section-comparison-1"><div class="section-label"><span class="section-index">01</span><h2>通用决策 · 专属版</h2></div><div class="reader-content wide-content"><p>该行业适配器先使用通用行业框架，后续可继续沉淀专属指标和表格。</p><div class="table-wrap"><table><thead><tr><th>模块</th><th>当前内容</th></tr></thead><tbody><tr><td>核心判断</td><td>针对议题「Check system health」，本报告基于  进行分析。</td></tr><tr><td>关键风险</td><td>当前分析可能未覆盖全部司法辖区的观点差异。
+法律议题的时效性可能影响结论的准确性。</td></tr><tr><td>下一步</td><td>若结论置信度不足，建议补充联网检索或专业法律数据库查询。
+重要法律决策应咨询持证律师。</td></tr></tbody></table></div></div></article><article class="reader-section comparison-block" id="section-comparison-2"><div class="section-label"><span class="section-index">02</span><h2>共识与分歧</h2></div><div class="reader-content wide-content"><p>AI Judge 不只给结论，还要说明哪些一致、哪些分歧值得看。</p><div class="table-wrap"><table><thead><tr><th>类型</th><th>内容</th></tr></thead><tbody><tr><td>共识</td><td>报告基于可用的分析来源生成。
+若分析来源不足，结论应标记为低置信度。</td></tr><tr><td>分歧</td><td>当分析来源不充分时，不应伪造未执行的席位或检索结果。</td></tr></tbody></table></div></div></article><article class="reader-section comparison-block" id="section-comparison-3"><div class="section-label"><span class="section-index">03</span><h2>风险与下一步</h2></div><div class="reader-content wide-content"><p>风险和行动分开呈现，避免用户把模型语气误读为确定性。</p><div class="table-wrap"><table><thead><tr><th>风险/失败条件</th><th>建议动作</th></tr></thead><tbody><tr><td>当前分析可能未覆盖全部司法辖区的观点差异。</td><td>若结论置信度不足，建议补充联网检索或专业法律数据库查询。</td></tr><tr><td>法律议题的时效性可能影响结论的准确性。</td><td>重要法律决策应咨询持证律师。</td></tr></tbody></table></div></div></article></section><section class="reader reader-risk"><article class="reader-section risk-block" id="section-risk"><div class="section-label"><span class="section-index">01</span><h2>风险矩阵</h2></div><div class="reader-content"><div class="risk-grid"><div class="risk-card risk-high"><span class="risk-index">01</span><strong>当前分析可能未覆盖全部司法辖区的观点差异。</strong><p>这是 AI Judge 的决策辅助报告，不替代人类最终判断。</p></div><div class="risk-card risk-high"><span class="risk-index">02</span><strong>法律议题的时效性可能影响结论的准确性。</strong><p>这是 AI Judge 的决策辅助报告，不替代人类最终判断。</p></div></div></div></article></section><section class="appendix-panel" id="section-appendix"><details class="appendix" id="appendix-industry"><summary>行业展开</summary><div class="appendix-body"><article class="report-block"><h3>通用决策 · 专属版</h3><p>该行业适配器先使用通用行业框架，后续可继续沉淀专属指标和表格。</p><div class="table-wrap"><table><thead><tr><th>模块</th><th>当前内容</th></tr></thead><tbody><tr><td>核心判断</td><td>针对议题「Check system health」，本报告基于  进行分析。</td></tr><tr><td>关键风险</td><td>当前分析可能未覆盖全部司法辖区的观点差异。
+法律议题的时效性可能影响结论的准确性。</td></tr><tr><td>下一步</td><td>若结论置信度不足，建议补充联网检索或专业法律数据库查询。
+重要法律决策应咨询持证律师。</td></tr></tbody></table></div></article></div></details><details class="appendix" id="appendix-evidence"><summary>证据与来源</summary><div class="appendix-body"><article class="report-block"><h3>基础版 · 一页结论</h3><p>针对议题「Check system health」，本报告基于  进行分析。</p><div class="metric-grid"><div class="metric"><span>有效席位</span><strong>3/3</strong></div><div class="metric"><span>Noise Score</span><strong>18/100</strong></div><div class="metric"><span>噪声等级</span><strong>low</strong></div><div class="metric"><span>证据强度</span><strong>high</strong></div></div><div class="card-grid"><div class="card"><span>当前最稳健结论</span><div class="card-value">针对议题「Check system health」，本报告基于  进行分析。</div><p>基础版只保留可读结论，原始席位回答进入审计附录。</p></div><div class="card"><span>是否需要人工复核</span><div class="card-value">可作为初步参考</div><p>建议动作：publishable_low_noise</p></div><div class="card"><span>证据强度</span><div class="card-value">high</div><p>证据强度来自席位覆盖、证据包和失败席位综合判断。</p></div><div class="card"><span>下一步</span><div class="card-value">若结论置信度不足，建议补充联网检索或专业法律数据库查询。</div><p>下一步行动必须能被人类执行或复核。</p></div></div></article><article class="report-block"><h3>共识与分歧</h3><p>AI Judge 不只给结论，还要说明哪些一致、哪些分歧值得看。</p><div class="table-wrap"><table><thead><tr><th>类型</th><th>内容</th></tr></thead><tbody><tr><td>共识</td><td>报告基于可用的分析来源生成。
+若分析来源不足，结论应标记为低置信度。</td></tr><tr><td>分歧</td><td>当分析来源不充分时，不应伪造未执行的席位或检索结果。</td></tr></tbody></table></div></article><article class="report-block"><h3>证据强度</h3><p>整体证据强度：high</p><ul><li>实质性分析来源：无（强度：weak）</li><li>席位有效性：3/3（强度：medium）</li></ul></article><article class="report-block"><h3>风险与下一步</h3><p>风险和行动分开呈现，避免用户把模型语气误读为确定性。</p><div class="table-wrap"><table><thead><tr><th>风险/失败条件</th><th>建议动作</th></tr></thead><tbody><tr><td>当前分析可能未覆盖全部司法辖区的观点差异。</td><td>若结论置信度不足，建议补充联网检索或专业法律数据库查询。</td></tr><tr><td>法律议题的时效性可能影响结论的准确性。</td><td>重要法律决策应咨询持证律师。</td></tr></tbody></table></div></article></div></details><details class="appendix" id="appendix-audit"><summary>系统审计</summary><div class="appendix-body"><article class="report-block"><h3>Noise Audit / 噪声审计</h3><p>本轮噪声：18/100，等级：low。</p><div class="metric-grid"><div class="metric"><span>噪声分数</span><strong>18/100</strong></div><div class="metric"><span>推荐动作</span><strong>publishable_low_noise</strong></div><div class="metric"><span>Schema 失败</span><strong>0</strong></div><div class="metric"><span>污染计数</span><strong>0</strong></div></div><ul><li>stance_disagreement</li><li>evidence_divergence</li></ul></article><article class="report-block"><h3>Model Stability / 模型稳定性画像</h3><p>当前累计画像数：3。</p><div class="table-wrap"><table><thead><tr><th>席位</th><th>样本数</th><th>稳定性</th><th>有效率</th><th>Schema失败率</th></tr></thead><tbody><tr><td>Dissent Reviewer</td><td>1</td><td>100.0</td><td>1.0</td><td>-</td></tr><tr><td>Human Final Gate</td><td>1</td><td>100.0</td><td>1.0</td><td>-</td></tr><tr><td>Report Builder</td><td>1</td><td>100.0</td><td>1.0</td><td>-</td></tr></tbody></table></div></article><article class="report-block"><h3>Artifact Manifest / 交付物清单</h3><p>客户端只暴露路由和报告类型，不暴露本机磁盘路径。</p><div class="table-wrap"><table><thead><tr><th>交付物</th><th>用途</th></tr></thead><tbody><tr><td>基础报告</td><td>给所有问题的稳定阅读版本</td></tr><tr><td>行业报告</td><td>按问题类型适配的专业交付版本</td></tr><tr><td>审计版</td><td>Noise、模型画像、证据强度和席位矩阵</td></tr></tbody></table></div></article><article class="report-block"><h3>输出质量门禁</h3><p>状态：passed · 可发布：是</p></article></div></details></section></main><aside aria-label="决策摘要" class="rail"><div class="rail-head">决策摘要</div><section class="rail-section"><p class="rail-label">核心判断</p><p class="rail-lead">针对议题「Check system health」，本报告基于  进行分析。</p></section><section class="rail-section"><p class="rail-label">关键指标</p><div class="rail-metrics"><div class="rail-metric"><span>有效席位</span><strong>3/3</strong></div><div class="rail-metric"><span>Noise Score</span><strong>18/100</strong></div><div class="rail-metric"><span>噪声等级</span><strong>low</strong></div><div class="rail-metric"><span>证据强度</span><strong>high</strong></div></div></section><section class="rail-section"><p class="rail-label">质量门禁</p><span class="status-pill">passed · 可发布</span></section></aside></div></body></html>

@@ -3,6 +3,7 @@ import time
 from bridges.chrome_fixed_tab_bridge import (
     _capture_acceptance,
     _capture_is_polluted,
+    _response_is_cross_task_payload,
     _response_text_from_capture,
     _should_send_final_answer_nudge,
 )
@@ -64,6 +65,47 @@ def test_closed_marker_answer_is_accepted_without_topic_echo():
 
     assert accepted["accepted"]
     assert accepted["mode"] == "closed_marker"
+
+
+def test_long_closed_marker_answer_must_match_current_question():
+    text = "当前 AI Judge 报告应重构首屏、状态门禁、业务草稿和评分管线。" * 20
+    capture = {
+        "ok": True,
+        "text": text,
+        "marker_found": True,
+        "marker_closed": True,
+    }
+    item = {"prompt_id": "AIJUDGE-wenxin-123", "submission_confirmed": True, "before_text": ""}
+
+    accepted = _capture_acceptance(
+        capture,
+        item,
+        "开发商被执行背景下，房屋置换、抵押、查封、拒执罪和债权人撤销权风险。",
+    )
+
+    assert not accepted["matches_question"]
+    assert not accepted["accepted"]
+
+
+def test_cross_task_betting_payload_is_pollution_for_legal_question():
+    text = (
+        '{ "model_account": "wenxin", "round_id": "run-7", '
+        '"loan_decision": {"amount": 0}, "no_bet_reason": null, '
+        '"bet_ledger": [{"match_id": "WARM-001", "market": "moneyline", '
+        '"selection": "Egypt", "stake": 100, "odds": 2.1}], '
+        '"betting_thought": "" }'
+    )
+    question = "开发商被执行背景下，房屋抵押是否构成规避执行或拒执罪？"
+
+    assert _response_is_cross_task_payload(text, question)
+    accepted = _capture_acceptance(
+        {"ok": True, "text": text, "marker_found": True, "marker_closed": True},
+        {"prompt_id": "AIJUDGE-wenxin-123", "submission_confirmed": True, "before_text": ""},
+        question,
+    )
+
+    assert accepted["polluted"]
+    assert not accepted["accepted"]
 
 
 def test_prompt_placeholder_marker_is_not_accepted_as_answer():
@@ -166,6 +208,30 @@ def test_chatgpt_empty_thinking_turn_triggers_final_answer_nudge():
     assert _should_send_final_answer_nudge("chatgpt", item, capture, assessment)
     item["final_answer_nudge"] = {"ok": True}
     assert not _should_send_final_answer_nudge("chatgpt", item, capture, assessment)
+
+
+def test_chatgpt_short_thinking_stub_triggers_final_answer_nudge():
+    item = {
+        "seat": "chatgpt",
+        "prompt_id": "AIJUDGE-chatgpt-456",
+        "submitted_at": time.time() - 90,
+        "timeout_seconds": 300,
+        "submission_confirmed": True,
+        "before_text": "",
+    }
+    capture = {
+        "ok": True,
+        "text": "我会按第二轮差异裁决处理：先修订关键断言，再给出新增判断。",
+        "marker_found": False,
+        "marker_closed": False,
+        "thinking_only": True,
+        "page_busy": False,
+    }
+
+    assessment = _capture_acceptance(capture, item, "未成年人受指使线下收取电诈被害人现金的罪名评价")
+
+    assert not assessment["accepted"]
+    assert _should_send_final_answer_nudge("chatgpt", item, capture, assessment)
 
 
 def test_nudge_waits_while_chatgpt_is_still_generating():

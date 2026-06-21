@@ -17,8 +17,12 @@ from core.seat_personas import SEAT_PERSONAS
 POLICY_VERSION = "required-web-seat-v1"
 OPTIONAL_EXECUTION_SEATS = {"grok", "gork"}
 RECOVERABLE_EXECUTION_CODES = {
+    "cdp_unavailable",
+    "web_collection_process_timeout",
+    "prompt_write_unconfirmed",
     "slow_response_pending",
     "response_timeout",
+    "response_below_minimum",
     "send_button_not_found",
     "submit_unconfirmed",
     "chrome_submit_unconfirmed",
@@ -42,7 +46,36 @@ RECOVERABLE_EXECUTION_CODES = {
     "composer_not_ready",
     "deepseek_expert_mode_not_verified",
     "doubao_expert_mode_not_verified",
+    "xunfei_quality_mode_not_verified",
+    "xunfei_desk_bounced_to_home",
+    "xunfei_desk_input_not_ready",
+    "xunfei_desk_ready_failed",
 }
+
+
+def normalize_error(error: Any, *, fallback_code: str = "", fallback_message: str = "") -> dict[str, Any]:
+    """Return a structured error object even when older callers pass a string."""
+    if isinstance(error, dict):
+        normalized = dict(error)
+        code = normalized.get("code") or normalized.get("reason") or fallback_code
+        message = normalized.get("message") or normalized.get("detail") or fallback_message
+        if code:
+            normalized["code"] = str(code)
+        if message:
+            normalized["message"] = str(message)
+        return normalized
+    if error is None or error == "":
+        if not fallback_code and not fallback_message:
+            return {}
+        return {
+            "code": str(fallback_code or "unknown"),
+            "message": str(fallback_message or fallback_code or "No response captured."),
+        }
+    text = str(error)
+    return {
+        "code": str(fallback_code or text or "unknown"),
+        "message": str(fallback_message or text or "No response captured."),
+    }
 
 
 def normalize_seat_id(seat: Any) -> str:
@@ -87,6 +120,7 @@ def attach_execution_validity(
     effective_prompt_id = str(prompt_id or result.get("prompt_id") or existing.get("prompt_id") or "")
     is_ok = bool(result.get("ok"))
     required_value = seat_execution_required(seat, config) if required is None else bool(required)
+    min_response_chars = minimum_required_response_chars(seat, config=config, existing=existing, item=result)
 
     submitted_sources = [
         submitted,
@@ -114,7 +148,7 @@ def attach_execution_validity(
     valid_required_answer = bool(
         accepted_value
         and submitted_value
-        and response_chars > 0
+        and response_chars >= min_response_chars
         and matches_question_value
         and not prompt_echo_value
         and not polluted_value
@@ -126,6 +160,7 @@ def attach_execution_validity(
         accepted=accepted_value,
         submitted=submitted_value,
         response_chars=response_chars,
+        min_response_chars=min_response_chars,
         matches_question=matches_question_value,
         prompt_echo=prompt_echo_value,
         polluted=polluted_value,
@@ -146,6 +181,7 @@ def attach_execution_validity(
         "polluted": polluted_value,
         "page_busy": page_busy_value,
         "response_chars": response_chars,
+        "min_response_chars": min_response_chars,
         "response_hash": response_hash,
         "capture_mode": capture_mode or existing.get("capture_mode") or result.get("capture_mode") or "",
         "prompt_id": effective_prompt_id,
@@ -158,6 +194,19 @@ def attach_execution_validity(
     else:
         result["execution_required"] = False
         result["best_effort"] = True
+    result["min_response_chars"] = min_response_chars
+    if isinstance(config, dict) and isinstance(config.get("answer_contract"), dict):
+        result["answer_contract"] = dict(config["answer_contract"])
+    elif isinstance(result.get("answer_contract"), dict):
+        result["answer_contract"] = dict(result["answer_contract"])
+    elif isinstance(existing.get("answer_contract"), dict):
+        result["answer_contract"] = dict(existing["answer_contract"])
+    if required_value and not valid:
+        result["ok"] = False
+        if not result.get("error"):
+            result["error"] = _execution_error_for_reason(reason, response_chars=response_chars, min_response_chars=min_response_chars)
+        if reason in RECOVERABLE_EXECUTION_CODES:
+            result["supplementable"] = True
     return result
 
 
@@ -167,6 +216,63 @@ def annotate_execution_results(
     config: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     return [attach_execution_validity(item, config=config) for item in results]
+
+
+def minimum_required_response_chars(
+    seat: Any,
+    *,
+    config: dict[str, Any] | None = None,
+    existing: dict[str, Any] | None = None,
+    item: dict[str, Any] | None = None,
+) -> int:
+    """Return the minimum complete-answer size for a required seat.
+
+    Default runs keep the historical permissive contract. High-stakes or
+    structure-heavy runs can raise this through bridge overrides, and the value
+    is preserved on re-annotation so report assembly cannot accidentally loosen
+    the collection gate.
+    """
+    seat_id = normalize_seat_id(seat)
+    config = config if isinstance(config, dict) else {}
+    existing = existing if isinstance(existing, dict) else {}
+    item = item if isinstance(item, dict) else {}
+    seat_config = ((config.get("seats") or {}).get(seat_id) or {}) if isinstance(config.get("seats"), dict) else {}
+    contract = config.get("answer_contract") if isinstance(config.get("answer_contract"), dict) else {}
+    item_contract = item.get("answer_contract") if isinstance(item.get("answer_contract"), dict) else {}
+    existing_contract = existing.get("answer_contract") if isinstance(existing.get("answer_contract"), dict) else {}
+
+    candidates = [
+        seat_config.get("min_required_response_chars"),
+        seat_config.get("required_answer_min_chars"),
+        seat_config.get("min_response_chars"),
+        _seat_min_from_contract(contract, seat_id),
+        contract.get("min_required_response_chars"),
+        contract.get("required_answer_min_chars"),
+        config.get("min_required_response_chars"),
+        config.get("required_answer_min_chars"),
+        config.get("min_response_chars"),
+        item.get("min_response_chars"),
+        existing.get("min_response_chars"),
+        _seat_min_from_contract(item_contract, seat_id),
+        item_contract.get("min_required_response_chars"),
+        _seat_min_from_contract(existing_contract, seat_id),
+        existing_contract.get("min_required_response_chars"),
+    ]
+    for value in candidates:
+        try:
+            parsed = int(value)
+        except Exception:
+            continue
+        if parsed > 0:
+            return max(1, min(8000, parsed))
+    return 1
+
+
+def _seat_min_from_contract(contract: dict[str, Any], seat: str) -> Any:
+    by_seat = contract.get("min_response_chars_by_seat")
+    if isinstance(by_seat, dict):
+        return by_seat.get(seat)
+    return None
 
 
 def execution_policy_summary(
@@ -203,7 +309,7 @@ def execution_policy_summary(
     ]
     required_supplementable = [
         failure for failure in required_failures
-        if failure.get("supplementable") or str(((failure.get("error") or {}).get("code") or "")) in RECOVERABLE_EXECUTION_CODES
+        if failure.get("supplementable") or str(normalize_error(failure.get("error")).get("code") or "") in RECOVERABLE_EXECUTION_CODES
     ]
 
     return {
@@ -237,6 +343,7 @@ def _execution_invalid_reason(
     accepted: bool,
     submitted: bool,
     response_chars: int,
+    min_response_chars: int,
     matches_question: bool,
     prompt_echo: bool,
     polluted: bool,
@@ -248,24 +355,38 @@ def _execution_invalid_reason(
     if not submitted:
         return "submission_not_confirmed"
     if not accepted:
-        error = result.get("error") or {}
+        error = normalize_error(result.get("error"))
         return str(error.get("code") or "answer_not_accepted")
     if response_chars <= 0:
         return "empty_response"
-    if not matches_question:
-        return "response_not_relevant"
     if prompt_echo:
         return "prompt_echo"
     if polluted:
         return "transcript_pollution"
+    if response_chars < min_response_chars:
+        return "response_below_minimum"
+    if not matches_question:
+        return "response_not_relevant"
     if page_busy:
         return "page_busy"
     return "execution_invalid"
 
 
+def _execution_error_for_reason(reason: str, *, response_chars: int, min_response_chars: int) -> dict[str, Any]:
+    if reason == "response_below_minimum":
+        return {
+            "code": "response_below_minimum",
+            "message": (
+                f"Captured answer has {response_chars} chars, below this run's minimum "
+                f"complete-answer contract ({min_response_chars} chars)."
+            ),
+        }
+    return {"code": reason or "execution_invalid", "message": reason or "Execution validity failed."}
+
+
 def _failure_summary(item: dict[str, Any]) -> dict[str, Any]:
     seat = normalize_seat_id(item.get("seat"))
-    error = item.get("error") or {}
+    error = normalize_error(item.get("error"))
     validity = item.get("execution_validity") or {}
     return {
         "seat": seat,

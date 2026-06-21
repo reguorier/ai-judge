@@ -35,9 +35,14 @@ from core.seat_execution_policy import annotate_execution_results
 from core.seat_personas import SEAT_PERSONAS, render_jury_prompt
 from bridges.chrome_fixed_tab_bridge import (
     _build_prepare_submission_ui_js,
-    _deepseek_prepare_verified,
-    _doubao_prepare_verified,
     _humanized_sleep,
+    _quality_mode_failure,
+    _quality_mode_policy_snapshot,
+    _quality_mode_prepare_required,
+    _quality_mode_prepare_verified,
+    _quality_mode_required_mode,
+    _quality_mode_trace_action,
+    _quality_mode_trace_message,
     chrome_apple_events_status,
     list_chrome_tabs,
     run_chrome_fixed_tabs,
@@ -54,16 +59,47 @@ RETRYABLE_WEB_ERROR_CODES = {
     "cdp_unavailable",
     "response_timeout",
     "slow_response_pending",
+    "response_below_minimum",
     "response_not_relevant",
     "model_page_error",
     "page_error",
     "chrome_crash",
     "fixed_tab_not_found",
     "deepseek_expert_mode_not_verified",
+    "doubao_expert_mode_not_verified",
+    "meta_quality_mode_not_verified",
+    "wenxin_quality_mode_not_verified",
+    "minimax_quality_mode_not_verified",
+    "yuanbao_quality_mode_not_verified",
+    "kimi_quality_mode_not_verified",
+    "qwen_quality_mode_not_verified",
+    "gemini_quality_mode_not_verified",
+    "stepfun_quality_mode_not_verified",
+    "xunfei_quality_mode_not_verified",
+    "xunfei_desk_bounced_to_home",
+    "xunfei_desk_input_not_ready",
+    "xunfei_desk_ready_failed",
     "submit_unconfirmed",
     "send_button_not_found",
     "composer_busy",
 }
+
+BLOCKING_LOGIN_STATES = {
+    "missing",
+    "login_required",
+    "challenge_required",
+    "page_error",
+    "provider_account_restricted",
+}
+
+LONG_PROMPT_FRAGILE_SEATS = {"gemini", "deepseek", "qwen", "wenxin", "yuanbao", "meta", "grok", "stepfun", "xunfei"}
+A_SHARE_REDUCTION_PROMPT_MARKERS = (
+    "董事减持",
+    "upper_bound_ret_to_first2_high",
+    "core_stats_summary",
+    "event_study_rows",
+    "2026Q2",
+)
 
 DEFAULT_URLS = {
     "chatgpt": "https://chatgpt.com/",
@@ -80,6 +116,8 @@ DEFAULT_URLS = {
     "wenxin": "https://wenxin.baidu.com/new-chat",
     "mimo": "https://aistudio.xiaomimimo.com/#/chat",
     "meta": "https://www.meta.ai/",
+    "stepfun": "https://chat.stepfun.com/chats/new",
+    "xunfei": "https://xinghuo.xfyun.cn/desk",
 }
 
 DEFAULT_TARGETS = {
@@ -114,6 +152,16 @@ DEFAULT_TARGETS = {
         "channel": "web",
         "browser_label": "Meta AI / meta.ai",
     },
+    "stepfun": {
+        "provider": "StepFun",
+        "channel": "web",
+        "browser_label": "阶跃星辰 / chat.stepfun.com",
+    },
+    "xunfei": {
+        "provider": "科大讯飞",
+        "channel": "web",
+        "browser_label": "讯飞星火 / xinghuo.xfyun.cn",
+    },
 }
 
 DEFAULT_INPUT_SELECTORS = [
@@ -134,6 +182,25 @@ DEFAULT_SUBMIT_SELECTORS = [
 DEFAULT_RESPONSE_SELECTORS = [
     "[data-message-author-role='assistant']",
     "[data-testid*='conversation-turn']",
+    ".ds-markdown",
+    ".ds-markdown--block",
+    ".bubble-content",
+    "[class*='assistant-message']",
+    ".model-response-text",
+    ".response-content",
+    "[class*='bot-message']",
+    "[class*='ai-answer']",
+    "[class*='answer-content']",
+    ".chat-message-content",
+    "[class*='message-content']",
+    ".markdown-body",
+    "[class*='answer-text']",
+    "[class*='receive-message']",
+    "[class*='assistant-content']",
+    "[class*='message-text']",
+    "[class*='chat-content']",
+    "[class*='robot-msg']",
+    "article",
     ".markdown",
     "main",
 ]
@@ -158,6 +225,8 @@ WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS = {
     "minimax",
     "zhipu",
     "wenxin",
+    "stepfun",
+    "xunfei",
 }
 
 
@@ -172,6 +241,7 @@ def playwright_installed() -> bool:
 
 def default_config() -> dict[str, Any]:
     """Return a conservative editable bridge config template."""
+    quality_mode_policy = _quality_mode_policy_snapshot()
     return {
         "headless": True,
         "timeout_seconds": 120,
@@ -194,7 +264,7 @@ def default_config() -> dict[str, Any]:
         "chrome_launch_strategy": "open_app",
         "strict_chrome_profile_guard": True,
         "auto_terminate_wrong_cdp_profile": True,
-        "chrome_profile_marker_required": True,
+        "chrome_profile_marker_required": False,
         "chrome_profile_marker_path": str(Path.home() / "Documents/Playground/.omx/ai-judge/chrome-profile/AI_JUDGE_DEDICATED_PROFILE.txt"),
         "login_state_path": str(DATA_DIR / "seat_login_state.json"),
         "login_state_audit": True,
@@ -215,6 +285,7 @@ def default_config() -> dict[str, Any]:
         "input_selectors": DEFAULT_INPUT_SELECTORS,
         "submit_selectors": DEFAULT_SUBMIT_SELECTORS,
         "response_selectors": DEFAULT_RESPONSE_SELECTORS,
+        "quality_mode_policy": quality_mode_policy,
         "seats": {
             seat: {
                 "enabled": False,
@@ -235,6 +306,7 @@ def default_config() -> dict[str, Any]:
                 "execution_required": seat != "grok",
                 "best_effort": seat == "grok",
                 "exclude_from_publish_gate": seat == "grok",
+                "required_quality_mode": _quality_mode_required_mode(seat),
                 "fragile_page": seat in WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS or seat in {"chatgpt", "deepseek"},
                 "notes": "Set enabled=true after logging into this model in its isolated profile.",
             }
@@ -273,6 +345,9 @@ def load_bridge_config(path: str | Path | None = None) -> dict[str, Any]:
         if seat not in seats:
             seats[seat] = {}
         seats[seat].update(seat_config)
+    config["quality_mode_policy"] = _quality_mode_policy_snapshot()
+    for seat, seat_config in seats.items():
+        seat_config["required_quality_mode"] = _quality_mode_required_mode(seat)
 
     config["_config_path"] = str(target)
     config["_config_exists"] = True
@@ -323,8 +398,36 @@ def save_calibration(data: dict[str, Any], path: str | Path | None = None) -> Pa
     return target
 
 
-def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
-    """Return product-facing readiness for the isolated web bridge."""
+def _prefer_wake_cdp_status(cdp_status: dict[str, Any] | None, cdp_wake: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Use the successful wake probe if the immediate follow-up probe races and times out."""
+    if not isinstance(cdp_status, dict) or not isinstance(cdp_wake, dict):
+        return cdp_status
+    wake_status = cdp_wake.get("status")
+    if isinstance(wake_status, dict) and wake_status.get("available") and not cdp_status.get("available"):
+        failed_probe = dict(cdp_status)
+        adopted = dict(wake_status)
+        adopted["wake"] = cdp_wake
+        adopted["pre_wake_probe"] = failed_probe
+        adopted["adopted_from_wake"] = True
+        return adopted
+    cdp_status["wake"] = cdp_wake
+    return cdp_status
+
+
+def bridge_status(
+    path: str | Path | None = None,
+    *,
+    allow_wake: bool = False,
+    open_tabs: bool = False,
+) -> dict[str, Any]:
+    """Return product-facing readiness for the isolated web bridge.
+
+    Status reads must be side-effect free by default.  Older versions used this
+    route as a light self-heal point and woke Chrome CDP/opened tabs whenever
+    dashboards polled readiness.  That made passive status polling look like an
+    endless bridge launch loop.  Only explicit run execution or the dedicated
+    wake endpoint should pass allow_wake=True.
+    """
     config = load_bridge_config(path)
     calibration = load_calibration()
     installed = playwright_installed()
@@ -332,17 +435,17 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
     chrome_status = chrome_apple_events_status() if automation_driver == "chrome_apple_events" else None
     cdp_status = chrome_cdp_status(config) if automation_driver == "chrome_cdp" else None
     cdp_wake = None
-    if automation_driver == "chrome_cdp" and cdp_status and not cdp_status.get("available") and config.get("auto_wake_cdp", True):
-        cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=bool(config.get("auto_wake_open_tabs", True)))
+    if automation_driver == "chrome_cdp" and cdp_status and not cdp_status.get("available") and allow_wake and config.get("auto_wake_cdp", True):
+        cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=bool(open_tabs and config.get("auto_wake_open_tabs", True)))
         cdp_status = chrome_cdp_status(config)
-        cdp_status["wake"] = cdp_wake
-    elif automation_driver == "chrome_cdp" and cdp_status and cdp_status.get("available") and config.get("auto_wake_open_tabs", True):
+        cdp_status = _prefer_wake_cdp_status(cdp_status, cdp_wake)
+    elif automation_driver == "chrome_cdp" and cdp_status and cdp_status.get("available") and allow_wake and open_tabs and config.get("auto_wake_open_tabs", True):
         # A CDP endpoint can survive with zero useful tabs after a crash/restart.
-        # Treat status checks as a light self-heal point so the client does not
-        # report a connected but empty bridge.
+        # Explicit wake/run checks may self-heal so the executor does not report
+        # a connected but empty bridge.
         cdp_wake = ensure_chrome_cdp_awake(config, open_tabs=True)
         cdp_status = chrome_cdp_status(config)
-        cdp_status["wake"] = cdp_wake
+        cdp_status = _prefer_wake_cdp_status(cdp_status, cdp_wake)
     chrome_tabs = []
     if chrome_status and chrome_status.get("available"):
         try:
@@ -392,7 +495,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
         )
         fixed_tab_driver = channel == "web" and automation_driver in {"chrome_apple_events", "chrome_cdp"}
         login_state = _seat_login_state(seat_config, chrome_tabs) if fixed_tab_driver else {"state": "not_applicable"}
-        login_blocked = login_state.get("state") in {"missing", "login_required", "challenge_required", "page_error", "provider_account_restricted"}
+        login_blocked = login_state.get("state") in BLOCKING_LOGIN_STATES
         if fixed_tab_driver:
             ready = bool(
                 configured
@@ -422,7 +525,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 reason = str((chrome_status or {}).get("reason") or "apple_events_js_disabled")
             elif not _fixed_chrome_tab_available(seat_config, chrome_tabs):
                 reason = "fixed_tab_not_found"
-            elif login_state.get("state") in {"login_required", "challenge_required", "page_error", "provider_account_restricted"}:
+            elif login_state.get("state") in BLOCKING_LOGIN_STATES:
                 reason = str(login_state.get("state"))
             else:
                 reason = "ready"
@@ -431,7 +534,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 reason = str((cdp_status or {}).get("reason") or "cdp_unavailable")
             elif not _fixed_chrome_tab_available(seat_config, chrome_tabs):
                 reason = "fixed_tab_not_found"
-            elif login_state.get("state") in {"login_required", "challenge_required", "page_error", "provider_account_restricted"}:
+            elif login_state.get("state") in BLOCKING_LOGIN_STATES:
                 reason = str(login_state.get("state"))
             else:
                 reason = "ready"
@@ -448,6 +551,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
             "safe_background": driver["safe_background"],
             "operator_required": driver["operator_required"],
             "execution_required": bool(seat_config.get("execution_required", seat != "grok")),
+            "required_quality_mode": seat_config.get("required_quality_mode", _quality_mode_required_mode(seat)),
             "best_effort": bool(seat_config.get("best_effort") or seat_config.get("exclude_from_publish_gate")),
             "exclude_from_publish_gate": bool(seat_config.get("exclude_from_publish_gate")),
             "provider": seat_config.get("provider", persona["name"]),
@@ -498,6 +602,7 @@ def bridge_status(path: str | Path | None = None) -> dict[str, Any]:
                 "reason": seat.get("reason"),
                 "safe_background": seat.get("safe_background"),
                 "execution_required": seat.get("execution_required"),
+                "required_quality_mode": seat.get("required_quality_mode"),
                 "best_effort": seat.get("best_effort"),
                 "exclude_from_publish_gate": seat.get("exclude_from_publish_gate"),
                 "calibration_status": (seat.get("calibration") or {}).get("status"),
@@ -812,6 +917,14 @@ def run_web_seats(
     total = max(1, len(requested))
     with sync_playwright() as playwright:
         for index, seat in enumerate(requested, 1):
+            # P1.7: flash stop_event check — skip remaining seats when total timeout fires
+            stop_event = config.get("_stop_event")
+            if stop_event is not None and stop_event.is_set():
+                if trace:
+                    trace("bridge", "flash_stopped", f"flash 总时限到达，跳过剩余席位（含 {seat}）", {"seat": seat, "remaining": len(requested) - index + 1})
+                item = _failed_result(seat, "flash_timeout", "Flash total timeout reached; seat skipped.")
+                results.append(item)
+                continue
             pct = 0.12 + 0.58 * (index - 1) / total
             if progress:
                 progress(f"后台网页席位：{seat} ({index}/{total})", pct)
@@ -882,8 +995,30 @@ def _run_driver_with_retries(
     driver_label: str,
 ) -> list[dict[str, Any]]:
     """Run a fixed-tab driver and retry transient collection failures per seat."""
+    try:
+        raw_results = runner(question=question, seats=seats, config=config, mode=mode, progress=progress, trace=trace)
+    except Exception as exc:
+        if trace:
+            trace("bridge", "driver_exception", f"{driver_label} driver failed before returning seat results", {
+                "driver": driver_label,
+                "seats": seats,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            })
+        return annotate_execution_results(
+            [
+                _failed_result(
+                    seat,
+                    "web_collection_driver_exception",
+                    f"{driver_label} driver failed before returning a structured result: {type(exc).__name__}: {exc}",
+                )
+                for seat in seats
+            ],
+            config=config,
+        )
+
     results = annotate_execution_results(
-        runner(question=question, seats=seats, config=config, mode=mode, progress=progress, trace=trace),
+        raw_results,
         config=config,
     )
     attempts = _retry_attempts(config)
@@ -907,6 +1042,15 @@ def _run_driver_with_retries(
                     "reason": "retryable_transient_web_collection_failure",
                 },
             )
+            # P3.6: per-seat retry trace
+            for seat in retry_seats:
+                trace("seat", "seat_retry_started",
+                      f"{seat} 开始重试 ({attempt}/{attempts})",
+                      {"seat": seat, "attempt": attempt, "max_attempts": attempts})
+        # P1.7: flash stop_event check — skip retries when total timeout fires
+        stop_event = config.get("_stop_event")
+        if stop_event is not None and stop_event.is_set():
+            break
         retry_config = dict(config)
         retry_config["_retry_run"] = True
         retry_timeout = config.get("retry_timeout_seconds") or config.get("timeout_seconds")
@@ -957,10 +1101,11 @@ def _retry_attempts(config: dict[str, Any]) -> int:
 
 
 def _should_retry_result(item: dict[str, Any]) -> bool:
-    if item.get("ok"):
+    validity = item.get("execution_validity") if isinstance(item.get("execution_validity"), dict) else {}
+    if item.get("ok") and validity.get("valid", True):
         return False
     error = item.get("error") or {}
-    code = str(error.get("code") or "")
+    code = str(error.get("code") or validity.get("reason") or "")
     if code not in RETRYABLE_WEB_ERROR_CODES:
         return False
     retry_history = item.get("retry_history") or []
@@ -1026,6 +1171,21 @@ def _matching_chrome_tab(seat_config: dict[str, Any], tabs: list[Any]) -> Any | 
     return None
 
 
+def _is_xunfei_seat(seat_config: dict[str, Any], tab_url: str = "") -> bool:
+    fields: list[str] = [
+        str(seat_config.get("id") or ""),
+        str(seat_config.get("seat") or ""),
+        str(seat_config.get("provider") or ""),
+        str(seat_config.get("name") or ""),
+        str(seat_config.get("browser_label") or ""),
+        str(tab_url or ""),
+    ]
+    fields.extend(_url_candidates(seat_config))
+    fields.extend(str(value or "") for value in seat_config.get("match_domains") or [])
+    haystack = " ".join(fields).lower()
+    return any(marker in haystack for marker in ("xunfei", "xinghuo", "xfyun", "讯飞"))
+
+
 def _seat_login_state(seat_config: dict[str, Any], tabs: list[Any]) -> dict[str, Any]:
     """Best-effort visible-tab login marker without reading cookies or private account data."""
     tab = _matching_chrome_tab(seat_config, tabs)
@@ -1033,34 +1193,54 @@ def _seat_login_state(seat_config: dict[str, Any], tabs: list[Any]) -> dict[str,
         return {"state": "missing", "title": "", "url": ""}
     title = str(getattr(tab, "title", "") or "")
     url = str(getattr(tab, "url", "") or "")
+    # Query params can contain benign tracking values such as ``from_login=1``.
+    # Do not let tracking/query strings trip the login wall detector.
+    login_haystack = f"{title} {url.split('?', 1)[0]}".lower()
     haystack = f"{title} {url}".lower()
     error_haystack = f"{title} {url.split('?', 1)[0]}".lower()
     login_markers = (
         "/login", "/signin", "/sign_in", "/sign-in", "/auth", "accounts.google.com",
-        "login", "sign in", "signin", "sign_in", "log in", "logout", "登录", "登陆", "未登录", "请登录",
+        "accounts.x.ai", "exchange-token-error", "/c/guest",
+        "sign in", "signin", "sign_in", "log in", "logout",
+        "登录", "登陆", "注册", "未登录", "请登录", "无法登录", "继续前往xai",
     )
-    challenge_markers = ("captcha", "verify", "verification", "验证", "人机", "安全检查")
+    challenge_url_markers = (
+        "captcha", "challenge", "turnstile", "cf_chl", "/verify", "/verification",
+        "verify-human", "security-check",
+    )
+    challenge_title_markers = (
+        "captcha", "human verification", "verify you are human", "checking your browser",
+        "security check", "安全检查", "人机验证", "人机", "请完成验证",
+    )
     error_markers = ("err_connection", "无法访问", "not found", "timeout", "出错了")
     restricted_markers = (
         "/restricted", "account hold", "account on hold", "restricted",
         "suspended", "blocked", "request a review",
     )
     error_404 = bool(re.search(r"(^|[^0-9])404([^0-9]|$)", error_haystack))
-    if any(marker in haystack for marker in challenge_markers):
+    url_lower = url.lower()
+    title_lower = title.lower()
+    if any(marker in url_lower for marker in challenge_url_markers) or any(marker in title_lower for marker in challenge_title_markers):
         state = "challenge_required"
     elif any(marker in haystack for marker in restricted_markers):
         state = "provider_account_restricted"
-    elif any(marker in haystack for marker in login_markers):
+    elif any(marker in login_haystack for marker in login_markers):
         state = "login_required"
     elif any(marker in error_haystack for marker in error_markers) or error_404:
         state = "page_error"
+    elif _is_xunfei_seat(seat_config, url) and "/desk" not in url.split("?", 1)[0].lower():
+        state = "desk_auto_recoverable"
     else:
         state = "session_present"
-    return {
+    result = {
         "state": state,
         "title": title[:160],
         "url": url,
     }
+    if state == "desk_auto_recoverable":
+        result["required_url"] = "https://xinghuo.xfyun.cn/desk"
+        result["message"] = "讯飞固定标签当前在首页；AI Judge 会在运行前安装临时路由守门并自动拉回 /desk。"
+    return result
 
 
 def _url_candidates(seat_config: dict[str, Any]) -> list[str]:
@@ -1290,38 +1470,24 @@ def _ask_one_seat(
                 "headless": bool(headless),
                 "profile_dir": str(profile_dir),
                 "url": url,
-            })
+        })
         page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
         if trace:
             trace("browser", "page_loaded", f"{seat} 页面已加载", {"seat": seat, "url": url})
         prompt_id = f"AIJUDGE-{seat}-{time.time_ns()}"
         _humanized_sleep(config, seat_config, seat, "before_submit")
-        if seat == "deepseek":
+        if _quality_mode_prepare_required(seat):
             prepared = _prepare_playwright_submission_ui(page, prompt_id)
-            if not _deepseek_prepare_verified(prepared):
+            if not _quality_mode_prepare_verified(seat, prepared):
+                code, message = _quality_mode_failure(seat)
                 if trace:
-                    trace("seat", "deepseek_expert_mode_blocked", f"{seat} 未确认专家模式，拒绝提交", {
+                    trace("seat", _quality_mode_trace_action(seat), _quality_mode_trace_message(seat), {
                         "seat": seat,
                         "prepared": prepared,
+                        "code": code,
+                        "required_quality_mode": _quality_mode_required_mode(seat),
                     })
-                return _failed_result(
-                    seat,
-                    "deepseek_expert_mode_not_verified",
-                    "DeepSeek expert mode, 深度思考, and 智能搜索 were not all verified before submission; the bridge refused to collect a fast-mode answer.",
-                )
-        if seat == "doubao":
-            prepared = _prepare_playwright_submission_ui(page, prompt_id)
-            if not _doubao_prepare_verified(prepared):
-                if trace:
-                    trace("seat", "doubao_expert_mode_blocked", f"{seat} 未确认专家/超能模式，拒绝提交", {
-                        "seat": seat,
-                        "prepared": prepared,
-                    })
-                return _failed_result(
-                    seat,
-                    "doubao_expert_mode_not_verified",
-                    "Doubao expert/super mode was not verified before submission; the bridge refused to collect a fast-mode answer.",
-                )
+                return _failed_result(seat, code, message)
         prompt = _seat_prompt(seat, question, mode)
         input_locator = _find_visible_locator(page, _selectors(config, seat_config, "input_selectors"), min(timeout_ms, 20000))
         if input_locator is None and _recover_playwright_page(page, config, seat_config, seat, "input_not_found", trace):
@@ -1427,6 +1593,85 @@ def _is_worldcup_prompt(question: str) -> bool:
     return any(marker in head for marker in WORLDCUP_PROMPT_MARKERS)
 
 
+def _is_a_share_reduction_prompt(question: str) -> bool:
+    if not question:
+        return False
+    head = question[:8000]
+    return sum(1 for marker in A_SHARE_REDUCTION_PROMPT_MARKERS if marker in head) >= 2
+
+
+def _compact_a_share_reduction_context(question: str, limit: int = 5200) -> str:
+    text = re.sub(r"\n{3,}", "\n\n", question or "").strip()
+    if len(text) <= limit:
+        return text
+    keep_patterns = (
+        "硬性要求",
+        "研究问题",
+        "数据口径",
+        "plan_events",
+        "unique_stocks_with_director_plan",
+        "early_complete",
+        "unknown_completion_events",
+        "valid_price_events",
+        "upper_bound_ret_to_first2_high_pct",
+        "ret_to_day1_open_pct",
+        "ret_to_day1_close_pct",
+        "ret_to_day2_open_pct",
+        "ret_to_day2_close_pct",
+        "ret_to_5d_close_pct",
+        "ret_to_10d_close_pct",
+        "ret_to_30d_close_pct",
+        "trend_price_ok_events",
+        "trend_status_counts",
+        "first2_high_is_period_high",
+        "ret_to_period_high_pct",
+        "ret_to_period_end_close_pct",
+        "period_max_drawdown_pct",
+        "trend_classification_counts",
+        "前 2 交易日完成样本",
+        "老师解读",
+        "事后上界",
+        "可交易",
+        "每个席位",
+        "Round",
+        "不得",
+        "必须",
+    )
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    selected: list[str] = []
+    for line in lines:
+        if any(pattern in line for pattern in keep_patterns):
+            selected.append(line)
+    compact_body = "\n".join(selected)
+    if len(compact_body) < 1800:
+        compact_body = f"{text[:2200]}\n...\n{text[-1800:]}"
+    header = (
+        "AI Judge A股董事减持长材料压缩版。原始问题包含全量 CSV/JSON 统计，"
+        "本席位使用无未来函数的压缩事实包作答；不得虚构来源或把未知当作否定。\n\n"
+    )
+    return (header + compact_body)[:limit]
+
+
+def _a_share_reduction_short_prompt(seat: str, question: str, mode: str) -> str:
+    persona = SEAT_PERSONAS.get(seat, {})
+    seat_name = persona.get("name") or seat
+    context = _compact_a_share_reduction_context(question)
+    return (
+        f"AI Judge A股董事减持数据优先裁决短版输入。你是 {seat_name}（seat_id={seat}）。\n"
+        "请基于下面压缩事实包完成回答，必须区分事实、判断、假设和下一轮验证。\n"
+        "如果你没有联网能力，请明确 web_search_used=false；禁止编造来源。\n\n"
+        f"{context}\n\n"
+        "请按以下结构输出中文：\n"
+        "1. 立场：支持 / 不支持 / 暂不充分。\n"
+        "2. 数据审计：可信统计、缺失统计、可能补丁。\n"
+        "3. 未来函数审计：哪些收益只是事后上界，哪些是可交易现实。\n"
+        "4. 二轮共振：你要追问其他席位的 2-3 个问题，以及看完他人证据后的复判条件。\n"
+        "5. 老师解读素材：用通俗话解释一个关键误区。\n"
+        "6. 下一轮样本外验证方案。\n"
+        f"当前模式：{mode}。"
+    )
+
+
 def _compact_worldcup_context(question: str, limit: int = 1800) -> str:
     text = re.sub(r"\n{3,}", "\n\n", question or "").strip()
     if len(text) <= limit:
@@ -1490,8 +1735,12 @@ def _seat_prompt(seat: str, question: str, mode: str) -> str:
     head = question[:200] if question else ""
     if "AI Judge 狼人杀" in head or "AI Judge 的模型狼人杀" in head:
         return question
+    if "AI_JUDGE_RERUN_MARKER:POOL_" in str(question or ""):
+        return question
     if _is_worldcup_prompt(question) and seat in WORLDCUP_FRAGILE_SHORT_PROMPT_SEATS:
         return _worldcup_short_prompt(seat, question, mode)
+    if _is_a_share_reduction_prompt(question) and seat in LONG_PROMPT_FRAGILE_SEATS and len(question) > 12000:
+        return _a_share_reduction_short_prompt(seat, question, mode)
     base = render_jury_prompt(seat, question) or question
     is_resonance_followup = "[AIJUDGE_RESONANCE_FOLLOWUP]" in question
     if is_resonance_followup:

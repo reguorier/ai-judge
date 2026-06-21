@@ -1,5 +1,5 @@
 /* ══════════ AI Judge P3.8.4 — Product Validation & RC1 Seal ══════════ */
-const AI_JUDGE_CLIENT_BUILD = "P3.8.13-RC1";
+const AI_JUDGE_CLIENT_BUILD = "P3.8.14-RC1";
 window.__AI_JUDGE_BUILD_ID__ = AI_JUDGE_CLIENT_BUILD;
 window.__AI_JUDGE_SCRIPT_STARTED__ = true;
 if (typeof console !== "undefined" && console.info) {
@@ -43,6 +43,7 @@ const PARLIAMENT_SEATS = [
   { id: "zhipu", name: "Zhipu", channel: "Zhipu", color: "#0ea5e9", providerDot: "#2563eb" },
   { id: "mimo", name: "MiMo", channel: "Xiaomi", color: "#8b5cf6", providerDot: "#ff6900" },
   { id: "wenxin", name: "Wenxin", channel: "Baidu", color: "#22c55e", providerDot: "#2932e1" },
+  { id: "xunfei", name: "Xunfei", channel: "iFlytek", color: "#ef4444", providerDot: "#ef4444" },
   { id: "meta", name: "Meta AI", channel: "Meta", color: "#1877f2", providerDot: "#1877f2" },
 ];
 
@@ -85,6 +86,11 @@ const MSG_TYPE = Object.freeze({
   REPORT_READY: "report_ready",
   SYSTEM_ERROR: "system_error",
   ATTACHMENT_ADDED: "attachment_added",
+  // P2.5: Resonance tracking
+  RESONANCE_ROUND1_DONE: "resonance_round1_done",
+  RESONANCE_IN_PROGRESS: "resonance_in_progress",
+  RESONANCE_SEAT_FOLLOWED: "resonance_seat_followed",
+  RESONANCE_COMPLETE: "resonance_complete",
 });
 
 /* ── Helpers ── */
@@ -95,6 +101,91 @@ function escapeAttr(str) { return String(str || "").replace(/&/g,"&amp;").replac
 function excerpt(text, max) { const s = String(text || ""); return s.length <= max ? s : s.slice(0, max) + "…"; }
 function getModeConfig(mode) { return MODE_CONFIG[mode] || MODE_CONFIG.flash; }
 function defaultAbstainedSeats() { return ["claude"]; }
+function clientModeForBackend(mode) { return mode === "flash" ? "quick_judge" : "deep_judge"; }
+function normalizeApiError(data, status, source, runId) {
+  const payload = data && typeof data === "object" ? data : {};
+  return {
+    ok: false,
+    status: payload.status || status || 0,
+    error: payload.error || payload.message || "request_failed",
+    reason: payload.reason || payload.error || payload.message || "请求失败。",
+    next_action: payload.next_action || payload.nextAction || "检查后端状态后重试。",
+    trace_id: payload.trace_id || payload.traceId || "",
+    run_id: payload.run_id || payload.runId || runId || "",
+    source: payload.source || source || "dashboard",
+    payload,
+  };
+}
+function apiErrorText(err) {
+  if (!err) return "未知错误";
+  const parts = [];
+  if (err.reason || err.error) parts.push(err.reason || err.error);
+  if (err.next_action) parts.push("下一步：" + err.next_action);
+  if (err.trace_id) parts.push("trace_id: " + err.trace_id);
+  return parts.join(" / ") || "未知错误";
+}
+function parseErrorPayload(err) {
+  if (!err) return {};
+  if (typeof err === "object") return err;
+  const raw = String(err || "").trim();
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : { error: raw };
+  } catch (_) {
+    return { error: raw, reason: raw };
+  }
+}
+function readableTaskError(err) {
+  const payload = parseErrorPayload(err);
+  const status = payload.status || "";
+  if (status === "bridge_busy") {
+    const reason = payload.reason || "固定 Chrome 桥接正在处理另一轮裁决。";
+    const next = payload.next_action || "等待当前流程结束后重试。";
+    return `${reason} 下一步：${next}`;
+  }
+  return apiErrorText(normalizeApiError(payload, payload.status || 0, "task_error"));
+}
+async function fetchJsonContract(url, options, source, runId) {
+  let res;
+  let data = {};
+  try {
+    res = await fetch(url, options || {});
+    const raw = await res.text();
+    data = raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    return { ok: false, status: 0, data: normalizeApiError({ error: err.message || "network_error", next_action: "确认 backend 是否可访问。" }, 0, source, runId) };
+  }
+  if (!res.ok || data.ok === false) {
+    return { ok: false, status: res.status, data: normalizeApiError(data, res.status, source, runId) };
+  }
+  return { ok: true, status: res.status, data };
+}
+function alignmentFromBackend(question, mode, payload) {
+  const cfg = getModeConfig(mode);
+  const promptFlow = payload?.prompt_flow || {};
+  const plan = payload?.execution_plan || {};
+  const runnable = plan.runnable_seats || [];
+  const blocked = plan.blocked_seats || [];
+  const summary = [
+    `模式：${cfg.label}`,
+    `后端决策：${plan.decision || "unknown"}`,
+    `可运行席位：${runnable.length ? runnable.join("、") : "待确认"}`,
+  ];
+  if (blocked.length) {
+    summary.push(`阻塞席位：${blocked.map(s => s.seat || s.id || s).join("、")}`);
+  }
+  if (promptFlow.trace_id || payload?.trace_id) {
+    summary.push(`trace_id：${promptFlow.trace_id || payload.trace_id}`);
+  }
+  return {
+    alignedIntent: promptFlow.quick_response || `我理解你的问题是：「${question}」。后端已生成预运行计划：${plan.message || "等待确认后开始真实裁决。"}`,
+    suggestedMode: cfg.label,
+    promptSummary: summary,
+    backendPromptFlow: promptFlow,
+    executionPlan: plan,
+  };
+}
 function normalizeConfidence(value) {
   if (value === null || value === undefined || value === "") return null;
   const num = Number(value);
@@ -117,6 +208,19 @@ function currentDraftId() {
 function isTextLikeFile(file) {
   return file.type?.startsWith("text/")
     || /(\.txt|\.md|\.markdown|\.json|\.jsonl|\.csv|\.tsv|\.log|\.yaml|\.yml|\.xml|\.html|\.css|\.js|\.ts|\.py|\.sh)$/i.test(file.name || "");
+}
+// P2.5: Check if worldcup_pool_local.html exists in product dir
+let _worldcupLocalCached = null;
+function checkWorldcupLocalExists() {
+  return _worldcupLocalCached;
+}
+async function initWorldcupLocalCheck() {
+  try {
+    const res = await fetch("/worldcup_pool_local.html", { method: "HEAD" });
+    _worldcupLocalCached = res.ok;
+  } catch (_) {
+    _worldcupLocalCached = false;
+  }
 }
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -186,6 +290,22 @@ state.judgeSettings = {
   saveAsDefault: false,
   estimatedDurationSec: null,
 };
+
+
+// ── Bridge Wake: re-awaken Chrome CDP if browser was closed ──
+async function wakeBridge() {
+  try {
+    const res = await fetch(API_BASE + "/api/bridge/recover", { method: "POST", headers: {"Content-Type": "application/json"}, body: "{}" });
+    const data = await res.json();
+    if (data.ok) {
+      addThreadMessage({ type: MSG_TYPE.SYSTEM_INFO, text: "桥接已唤醒：" + (data.opened_tabs?.length || 0) + " 个标签页已恢复。" });
+    } else {
+      addThreadMessage({ type: MSG_TYPE.SYSTEM_ERROR, error: "桥接唤醒失败：" + (data.error || JSON.stringify(data)) });
+    }
+  } catch (e) {
+    addThreadMessage({ type: MSG_TYPE.SYSTEM_ERROR, error: "桥接唤醒异常：" + e.message });
+  }
+}
 
 function loadUserSettings() {
   try {
@@ -392,12 +512,11 @@ async function renderAskSettingsPanel() {
         <span class="settings-mode-tab ${state.judgeSettings.mode === 'strategic' ? 'active' : ''}" onclick="settingsSetMode('strategic')">深度</span>
         <span class="settings-mode-tab ${state.judgeSettings.mode === 'custom' ? 'active' : ''}" onclick="settingsSetMode('custom')">自定义</span>
       </div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-label">引擎</div>
-      <div class="settings-mode-tabs">
-        <span class="settings-mode-tab ${state.engine === 'web' ? 'active' : ''}" onclick="switchEngine('web')">网页陪审</span>
-        <span class="settings-mode-tab disabled" title="本地模式暂不可用">本地模式</span>
+      <div class="settings-engine-tabs" style="margin-top:8px;">
+        <span class="settings-engine-tab ${state.engine === 'web' ? 'active' : ''}"
+              onclick="state.engine='web'; renderSettings();">网页陪审</span>
+        <span class="settings-engine-tab disabled"
+              title="本地模式暂不可用">本地模式</span>
       </div>
     </div>
     ${state.judgeSettings.mode === 'custom' ? `
@@ -447,6 +566,7 @@ function toggleSettingsPanel() {
   if (!panel) return;
   _settingsPanelVisible = !_settingsPanelVisible;
   panel.classList.toggle("visible", _settingsPanelVisible);
+  panel.classList.toggle("hidden", !_settingsPanelVisible); // P2.5: override global .hidden { display:none!important }
   if (_settingsPanelVisible) {
     renderAskSettingsPanel();
     // Write trace: settings_opened
@@ -471,13 +591,6 @@ function settingsSetMode(mode) {
 
 function settingsSetReportStyle(style) {
   state.judgeSettings.reportStyle = style;
-  renderAskSettingsPanel();
-}
-
-// ── Task 6: Engine selection ──
-function switchEngine(engine) {
-  if (engine !== "web" && engine !== "local") return;
-  state.engine = engine;
   renderAskSettingsPanel();
 }
 
@@ -622,7 +735,7 @@ function renderMessageCard(msg, idx) {
     return `
       <div class="msg-card system-msg">
         <div class="msg-role">系统 <span class="msg-time">${ts}</span></div>
-        <div class="msg-body">裁决已启动，run_id: ${escapeHtml(msg.runId || "")}</div>
+        <div class="msg-body">裁决运行已创建，等待确认开庭，run_id: ${escapeHtml(msg.runId || "")}</div>
       </div>`;
   }
   if (type === MSG_TYPE.SEAT_ANSWERED) {
@@ -691,10 +804,49 @@ function renderMessageCard(msg, idx) {
       </div>`;
   }
   if (type === MSG_TYPE.SYSTEM_ERROR) {
+    const detail = [msg.reason, msg.next_action ? "下一步：" + msg.next_action : "", msg.trace_id ? "trace_id: " + msg.trace_id : ""]
+      .filter(Boolean)
+      .map(v => `<div class="msg-body" style="color:var(--text-soft);font-size:12px;">${escapeHtml(v)}</div>`)
+      .join("");
     return `
       <div class="msg-card system-msg error-msg">
         <div class="msg-role">系统错误 <span class="msg-time">${ts}</span></div>
         <div class="msg-body" style="color:var(--red);">${escapeHtml(msg.error || "未知错误")}</div>
+        ${detail}
+      </div>`;
+  }
+  // P2.5: Resonance messages
+  if (type === MSG_TYPE.RESONANCE_ROUND1_DONE) {
+    return `
+      <div class="msg-card system-msg resonance-msg">
+        <div class="msg-role">共振 <span class="msg-time">${ts}</span></div>
+        <div class="msg-headline" style="color:var(--accent);">第一轮回答完成</div>
+        <div class="msg-body">${escapeHtml(msg.summary || "所有席位已完成首轮回答，即将进入二轮共振交叉追问。")}</div>
+      </div>`;
+  }
+  if (type === MSG_TYPE.RESONANCE_IN_PROGRESS) {
+    return `
+      <div class="msg-card system-msg resonance-msg">
+        <div class="msg-role">共振 <span class="msg-time">${ts}</span></div>
+        <div class="msg-headline" style="color:var(--accent);">正在进行二轮共振</div>
+        <div class="msg-body">${escapeHtml(msg.summary || "席位之间正在交叉阅读彼此回答，进行追问和质疑。")}</div>
+      </div>`;
+  }
+  if (type === MSG_TYPE.RESONANCE_SEAT_FOLLOWED) {
+    const seatName = msg.seat?.name || msg.seatId || "?";
+    return `
+      <div class="msg-card seat-msg">
+        <div class="msg-role"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${msg.seat?.color||'#64748b'};margin-right:6px"></span>${escapeHtml(seatName)} <span class="msg-time">${ts}</span></div>
+        <div class="msg-headline">已完成追问</div>
+        <div class="msg-body">${escapeHtml(msg.summary || "该席位已完成交叉追问。")}</div>
+      </div>`;
+  }
+  if (type === MSG_TYPE.RESONANCE_COMPLETE) {
+    return `
+      <div class="msg-card system-msg resonance-msg">
+        <div class="msg-role">共振 <span class="msg-time">${ts}</span></div>
+        <div class="msg-headline" style="color:var(--green);">共振完成，正在生成报告</div>
+        <div class="msg-body">${escapeHtml(msg.summary || "全部席位已完成交叉追问，Grand Judge 正在综合各席位最终意见生成裁决报告。")}</div>
       </div>`;
   }
   // Default fallback
@@ -821,20 +973,6 @@ function hideAlignTab() {
 }
 
 /* ══════════ Room View ══════════ */
-// ── Task 4: Step-aware phase message mapping ──
-function stepMessageFor(rawStep, completed, total) {
-  const s = (rawStep || "").toLowerCase();
-  if (s.includes("受理") || s.includes("提示词对齐")) return "受理完成，网页提示词对齐";
-  if (s.includes("桥接") || s.includes("校准")) return `后台网页桥接准备：${total} 席校准通过`;
-  if (s.includes("等待席位") || s.includes("回答")) return `等待席位回答，剩余 ${total - completed} 席，最长等待 120s`;
-  if (s.includes("补跑") || s.includes("rerun")) return `补跑 ${completed}/${total}`;
-  if (s.includes("判词") || s.includes("报告")) return "生成判词报告";
-  // Fallback: seat-count-based phases
-  if (completed === 0) return "正在执行网页陪审…";
-  if (completed < total) return `${completed}/${total} 席已完成独立发言，${total - completed} 席仍在思考`;
-  return "全席位发言完毕，正在汇总…";
-}
-
 function renderRoom() {
   const thread = state.currentThread;
   const task = state.currentTask;
@@ -852,6 +990,28 @@ function renderRoom() {
     if (status) status.textContent = "等待开庭";
     if (seatsGrid) seatsGrid.innerHTML = "";
     $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+    updateRoomReportButton();
+    return;
+  }
+
+  if (thread.stage === "waiting_confirm" && !task && !v) {
+    if (phase) phase.textContent = "等待确认裁决…";
+    if (status) status.textContent = "尚未开庭";
+    if (seatsGrid) seatsGrid.innerHTML = "";
+    if (controls) controls.classList.add("hidden");
+    $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+    updateRoomReportButton();
+    return;
+  }
+
+  if (thread.stage === "failed" || task?.status === "failed") {
+    const failedMessage = readableTaskError(task?.error || "裁决失败");
+    if (phase) phase.textContent = "裁决失败：" + failedMessage;
+    if (status) status.textContent = "失败";
+    if (seatsGrid) seatsGrid.innerHTML = "";
+    if (controls) controls.classList.add("hidden");
+    $$("#room-controls button").forEach(b => b.classList.add("hidden"));
+    updateRoomReportButton();
     return;
   }
 
@@ -898,16 +1058,16 @@ function renderRoom() {
   const completed = allSeats.filter(s => s.ok || s.status === "complete" || s.status === "done" || s.status === "answered").length;
   const total = Math.max(1, allSeats.length);
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  if (controls) controls.classList.remove("hidden");
 
   if (task?.status === "running") {
-    // ── Task 4: Step-aware phase messages ──
-    const rawStep = task.current_step || task.step || "";
-    const stepMsg = stepMessageFor(rawStep, completed, total);
-    if (phase) phase.textContent = stepMsg;
+    if (phase) {
+      if (completed === 0) phase.textContent = "Grand Judge 已开庭，席位正在准备发言…";
+      else if (completed < total) phase.textContent = `${completed}/${total} 席已完成独立发言，${total - completed} 席仍在思考`;
+      else phase.textContent = "全席位发言完毕，正在汇总…";
+    }
     if (status) status.textContent = `进行中 · ${completed}/${total} 席`;
-    // Use backend progress when available, else fallback to seat ratio
-    const backendProgress = task.progress != null ? Math.round(Number(task.progress) * 100) : null;
-    setProgress(backendProgress ?? pct, rawStep || "");
+    setProgress(pct || (task.progress ? Math.round(task.progress * 100) : 0), "");
     $("#btn-pause-judge").classList.remove("hidden");
     $("#btn-stop-judge").classList.remove("hidden");
     $("#btn-resume-judge").classList.add("hidden");
@@ -917,7 +1077,7 @@ function renderRoom() {
     setProgress(100, "");
     $$("#room-controls button").forEach(b => b.classList.add("hidden"));
   } else if (task?.status === "failed") {
-    if (phase) phase.textContent = "裁决失败：" + (task.error || "未知错误");
+    if (phase) phase.textContent = "裁决失败：" + readableTaskError(task.error || "未知错误");
     if (status) status.textContent = "失败";
     $$("#room-controls button").forEach(b => b.classList.add("hidden"));
   } else {
@@ -1138,57 +1298,6 @@ function renderReport() {
         <span>报告: ${style === "concise" ? "简洁" : style === "detailed" ? "详细" : "可审计"}</span>
       </div>
     </div>
-    ${(() => {
-      // ── Task 3: Seat cards ──
-      const seats = reportData.seats || reportData.seat_scores || [];
-      if (seats.length) {
-        const maxPreview = 120;
-        return `<div class="report-section"><h3>席位发言摘要</h3><div class="report-seat-grid">${seats.map(s => {
-          const name = s.name || s.seat_name || s.seat || s.id || "—";
-          const score = s.score != null ? Number(s.score).toFixed(2) : (s.confidence != null ? Number(s.confidence).toFixed(2) : "—");
-          const answer = s.answer || s.answer_preview || s.text || "";
-          const preview = answer.length > maxPreview ? answer.slice(0, maxPreview) + "…" : answer;
-          const color = s.color || "#64748b";
-          const tier = s.tier || (score >= 0.7 ? "A" : score >= 0.5 ? "B" : "C");
-          return `<div class="report-seat-card" style="border-left: 3px solid ${escapeAttr(color)}">
-            <div class="rsc-header"><span class="rsc-name" style="color:${escapeAttr(color)}">${escapeHtml(name)}</span><span class="rsc-score">score=${score}</span><span class="rsc-tier tier-${tier.toLowerCase()}">${tier}</span></div>
-            <div class="rsc-answer">${escapeHtml(preview)}</div>
-          </div>`;
-        }).join("")}</div></div>`;
-      }
-      return "";
-    })()}
-    ${(() => {
-      // ── Task 3: Claims table ──
-      const claims = reportData.claims || [];
-      if (claims.length) {
-        return `<div class="report-section"><h3>Claims 评分</h3>
-        <div class="report-claims-table"><div class="rct-header"><span>Claim</span><span>Tier</span><span>Score</span></div>
-        ${claims.map(c => {
-          const text = c.text || c.claim || c.statement || "—";
-          const tier = c.tier || "—";
-          const score = c.score != null ? Number(c.score).toFixed(2) : "—";
-          return `<div class="rct-row"><span class="rct-claim">${escapeHtml(text)}</span><span class="rct-tier tier-${String(tier).toLowerCase()}">${tier}</span><span class="rct-score">${score}</span></div>`;
-        }).join("")}</div></div>`;
-      }
-      return "";
-    })()}
-    ${(() => {
-      // ── Task 3: Web bridge evidence strength ──
-      const wb = reportData.web_bridge;
-      if (wb) {
-        const ok = wb.ok_count ?? wb.success_count ?? 0;
-        const failed = wb.failed_count ?? wb.error_count ?? 0;
-        const total = ok + failed;
-        if (total > 0) {
-          const pct = Math.round((ok / total) * 100);
-          const cls = pct >= 80 ? "confidence-high" : pct >= 50 ? "confidence-mid" : "confidence-low";
-          return `<div class="report-section"><h3>证据收集状态</h3>
-          <div class="report-evidence-bar"><span class="${cls}">${ok}/${total} 席有效收集</span><span>成功率 ${pct}%</span></div></div>`;
-        }
-      }
-      return "";
-    })()}
     ${reasons.length ? `
     <div class="report-section">
       <h3>关键理由</h3>
@@ -1226,12 +1335,42 @@ function renderReport() {
     </div>`}
     <div class="report-actions">
       ${viewUrl ? `<a href="${escapeAttr(viewUrl)}" target="_blank" class="btn-primary">打开完整报告</a>` : ""}
-      <button onclick="saveToMemory()">存入记忆</button>
+      <button onclick="saveToMemory()">刷新历史</button>
     </div>
   `;
 
+  // ── Phase 3 Task 3: Render real Web Jury seat cards ──
+  if (v && v.claims && v.claims.length > 0) {
+    const claimsBySeat = {};
+    v.claims.forEach(c => {
+      const s = c._seat || c.seat || "unknown";
+      if (!claimsBySeat[s]) claimsBySeat[s] = [];
+      claimsBySeat[s].push(c);
+    });
+    let seatHtml = '<div class="report-seat-grid">';
+    for (const [seatId, claims] of Object.entries(claimsBySeat)) {
+      const avg = claims.reduce((a, c) => a + (c._score || 0.5), 0) / claims.length;
+      const preview = claims[0]?.claim || "";
+      seatHtml += `
+        <div class="report-seat-card">
+          <div class="seat-name">${escapeHtml(seatId)}</div>
+          <div class="seat-score">${(avg * 100).toFixed(0)}%</div>
+          <div class="seat-preview">${escapeHtml(preview.slice(0, 200))}</div>
+          <div class="seat-tier">${escapeHtml(claims[0]?._tier || "—")}</div>
+        </div>`;
+    }
+    seatHtml += '</div>';
+    container.insertAdjacentHTML('beforeend', seatHtml);
+  }
+
   // ── P1.1 Follow-up section ──
   renderFollowupSection(container, reportData.run_id || state.currentThread.runId || "");
+
+  // ── FDJP Five-Dimension Audit ──
+  const fdjpRunId = reportData.run_id || state.currentThread.runId || "";
+  if (fdjpRunId) {
+    setTimeout(() => loadFiveDimensionAudit(fdjpRunId), 20);
+  }
 
   // ── P1.2B Process summary ──
   renderReportProcessSummary();
@@ -1242,6 +1381,11 @@ function renderReport() {
     setTimeout(() => renderEvidenceSummaryForReport(), 50);
     setTimeout(() => renderActionPackForReport(), 100);
   }
+
+  // ── P1-D Citation Verification ──
+  if (showDetailed) {
+    setTimeout(() => renderCitationVerificationForReport(container, reportData), 150);
+  }
 }
 
 function openRawVerdict() {
@@ -1249,6 +1393,73 @@ function openRawVerdict() {
   if (!v) return;
   const w = window.open("", "_blank");
   w.document.write("<pre>" + escapeHtml(JSON.stringify(v, null, 2)) + "</pre>");
+}
+
+// ── FDJP Five-Dimension Audit ──
+
+function loadFiveDimensionAudit(runId) {
+  fetch(API_BASE + "/api/runs/" + encodeURIComponent(runId) + "/dimension-audit")
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.ok) {
+        renderFiveDimensionAuditCard(data);
+      }
+    })
+    .catch(function() {});
+}
+
+function renderFiveDimensionAuditCard(data) {
+  var container = document.getElementById("fdjp-section");
+  if (!container) return;
+  var fdjpContainer = document.getElementById("fdjp-container");
+  if (fdjpContainer) fdjpContainer.classList.remove("hidden");
+
+  var dims = data.dimensions || {};
+  var scores = data.dimension_scores || {};
+  var dimKeys = ["philosophy", "military", "economy", "politics", "history"];
+  var labels = { philosophy: "哲思", military: "兵争", economy: "利析", politics: "权辩", history: "史鉴" };
+
+  var rows = "";
+  dimKeys.forEach(function(d) {
+    var label = labels[d] || d;
+    var score = scores[d] || 0;
+    var pct = Math.round(score * 100);
+    var dimData = dims[d] || {};
+    var summary = (dimData.summary || "未生成").slice(0, 80);
+    var findings = dimData.findings || [];
+    var action = findings.length ? (findings[0].action_impact || "待补充").slice(0, 60) : "待补充";
+    rows += "<tr><td>" + escapeHtml(label) + "</td><td>" + pct + "%</td><td>" + escapeHtml(summary) + "</td><td>" + escapeHtml(action) + "</td></tr>";
+  });
+
+  var overallPct = Math.round((data.overall_score || 0) * 100);
+  var status = data.status || "unknown";
+  var statusTagClass = status.indexOf("BLOCKED") >= 0 ? "tag-red" : (status.indexOf("WARNINGS") >= 0 ? "tag-amber" : "tag-green");
+
+  var gates = data.gates || {};
+  var blockersHtml = "";
+  (gates.blockers || []).forEach(function(b) {
+    blockersHtml += "<div class='fdjp-blocker'>" + escapeHtml(b.blocker_id || "") + ": " + escapeHtml(b.reason || "") + "</div>";
+  });
+  var warningsHtml = "";
+  (gates.warnings || []).forEach(function(w) {
+    warningsHtml += "<div class='fdjp-warning'>" + escapeHtml(w.warning_id || "") + ": " + escapeHtml(w.reason || "") + "</div>";
+  });
+
+  container.innerHTML =
+    "<h2>FDJP 五维裁决协议</h2>" +
+    "<div class='card fdjp-overview-card'>" +
+      "<div class='fdjp-status-row'>" +
+        "<span class='tag " + statusTagClass + "'>" + escapeHtml(status) + "</span>" +
+        "<span class='tag tag-blue'>Overall " + overallPct + "%</span>" +
+        "<span class='tag tag-amber'>" + escapeHtml(data.mode || "unknown") + " mode</span>" +
+      "</div>" +
+      "<table class='fdjp-table'>" +
+        "<tr><th>维度</th><th>得分</th><th>核心发现</th><th>行动影响</th></tr>" +
+        rows +
+      "</table>" +
+      blockersHtml +
+      warningsHtml +
+    "</div>";
 }
 
 // ── P1.1 Follow-up Chatbot ──
@@ -1376,10 +1587,10 @@ async function sendFollowup(runId) {
   }
 
   try {
-    const res = await fetch(API_BASE + "/api/runs/" + encodeURIComponent(runId) + "/followup", {
+    const res = await fetch(API_BASE + followupEndpoint(runId), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, mode: "" }),
+      body: JSON.stringify({ prompt: question, question, mode: "" }),
     });
     const data = await res.json();
 
@@ -1523,30 +1734,17 @@ async function renderMemory() {
       }).catch(() => {});
     }
   } catch (e) {
-    // Fallback: try localStorage if backend fails
-    try {
-      const mem = JSON.parse(localStorage.getItem("ai_judge_memory") || "[]");
-      if (!mem.length) {
-        list.innerHTML = '<div class="memory-empty"><p>暂无已保存的判断</p></div>';
-        return;
-      }
-      list.innerHTML = mem.map((item, i) => {
-        const timeStr = item.time ? new Date(item.time).toLocaleString("zh-CN") : "";
-        return `
-          <div class="memory-item" onclick="loadMemoryVerdict('${escapeAttr(item.run_id)}')">
-            <div class="mem-question">${escapeHtml(item.question)}</div>
-            <div class="mem-verdict">${escapeHtml(excerpt(item.verdict, 120))}</div>
-            <div class="mem-meta">
-              ${confidenceChip(item.confidence)}
-              <span>${escapeHtml(timeStr)}</span>
-              <span>${escapeHtml(item.run_id || "")}</span>
-            </div>
-          </div>
-        `;
-      }).join("");
-    } catch (_) {
-      list.innerHTML = '<div class="memory-empty"><p>无法读取记忆</p></div>';
-    }
+    const err = normalizeApiError({
+      error: "history_unavailable",
+      reason: e.message || "无法读取真实历史记录。",
+      next_action: "确认 backend 可访问，并检查 /api/runs/recent。",
+    }, 0, "memory_history");
+    list.innerHTML = `
+      <div class="memory-empty">
+        <p>历史记录暂不可用</p>
+        <p>${escapeHtml(err.reason)}</p>
+        <p>${escapeHtml(err.next_action)}</p>
+      </div>`;
   }
 }
 
@@ -1578,28 +1776,8 @@ function openFollowupForRun(runId) {
 }
 
 function saveToMemory() {
-  const v = state.currentVerdict || state.currentThread.report;
-  if (!v) return;
-  try {
-    const settings = state.judgeSettings;
-    const modeLabel = settings.mode === "flash" ? "快速" : settings.mode === "strategic" ? "深度" : "自定义";
-    const seatCount = v.seat_count || settings.selectedSeats.length || 0;
-    const reportLabel = settings.reportStyle === "concise" ? "简洁" : settings.reportStyle === "detailed" ? "详细" : "可审计";
-    const configSummary = `本轮：${modeLabel} · ${seatCount}席 · ${reportLabel}报告`;
-
-    const mem = JSON.parse(localStorage.getItem("ai_judge_memory") || "[]");
-    mem.unshift({
-      question: state.currentThread.question || v.question || "",
-      verdict: v.one_liner || "",
-      confidence: v.confidence || 0,
-      run_id: v.run_id || state.currentThread.runId,
-      time: new Date().toISOString(),
-      config: configSummary,
-    });
-    if (mem.length > 50) mem.length = 50;
-    localStorage.setItem("ai_judge_memory", JSON.stringify(mem));
-    renderMemory();
-  } catch (_) {}
+  loadHistory();
+  switchTab("memory");
 }
 
 async function loadMemoryVerdict(runId) {
@@ -1658,6 +1836,15 @@ async function fetchJson(path, options) {
   return { ok: true, status: res.status, data };
 }
 
+function isClientRunId(runId) {
+  return String(runId || "").startsWith("client-");
+}
+
+function followupEndpoint(runId) {
+  const encoded = encodeURIComponent(runId || "");
+  return isClientRunId(runId) ? `/api/client/runs/${encoded}/followup` : `/api/runs/${encoded}/followup`;
+}
+
 function renderMoreDetail(title, summary, payload) {
   const detail = $("#more-detail");
   if (!detail) return;
@@ -1683,9 +1870,43 @@ function renderMoreDetailHtml(title, summary, html, payload) {
   `;
 }
 
+async function startWerewolfGame(boardKey) {
+  const stateEl = $("#werewolf-game-state");
+  if (stateEl) {
+    stateEl.style.display = "block";
+    stateEl.innerHTML = '<span style="color:var(--accent);font-size:13px">正在创建对局…</span>';
+  }
+  try {
+    const res = await fetchJson("/api/werewolf/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ board: boardKey }),
+    });
+    if (res.ok && res.data?.game_id) {
+      const gid = res.data.game_id;
+      if (stateEl) {
+        const bd = res.data.board_config || {};
+        stateEl.innerHTML = '<div style="color:#059669;font-weight:600;margin-bottom:6px">对局已创建</div>' +
+          '<div style="font-size:12px;color:var(--text-soft)">game_id: ' + escapeHtml(gid) + '</div>' +
+          '<div style="font-size:12px;color:var(--text-soft);margin-top:4px">板型: ' + escapeHtml(bd.name || boardKey) + ' | ' + (bd.seat_count || '?') + ' 人</div>' +
+          '<div style="margin-top:8px"><button data-werewolf-state="' + escapeAttr(gid) + '" style="padding:4px 12px;font-size:11px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer">查看对局状态</button></div>';
+      }
+    } else if (stateEl) {
+      let reason = res.data?.reason || res.data?.error || res.data?.status || res.status || "未知";
+      if (reason === "bridge_busy") {
+        reason = "固定 Chrome 桥接正在处理另一轮流程，请等待当前流程结束后重试。";
+      }
+      stateEl.innerHTML = '<span style="color:#dc2626;font-size:12px">创建对局失败：' + escapeHtml(reason) + '</span>';
+    }
+  } catch (e) {
+    if (stateEl) stateEl.innerHTML = '<span style="color:#dc2626;font-size:12px">请求异常：' + escapeHtml(e.message) + '</span>';
+  }
+}
+
 async function openMoreFeature(id, sourceEl) {
   const runId = currentRunId();
   if (id === "followup") {
+    const endpoint = runId ? followupEndpoint(runId) : "";
     renderMoreDetailHtml("继续追问", runId
       ? "追问会挂到当前 run 的上下文里；需要全席位重跑时，回到 Ask 提交新问题。"
       : "需要先打开一个报告或历史 run，系统才能带入摘要、结论、分歧和附件上下文。",
@@ -1695,7 +1916,7 @@ async function openMoreFeature(id, sourceEl) {
           <button type="button" data-more-command="followup" data-run-id="${escapeAttr(runId)}">保存追问上下文</button>
         </div>
       ` : "",
-      runId ? { run_id: runId, endpoint: `/api/runs/${runId}/followup` } : { required_context: "run_id" });
+      runId ? { run_id: runId, endpoint } : { required_context: "run_id" });
     return;
   }
   if (id === "logs") {
@@ -1722,6 +1943,12 @@ async function openMoreFeature(id, sourceEl) {
       return;
     }
     const gaps = await fetchJson(`/api/judge/${targetRun}/evidence-gaps`);
+    if (!gaps.ok || gaps?.data?.ok === false) {
+      renderMoreDetailHtml("证据", "裁决尚未开始、报告尚未生成，或该 run 暂无可读取的证据缺口。",
+        '<div class="more-list"><div class="more-list-item">等待裁决完成后再查看证据缺口。</div></div>',
+        gaps);
+      return;
+    }
     const tasks = gaps?.data?.tasks || [];
     renderMoreDetailHtml("证据", "当前 run 的 evidence gaps。可以把人工补充证据写回队列。",
       `<div class="more-list">${tasks.length ? tasks.map(t => `
@@ -1770,16 +1997,17 @@ async function openMoreFeature(id, sourceEl) {
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:16px">';
       for (const key of boardKeys) {
         const b = boards[key];
-        html += '<div style="padding:10px 12px;background:var(--bg-card,#f1f3f8);border:1px solid var(--line,#e2e8f0);border-radius:8px;font-size:12px">';
-        html += '<div style="font-weight:700;margin-bottom:2px">' + escapeHtml(b.name || key) + '</div>';
-        html += '<div style="color:#64748b">' + escapeHtml(b.desc || '') + '</div>';
-        html += '<div style="color:#94a3b8;font-size:11px;margin-top:4px">' + (b.seat_count || '?') + ' 人</div>';
+        const roles = b.roles ? b.roles.join('、') : (b.description || '');
+        html += '<div style="padding:10px 12px;background:var(--bg-card,#f1f3f8);border:1px solid var(--line,#e2e8f0);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:6px">';
+        html += '<div style="font-weight:700">' + escapeHtml(b.name || key) + '</div>';
+        html += '<div style="color:#64748b;font-size:11px">' + escapeHtml(b.desc || '') + '</div>';
+        if (roles) html += '<div style="color:#94a3b8;font-size:11px">角色：' + escapeHtml(roles) + '</div>';
+        html += '<div style="color:#94a3b8;font-size:11px">' + (b.seat_count || '?') + ' 人</div>';
+        html += '<button data-werewolf-start="' + escapeAttr(key) + '" style="margin-top:4px;padding:4px 12px;font-size:11px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;cursor:pointer;width:100%">开始对局</button>';
         html += '</div>';
       }
       html += '</div>';
-      html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line,#e2e8f0)">';
-      html += '<p style="font-size:12px;color:#94a3b8">开局方式：在 Ask 面板输入"开始狼人杀"或使用 /api/werewolf/start 接口。</p>';
-      html += '</div>';
+      html += '<div id="werewolf-game-state" style="margin-top:16px;padding:12px;border-radius:8px;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.18);display:none"></div>';
       detail.innerHTML = html;
       try { detail.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch(_){}
     } catch (e) {
@@ -1787,6 +2015,7 @@ async function openMoreFeature(id, sourceEl) {
     }
     return;
   }
+
   if (id === "sports") {
     const detail = $("#more-detail");
     if (!detail) return;
@@ -1798,15 +2027,21 @@ async function openMoreFeature(id, sourceEl) {
         fetchJson("/api/worldcup-pool/runtime-summary")
       ]);
       const health = healthResp?.data || {};
+      const poolLocalExists = checkWorldcupLocalExists();
       let html = '<h3>🏟️ 赛事预测池</h3>';
       html += '<p style="color:#64748b;margin-bottom:16px;font-size:13px">13 个 AI 模型独立分析同一赛事，模拟预测准确度。不构成现实投资建议。</p>';
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px">';
       html += '<div style="padding:12px;background:var(--bg-card,#f1f3f8);border:1px solid var(--line,#e2e8f0);border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:800;color:' + (health.ok ? '#059669' : '#dc2626') + '">' + (health.ok ? '在线' : '离线') + '</div><div style="font-size:11px;color:#94a3b8">后端状态</div></div>';
       html += '<div style="padding:12px;background:var(--bg-card,#f1f3f8);border:1px solid var(--line,#e2e8f0);border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:800">14</div><div style="font-size:11px;color:#94a3b8">AI 席位</div></div>';
-      html += '<div style="padding:12px;background:var(--bg-card,#f1f3f8);border:1px solid var(--line,#e2e8f0);border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:800">' + (health.pool_app_exists ? '✅' : '❌') + '</div><div style="font-size:11px;color:#94a3b8">前端应用</div></div>';
+      html += '<div style="padding:12px;background:var(--bg-card,#f1f3f8);border:1px solid var(--line,#e2e8f0);border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:800">' + (poolLocalExists ? '✅' : '❌') + '</div><div style="font-size:11px;color:#94a3b8">本地面板</div></div>';
       html += '</div>';
       html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line,#e2e8f0)">';
-      html += '<a href="/worldcup_pool.html" target="_blank" style="display:inline-block;padding:8px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">打开预测池页面</a>';
+      if (poolLocalExists) {
+        html += '<button data-worldcup-pool-open style="display:inline-block;padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">打开本地预测池</button>';
+      } else {
+        html += '<p style="font-size:12px;color:var(--amber)">本地预测池面板尚未部署。请运行 deploy脚本或手动放置 worldcup_pool_local.html 到 product 目录。</p>';
+        html += '<button data-worldcup-pool-open style="display:inline-block;padding:8px 16px;background:var(--bg-card);color:var(--text-soft);border:1px solid var(--line);border-radius:6px;font-size:13px;cursor:pointer;margin-top:8px">尝试打开本地预测池</button>';
+      }
       html += '</div>';
       detail.innerHTML = html;
       try { detail.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch(_){}
@@ -1848,10 +2083,10 @@ async function handleMoreCommand(commandEl) {
     if (command === "followup") {
       const prompt = ($("#more-followup-prompt")?.value || "").trim();
       if (!prompt) throw new Error("请输入追问内容");
-      result = await fetchJson(`/api/runs/${runId}/followup`, {
+      result = await fetchJson(followupEndpoint(runId), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, question: prompt }),
       });
       renderMoreDetail("继续追问", result.ok ? "追问已保存到当前 run 上下文。" : "追问保存失败。", result);
       return;
@@ -1891,7 +2126,8 @@ async function handleMoreCommand(commandEl) {
     }
     if (command === "gavel-sync-run") {
       result = await fetchJson(`/api/gavel/${runId}/sync`, { method: "POST" });
-      renderMoreDetail("签字 / 归档", result.ok ? "当前 run 签字已同步。" : "当前 run 签字同步失败。", result);
+      const synced = result.ok && !result.data?.error && result.data?.status !== "none";
+      renderMoreDetail("签字 / 归档", synced ? "当前 run 签字已同步。" : "当前 run 没有可同步的签字记录。", result);
       return;
     }
     if (command === "gavel-sync-all") {
@@ -1907,7 +2143,7 @@ async function handleMoreCommand(commandEl) {
 }
 
 /* ══════════ Core: Submit Judge (two-phase: pre-run confirm → actual submit) ══════════ */
-function submitJudge() {
+async function submitJudge() {
   const input = $("#ask-input");
   const question = (input?.value || "").trim();
   if (!question) return;
@@ -1916,7 +2152,7 @@ function submitJudge() {
   const threadId = "thread_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
   state.currentThread = {
     threadId,
-    runId: "",  // ← intentionally empty: only set after "开始裁决"
+    runId: "",  // set after backend create_run succeeds
     mode: state.selectedMode,
     stage: "aligning",
     question,
@@ -1929,6 +2165,7 @@ function submitJudge() {
     artifacts: [],
     report: null,
   };
+  const thread = state.currentThread;
 
   // Add user_question message
   addThreadMessage({
@@ -1937,42 +2174,96 @@ function submitJudge() {
     mode: state.selectedMode,
   });
 
-  // Simulate Grand Judge alignment (in production this would call /api/prompt/resonate)
-  // For now, we generate alignment from front-end state
-  const alignedIntent = generateAlignment(question, state.selectedMode);
-  state.currentThread.alignedIntent = alignedIntent.alignedIntent;
-  state.currentThread.suggestedMode = alignedIntent.suggestedMode;
-  state.currentThread.promptSummary = alignedIntent.promptSummary;
+  let activeSeats = [];
+  state.workflow.stage = WORKFLOW_STAGE.ALIGNING_INTENT;
+  setBusy(true);
+  setProgress(1, "读取席位默认…");
 
-  // Add judge_alignment message
-  addThreadMessage({
-    type: MSG_TYPE.JUDGE_ALIGNMENT,
-    alignedIntent: alignedIntent.alignedIntent,
-    suggestedMode: alignedIntent.suggestedMode,
-  });
+  try {
+    await getSeatStatus();
+    activeSeats = resolveActiveSeats();
+    setProgress(1, "创建真实运行…");
+    const create = await fetchJsonContract(API_BASE + "/api/client/runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        mode: clientModeForBackend(state.judgeSettings.mode || state.selectedMode),
+        engine: "web",
+        auto_complete: false,
+        total_seats: activeSeats.length || 1,
+      }),
+    }, "ask_create_run");
+    if (!create.ok) throw create.data;
+    const run = create.data.run || {};
+    const runId = run.run_id || create.data.run_id || run.runId || create.data.runId || "";
+    if (!runId || runId.startsWith("demo-")) {
+      throw normalizeApiError({ error: "invalid_run_id", reason: "后端没有返回真实 run_id。", next_action: "检查 /api/client/runs 响应。" }, create.status, "ask_create_run");
+    }
+    thread.runId = runId;
+    state.currentRunId = runId;
+    state.workflow.runId = runId;
+    addThreadMessage({ type: MSG_TYPE.RUN_STARTED, runId });
 
-  // Add seat_prompt_preview message
-  const activeSeats = resolveActiveSeats();
-  addThreadMessage({
-    type: MSG_TYPE.SEAT_PROMPT_PREVIEW,
-    seats: activeSeats,
-    promptSummary: alignedIntent.promptSummary.join("\n"),
-  });
+    const resonance = await fetchJsonContract(API_BASE + "/api/prompt/resonate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        mode: state.judgeSettings.mode || state.selectedMode,
+        engine: state.engine,
+        seats: activeSeats.map(s => s.id).filter(Boolean),
+      }),
+    }, "ask_prompt_resonate", runId);
+    if (!resonance.ok) throw resonance.data;
 
-  // Add attachment_context message if there are attachments
-  const atts = state.currentThread.attachments || [];
-  if (atts.length > 0) {
+    const alignedIntent = alignmentFromBackend(question, state.selectedMode, resonance.data);
+    state.currentThread.alignedIntent = alignedIntent.alignedIntent;
+    state.currentThread.suggestedMode = alignedIntent.suggestedMode;
+    state.currentThread.promptSummary = alignedIntent.promptSummary;
+    state.currentThread.backendPromptFlow = alignedIntent.backendPromptFlow;
+    state.currentThread.executionPlan = alignedIntent.executionPlan;
+
     addThreadMessage({
-      type: MSG_TYPE.ATTACHMENT_CONTEXT,
-      attachments: atts,
+      type: MSG_TYPE.JUDGE_ALIGNMENT,
+      alignedIntent: alignedIntent.alignedIntent,
+      suggestedMode: alignedIntent.suggestedMode,
     });
+
+    addThreadMessage({
+      type: MSG_TYPE.SEAT_PROMPT_PREVIEW,
+      seats: activeSeats,
+      promptSummary: alignedIntent.promptSummary.join("\n"),
+    });
+
+    const atts = state.currentThread.attachments || [];
+    if (atts.length > 0) {
+      addThreadMessage({
+        type: MSG_TYPE.ATTACHMENT_CONTEXT,
+        attachments: atts,
+      });
+    }
+
+    state.currentThread.stage = "waiting_confirm";
+    state.workflow.stage = WORKFLOW_STAGE.WAITING_USER_CONFIRM;
+    showAlignView();
+    renderAlign();
+  } catch (err) {
+    const apiErr = normalizeApiError(err, err?.status || 0, err?.source || "ask_submit");
+    state.currentThread.stage = "failed";
+    state.workflow.stage = WORKFLOW_STAGE.FAILED;
+    addThreadMessage({
+      type: MSG_TYPE.SYSTEM_ERROR,
+      error: apiErr.error,
+      reason: apiErr.reason,
+      next_action: apiErr.next_action,
+      trace_id: apiErr.trace_id,
+      runId: apiErr.run_id,
+    });
+    setProgress(0, apiErrorText(apiErr));
+  } finally {
+    setBusy(false);
   }
-
-  state.currentThread.stage = "waiting_confirm";
-
-  // Show align view (pre-run confirmation)
-  showAlignView();
-  renderAlign();
 }
 
 function generateAlignment(question, mode) {
@@ -2017,17 +2308,12 @@ async function executeJudge() {
   const activeSeats = resolveActiveSeats();
   state._pendingSeats = activeSeats;
 
-  // Add run_started message (now we have a real run_id)
-  addThreadMessage({
-    type: MSG_TYPE.RUN_STARTED,
-    runId: "(提交中...)",
-  });
-
   try {
     // ── P1.5: Build seat_config payload ──
     const settings = state.judgeSettings;
     const seatCfg = {};
-    if (settings.mode === "custom" && settings.selectedSeats.length > 0) {
+    // Always pass selectedSeats if user has made a selection (any mode)
+    if (settings.selectedSeats && settings.selectedSeats.length > 0) {
       seatCfg.selected = settings.selectedSeats;
     }
     if (settings.excludedSeats.length > 0) {
@@ -2041,7 +2327,26 @@ async function executeJudge() {
       settings.saveAsDefault = false;
     }
 
-    const res = await fetch(API_BASE + "/api/judge", {
+    let data;
+    const existingRunId = thread.runId || state.currentRunId || "";
+    if (existingRunId) {
+      const execute = await fetchJsonContract(API_BASE + "/api/client/runs/" + encodeURIComponent(existingRunId) + "/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seats: activeSeats.map(s => s.id).filter(Boolean),
+          engine: state.engine,
+        }),
+      }, "room_execute_run", existingRunId);
+      if (!execute.ok) throw execute.data;
+      data = {
+        ...execute.data,
+        run_id: execute.data.run_id || existingRunId,
+        seats: execute.data.seats || activeSeats.map(s => s.id).filter(Boolean),
+        status: execute.data.status || "running",
+      };
+    } else {
+      const submit = await fetchJsonContract(API_BASE + "/api/judge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2062,9 +2367,10 @@ async function executeJudge() {
           contentAvailable: !!att.contentAvailable,
         })),
       }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+      }, "room_submit_judge");
+      if (!submit.ok) throw submit.data;
+      data = submit.data;
+    }
 
     // NOW we have a real run_id — update thread and the run_started message
     thread.runId = data.run_id;
@@ -2106,15 +2412,28 @@ async function executeJudge() {
     renderThreadMessages("room-thread-messages");
 
   } catch (err) {
+    const apiErr = normalizeApiError(err, err?.status || 0, err?.source || "room_execute", state.currentThread.runId || state.currentRunId || "");
+    const friendlyErr = apiErrorText(apiErr);
     state.currentThread.stage = "failed";
     state.workflow.stage = WORKFLOW_STAGE.FAILED;
     state.workflow.canPause = false;
-    setProgress(0, "提交失败：" + err.message);
+    state.currentTask = {
+      run_id: apiErr.run_id || state.currentThread.runId || state.currentRunId || "",
+      status: "failed",
+      error: friendlyErr,
+      progress: 0,
+    };
+    setProgress(0, "提交失败：" + friendlyErr);
     setBusy(false);
+    renderRoom();
 
     addThreadMessage({
       type: MSG_TYPE.SYSTEM_ERROR,
-      error: err.message,
+      error: friendlyErr,
+      reason: apiErr.reason,
+      next_action: apiErr.next_action,
+      trace_id: apiErr.trace_id,
+      runId: apiErr.run_id,
     });
   }
 }
@@ -2122,7 +2441,7 @@ async function executeJudge() {
 /* ══════════ Resolve active seats — FULL 13-seat support ══════════ */
 function resolveActiveSeats() {
   // Priority 1: user explicitly selected seats in settings (custom mode)
-  if (state.judgeSettings.mode === "custom" && state.judgeSettings.selectedSeats.length > 0) {
+  if (state.judgeSettings.selectedSeats && state.judgeSettings.selectedSeats.length > 0) {
     return state.judgeSettings.selectedSeats.map(id => {
       const seatInfo = PARLIAMENT_SEATS.find(ps => ps.id === id) || {};
       // Check runnability from cached seat status
@@ -2142,27 +2461,19 @@ function resolveActiveSeats() {
     return state._pendingSeats;
   }
 
-  // Priority 3: bridge status
-  if (state.bridge?.seats && state.bridge.seats.length > 0) {
-    return state.bridge.seats.filter(s => !defaultAbstainedSeats().includes(s.id || s.seat)).map(s => ({
-      id: s.id || s.seat, name: s.name || s.id || s.seat, channel: s.channel || "",
-      ready: s.ready !== false, state: s.ready !== false ? "waiting" : "unavailable",
-      color: s.color || "#64748b",
-    }));
-  }
-
-  // Priority 4: use API-default seats per mode (flash=3, strategic=all-ready)
-  // Priority 4a: try cached seat status + mode defaults
+  // Priority 3: use API-default seats per mode. Bridge all-ready is only a fallback.
   const mode = state.judgeSettings.mode || state.selectedMode;
   const cached = _cachedSeatStatus;
   const cachedDefaults = _cachedSeatDefaults || {};
-  const modeDefaultIds = cachedDefaults[mode];
-  if (cached && cached.length > 0 && modeDefaultIds && modeDefaultIds.length > 0) {
+  const rawModeDefault = cachedDefaults[mode];
+  const modeDefaultIds = Array.isArray(rawModeDefault) ? rawModeDefault : [];
+  if (cached && cached.length > 0) {
     const abstained = defaultAbstainedSeats();
     const readySeats = cached.filter(s => s.ready && !abstained.includes(s.id));
-    // For flash/strategic: filter ready seats to mode defaults only
-    if (mode === "flash" || mode === "strategic") {
-      const filtered = readySeats.filter(s => modeDefaultIds.includes(s.id));
+    if (modeDefaultIds.length > 0) {
+      const filtered = modeDefaultIds
+        .map(id => readySeats.find(s => s.id === id))
+        .filter(Boolean);
       if (filtered.length > 0) {
         return filtered.map(s => ({
           id: s.id, name: s.name || s.id, channel: s.channel || "",
@@ -2170,7 +2481,13 @@ function resolveActiveSeats() {
         }));
       }
     }
-    // Fallback: all ready seats (minus abstained)
+    if (rawModeDefault === "all_ready" && readySeats.length > 0) {
+      return readySeats.map(s => ({
+        id: s.id, name: s.name || s.id, channel: s.channel || "",
+        color: s.color || "#64748b", ready: true, state: "waiting",
+      }));
+    }
+    // Unknown defaults: all ready seats (minus abstained)
     if (readySeats.length > 0) {
       return readySeats.map(s => ({
         id: s.id, name: s.name || s.id, channel: s.channel || "",
@@ -2179,7 +2496,16 @@ function resolveActiveSeats() {
     }
   }
 
-  // Priority 4b: PARLIAMENT_SEATS — full list (minus abstained)
+  // Priority 4: bridge status fallback
+  if (state.bridge?.seats && state.bridge.seats.length > 0) {
+    return state.bridge.seats.filter(s => !defaultAbstainedSeats().includes(s.id || s.seat)).map(s => ({
+      id: s.id || s.seat, name: s.name || s.id || s.seat, channel: s.channel || "",
+      ready: s.ready !== false, state: s.ready !== false ? "waiting" : "unavailable",
+      color: s.color || "#64748b",
+    }));
+  }
+
+  // Priority 5: PARLIAMENT_SEATS — full list (minus abstained)
   const abstained = defaultAbstainedSeats();
   return PARLIAMENT_SEATS
     .filter(s => !abstained.includes(s.id))
@@ -2212,6 +2538,25 @@ function startPolling(runId) {
   }, 5000);
 }
 
+function stepMessageFor(step) {
+  if (!step) return "运行中";
+  const s = String(step);
+  const map = [
+    [/受理完成|prompt_flow|对齐/, "正在对齐问题意图…"],
+    [/校准|calibration|gate/, "检查席位校准状态…"],
+    [/桥接|bridge.*准备/, "准备网页桥接…"],
+    [/剩余.*席|waiting.*seat/, "等待席位回答…"],
+    [/补跑|retry|recovery/, "补跑失败席位…"],
+    [/共振|resonance|followup/, "席位交叉追问中…"],
+    [/判词|verdict|report/, "生成裁决报告…"],
+    [/完成|complete/, "已完成"],
+  ];
+  for (const [re, label] of map) {
+    if (re.test(s)) return label;
+  }
+  return s.length > 40 ? s.slice(0, 37) + "…" : s;
+}
+
 function handleTask(task) {
   if (task.error && !task.status) {
     setProgress(0, task.error);
@@ -2227,7 +2572,7 @@ function handleTask(task) {
 
   state.currentTask = task;
   const pct = Math.round((Number(task.progress) || 0) * 100);
-  setProgress(pct, task.current_step || task.status || "运行中");
+  setProgress(pct, stepMessageFor(task.current_step || task.status));
 
   // Process seat-level events and inject into thread
   if (task.progress_diagnostics?.seats) {
@@ -2275,6 +2620,51 @@ function handleTask(task) {
     });
   }
 
+  // P2.5: Resonance detection
+  if (state.currentThread.runId && task.progress_diagnostics?.seats) {
+    const seats = task.progress_diagnostics.seats;
+    const totalSeats = seats.length;
+    const completedSeats = seats.filter(s => s.state === "complete" || s.state === "done" || s.state === "answered").length;
+    const existingMsgs2 = state.currentThread.messages;
+
+    // Detect first-round completion: all seats answered but resonance not yet started
+    if (completedSeats === totalSeats && totalSeats > 0) {
+      const hasRound1Done = existingMsgs2.some(m => m.type === MSG_TYPE.RESONANCE_ROUND1_DONE);
+      if (!hasRound1Done) {
+        addThreadMessage({
+          type: MSG_TYPE.RESONANCE_ROUND1_DONE,
+          summary: "全部 " + totalSeats + " 个席位已完成首轮回答。",
+        });
+      }
+      // Detect resonance in progress
+      const hasResonanceInProgress = existingMsgs2.some(m => m.type === MSG_TYPE.RESONANCE_IN_PROGRESS);
+      if (!hasResonanceInProgress) {
+        addThreadMessage({
+          type: MSG_TYPE.RESONANCE_IN_PROGRESS,
+          summary: "席位间开始交叉追问，预计需要额外 30-60 秒。",
+        });
+      }
+    }
+
+    // Detect per-seat resonance follow-ups (seats with followup completions)
+    const resonancePhaseHint = task.current_step || task.status || "";
+    if (resonancePhaseHint.toLowerCase().includes("resonance") || resonancePhaseHint.includes("共振")) {
+      seats.filter(s => s.followup_done).forEach(s => {
+        const seatId = s.seat || s.id;
+        const alreadyTracked = existingMsgs2.some(m => m.type === MSG_TYPE.RESONANCE_SEAT_FOLLOWED && (m.seatId === seatId));
+        if (!alreadyTracked) {
+          const seatInfo = PARLIAMENT_SEATS.find(ps => ps.id === seatId) || {};
+          addThreadMessage({
+            type: MSG_TYPE.RESONANCE_SEAT_FOLLOWED,
+            seatId,
+            seat: { id: seatId, name: seatInfo.name || seatId, color: seatInfo.color || "#64748b" },
+            summary: seatInfo.name + " 已完成交叉追问。",
+          });
+        }
+      });
+    }
+  }
+
   // Update room rendering with task data
   renderRoom();
 
@@ -2282,6 +2672,17 @@ function handleTask(task) {
     cleanupProgress();
     setBusy(false);
     setProgress(100, "已完成");
+
+    // P2.5: Resonance complete message if resonance was active
+    const hasResonanceComplete = state.currentThread.messages.some(m => m.type === MSG_TYPE.RESONANCE_COMPLETE);
+    const hadResonance = state.currentThread.messages.some(m => m.type === MSG_TYPE.RESONANCE_IN_PROGRESS);
+    if (!hasResonanceComplete && hadResonance) {
+      addThreadMessage({
+        type: MSG_TYPE.RESONANCE_COMPLETE,
+        summary: "全部席位已完成交叉追问，Grand Judge 正在综合各席位最终意见。",
+      });
+    }
+
     if (task.result) {
       renderVerdict(task.result);
     } else {
@@ -2310,44 +2711,34 @@ function handleTask(task) {
   if (task.status === "failed" || task.status === "cancelled") {
     cleanupProgress();
     setBusy(false);
-    // ── Task 5: Enhanced error diagnosis ──
-    const errMsg = (task.error || "").toLowerCase();
-    let diagnosis = "";
-    let actions = "";
-
-    if (errMsg.includes("chrome") || errMsg.includes("浏览器") || errMsg.includes("cdp") || errMsg.includes("chromedriver")) {
-      diagnosis = "Chrome 浏览器未就绪，请确保 AI Judge Chrome 已打开";
-      actions = `<button onclick="retryCurrentRun()" class="btn-primary" style="margin-right:8px">重试</button>`;
-    } else if (errMsg.includes("login") || errMsg.includes("session") || errMsg.includes("expired") || errMsg.includes("auth") || errMsg.includes("登录")) {
-      diagnosis = "以下席位需要重新登录：" + (task.failed_seats || []).map(s => s.name || s.seat || s).join("、") || "部分席位";
-      actions = `<button onclick="skipFailedSeats()" class="btn-primary" style="margin-right:8px">跳过失败席位继续</button>`;
-    } else if (errMsg.includes("timeout") || errMsg.includes("超时")) {
-      const doneCount = task.completed_seats?.length || (task.progress_diagnostics?.seats || []).filter(s => s.ok || s.status === "complete").length || 0;
-      const totalCount = task.total_seats || "?";
-      diagnosis = `执行超时，已完成 ${doneCount}/${totalCount} 席位`;
-      actions = `<button onclick="viewPartialResults()" class="btn-primary" style="margin-right:8px">查看部分结果</button>`;
-    } else if (errMsg.includes("connection refused") || errMsg.includes("network") || errMsg.includes("unreachable") || errMsg.includes("econnrefused")) {
-      diagnosis = "AI Judge 服务未运行";
-      actions = `<span style="font-size:13px;color:var(--text-soft)">请确保后端服务已启动后重试</span>`;
-    } else {
-      diagnosis = task.error || ("任务" + task.status);
-    }
-
-    setProgress(pct, diagnosis);
+    const errMsg = task.error || "";
+    const friendlyErr = readableTaskError(errMsg || task.status);
+    setProgress(pct, friendlyErr);
     state.currentThread.stage = task.status === "cancelled" ? "cancelled" : "failed";
     state.workflow.stage = task.status === "cancelled" ? WORKFLOW_STAGE.CANCELLED : WORKFLOW_STAGE.FAILED;
     state.workflow.canPause = false;
-
-    // Update room phase with diagnosis
-    const phase = $("#room-phase");
-    if (phase) phase.innerHTML = `${diagnosis} ${actions}`;
-
     renderRoom();
 
-    addThreadMessage({
-      type: MSG_TYPE.SYSTEM_ERROR,
-      error: task.error || ("任务" + task.status),
-    });
+    let diag = { type: MSG_TYPE.SYSTEM_ERROR, error: friendlyErr };
+
+    // 4-type error diagnostics
+    if (/bridge_busy/i.test(errMsg)) {
+      diag.error = friendlyErr;
+      diag.recovery = { label: "稍后重试", action: "retry" };
+    } else if (/chrome|浏览器/i.test(errMsg)) {
+      diag.error = "Chrome 浏览器未就绪，请确保 AI Judge 专用 Chrome 已打开且标签页正常。";
+      diag.recovery = { label: "重试", action: "retry" };
+    } else if (/login|登录|session.*expired|fixed_tab_not_found/i.test(errMsg)) {
+      diag.error = "部分席位登录已过期，请在 Chrome 中重新登录对应平台后重试。";
+      diag.recovery = { label: "跳过失败席位", action: "skip_failed" };
+    } else if (/timeout|超时/i.test(errMsg)) {
+      diag.error = "执行超时，可能某个席位响应过慢。";
+      diag.recovery = { label: "查看部分结果", action: "view_partial" };
+    } else if (/connection_refused|ECONNREFUSED|服务/i.test(errMsg)) {
+      diag.error = "AI Judge 服务未运行，请重启应用后重试。";
+    }
+
+    addThreadMessage(diag);
   }
 }
 
@@ -2437,39 +2828,6 @@ async function stopCurrentRun() {
       });
     }
   } catch (_) {}
-}
-
-/* ── Task 5: Error recovery helpers ── */
-function retryCurrentRun() {
-  const runId = state.currentThread.runId || state.currentRunId;
-  if (!runId) return;
-  state.currentThread.stage = "running";
-  state.workflow.stage = WORKFLOW_STAGE.RUNNING;
-  startProgress(runId);
-  renderRoom();
-}
-
-async function skipFailedSeats() {
-  const runId = state.currentThread.runId || state.currentRunId;
-  if (!runId) return;
-  try {
-    const res = await fetch(API_BASE + "/api/runs/" + runId + "/rerun-failed", { method: "POST" });
-    if (res.ok) {
-      state.currentThread.stage = "running";
-      startProgress(runId);
-    }
-  } catch (_) {}
-}
-
-function viewPartialResults() {
-  const v = state.currentVerdict;
-  const task = state.currentTask;
-  if (v) {
-    renderVerdict(v);
-  } else if (task?.run_id) {
-    loadVerdict(task.run_id);
-  }
-  switchTab("report");
 }
 
 /* ══════════ History ══════════ */
@@ -2723,6 +3081,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderAsk();
   loadSystemInfo();
   await loadHistory();
+  // P2.5: Init worldcup local check
+  initWorldcupLocalCheck();
   // Don't call renderMemory here — it's backend-driven and will be called when user clicks Memory tab
 });
 
@@ -2738,7 +3098,7 @@ function bindUI() {
     seg.addEventListener("click", () => switchMode(seg.dataset.mode));
   });
 
-  // Send button — goes to Align (pre-run confirm), does NOT call /api/judge
+  // Send button — creates a real client run, then opens Align for confirmation.
   $("#btn-send").addEventListener("click", () => submitJudge());
 
   // Enter to submit
@@ -2787,7 +3147,7 @@ function bindUI() {
         const supportedText = ["txt","md","json","csv","log","yaml","yml","js","py","ts","html","css","sh"];
         const supportedImg = ["png","jpg","jpeg","gif","webp","svg","bmp"];
         if (supportedText.includes(ext)) {
-          await uploadAttachmentToServer(f);
+          state.currentThread.attachments.push(await uploadAttachmentToServer(f));
           renderAttachChips();
           addThreadMessage({
             type: MSG_TYPE.ATTACHMENT_ADDED,
@@ -2795,7 +3155,7 @@ function bindUI() {
             fileSize: f.size,
           });
         } else if (supportedImg.includes(ext)) {
-          await uploadAttachmentToServer(f);
+          state.currentThread.attachments.push(await uploadAttachmentToServer(f, { forceBinary: true }));
           renderAttachChips();
           addThreadMessage({
             type: MSG_TYPE.ATTACHMENT_ADDED,
@@ -2874,6 +3234,18 @@ function bindUI() {
       const command = event.target.closest("[data-more-command]");
       if (command) {
         handleMoreCommand(command);
+        return;
+      }
+      // P2.5: Werewolf start buttons
+      const wwStart = event.target.closest("[data-werewolf-start]");
+      if (wwStart) {
+        startWerewolfGame(wwStart.dataset.werewolfStart);
+        return;
+      }
+      // P2.5: Sports pool open button
+      const poolOpen = event.target.closest("[data-worldcup-pool-open]");
+      if (poolOpen) {
+        window.location.href = "/worldcup_pool_local.html";
         return;
       }
       const target = event.target.closest("[data-more-action]");
@@ -3017,6 +3389,77 @@ async function renderRoomTimeline() {
     renderAdvancedTimeline(data.events, advDiv);
     const advEvents = data.events.filter(e => e.advanced);
     if (advWrapper) advWrapper.hidden = !advEvents.length;
+  }
+}
+
+// ── P1-D Citation Verification ──
+function renderCitationVerificationForReport(container, reportData) {
+  if (!container) return;
+
+  // Check for citation evidence in multiple possible locations
+  const citations = reportData.citations || reportData.evidence?.citations || reportData.verification?.citations;
+  const evidenceBroker = reportData.evidence_broker || reportData.evidence?.broker || reportData.verification?.broker;
+
+  if (!citations || !citations.length) return; // No citation data
+
+  let html = '<div class="report-section citation-section">';
+  html += '<h3>引用验证</h3>';
+
+  const verified = citations.filter(c => c.status === "verified" || c.verified);
+  const suspicious = citations.filter(c => c.status === "suspicious" || c.status === "unverified" || c.suspicious);
+  const unverified = citations.filter(c => c.status === "unverified_claim" || c.missing_evidence || !c.status);
+
+  html += '<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">';
+  html += '<span style="padding:4px 10px;background:rgba(5,150,105,.1);border-radius:12px;font-size:12px;color:#059669">已验证 ' + verified.length + '</span>';
+  html += '<span style="padding:4px 10px;background:rgba(220,38,38,.08);border-radius:12px;font-size:12px;color:#dc2626">可疑 ' + suspicious.length + '</span>';
+  html += '<span style="padding:4px 10px;background:rgba(100,116,139,.1);border-radius:12px;font-size:12px;color:#64748b">缺证据 ' + unverified.length + '</span>';
+  html += '</div>';
+
+  if (verified.length) {
+    html += '<details open><summary style="cursor:pointer;font-weight:600;font-size:13px;margin-bottom:8px">已验证引用 (' + verified.length + ')</summary>';
+    html += '<ul style="font-size:12px;margin:0;padding-left:16px">';
+    verified.forEach(c => {
+      html += '<li style="margin-bottom:4px">' + escapeHtml(c.text || c.claim || c.summary || "引用") + '';
+      if (c.source) html += ' <span style="color:#94a3b8">(' + escapeHtml(c.source) + ')</span>';
+      html += '</li>';
+    });
+    html += '</ul></details>';
+  }
+
+  if (suspicious.length) {
+    html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--red);margin-bottom:8px">可疑引用 (' + suspicious.length + ')</summary>';
+    html += '<ul style="font-size:12px;margin:0;padding-left:16px;color:var(--red)">';
+    suspicious.forEach(c => {
+      html += '<li style="margin-bottom:4px">' + escapeHtml(c.text || c.claim || c.summary || "引用") + '';
+      html += ' <span style="color:#94a3b8">— ' + escapeHtml(c.reason || c.note || "未验证") + '</span>';
+      html += '</li>';
+    });
+    html += '</ul></details>';
+  }
+
+  if (unverified.length) {
+    html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--text-muted);margin-bottom:8px">缺证据结论 (' + unverified.length + ')</summary>';
+    html += '<ul style="font-size:12px;margin:0;padding-left:16px;color:var(--text-muted)">';
+    unverified.forEach(c => {
+      html += '<li style="margin-bottom:4px">' + escapeHtml(c.text || c.claim || c.summary || "结论") + '</li>';
+    });
+    html += '</ul></details>';
+  }
+
+  if (evidenceBroker) {
+    html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600;font-size:13px;margin-bottom:8px">Evidence Broker 来源</summary>';
+    html += '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">' + escapeHtml(typeof evidenceBroker === "string" ? evidenceBroker : (evidenceBroker.source || evidenceBroker.note || JSON.stringify(evidenceBroker).slice(0, 200))) + '</div>';
+    html += '</details>';
+  }
+
+  html += '</div>';
+
+  // Insert after the report-actions div or at the end
+  const target = container.querySelector(".report-actions");
+  if (target) {
+    target.insertAdjacentHTML("afterend", html);
+  } else {
+    container.insertAdjacentHTML("beforeend", html);
   }
 }
 

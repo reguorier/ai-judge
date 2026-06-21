@@ -1,67 +1,55 @@
-"""HTML renderer for client-first reports."""
+"""Schema-driven HTML renderer for client-first final reports."""
 
 from __future__ import annotations
 
-import html
-import re
 from typing import Any
 
-from product.reporting.markdown_renderer import render_final_report_markdown
-
-
-def _inline(text: str) -> str:
-    escaped = html.escape(text)
-    return re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
+from product.reporting.publication import build_publication_report, render_publication_html
+from product.reporting.publication.judge_ir import JudgeIR
+from product.reporting.publication.layout_compiler import compile_judge_ir
 
 
 def render_final_report_html(report: dict[str, Any]) -> str:
-    markdown = render_final_report_markdown(report)
-    body: list[str] = []
-    in_list = False
-    for raw in markdown.splitlines():
-        line = raw.rstrip()
-        if line.startswith("# "):
-            if in_list:
-                body.append("</ul>")
-                in_list = False
-            body.append(f"<h1>{_inline(line[2:])}</h1>")
-        elif line.startswith("## "):
-            if in_list:
-                body.append("</ul>")
-                in_list = False
-            body.append(f"<h2>{_inline(line[3:])}</h2>")
-        elif line.startswith("### "):
-            if in_list:
-                body.append("</ul>")
-                in_list = False
-            body.append(f"<h3>{_inline(line[4:])}</h3>")
-        elif line.startswith("- "):
-            if not in_list:
-                body.append("<ul>")
-                in_list = True
-            body.append(f"<li>{_inline(line[2:])}</li>")
-        elif line:
-            if in_list:
-                body.append("</ul>")
-                in_list = False
-            body.append(f"<p>{_inline(line)}</p>")
-    if in_list:
-        body.append("</ul>")
-    return """<!doctype html>
-<html lang=\"zh-CN\">
-<head>
-  <meta charset=\"utf-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-  <title>AI Judge 最终报告</title>
-  <style>
-    :root { color-scheme: light; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1f2933; background: #f6f7f9; }
-    main { max-width: 880px; margin: 0 auto; padding: 40px 24px 64px; background: #fff; min-height: 100vh; }
-    h1 { font-size: 30px; margin: 0 0 18px; }
-    h2 { font-size: 20px; margin: 30px 0 10px; padding-top: 16px; border-top: 1px solid #d8dee8; }
-    h3 { font-size: 16px; margin: 18px 0 8px; }
-    p, li { line-height: 1.65; font-size: 15px; }
-    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
-  </style>
-</head>
-<body><main>""" + "\n".join(body) + "\n</main></body></html>\n"
+    """Render client final reports through JudgeIR and registered components."""
+
+    model = build_final_report_publication_model(report)
+    return render_publication_html(model)
+
+
+def build_final_report_judge_ir(report: dict[str, Any]) -> JudgeIR:
+    """Build the exact JudgeIR used by the client HTML renderer."""
+
+    return compile_judge_ir(build_final_report_publication_model(report))
+
+
+def build_final_report_publication_model(report: dict[str, Any]) -> dict[str, Any]:
+    """Adapt a client final report to the publication model before IR compile."""
+
+    payload = dict(report)
+    payload.setdefault("title", report.get("title") or report.get("question") or "AI Judge 最终报告")
+    payload.setdefault("question", report.get("question") or report.get("title") or "")
+    payload.setdefault("core_conclusion", report.get("core_conclusion") or report.get("one_liner") or "")
+    payload.setdefault("recommended_actions", report.get("recommended_actions") or report.get("next_steps") or [])
+    payload.setdefault("risks", report.get("risks") or report.get("failure_conditions") or [])
+    payload.setdefault("mode_label", report.get("mode_label") or report.get("mode") or "AI Judge")
+
+    model = build_publication_report(
+        payload,
+        domain_hint=_domain_hint(payload),
+        report_profile="both",
+        reader_type="professional_user",
+    )
+    audit = report.get("audit") if isinstance(report.get("audit"), dict) else {}
+    if audit.get("generated_at"):
+        model["generated_at"] = str(audit["generated_at"])
+    return model
+
+
+def _domain_hint(report: dict[str, Any]) -> str:
+    question = str(report.get("question") or report.get("title") or "")
+    mode = str(report.get("mode") or "")
+    if mode == "prediction_pool" or "预测池" in question or "世界杯" in question:
+        return "prediction_pool"
+    if mode == "deep_judge" or any(token in question for token in ("法律", "法院", "股权", "合同", "债务", "破产")):
+        return "legal_memo"
+    return "auto"

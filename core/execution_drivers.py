@@ -151,6 +151,7 @@ def decide_execution(
             })
 
     required_ready_count = len(seats)
+    minimum_runnable_count = required_ready_count
     can_run = len(runnable) == required_ready_count
     driver = _dominant_driver(runnable_drivers) or "web_dom"
     return {
@@ -162,7 +163,8 @@ def decide_execution(
         "runnable_seats": runnable,
         "blocked_seats": blocked,
         "can_run_deep_collection": can_run,
-        "minimum_ready_seats": required_ready_count,
+        "minimum_ready_seats": minimum_runnable_count,
+        "requested_ready_seats": required_ready_count,
         "decision": "run_web" if can_run else "block_for_calibration",
         "message": (
             f"网页全量收集需要所选 {required_ready_count} 个席位全部校准通过；"

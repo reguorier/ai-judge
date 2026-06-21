@@ -8,8 +8,11 @@ from core.web_jury import (
     build_single_judge_baseline,
     build_web_deliberation,
     build_web_claims,
+    schedule_round2_followups,
     run_web_jury,
     _bridge_collection_insufficient,
+    _round2_priority_limit,
+    _round2_scheduler_summary,
 )
 
 
@@ -86,6 +89,67 @@ def test_resonance_followup_prompt_uses_model_questions():
     assert "如何定义验收标准？" in prompts[0]["questions"]
     assert "[AIJUDGE_RESONANCE_FOLLOWUP]" in prompts[0]["prompt"]
     assert "带入用户角色" in prompts[0]["prompt"]
+
+
+def test_full_round2_policy_includes_failed_seats_and_schedules_all():
+    raw_results = [
+        {
+            "seat": "chatgpt",
+            "seat_name": "ChatGPT",
+            "ok": True,
+            "response": "初轮方案。共振提问：\n1. 如何定义验收标准？",
+        },
+        {
+            "seat": "qwen",
+            "seat_name": "Qwen",
+            "ok": False,
+            "error": {"code": "fixed_tab_not_found", "message": "No Chrome CDP tab matched."},
+        },
+        {
+            "seat": "deepseek",
+            "seat_name": "DeepSeek",
+            "ok": True,
+            "response": "补充法条和执行路径。",
+        },
+    ]
+
+    prompts = build_resonance_followup_prompts(
+        "股权能否执行清偿公司赔偿金？",
+        raw_results,
+        include_failed=True,
+    )
+    schedule = schedule_round2_followups(
+        prompts=prompts,
+        raw_results=raw_results,
+        max_priority_seats=_round2_priority_limit({"round2_policy": "all_seats"}, len(prompts)),
+        policy_name="all_seats",
+    )
+
+    assert {item["seat"] for item in prompts} == {"chatgpt", "qwen", "deepseek"}
+    assert next(item for item in prompts if item["seat"] == "qwen")["round2_recovery"] is True
+    assert len(schedule["scheduled_prompts"]) == 3
+    assert schedule["deferred_prompts"] == []
+    assert schedule["policy"]["name"] == "all_seats"
+
+
+def test_round2_scheduler_summary_preserves_actual_policy_name():
+    summary = _round2_scheduler_summary([
+        {
+            "seat": "qwen",
+            "seat_name": "Qwen",
+            "ok": False,
+            "round2_scheduled": True,
+            "round2_priority": {"rank": 1, "score": 0.5, "reason": "基础代表性席位"},
+            "round2_scheduler_policy": {
+                "name": "all_seats",
+                "reason": "用户要求全席位二轮共振。",
+            },
+        }
+    ])
+
+    assert summary["policy"]["name"] == "all_seats"
+    assert summary["policy"]["max_priority_seats"] == 1
+    assert summary["scheduled_count"] == 1
 
 
 def test_run_web_jury_collects_second_round_resonance_answers(monkeypatch):

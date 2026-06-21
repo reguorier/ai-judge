@@ -11,6 +11,8 @@ import math
 from collections import Counter
 from typing import Any
 
+from core.seat_execution_policy import normalize_error
+
 
 def attach_cross_temporal_analysis(verdict: dict[str, Any]) -> dict[str, Any]:
     """Attach a cross-temporal analysis block to a verdict in place."""
@@ -864,7 +866,7 @@ def _is_recoverable_raw_result(item: dict[str, Any]) -> bool:
         return False
     if item.get("supplementable"):
         return True
-    code = str((item.get("error") or {}).get("code") or "")
+    code = str(normalize_error(item.get("error")).get("code") or "")
     return code in {
         "slow_response_pending",
         "response_timeout",
@@ -880,7 +882,7 @@ def _is_recoverable_raw_result(item: dict[str, Any]) -> bool:
 
 
 def _raw_error_label(raw: dict[str, Any]) -> str:
-    error = raw.get("error") or {}
+    error = normalize_error(raw.get("error"))
     return str(error.get("code") or "未完成")
 
 

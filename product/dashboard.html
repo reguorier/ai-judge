@@ -328,6 +328,17 @@ body {
 .report-section p, .report-section li { font-size: 14px; line-height: 1.65; color: var(--text-soft); }
 .report-section ul { padding-left: 18px; }
 .report-section li { margin-bottom: 4px; }
+.fdjp-section { margin-bottom: 24px; }
+.fdjp-overview-card { background: #f8fafd; border-radius: 12px; padding: 16px 20px; }
+.fdjp-status-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.fdjp-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+.fdjp-table th { text-align: left; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #d8dee8; background: #eef2f7; }
+.fdjp-table td { padding: 6px 8px; border-bottom: 1px solid #e8ecf1; }
+.fdjp-blocker { color: #c92a2a; background: #fff5f5; padding: 4px 10px; border-radius: 6px; font-size: 13px; margin: 4px 0; }
+.fdjp-warning { color: #b37400; background: #fff9f0; padding: 4px 10px; border-radius: 6px; font-size: 13px; margin: 4px 0; }
+.tag-red { background: #c92a2a; color: #fff; } .tag-amber { background: #b37400; color: #fff; }
+.tag-green { background: #2b8a3e; color: #fff; } .tag-blue { background: #1c7ed6; color: #fff; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
 .report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .report-actions button, .report-actions a {
   padding: 10px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
@@ -338,32 +349,6 @@ body {
 .report-actions .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .report-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); }
 .report-empty p { font-size: 14px; margin-top: 8px; }
-
-/* ─── Task 3: Seat cards in report ─── */
-.report-seat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 8px; }
-.report-seat-card { padding: 14px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); }
-.report-seat-card .rsc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.rsc-name { font-size: 14px; font-weight: 600; }
-.rsc-score { font-size: 12px; color: var(--text-soft); font-family: monospace; }
-.rsc-tier { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 10px; }
-.rsc-answer { font-size: 13px; line-height: 1.55; color: var(--text-soft); }
-
-/* ─── Task 3: Claims table ─── */
-.report-claims-table { border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; margin-top: 8px; }
-.rct-header { display: grid; grid-template-columns: 1fr 60px 60px; gap: 8px; padding: 10px 14px; background: rgba(15,15,15,.03); font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--line); }
-.rct-row { display: grid; grid-template-columns: 1fr 60px 60px; gap: 8px; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--line); align-items: center; }
-.rct-row:last-child { border-bottom: none; }
-.rct-claim { color: var(--text); line-height: 1.45; }
-.rct-tier, .rct-score { text-align: center; font-family: monospace; font-size: 12px; }
-
-/* ─── Task 3: Evidence bar ─── */
-.report-evidence-bar { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; align-items: center; margin-top: 8px; }
-.report-evidence-bar span { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--line); }
-
-/* ─── Tier badges ─── */
-.tier-a { background: rgba(22,163,74,.1); color: #16a34a; }
-.tier-b { background: rgba(217,119,6,.1); color: #d97706; }
-.tier-c { background: rgba(220,38,38,.1); color: #dc2626; }
 
 /* ─── View: Memory ─── */
 .memory-container { display: flex; flex-direction: column; gap: 16px; }
@@ -882,7 +867,15 @@ body {
 }
 .settings-mode-tab:hover { border-color: var(--accent); color: var(--accent); }
 .settings-mode-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.settings-mode-tab.disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+.settings-engine-tabs { display: flex; gap: 6px; margin-top: 8px; }
+.settings-engine-tab {
+  padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); color: var(--text-secondary);
+  transition: all .15s ease;
+}
+.settings-engine-tab:hover { border-color: var(--accent); color: var(--accent); }
+.settings-engine-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.settings-engine-tab.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 .settings-seat-summary { font-size: 13px; color: var(--text); }
 .settings-seat-unavail-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .ss-seat-unavail { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(220,38,38,.08); color: var(--red); }
@@ -937,7 +930,7 @@ body {
     </div>
     <div class="topbar-status" id="topbar-status" title="点击查看系统详情">
       <span class="dot"></span>
-      <span id="status-text">系统正常 · P3.8.12-RC1 · 已封存</span>
+      <span id="status-text">系统正常 · P3.8.14-RC1 · 已封存</span>
     </div>
     <div class="topbar-actions">
       <button class="ask-btn" id="btn-refresh" title="刷新">刷新</button>
@@ -1076,6 +1069,9 @@ body {
           <h3>尚无裁决报告</h3>
           <p>提交问题并等待裁决完成后，报告将在此显示。</p>
         </div>
+      </div>
+      <div class="fdjp-container hidden" id="fdjp-container">
+        <div class="fdjp-section" id="fdjp-section"></div>
       </div>
       <div class="timeline-zone hidden" id="report-process-zone">
         <div class="timeline-zone-header">

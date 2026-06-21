@@ -85,13 +85,17 @@ class TaskManager:
         question: str,
         mode: str = "standard",
         seats: list[str] | None = None,
+        run_id: str | None = None,
     ) -> str:
         """Submit a new jury task. Returns run_id immediately."""
-        run_id = uuid.uuid4().hex[:12]
+        if run_id is None:
+            run_id = uuid.uuid4().hex[:12]
         now = datetime.now(timezone.utc).isoformat()
 
-        from core.modes import resolve_mode
-        config = resolve_mode(mode, override_seats=seats)
+        from core.modes import resolve_mode, JURY_MODES
+
+        safe_mode = mode if mode in JURY_MODES else "strategic"
+        config = resolve_mode(safe_mode, override_seats=seats)
         resolved_seats = config["seats"]
 
         with self._get_conn() as conn:
@@ -282,8 +286,8 @@ class TaskManager:
             self.update_progress(run_id, "scoring", 0.80)
 
             # Phase 3: Evidence trace (if strategic)
-            from core.modes import resolve_mode
-            config = resolve_mode(mode)
+            from core.modes import resolve_mode, JURY_MODES
+            config = resolve_mode(mode if mode in JURY_MODES else "strategic")
             if config["features"].get("evidence_trace"):
                 self.update_progress(run_id, "evidence_tracing", 0.90)
 
@@ -307,8 +311,10 @@ class TaskManager:
         If background=True (default), runs in a daemon thread.
         If background=False, caller must call run_task() manually.
         """
-        from core.modes import resolve_mode
-        config = resolve_mode(mode, override_seats=seats)
+        from core.modes import resolve_mode, JURY_MODES
+
+        safe_mode = mode if mode in JURY_MODES else "strategic"
+        config = resolve_mode(safe_mode, override_seats=seats)
         resolved_seats = config["seats"]
 
         run_id = self.submit(question, mode, resolved_seats)

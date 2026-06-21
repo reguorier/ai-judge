@@ -5,9 +5,11 @@ from bridges.chrome_fixed_tab_bridge import (
     _post_timeout_grace_seconds,
     _seat_timeout_seconds,
 )
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from core.seat_execution_policy import execution_policy_summary
+import bridges.chrome_cdp_bridge as chrome_cdp_bridge
 import bridges.web_seat_bridge as web_seat_bridge
 from bridges.web_seat_bridge import (
     _calibrate_desktop_seat,
@@ -19,6 +21,7 @@ from bridges.web_seat_bridge import (
     _seat_login_state,
     _should_retry_result,
     default_config,
+    load_bridge_config,
     merge_bridge_config_overrides,
 )
 
@@ -34,6 +37,16 @@ def test_retryable_timeout_can_be_retried_but_quota_cannot():
         "ok": False,
         "supplementable": True,
         "error": {"code": "slow_response_pending", "message": "still thinking"},
+    })
+    assert _should_retry_result({
+        "seat": "gemini",
+        "ok": False,
+        "error": {"code": "gemini_quality_mode_not_verified", "message": "Pro expanded mode was not verified."},
+    })
+    assert _should_retry_result({
+        "seat": "kimi",
+        "ok": False,
+        "error": {"code": "kimi_quality_mode_not_verified", "message": "Thinking mode was not verified."},
     })
     assert not _should_retry_result({
         "seat": "grok",
@@ -144,6 +157,53 @@ def test_default_config_enables_humanized_pacing_and_fragile_seats():
     assert config["seats"]["wenxin"]["fragile_page"] is True
     assert config["seats"]["mimo"]["fragile_page"] is True
     assert config["seats"]["gemini"]["fragile_page"] is False
+
+
+def test_default_config_pins_quality_modes_for_wake_and_execution():
+    config = default_config()
+
+    assert config["quality_mode_policy"]["meta"]["required_mode"] == "思考"
+    assert config["quality_mode_policy"]["wenxin"]["required_mode"] == "深度思考"
+    assert config["quality_mode_policy"]["minimax"]["required_mode"] == "MiniMax-M3 + Thinking"
+    assert config["quality_mode_policy"]["yuanbao"]["required_mode"] == "深度思考"
+    assert config["quality_mode_policy"]["kimi"]["required_mode"] == "K2.6 思考"
+    assert config["quality_mode_policy"]["qwen"]["required_mode"] == "Qwen3.7-Plus + 思考"
+    assert config["quality_mode_policy"]["gemini"]["required_mode"] == "Pro 扩展"
+    assert config["quality_mode_policy"]["xunfei"]["required_mode"] == "推理模式"
+    assert config["seats"]["gemini"]["required_quality_mode"] == "Pro 扩展"
+    assert config["seats"]["xunfei"]["required_quality_mode"] == "推理模式"
+    assert "xinghuo.xfyun.cn" in config["seats"]["xunfei"]["url"]
+    assert config["seats"]["chatgpt"]["required_quality_mode"] == ""
+
+
+def test_load_bridge_config_repins_stale_quality_mode_policy():
+    with TemporaryDirectory() as tmpdir:
+        config_path = Path(tmpdir) / "web_seats.json"
+        config_path.write_text(json.dumps({
+            "quality_mode_policy": {"gemini": {"required_mode": "Flash"}},
+            "seats": {"gemini": {"required_quality_mode": "Flash"}},
+        }), encoding="utf-8")
+
+        config = load_bridge_config(config_path)
+
+    assert config["quality_mode_policy"]["gemini"]["required_mode"] == "Pro 扩展"
+    assert config["seats"]["gemini"]["required_quality_mode"] == "Pro 扩展"
+
+
+def test_cdp_wake_result_carries_pinned_quality_mode_policy(monkeypatch):
+    config = default_config()
+    config["auto_wake_cdp"] = False
+
+    monkeypatch.setattr(chrome_cdp_bridge, "chrome_cdp_status", lambda cfg: {
+        "available": False,
+        "reason": "cdp_unavailable",
+    })
+    monkeypatch.setattr(chrome_cdp_bridge, "_write_cdp_state", lambda cfg, payload: None)
+
+    result = chrome_cdp_bridge.ensure_chrome_cdp_awake(config, open_tabs=False)
+
+    assert result["quality_mode_policy"]["gemini"]["required_mode"] == "Pro 扩展"
+    assert result["quality_mode_policy"]["qwen"]["strict"] is True
 
 
 def test_worldcup_fragile_seats_receive_short_structured_prompt():
@@ -316,6 +376,46 @@ def test_bridge_status_marks_restricted_required_tab_not_ready(monkeypatch):
     assert claude["login_state"]["state"] == "provider_account_restricted"
 
 
+def test_xunfei_homepage_tab_is_auto_recoverable_not_blocking(monkeypatch):
+    """Xunfei can start from its homepage because CDP installs a temporary /desk guard."""
+    config = web_seat_bridge.default_config()
+    config["automation_driver"] = "chrome_cdp"
+    config["auto_wake_cdp"] = False
+    config["auto_wake_open_tabs"] = False
+    config["login_state_audit"] = False
+    for seat_config in config["seats"].values():
+        seat_config["enabled"] = False
+    config["seats"]["xunfei"].update({
+        "enabled": True,
+        "url": "https://xinghuo.xfyun.cn/desk",
+        "fresh_url": "https://xinghuo.xfyun.cn/desk",
+        "match_domains": ["xinghuo.xfyun.cn", "xfyun.cn"],
+        "channel": "web",
+        "execution_required": True,
+    })
+
+    class Tab:
+        title = "讯飞星火-懂我的AI助手"
+        url = "https://xinghuo.xfyun.cn/"
+
+    monkeypatch.setattr(web_seat_bridge, "load_bridge_config", lambda path=None: config)
+    monkeypatch.setattr(web_seat_bridge, "load_calibration", lambda: {"version": 1, "updated_at": None, "seats": {}})
+    monkeypatch.setattr(web_seat_bridge, "playwright_installed", lambda: True)
+    monkeypatch.setattr(web_seat_bridge, "chrome_cdp_status", lambda config: {"available": True})
+    monkeypatch.setattr(web_seat_bridge, "list_cdp_tabs", lambda config: [Tab()])
+    monkeypatch.setattr(web_seat_bridge, "_write_login_state_audit", lambda config, status_payload: None)
+
+    status = web_seat_bridge.bridge_status()
+    xunfei = next(row for row in status["seat_browser_matrix"] if row["seat"] == "xunfei")
+
+    assert status["ready_count"] == 1
+    assert xunfei["configured"] is True
+    assert xunfei["ready"] is True
+    assert xunfei["reason"] == "ready"
+    assert xunfei["login_state"]["state"] == "desk_auto_recoverable"
+    assert "自动拉回 /desk" in xunfei["login_state"]["message"]
+
+
 def test_login_state_detects_generic_account_blocked_markers():
     """P62: Various account-restriction markers must produce provider_account_restricted."""
     blocked_cases = [
@@ -345,3 +445,68 @@ def test_login_state_normal_session_not_flagged_as_restricted():
 
     seat_config = {"url": "https://claude.ai/new", "match_domains": ["claude.ai"]}
     assert _seat_login_state(seat_config, [Tab()])["state"] == "session_present"
+
+
+def test_cdp_tab_dedupe_prefers_exact_url_and_closes_duplicates(monkeypatch):
+    from bridges.chrome_cdp_bridge import CDPTab
+
+    config = {
+        "seats": {
+            "gemini": {
+                "enabled": True,
+                "channel": "web",
+                "url": "https://gemini.google.com/app?hl=zh",
+                "match_domains": ["gemini.google.com"],
+                "provider": "Gemini",
+            }
+        }
+    }
+    tabs = [
+        CDPTab(title="Gemini old chat", url="https://gemini.google.com/app/old", target_id="old"),
+        CDPTab(title="Google Gemini", url="https://gemini.google.com/app?hl=zh", target_id="home"),
+        CDPTab(title="Google Gemini copy", url="https://gemini.google.com/app?hl=zh", target_id="copy"),
+    ]
+    closed_ids = []
+
+    def fake_close(endpoint, tab):
+        closed_ids.append(tab.target_id)
+        return {"ok": True, "target_id": tab.target_id}
+
+    monkeypatch.setattr(chrome_cdp_bridge, "_close_cdp_tab", fake_close)
+
+    assert chrome_cdp_bridge._match_tab(config["seats"]["gemini"], tabs).target_id == "home"
+    closed = chrome_cdp_bridge._dedupe_enabled_cdp_tabs(config, tabs, "http://127.0.0.1:9333")
+
+    assert {item["target_id"] for item in closed} == {"old", "copy"}
+    assert closed_ids == ["copy", "old"]
+
+
+def test_cdp_recovers_chrome_error_after_failed_fresh_navigation():
+    class Page:
+        def __init__(self):
+            self.url = "chrome-error://chromewebdata/"
+            self.visited = []
+
+        def goto(self, url, wait_until, timeout):
+            self.visited.append((url, wait_until, timeout))
+            self.url = url
+
+        def wait_for_timeout(self, _timeout):
+            return None
+
+    page = Page()
+    events = []
+    result = chrome_cdp_bridge._recover_chrome_error_page(
+        page,
+        {"fresh_navigation_timeout_seconds": 3},
+        {"url": "https://chat.qwen.ai/"},
+        "qwen",
+        "https://chat.qwen.ai/c/fixed-thread",
+        "https://chat.qwen.ai/",
+        lambda *event: events.append(event),
+    )
+
+    assert result["recovered"] is True
+    assert page.url == "https://chat.qwen.ai/"
+    assert page.visited == [("https://chat.qwen.ai/", "domcontentloaded", 3000)]
+    assert events[-1][1] == "cdp_chrome_error_recovered"

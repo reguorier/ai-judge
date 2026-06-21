@@ -151,14 +151,9 @@ def decide_execution(
             })
 
     required_ready_count = len(seats)
-    # P24: 允许最多 2 席降级（Claude 账号受限 / Gemini 验证未通过），保证回归可通过
-    can_run = len(runnable) >= required_ready_count - 2
+    minimum_runnable_count = required_ready_count
+    can_run = len(runnable) == required_ready_count
     driver = _dominant_driver(runnable_drivers) or "web_dom"
-    degraded_seats = [s for s in seats if s not in runnable]
-    degraded_msg = ""
-    if degraded_seats and can_run:
-        degraded_names = [SEAT_PERSONAS[s]["name"] for s in degraded_seats]
-        degraded_msg = f"（{'、'.join(degraded_names)} 未通过校准，本轮以 {len(runnable)} 席降级运行）"
     return {
         "engine": engine,
         "mode": mode,
@@ -168,11 +163,12 @@ def decide_execution(
         "runnable_seats": runnable,
         "blocked_seats": blocked,
         "can_run_deep_collection": can_run,
-        "minimum_ready_seats": required_ready_count,
+        "minimum_ready_seats": minimum_runnable_count,
+        "requested_ready_seats": required_ready_count,
         "decision": "run_web" if can_run else "block_for_calibration",
         "message": (
             f"网页全量收集需要所选 {required_ready_count} 个席位全部校准通过；"
-            f"当前可运行 {len(runnable)} 个。{degraded_msg}"
+            f"当前可运行 {len(runnable)} 个。"
         ),
     }
 

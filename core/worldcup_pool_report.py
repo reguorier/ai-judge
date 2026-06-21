@@ -148,6 +148,9 @@ def build_worldcup_pool_report(
         p for p in state.get("player_results") or []
         if isinstance(p, dict) and str(p.get("seat") or "").lower() in active_seats
     ]
+    pred_invest_report = _maybe_build_pred_invest_report(run_id, verdict, state, generated_at, report_id, player_results)
+    if pred_invest_report:
+        return pred_invest_report
     raw_results = [
         r for r in (verdict.get("web_bridge") or {}).get("raw_results") or []
         if isinstance(r, dict) and str(r.get("seat") or "").lower() in active_seats
@@ -194,6 +197,101 @@ def build_worldcup_pool_report(
         "markdown": markdown,
         "html": html_text,
     }
+
+
+def _maybe_build_pred_invest_report(
+    run_id: str,
+    verdict: dict[str, Any],
+    state: dict[str, Any],
+    generated_at: str,
+    report_id: str,
+    player_results: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Use the PRED-INVEST game state when the bridge run produced no player rows.
+
+    The pool app owns the daily game ledger. A bridge run can legitimately fail
+    to collect browser answers while the game state is still complete and ready.
+    In that case the public report must not fall back to the legacy PSG/Arsenal
+    template.
+    """
+    question = str(verdict.get("question") or "")
+    is_pred_invest = "PRED-INVEST" in question or isinstance(state.get("pool_app_bridge"), dict)
+    if player_results or not is_pred_invest:
+        return None
+    pred = _load_pred_invest_current_game()
+    if not pred:
+        return None
+    data = pred["data"]
+    source_markdown = pred["markdown"]
+    scoreboard = data.get("scoreboard") if isinstance(data.get("scoreboard"), dict) else {}
+    title = f"PRED-INVEST 当前游戏内容报告 · {data.get('date') or ''} · {data.get('round_id') or run_id}".strip()
+    bridge_stats = verdict.get("_strategic_seat_stats") if isinstance(verdict.get("_strategic_seat_stats"), dict) else {}
+    supplementable = verdict.get("supplementable_seats") if isinstance(verdict.get("supplementable_seats"), list) else []
+    diagnostics = [
+        "",
+        "## AI Judge 桥接诊断",
+        "",
+        f"- bridge run: `{run_id}`",
+        f"- bridge completed/total: {bridge_stats.get('completed', 0)}/{bridge_stats.get('total', 0)}",
+        f"- bridge failed: {bridge_stats.get('failed', 0)}",
+        f"- supplementable seats: {', '.join(str(item.get('seat') or '') for item in supplementable if isinstance(item, dict)) or '无'}",
+        "- report data source: `pool-app/data/pool/pred_invest/latest_current_game.json`",
+        "- note: 浏览器桥接未能回收足够席位时，本报告仍以已通过 PRED 自检的游戏账本为准；缺席桥接席位不再触发旧欧冠模板。",
+        "",
+    ]
+    markdown = "\n".join([
+        source_markdown.rstrip(),
+        *diagnostics,
+        "## 验收口径",
+        "",
+        f"- PRED verdict: **{data.get('verdict') or 'UNKNOWN'}**",
+        f"- models: {scoreboard.get('models', 0)}/12",
+        f"- forecast matches: {scoreboard.get('forecast_matches', 0)}",
+        f"- matches with odds: {scoreboard.get('matches_with_odds', 0)}",
+        f"- existing structured bets: {scoreboard.get('existing_bets', 0)}",
+        f"- rule converted stake: {scoreboard.get('rule_converted_stake_total_gp', 0)} GP",
+        "",
+    ])
+    counts = {
+        "players": int(scoreboard.get("models") or 0),
+        "ok": int(scoreboard.get("models") or 0),
+        "failed": 0,
+        "sources": int(scoreboard.get("matches_with_odds") or 0),
+        "resonance": 0,
+        "product_feedback": 0,
+    }
+    html_text = _render_html(title, markdown, report_id)
+    return {
+        "schema": REPORT_SCHEMA,
+        "report_id": report_id,
+        "run_id": run_id,
+        "title": title,
+        "generated_at": generated_at,
+        "source_run_created_at": verdict.get("created_at"),
+        "state_updated_at": data.get("generated_at"),
+        "counts": counts,
+        "failed_seats": [],
+        "adapter_seats": [],
+        "sections": {"pred_invest": data, "bridge_diagnostics": {"stats": bridge_stats, "supplementable": supplementable}},
+        "format_standard": REPORT_FORMAT_STANDARD,
+        "markdown": markdown,
+        "html": html_text,
+    }
+
+
+def _load_pred_invest_current_game() -> dict[str, Any] | None:
+    root = Path("/Users/audimacmini/Documents/Playground/.omx/ai-judge/pool-app/data/pool/pred_invest")
+    json_path = root / "latest_current_game.json"
+    md_path = root / "latest_current_game.md"
+    if not json_path.exists() or not md_path.exists():
+        return None
+    try:
+        return {
+            "data": json.loads(json_path.read_text(encoding="utf-8")),
+            "markdown": md_path.read_text(encoding="utf-8"),
+        }
+    except Exception:
+        return None
 
 
 def _build_sections(
@@ -821,6 +919,11 @@ def _inline_md(text: Any) -> str:
 
 def _render_pdf_with_helper(report_json_path: Path, pdf_path: Path) -> bool:
     helper = Path(__file__).resolve().parent.parent / "tools" / "render_worldcup_pool_pdf.py"
+    try:
+        if pdf_path.exists():
+            pdf_path.unlink()
+    except Exception:
+        return False
     python_candidates = [
         Path.home() / ".cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
         Path("/usr/bin/python3"),

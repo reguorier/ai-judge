@@ -12,6 +12,46 @@ Status: ready for use after first replies
 | V2EX | Logged in, but activation code is unavailable. | Abandon V2EX for this launch cycle; resume only if an invite code or `$V2EX` activation appears. |
 | Zhihu | Article published. | Track comments and route useful examples into benchmark issues #2-#5. |
 | Direct email | QQ Mail is logged in through Safari; Apple Mail accounts fail IMAP/SMTP login; Chrome automation is blocked because the Codex Chrome extension is disabled. | Use `growth/outreach_mailto_links.md` or `growth/outreach_drafts/*.eml` for the first P0 send batch; record sent status immediately after sending. |
+| OpenRouter Discord | Safari is logged in as `reguorider`, but Discord requires phone verification before continuing / accepting the OpenRouter invite. | Retry after manual phone verification; use the short message in `growth/openrouter_outreach_pack_2026-06-17.md`. |
+| OpenRouter Works With OR | OpenRouter BYOK config, public docs, and a draft listing are now in place via `docs/OPENROUTER.md` and `growth/openrouter_works_with_or_app_draft.yaml`; official PR path still needs logo, one OpenRouter-backed public demo report, and traction/notability evidence. | Do not submit PR yet. Next add `logo.png` and generate one public-safe OpenRouter-backed audit report. |
+
+## Follow-up 0: OpenRouter Support / Partnership
+
+Status: initial emails sent 2026-06-18 HKT.
+
+Tickets:
+
+- `#31295`: main partnership / benchmark / credits request.
+- `#31297`: routing clarification; opened separately by Zendesk.
+
+Automation:
+
+- Codex heartbeat `openrouter-follow-up-check` was canceled on 2026-06-18 at user request.
+- No automatic follow-up is currently scheduled.
+
+Next action:
+
+- Wait 3 business days for a human response.
+- If no response, send one concise follow-up referencing both ticket numbers and asking for the partnerships, ecosystem/apps, or community credits queue.
+- Do not create another Zendesk ticket unless their response asks for it.
+
+```text
+Hi OpenRouter team,
+
+Following up on tickets #31295 and #31297. This is a partnership / benchmark routing request, not an account-support request.
+
+Could you point AI Judge to the right person or queue for one of these paths?
+
+1. Small OpenRouter Fusion vs AI Judge citation / claim-support benchmark.
+2. OpenRouter-as-model-routing-layer integration, with AI Judge adding auditable HTML/JSON evidence reports.
+3. Bulk/community/research credits for public multi-model reliability benchmarks.
+
+Repo: https://github.com/reguorier/ai-judge
+Demo: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
+
+Best,
+Reguorier
+```
 
 ## Follow-up 1: benchmark contributor
 

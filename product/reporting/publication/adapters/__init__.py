@@ -1,0 +1,1 @@
+"""Industry-specific publication adapters."""
