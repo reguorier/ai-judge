@@ -1,529 +1,101 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/release-3.8.0-purple" alt="v3.8.0">
-  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><img src="https://img.shields.io/badge/HuggingFace-Space%20live-ffcc4d" alt="Hugging Face Space"></a>
-  <img src="https://img.shields.io/badge/Citation%20Audit-launch%20edition-0f766e" alt="Citation Audit launch edition">
-  <img src="https://img.shields.io/badge/COUNCIL--004-persona%20seats-gold" alt="COUNCIL-004 persona seats">
-  <img src="https://img.shields.io/badge/evidence-traced-2ea44f" alt="evidence traced">
-  <img src="https://img.shields.io/badge/dissent-before%20confidence-orange" alt="dissent before confidence">
-  <img src="https://img.shields.io/badge/reasoning-tree%20ready-38bdf8" alt="reasoning tree ready">
-  <img src="https://img.shields.io/badge/local--first-macOS%20%2B%20Docker-black" alt="local-first">
-  <img src="https://img.shields.io/badge/license-BSL%201.1-blue" alt="BSL 1.1">
+  <img src="https://img.shields.io/badge/release-3.8-public%20showcase-0a66c2" alt="AI Judge v3.8 public showcase">
+  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><img src="https://img.shields.io/badge/HuggingFace-citation%20audit%20live-087a68" alt="Hugging Face citation audit live"></a>
+  <img src="https://img.shields.io/badge/core-closed--core-17202a" alt="closed-core">
+  <img src="https://img.shields.io/badge/public-demo%20%2B%20benchmarks-9a6500" alt="public demo and benchmarks">
 </p>
 
 <p align="center">
-  <img src="assets/ai-judge-v3-hero.png" alt="AI Judge v3 product overview" width="960">
+  <img src="assets/citation-audit-space-output.png" alt="AI Judge citation audit public demo output" width="960">
 </p>
 
-<h1 align="center">AI Judge v3.8.0</h1>
-<p align="center"><strong>Source-available citation audit for AI-generated answers.</strong></p>
-<p align="center">Catch fabricated, weak, irrelevant, unverifiable, and contradicted citations before an AI-generated report, paper, README, or client memo is published.</p>
-<p align="center"><strong>Built for teams shipping AI agents:</strong> audit the answer, the source, and the judgment path before it reaches a user.</p>
-<p align="center">Star this repo if you want a practical judge layer for LLM outputs, RAG citations, and agent traces instead of another chatbot wrapper.</p>
+<h1 align="center">AI Judge</h1>
+<p align="center"><strong>Public showcase for a closed-core, source-isolated audit layer for AI-generated answers.</strong></p>
+<p align="center">AI Judge checks whether citations and isolated sources actually support the exact claims a model answer made before that answer is reused in a report, memo, README, paper, or agent workflow.</p>
 
 <p align="center">
-  <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
+  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Citation Audit</a> ·
   <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
-  <a href="docs/ARC_AGENT_TRACE_AUDIT.md">Agent Trace Audit</a> ·
-  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
-  <a href="https://github.com/reguorier/ai-judge/releases/latest">macOS App</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#demo-result">Demo Result</a> ·
-  <a href="docs/LAUNCH_CITATION_AUDIT.md">Launch Plan</a> ·
-  <a href="docs/AI_JUDGE_GROWTH_PLAYBOOK.md">Growth Playbook</a> ·
-  <a href="docs/PRO_EARLY_ACCESS.md">Pro Early Access</a> ·
-  <a href="docs/LAUNCH_DEMO_KIT.md">Launch Demo Kit</a> ·
-  <a href="#what-v38-adds">What v3.8 Adds</a> ·
-  <a href="#what-v37-adds">What v3.7 Adds</a> ·
-  <a href="#what-v33-adds">What v3.3 Adds</a> ·
-  <a href="#what-v32-adds">What v3.2 Adds</a> ·
-  <a href="#how-it-differs">Comparison</a> ·
-  <a href="RELEASE_V3_8.md">v3.8 Notes</a> ·
-  <a href="RELEASE_V3_7.md">v3.7 Notes</a> ·
-  <a href="RELEASE_V3_3.md">v3.3 Notes</a> ·
-  <a href="RELEASE_V3_2.md">v3.2 Notes</a>
+  <a href="product/landing.html">Public Showcase Page</a> ·
+  <a href="docs/PUBLIC_PRIVATE_BOUNDARY.md">Public / Private Boundary</a> ·
+  <a href="docs/ARC_AGENT_TRACE_AUDIT.md">Agent Trace Audit</a>
 </p>
 
 ---
 
-## macOS Desktop App
+## What This Public Repo Is
 
-Download the signed local wrapper and bundled runtime:
+This repository is the public-facing doorway for AI Judge: product positioning, public demos, sanitized examples, benchmark descriptions, and a lightweight explanation of the trust protocol.
 
-<p>
-  <a href="https://github.com/reguorier/ai-judge/releases/latest"><strong>Download the latest AI Judge macOS build</strong></a>
-</p>
+The private repository remains the engineering source of truth for the production runtime. Browser/CDP bridge code, model-seat orchestration, local operator flows, customer facts, raw transcripts, generated evidence packs, and commercial workflow code are not part of the public surface.
 
-The installer places `AI Judge.app` in `/Applications` and the local runtime in `/Users/Shared/AI Judge/runtime`. It does not include local task history, runs, browser profiles, or the packager's web login data. Web seats still use each user's own Chrome/web account sessions. The current branch reports v3.8.0 from the local API and desktop workbench; use GitHub Releases for signed artifacts.
-
-## Why People Notice It
-
-Most AI comparison tools answer: **which model sounded best?**
-AI Judge asks a harder question: **which answer can show its evidence, survive dissent, and explain the path to judgment without models quietly copying the same source?**
-
-It separates polished language from actual thinking quality, then gives the human a compact evidence package instead of another black-box synthesis.
-
-## Citation Audit in 60 Seconds
-
-Most LLM eval tools ask whether an answer is good. AI Judge v3.8 keeps the citation-audit wedge, then adds a narrower product question: **which citations and model-seat answers are reliable enough to become a human-confirmed decision?**
-
-The current growth strategy is intentionally constrained: prove the citation and claim-support protocol first, collect hard benchmark cases from professional users, and delay full SaaS monetization until there is visible demand. See [`docs/AI_JUDGE_GROWTH_PLAYBOOK.md`](docs/AI_JUDGE_GROWTH_PLAYBOOK.md).
-
-For the shortest reproducible path, start with [`docs/TRY_AI_JUDGE_IN_3_MINUTES.md`](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). It links the live Space, one local audit, the eight-report gallery, the 100-case benchmark, the hard 13-case benchmark, and the public contribution issues.
-
-Try it in the browser first:
-
-<p>
-  <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit"><strong>Open the Hugging Face Space</strong></a>
-</p>
-
-<p align="center">
-  <img src="assets/citation-audit-space-output.png" alt="AI Judge Citation Audit live Space output" width="960">
-</p>
-
-```bash
-PYTHONPATH=. python cli/main.py audit examples/fake-citation.md \
-  --html reports/fake-citation-audit.html \
-  --json reports/fake-citation-audit.json
-```
-
-Batch Markdown/JSON audit is also available for repository-scale checks:
-
-```bash
-PYTHONPATH=. python cli/main.py audit-batch "examples/*.md" \
-  --out reports/citation-batch \
-  --manifest reports/citation-batch/manifest.json
-```
-
-The launch batch demo intentionally returns non-zero when contradicted claims are present. Inspect the generated index at [`reports/citation-batch/index.html`](reports/citation-batch/index.html) and the machine-readable manifest at [`reports/citation-batch/manifest.json`](reports/citation-batch/manifest.json). PDF/Docx inputs are not silently treated as audited; batch manifests list them under `skipped_inputs` with parser statuses such as `pdf_parser_pending` or `docx_parser_pending`.
-
-The audit returns:
-
-| Output | Why it matters |
-|---|---|
-| `verified` / `weakly_verified` / `irrelevant` / `unverifiable` / `contradicted` | Citation-level status instead of vague prose confidence |
-| `unverifiable` reason codes | Separates missing evidence, unfetched model candidates, fetch errors, blocked retrieval, weak matches, and no-citation cases |
-| Certification ID | Stable audit handle for reports and CI artifacts |
-| Replay Ledger | Raw answer is preserved; the judge does not rewrite model text |
-| Evidence Broker | Model-mentioned candidate sources are separated from supplied/fetched external evidence |
-| Evidence provenance | Tracks `model_candidate`, `user_supplied`, `fetched`, `independently_attested`, and `notarized` evidence |
-| HTML + JSON report | Human-readable proof plus automation-friendly output |
-
-Launch demos:
-
-```bash
-PYTHONPATH=. python cli/main.py audit examples/fake-citation.md --html reports/fake-citation-audit.html
-PYTHONPATH=. python cli/main.py audit examples/product-no-evidence.md --html reports/product-no-evidence-audit.html
-PYTHONPATH=. python cli/main.py audit examples/sounds-smart-low-judgment.md --html reports/sounds-smart-low-judgment-audit.html
-PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-causation.md --html reports/real-source-overclaimed-causation-audit.html
-PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-absolute.md --html reports/real-source-overclaimed-absolute-audit.html
-PYTHONPATH=. python cli/main.py audit examples/real-source-overclaimed-quantified.md --html reports/real-source-overclaimed-quantified-audit.html
-PYTHONPATH=. python tools/run_citation_bench.py
-```
-
-Demo reports: [`fake citation`](reports/fake-citation-audit.html), [`product plan without evidence`](reports/product-no-evidence-audit.html), [`sounds smart, low judgment`](reports/sounds-smart-low-judgment-audit.html), [`legal memo contradicted`](reports/legal-memo-contradicted-audit.html), [`open-source README irrelevant`](reports/opensource-readme-irrelevant-audit.html), [`real source, overclaimed causation`](reports/real-source-overclaimed-causation-audit.html), [`real source, overclaimed absolute`](reports/real-source-overclaimed-absolute-audit.html), [`real source, overclaimed quantified effect`](reports/real-source-overclaimed-quantified-audit.html).
-
-`contradicted` audits intentionally return a non-zero CLI status because they should block publication; the generated HTML/JSON report is still written.
-
-The first public benchmark is [`citation-bench/citation-bench-100.jsonl`](citation-bench/citation-bench-100.jsonl): 100 deterministic cases covering verified, weak, irrelevant, unverifiable, and contradicted citation behavior.
-
-Hard-mode launch cases live in [`citation-bench/citation-bench-hard-11.jsonl`](citation-bench/citation-bench-hard-11.jsonl):
-
-```bash
-PYTHONPATH=. python tools/run_citation_bench.py \
-  --bench citation-bench/citation-bench-hard-11.jsonl \
-  --fail-under 0.95
-```
-
-The hard set includes governance benchmarks where a real, relevant source supports a weaker proposition than the generated answer: correlation overclaimed as causation, limited pilot evidence overclaimed as "all/no false negatives", and a 12% effect overclaimed as 95%. That is the boundary AI Judge should make visible: a source can be real without verifying the model's claim.
-
-For legal and audit workflows, the next atom is not just a citation. It is `claim-span + source`; see [`docs/CLAIM_SPAN_ROADMAP.md`](docs/CLAIM_SPAN_ROADMAP.md).
-
-Agent trace audit now has a small executable bridge as well: [`examples/agent-trace-demo.json`](examples/agent-trace-demo.json), [`examples/agent-trace-supported.json`](examples/agent-trace-supported.json), and [`examples/agent-trace-partial.json`](examples/agent-trace-partial.json) can be rendered with [`tools/render_agent_trace_report.py`](tools/render_agent_trace_report.py) to produce JSON, Markdown, and HTML trace verdicts for ARC-style / agent-eval conversations.
-
-Want to help without reading the whole codebase? Start here:
-
-| Public issue | What to add |
-|---|---|
-| [Hard citation hallucination cases](https://github.com/reguorier/ai-judge/issues/2) | Plausible fake reports, real-but-irrelevant sources, contradicted claims |
-| [`unverifiable` vs `contradicted`](https://github.com/reguorier/ai-judge/issues/3) | Edge cases where missing evidence and refuting evidence are easy to confuse |
-| [Batch/PDF/Docx audit demand](https://github.com/reguorier/ai-judge/issues/4) | Real workflow needs before Pro batch audit is built |
-| [Demo gallery examples](https://github.com/reguorier/ai-judge/issues/5) | Public-safe AI answers that deserve a citation audit report |
-
-## 30-Second Product Tour
-
-<p align="center">
-  <img src="assets/ai-judge-v3.2-tianfu-stack.svg" alt="AI Judge v3.2 evidence and reasoning stack" width="900">
-</p>
-
-| Step | What happens | Why it matters |
-|---:|---|---|
-| 1 | 9 fixed persona seats answer independently | Creates structured divergence instead of bland consensus |
-| 2 | Claims enter the v2 scoring lane | Bluff, calibration, evidence, diversity, and graph value are auditable |
-| 3 | Evidence objects attach sources | Tool, rule, harness, and precedent evidence become inspectable |
-| 4 | Dissent challenges weak support | The system argues against itself before raising confidence |
-| 5 | Reasoning tree renders the path | Facts, evidence, rules, dissent, and conclusion become visible |
-| 6 | Human reads the evidence and decides | AI supports judgment, but does not replace it |
-
-```mermaid
-flowchart LR
-    Q["Question"] --> J["9 AI Seats"]
-    J --> C["Claim Ledger"]
-    C --> S["10 Scoring Functions"]
-    C --> E["Evidence Objects"]
-    E --> R["Risk Router"]
-    R --> X["Dissent Agent"]
-    X --> T["Reasoning Tree"]
-    C --> N["4 Cognitive Proxy Signals"]
-    N --> H["Hard Truth Mode L0-L4"]
-    S --> D["Diversity + Graph Value"]
-    D --> P["Peach Projection"]
-    T --> V["Human Verdict"]
-    H --> V
-    P --> V
-```
-
-## What v3.8 Adds
-
-AI Judge v3.8 turns the Decision Audit Workbench into a Trust Workbench. Simple mode gives a five-minute closeout surface; Pro mode exposes reliability diagnostics, benchmark cards, bridge status, and the evidence behind the final report.
-
-| Layer | What it does | User-visible output |
-|---|---|---|
-| Trust Workbench API | Reports product version, Stable/Lab capability cards, Human Gavel states, and reliability benchmark summaries | `/api/health`, `/api/product/capabilities`, `/api/benchmarks/summary` |
-| Paper-style final report | Converts verdicts into an auditable abstract, postulates, evidence map, execution plan, limits, and verification contract | `final_report`, HTML report, Markdown export |
-| Stable closeout | Shows final answer, recommended action, primary risk, and Human Gavel state without exposing bridge internals by default | Simple dashboard mode |
-| Lab reliability console | Keeps model-seat diagnostics, score rounds, bridge readiness, and benchmark cards available for expert users | Professional dashboard mode |
-| Desktop sync | Ships the macOS wrapper as `AIJudgeDesktop/3.8.0 macOS TrustWorkbench` while preserving the AJ icon and paste menu | `desktop/AIJudgeDesktop.swift` |
-| Parser guardrails | Markdown/JSON batch audit remains executable while PDF/Docx inputs are explicitly marked parser-pending instead of disappearing | `skipped_inputs`, `unsupported_input`, `unmatched_input` |
-
-## What v3.7 Adds
-
-AI Judge v3.7 turns the Command Center into a desktop Decision Audit Workbench. It keeps the local-first citation audit core, then adds execution gates for multi-model web seats, recovery, evidence review, and publish readiness.
-
-| Layer | What it does | User-visible output |
-|---|---|---|
-| Decision Audit Workbench | Runs the request, mentor gate, draft, evidence review, model comparison, and publish gate from one desktop surface | `product/dashboard.html`, `product/api_server.py` |
-| 13-seat web bridge | Tracks fixed visible Chrome tabs and per-seat readiness without using the system clipboard, keyboard, or mouse | `/api/bridge/status`, 13/13 configured seats |
-| Required-seat policy | Treats Grok as best-effort and keeps the other web seats execution-required for publish confidence | `core/seat_execution_policy.py` |
-| Recovery Cockpit | Rechecks slow or supplementable seats instead of turning a timing delay into a final model failure | `/api/rescue`, supplement history |
-| Reasoning Tree + evidence trace | Shows claim, evidence, dissent/blocker, and action nodes before a publish decision | Evidence review and final report panels |
-| Publish hard gate | Blocks external publish state until required seats, trace, risk disclosure, and human confirmation are present | Publish Gate panel |
-
-## What v3.3 Adds
-
-COUNCIL-004 turns the nine seats from interchangeable model names into stable, inspectable judging roles. Each seat now carries a fixed persona card with MBTI-style operating mode, risk preference, cognitive bias, ideology, strengths, weaknesses, and a system-prompt injection for jury dispatch.
-
-| Layer | What it does | User-visible output |
-|---|---|---|
-| Fixed seat personas | Keeps Gemini, ChatGPT, DeepSeek, Qwen, Kimi, Grok, Yuanbao, MiMo, and Doubao behavior intentionally different | `ai-judge seats --list`, `ai-judge seats --show grok` |
-| Jury prompt injection | Adds seat-specific operating instructions before the question | `render_jury_prompt(seat, question)` |
-| Evidence trace | Classifies claim support as L1 explicit citation, L2 implied source, or L3 no citation | `ai-judge trace --claim "..."` |
-| Contamination scan | Finds citation sources shared by 3+ seats so consensus does not masquerade as independence | `ai-judge trace --demo`, `ai-judge trace --claims-file ...` |
-
-```bash
-# Inspect the 9 fixed persona seats
-ai-judge seats --list
-ai-judge seats --show grok
-
-# Trace evidence sources
-ai-judge trace --demo
-ai-judge trace --claim "According to the 2025 IMF report, global debt reached $300T"
-ai-judge trace --claims-file path/to/claim-ledger.json
-```
-
-## What v3.2 Adds
-
-<p align="center">
-  <img src="assets/ai-judge-v3.2-reasoning-tree.svg" alt="AI Judge v3.2 reasoning tree visualization" width="900">
-</p>
-
-| Layer | What it does | User-visible output |
-|---|---|---|
-| Evidence objects | Gives each claim a source-backed evidence bundle | `tool_result`, `rule_match`, `harness_result`, `precedent` |
-| Dissent agent | Challenges weak evidence, single-source support, and overconfidence | Counterarguments and required checks |
-| Reasoning tree | Turns the verdict path into expandable JSON/UI nodes | Facts -> Evidence -> Rules -> Dissent -> Conclusion |
-| Risk router | Chooses review depth by sensitive surface and diff shape | `full_jury`, `standard_dissent`, `standard`, `fast_check` |
-| Enhanced confidence | Adds evidence strength and dissent penalty to confidence lights | More honest low/medium/high confidence |
-
-The full product package also adds a TypeScript reasoning-tree UI under `frontend/` and a Rust reference engine under `rust-engine/`.
-
-## Launch Assets
-
-AI Judge now includes a ready-to-record launch and hackathon demo pack:
-
-| Asset | Use it for |
-|---|---|
-| [`product/demo-video.html`](product/demo-video.html) | Auto-playing 90-second launch demo source for screen recording |
-| [`Record-AI-Judge-Demo.command`](Record-AI-Judge-Demo.command) | One-click macOS recorder for the 90-second launch demo |
-| [`Record-Microsoft-Agent-Academy.command`](Record-Microsoft-Agent-Academy.command) | One-click macOS recorder for the five-minute Microsoft submission video |
-| [`docs/RECORDING_GUIDE.md`](docs/RECORDING_GUIDE.md) | Exact recording workflow and screen order |
-| [`docs/LAUNCH_DEMO_KIT.md`](docs/LAUNCH_DEMO_KIT.md) | Voiceover, shot list, Product Hunt copy, Show HN copy, Chinese short post |
-| [`docs/MICROSOFT_AGENT_ACADEMY.md`](docs/MICROSOFT_AGENT_ACADEMY.md) | Microsoft Agent Academy submission positioning and answers |
-| [`assets/microsoft-agent-academy-architecture.svg`](assets/microsoft-agent-academy-architecture.svg) | Architecture diagram for hackathon submissions |
-| [`examples/microsoft_agent_academy/copilot_cowork_packet.md`](examples/microsoft_agent_academy/copilot_cowork_packet.md) | Copilot/Cowork demo prompt, sample output, and AI Judge evaluation packet |
-
-## Citation Audit Growth Kit
-
-The current monetization path is intentionally narrow: prove citation audit value first, then ask for Pro access only from users who need batch, CI, or document workflows.
-
-| Asset | Purpose |
-|---|---|
-| [`docs/CITATION_AUDIT_QUICKSTART.md`](docs/CITATION_AUDIT_QUICKSTART.md) | Reproducible local demo, report gallery, and benchmark command |
-| [`docs/LAUNCH_CITATION_AUDIT.md`](docs/LAUNCH_CITATION_AUDIT.md) | 30-day launch plan, public demos, and stop/go thresholds |
-| [`docs/UNVERIFIABLE_IS_NOT_FALSE.md`](docs/UNVERIFIABLE_IS_NOT_FALSE.md) | Public explainer for the most important trust-boundary concept |
-| [`docs/BATCH_AUDIT_SPEC.md`](docs/BATCH_AUDIT_SPEC.md) | Implemented Markdown/JSON batch-audit scope without building billing too early |
-| [`docs/DOCUMENT_PARSER_ROADMAP.md`](docs/DOCUMENT_PARSER_ROADMAP.md) | PDF/Docx parser gates and current unsupported-input policy |
-| [`docs/GITHUB_ACTION_CITATION_AUDIT.md`](docs/GITHUB_ACTION_CITATION_AUDIT.md) | CI integration examples for single-file and batch Markdown/document PRs |
-| [`docs/AI_DECISION_AUDIT_SAMPLE.md`](docs/AI_DECISION_AUDIT_SAMPLE.md) | Concrete sample deliverable for audit-service conversations |
-| [`reports/citation-batch/index.html`](reports/citation-batch/index.html) | Six-example batch audit proof with manifest and per-file reports |
-| [`docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md`](docs/AI_COLLECTIVE_BLIND_SPOTS_BLOG.md) | Publish-ready long-form launch essay |
-| [`docs/PRO_EARLY_ACCESS.md`](docs/PRO_EARLY_ACCESS.md) | First paid-signal offer and manual purchase flow |
-| [`product/pro_early_access.html`](product/pro_early_access.html) | Static early-access page for the $49 lifetime test |
-| [`growth/30_day_autopilot_execution.md`](growth/30_day_autopilot_execution.md) | Day-by-day automation table and current asset map |
-| [`growth/metrics_dashboard.md`](growth/metrics_dashboard.md) | Stop/go tracking for stars, replies, feature asks, and paid signals |
-| [`growth/outreach_targets.md`](growth/outreach_targets.md) | 20-target outreach queue for AI newsletters, legal-tech, research ops, and devtools |
-| [`growth/free_audit_offer.md`](growth/free_audit_offer.md) | Three free audit offer used to collect testimonials |
-| [`growth/anonymized_audit_permission_request.md`](growth/anonymized_audit_permission_request.md) | Permission template for a real anonymized Day-24 audit |
-| [`growth/zhihu_launch_post.md`](growth/zhihu_launch_post.md) | Chinese long-form launch post |
-| [`product/social_quote_cards.html`](product/social_quote_cards.html) | Three quote-card layouts for short-form launch visuals |
-| [`docs/GITHUB_SPONSORS.md`](docs/GITHUB_SPONSORS.md) | GitHub Sponsors copy and tier positioning |
-
-## Support
-
-AI Judge Citation Audit is source-available and free for single-file local evaluation. Support helps maintain citation hallucination benchmarks, demo reports, CI examples, Evidence Broker work, and anonymized AI Decision Audit examples.
-
-Current support paths:
-
-- Pro Early Access: [`docs/PRO_EARLY_ACCESS.md`](docs/PRO_EARLY_ACCESS.md)
-- Free audit/testimonial pipeline: [`growth/free_audit_status.md`](growth/free_audit_status.md)
-- Sponsor tiers and setup notes: [`docs/GITHUB_SPONSORS.md`](docs/GITHUB_SPONSORS.md)
-- Contact: [reguorider@gmail.com](mailto:reguorider@gmail.com)
-
-GitHub Sponsors is prepared but not enabled yet; `.github/FUNDING.yml` stays commented until the account is approved.
-
-## Citation Audit FAQ
-
-**Is `unverifiable` the same as false?**
-No. It means the current isolated evidence layer is insufficient. `contradicted` is reserved for evidence that explicitly refutes the claim.
-
-**Does AI Judge rewrite the model answer?**
-No. The Replay Ledger preserves the raw answer. The judge adds verification, hashes, and status labels around it.
-
-**Does a model-mentioned source count as evidence?**
-No. A model can hallucinate a source and then cite it confidently. Candidate sources must be checked against supplied or fetched external evidence.
-
-**Does a real source prove the model's conclusion?**
-No. AI Judge now separates citation matching from claim support. In the overclaimed-support demos, the citation is `verified` and the source is `relevant`, but the exact claim is still `contradicted` when the answer upgrades association into causation, limited evidence into an absolute, or a smaller measured effect into an inflated percentage.
-
-**Why start with citation audit instead of full Grand Judge?**
-Citation trust is a narrow, testable baseline. Once citation truthiness is bounded, broader council scoring can build on a cleaner evidence layer.
-
-**What becomes Pro?**
-The first Pro surface is repository-scale Markdown/JSON batch audit, with GitHub Action batch mode, history ledger, network-backed Evidence Broker, and PDF/Docx document parsing on the roadmap. Single-file local audit stays free.
-
-## v3.1 Foundation
-
-| Layer | What it does | User-visible output |
-|---|---|---|
-| Dual scores | Separates fluent confidence from judgment quality | `smart_sounding_score` and `judgment_quality_score` |
-| Self-closure | Detects when the answer stays trapped in one viewpoint | 自我视角闭环 |
-| Ambiguity flexibility | Checks whether contradiction is explored or prematurely closed | 模糊性处理能力 |
-| Recovery after negative feedback | Distinguishes repair from defensiveness | 反馈恢复模式 |
-| Experience grounding | Rewards concrete tests, cases, and lived evidence | 经验锚定度 |
-| Hard Truth Mode | Escalates when style outruns judgment | L0-L4 feedback levels |
-| Heterogeneity exemption | Protects unusual but genuinely novel reasoning | Neurodiversity-friendly safeguard |
-
-These are **textual proxy signals**, not medical or diagnostic claims. They help the user inspect reasoning behavior in the output.
-
-## Core Signals at a Glance
-
-| Signal | Good pattern | Risk pattern | Example output |
-|---|---|---|---|
-| Self-closure | Brings in outside viewpoints | Keeps returning to one self-centered frame | `self_reference_closure` |
-| Ambiguity flexibility | Suspends, tests, and integrates contradictions | Chooses a side too quickly | `low_flexibility_choose_side` |
-| Recovery after negative feedback | Uses challenge as new evidence | Defends, collapses, or performs agreement | `defensive_recovery` |
-| Experience grounding | Names concrete data, cases, tests, and constraints | Floats in jargon and abstraction | `conceptual_fluency_without_grounding` |
-
-## Demo Result
-
-Reproducible local smoke tests:
-
-```bash
-PYTHONPATH=. python3 tests/smoke_test_v3_2.py
-PYTHONPATH=. python3 tests/smoke_test_v3.py
-PYTHONPATH=. python3 tests/smoke_test_council_004.py
-```
-
-Observed v3.3 demo behavior:
-
-| Fixture | Personas | Trace | Result |
-|---|---:|---|---|
-| COUNCIL-004 smoke | 9 seats | L1/L2/L3 + shared-source scan | Pseudo-consensus detectable |
-
-Observed v3.2 demo behavior:
-
-| Fixture | Risk route | Evidence | Dissent | Result |
-|---|---|---:|---|---|
-| Security/payment checkout change | `full_jury` | 3 items | triggered | Reasoning tree exportable |
-
-Observed v3.1 demo behavior:
-
-| Fixture | Smart-sounding | Judgment quality | Result |
-|---|---:|---:|---|
-| Shallow strategic jargon | 0.937 | 0.695 | L2 判断优先, hard truth active |
-| Evidence-grounded reasoning | 0.879 | 0.913 | L0 普通反馈 |
-| Full pipeline | steady confidence | exportable verdict | hard truth triggers when needed |
-
-Example Hard Truth output:
+## The Core Claim
 
 ```text
-═══ 判断优先模式 ═══
-
-smart_sounding: 0.94 | judgment_quality: 0.70
-差距: 24% — 这段输出「听起来聪明」，但不应被直接采信。
-
-最小修复动作：
-  a. 你的哪个主张可以被证伪？
-  b. 哪个反方观点可能是真的？
-  c. 你下一步用什么数据或实验来验证？
+A source can be real and relevant, but still fail to prove the model's exact claim.
 ```
 
-## Quick Start
+AI Judge is built around that boundary. It preserves the raw model answer, isolates evidence, audits claim support, keeps dissent visible, and produces a human-final report package instead of silently rewriting the answer.
 
-```bash
-# Run full harness test suite (benchmark + regression + smoke)
-PYTHONPATH=. python3 tests/run_harness.py
+## Try It First
 
-# V3.1 neuro-cognitive demo
-python3 cli/main.py neuro-profile --demo
-
-# Hard Truth Mode
-python3 cli/main.py hard-truth --demo
-
-# Full V3.1 pipeline
-python3 cli/main.py v3-pipeline --demo
-
-# V3.2 evidence + dissent + reasoning tree pipeline
-python3 cli/main.py v3.2-pipeline --demo
-PYTHONPATH=. python3 tests/smoke_test_v3_2.py
-
-# COUNCIL-004 persona seats + evidence trace
-python3 cli/main.py seats --list
-python3 cli/main.py seats --show grok
-python3 cli/main.py trace --demo
-python3 cli/main.py trace --claim "According to the 2025 IMF report, global debt reached $300T"
-
-# V2 scoring remains available
-python3 cli/main.py score-v2 --demo
-```
-
-## Harness Engineering
-
-The `harness/` layer provides systematic, reproducible pipeline execution:
-
-| Module | Purpose |
-|--------|---------|
-| `harness/runner.py` | Programmatic API for all pipeline operations |
-| `harness/benchmark.py` | Golden-dataset testing with pass/fail thresholds |
-| `harness/regression.py` | Cross-version consistency detection |
-| `harness/config.py` | YAML-based profiles (default, strict, fast, ci) |
-| `harness/reporter.py` | JSON, Markdown, and HTML output |
-
-```python
-from harness import AIJudgeHarness
-h = AIJudgeHarness(config="ci")
-result = h.run_full_v3("Your analysis text here")
-print(result.passed, result.data)
-```
-
-CI runs `tests/run_harness.py` on every push and PR. Docker build is gated on harness passing.
-
-```bash
-ai-judge jury --question "Your question here"
-ai-judge collect --run latest
-ai-judge verdict --run latest
-```
-
-## v2 to v3.3
-
-| Area | v2 | v3.1 | v3.2 | v3.3 / COUNCIL-004 |
-|---|---|---|---|---|
-| Claim quality | 10 scoring functions, bluff gates, diversity radar | Same, plus judgment-quality profiling | Same, plus evidence object tracing | Same, plus L1/L2/L3 citation trace |
-| Model value | `graph_value_v2` and Two Peaches allocation | Same, now informed by cognitive risk flags | Same, now routed by risk depth and dissent | Same, with fixed persona roles for stable divergence |
-| Human role | Final verdict owner | Final verdict owner, with clearer blind-spot feedback | Final verdict owner, with visible reasoning path | Final verdict owner, with source-contamination warnings |
-| Failure mode caught | Unsupported confidence and echo-chamber consensus | Unsupported confidence, echo chambers, performative intelligence | Unsupported evidence, missing dissent, hidden risk surfaces | Pseudo-consensus from shared citations and bland seat behavior |
-| Main new command | `score-v2 --demo` | `neuro-profile`, `hard-truth`, `v3-pipeline` | `v3.2-pipeline --demo` | `seats`, `trace` |
-
-## How It Differs
-
-| System | Primary job | Final owner | What AI Judge v3.3 adds |
-|---|---|---|---|
-| Hermes-compatible skill | Package an agent workflow | User/host agent | Full jury workflow, scoring engine, judgment profiling, and auditable reasoning |
-| llm-council | Peer review and chairman synthesis | Chairman LLM | Human-final decision, claim ledger, dissent, persona seats, and local-first CLI/Docker package |
-| Perplexity Model Council | Web model comparison and synthesis | Perplexity synthesizer | Inspectable formulas, reasoning-tree artifacts, evidence trace, and local workflow |
-| AI Judge v3.3 | Evidence workflow for consequential decisions | Human | Scoring, diversity, graph value, hard truth, evidence tracing, contamination detection, dissent, and risk routing |
-
-## Repository Map
+Start with the public demo:
 
 ```text
-ai-judge/
-├── README.md
-├── RELEASE_V3.md
-├── RELEASE_V3_3.md
-├── SKILL.md
-├── Publish-AI-Judge-V3.command
-├── core/
-│   ├── neuro_profiler.py      # 4 proxy signals + dual scores
-│   ├── hard_truth.py          # L0-L4 judgment-first feedback
-│   ├── determinism.py         # consistency + confidence lights + v3 pipeline
-│   ├── scoring_v2.py          # v2 scoring plus v3/v3.2 bridge
-│   ├── seat_personas.py       # v3.3 fixed persona cards and prompt injection
-│   ├── evidence_trace.py      # v3.3 L1/L2/L3 source tracing and contamination scan
-│   ├── evidence.py            # v3.2 structured evidence objects
-│   ├── dissent.py             # v3.2 Devil's Advocate challenge
-│   ├── reasoning_trace.py     # v3.2 reasoning tree builder
-│   ├── risk_router.py         # v3.2 risk-based review depth
-│   ├── formula_engine.py      # 10 auditable scoring formulas
-│   ├── anchor_engine.py       # goal anchoring and taste cards
-│   ├── mirror.py              # thinking fingerprint and growth narrative
-│   └── ...
-├── cli/main.py                # unified CLI
-├── frontend/                  # TypeScript reasoning-tree UI components
-├── rust-engine/               # Rust reference implementation
-├── tests/smoke_test_v3.py
-├── product/landing.html
-├── Dockerfile
-└── docker-compose.yml
+https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 ```
 
-## Open-Core Boundary
+Then read the short deterministic path:
 
-| Public in this repo | Paid/private runtime |
+```text
+docs/TRY_AI_JUDGE_IN_3_MINUTES.md
+```
+
+The public proof path covers fake citations, weak support, irrelevant sources, contradicted claims, and overclaims where a real source supports a weaker proposition than the model answer asserted.
+
+## Current Product Direction
+
+The latest private line is report-first and closed-core:
+
+| Layer | Public message |
 |---|---|
-| CLI surface and v2/v3/v3.2/v3.3 demos | Production browser/CDP collector |
-| Scoring formulas, cognitive proxy functions, evidence/dissent demo, persona/trace tools | Managed multi-model runtime |
-| Codex/Hermes-compatible `SKILL.md` | SaaS license server |
-| Docker, schemas, docs, examples | Team deployment and support layer |
-| Swift bridge source | Hosted integrations |
+| Source-isolated audit | Separate model text, model-mentioned sources, supplied evidence, fetched evidence, and audit result. |
+| Claim-support gate | Check whether evidence supports the exact claim span, not just a related topic. |
+| Dissent before confidence | Preserve blockers and disagreements before raising a final label. |
+| Human-final reports | Generate HTML, JSON, and Markdown artifacts for review and signoff. |
+| Local-first runtime | Keep production orchestration, browser sessions, model seats, and operator controls private. |
 
-## Documentation
+## Public Materials
 
-| Document | Purpose |
+| Public-safe asset | Purpose |
 |---|---|
-| [RELEASE_V3_3.md](RELEASE_V3_3.md) | v3.3 COUNCIL-004 release notes and persona/trace commands |
-| [RELEASE_V3_2.md](RELEASE_V3_2.md) | v3.2 release notes and Tianfu migration notes |
-| [RELEASE_V3.md](RELEASE_V3.md) | v3.1 release notes and migration notes |
-| [docs/QUICKSTART.md](docs/QUICKSTART.md) | Setup and first demos |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
-| [docs/COMPARISON.md](docs/COMPARISON.md) | Comparison with other council-style tools |
-| [docs/v3.2-source/](docs/v3.2-source/) | Full-package source discussion, technical spec, and roadmap |
-| [product/landing.html](product/landing.html) | Product landing page |
-| [product/pro_early_access.html](product/pro_early_access.html) | Pro early-access page |
-| [docs/PRO_EARLY_ACCESS.md](docs/PRO_EARLY_ACCESS.md) | Manual early-access purchase flow |
+| `product/landing.html` | The current public showcase page. |
+| `docs/TRY_AI_JUDGE_IN_3_MINUTES.md` | Fast proof path for the citation-audit wedge. |
+| `citation-bench/citation-bench-100.jsonl` | Deterministic public citation cases. |
+| `citation-bench/citation-bench-hard-11.jsonl` | Hard overclaim and claim-support cases. |
+| `examples/` | Sanitized examples for public explanation. |
+| `docs/PUBLIC_PRIVATE_BOUNDARY.md` | The publication boundary for future updates. |
+| `docs/PUBLIC_EXPORT_MANIFEST.md` | The allowlist for clean public exports. |
 
-## License
+## What Stays Private
 
-BSL 1.1. Source available. Production use requires a license.
+- `core/`, `product/`, `bridges/`, `client/`, and runtime orchestration code in the private source of truth.
+- Browser/CDP bridge internals, fixed-tab automation, web-seat adapters, and model-seat collection logic.
+- Local run outputs, raw seat transcripts, legal case payloads, customer facts, browser captures, screenshots, cookies, and logs.
+- Growth/outreach drafts with contact details, private emails, or partnership notes.
+- Credentials, API keys, proxy settings, private environment files, and generated evidence packs.
 
-## Contact
+## Public Boundary
 
-For license keys, support, or partnership questions, email [reguorider@gmail.com](mailto:reguorider@gmail.com).
+AI Judge is a closed-core commercial product with public demos and benchmarks. Public materials should describe the workflow and the trust boundary accurately, without implying that the production runtime is public source.
+
+Before publishing any branch, release, or artifact, read [`docs/PUBLIC_PRIVATE_BOUNDARY.md`](docs/PUBLIC_PRIVATE_BOUNDARY.md).
+
+## Useful Links
+
+- [Live Hugging Face Space](https://huggingface.co/spaces/reguorier/ai-judge-citation-audit)
+- [3-Minute Proof](docs/TRY_AI_JUDGE_IN_3_MINUTES.md)
+- [Public Showcase Page](product/landing.html)
+- [Claim Span Roadmap](docs/CLAIM_SPAN_ROADMAP.md)
+- [Agent Trace Audit](docs/ARC_AGENT_TRACE_AUDIT.md)
+- [Public Export Manifest](docs/PUBLIC_EXPORT_MANIFEST.md)

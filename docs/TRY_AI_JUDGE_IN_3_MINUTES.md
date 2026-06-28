@@ -6,8 +6,9 @@ AI Judge Citation Audit is easiest to understand through one hard boundary:
 A source can be real and relevant, but still fail to prove the model's exact claim.
 ```
 
-This quick proof path uses deterministic local examples. It does not require model
-APIs, browser bridges, or paid accounts.
+This public proof path uses the live demo, static public examples, and benchmark
+fixtures. It does not require private source code, model APIs, browser bridges,
+or paid accounts.
 
 ## 1. Try The Live Demo
 
@@ -18,17 +19,17 @@ https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 ```
 
 Use the built-in suspicious citation sample first. The expected lesson is that
-`unverifiable` means insufficient isolated evidence, not false.
+`unverifiable` means insufficient isolated evidence, not automatically false.
 
-## 2. Run One Local Audit
+## 2. Inspect The Overclaim Boundary
 
-```bash
-PYTHONPATH=. python3 cli/main.py audit examples/real-source-overclaimed-causation.md \
-  --html reports/real-source-overclaimed-causation-audit.html \
-  --json reports/real-source-overclaimed-causation-audit.json
+Open the public example:
+
+```text
+examples/real-source-overclaimed-causation.md
 ```
 
-Expected result:
+The useful reading pattern is:
 
 ```text
 overall_status: verified
@@ -39,7 +40,7 @@ support_failure_code: overclaimed_causation
 That is the core product value. The citation can match, the source can be on
 topic, and the exact claim can still fail.
 
-## 3. Inspect The Eight-Example Gallery
+## 3. Inspect The Static Report Gallery
 
 Open:
 
@@ -60,13 +61,13 @@ The gallery covers:
 | Overclaimed absolute | A limited pilot is not "all/no false negatives." |
 | Overclaimed quantified effect | A 12% finding is not a 95% reduction. |
 
-## 4. Run The Benchmarks
+## 4. Read The Public Benchmarks
 
-```bash
-PYTHONPATH=. python3 tools/run_citation_bench.py --fail-under 0.95
-PYTHONPATH=. python3 tools/run_citation_bench.py \
-  --bench citation-bench/citation-bench-hard-11.jsonl \
-  --fail-under 0.95
+The public benchmark files are static fixtures:
+
+```text
+citation-bench/citation-bench-100.jsonl
+citation-bench/citation-bench-hard-11.jsonl
 ```
 
 Current expected snapshot:
@@ -99,7 +100,8 @@ Please keep private material out of public issues. A sanitized summary is enough
 - Not a legal, medical, financial, or academic authority.
 - Not a model answer rewriter.
 - Not proof that a source is correct just because it exists.
+- Not the private production runtime.
 
-AI Judge preserves the raw answer, mentor/model supplements, isolated evidence,
-and audit verdicts as separate layers. The judge summarizes, counts, scores, and
+AI Judge preserves the raw answer, model supplements, isolated evidence, and
+audit verdicts as separate layers. The judge summarizes, counts, scores, and
 shows uncertainty; it does not overwrite the original answer.
