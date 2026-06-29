@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Judge - Public showcase for source-isolated AI audit</title>
+<title>AI Judge - Source-isolated claim-support audit</title>
 <style>
   :root {
     --canvas: #f6f7f4;
@@ -228,6 +228,20 @@
     margin-top: 10px;
     color: var(--quiet);
     font-size: 13px;
+  }
+
+  .inline-shot {
+    width: 100%;
+    padding: 26px 0 0;
+  }
+
+  .inline-shot img {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    background: var(--surface);
   }
 
   .status-strip {
@@ -545,10 +559,10 @@
   <main>
     <section class="shell hero">
       <div class="eyebrow"><span class="dot"></span>Public showcase for a closed-core audit runtime</div>
-      <h1>AI Judge audits AI answers against their evidence.</h1>
+      <h1>AI Judge turns AI answers into auditable evidence packages.</h1>
       <p class="hero-copy">
         A source can exist, look relevant, and still fail to prove the model's exact claim.
-        <strong>AI Judge separates the answer, isolated evidence, dissent, and final report before a human signs off.</strong>
+        <strong>AI Judge separates the answer, isolated evidence, dissent, overclaim checks, and final report before a human signs off.</strong>
       </p>
       <div class="button-row hero-actions">
         <a class="button primary" href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Open live citation audit</a>
@@ -556,21 +570,22 @@
         <a class="button" href="https://github.com/reguorier/ai-judge">GitHub showcase</a>
       </div>
       <p class="hero-note">
+        Demo URL: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit<br>
         Public materials show the trust protocol, public demos, sanitized examples, and benchmark evidence.
         Production runtime code, browser bridge code, model-seat orchestration, and private user artifacts stay closed.
       </p>
       <div class="status-strip" aria-label="Current public status">
         <div class="status-item"><strong>v3.8</strong><span>Report-first product direction from the private line.</span></div>
         <div class="status-item"><strong>100 + 13</strong><span>Deterministic public citation and hard overclaim cases.</span></div>
-        <div class="status-item"><strong>HTML JSON MD</strong><span>Human-readable and automation-friendly audit outputs.</span></div>
+        <div class="status-item"><strong>Overclaim</strong><span>Causation, absolute, and quantified-effect failure families.</span></div>
         <div class="status-item"><strong>Closed-core</strong><span>Public showcase, private commercial runtime.</span></div>
       </div>
     </section>
 
     <div class="product-shot">
       <div class="product-shot-inner">
-        <img src="../assets/citation-audit-space-output.png" alt="AI Judge citation audit output in the public live demo">
-        <p class="caption">Public demo output: citation status, isolated evidence, failure reason, and report artifacts without exposing the private orchestration layer.</p>
+        <img src="../assets/ai-judge-public-flow.svg" alt="AI Judge source-isolated public audit flow">
+        <p class="caption">Public-safe overview: raw model answer, isolated evidence, claim-support audit, dissent, and human-final report. Private runtime details stay out of the public repository.</p>
       </div>
     </div>
 
@@ -663,6 +678,10 @@ Open: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 Read: docs/TRY_AI_JUDGE_IN_3_MINUTES.md
 Inspect: citation-bench/citation-bench-100.jsonl
 Inspect: citation-bench/citation-bench-hard-11.jsonl</pre>
+      <div class="inline-shot">
+        <img src="../assets/citation-audit-space-output.png" alt="AI Judge citation audit output in the public live demo">
+        <p class="caption">Public demo output: citation status, isolated evidence, failure reason, and report artifacts without exposing the private orchestration layer.</p>
+      </div>
     </section>
 
     <section class="shell" id="contact">

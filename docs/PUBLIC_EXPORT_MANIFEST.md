@@ -14,6 +14,7 @@ a doorway for product evaluation and demos, not the private source of truth.
 - `docs/ARC_AGENT_TRACE_AUDIT.md`
 - `docs/CLAIM_SPAN_ROADMAP.md`
 - `docs/UNVERIFIABLE_IS_NOT_FALSE.md`
+- `assets/ai-judge-public-flow.svg`
 - `assets/citation-audit-space-output.png`
 - `assets/ai-judge-v3-hero.png`
 - `citation-bench/citation-bench-100.jsonl`
