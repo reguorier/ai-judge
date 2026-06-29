@@ -28,6 +28,7 @@
   <a href="#citation-audit-in-60-seconds">Citation Audit</a> ·
   <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
   <a href="docs/THREE_BLOCK_GOVERNANCE_PACKET.md">Governance Packet</a> ·
+  <a href="docs/STRUCTURAL_GOVERNANCE.md">Structural Governance</a> ·
   <a href="docs/ARC_AGENT_TRACE_AUDIT.md">Agent Trace Audit</a> ·
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Space</a> ·
   <a href="https://github.com/reguorier/ai-judge/releases/latest">macOS App</a> ·
@@ -53,6 +54,8 @@
 ## Current Status
 
 AI Judge is now managed as a private full-source repository with a public-safe demo and benchmark surface. The public story is intentionally narrow: **a source can be real and still fail to support the exact claim a model made**. AI Judge catches that gap before the answer is reused in a report, legal memo, README, client deliverable, or agent workflow.
+
+The core is intentionally protected from workflow sprawl. Runtime, browser, portal, ops, and research-packet capabilities stay in their own lanes unless they pass the promotion gate in [`docs/STRUCTURAL_GOVERNANCE.md`](docs/STRUCTURAL_GOVERNANCE.md).
 
 Recent progress:
 

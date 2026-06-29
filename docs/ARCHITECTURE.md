@@ -1,5 +1,13 @@
 # AI Judge v3.2 Architecture
 
+## Structural Governance
+
+AI Judge is allowed to grow through adapters, runtime tools, reports, and
+research inputs, but the scoring and verdict core stays protected behind stable
+contracts. See [Structural Governance](STRUCTURAL_GOVERNANCE.md) for the
+canonical flow, lane boundaries, side-effect levels, and promotion gate for new
+capabilities.
+
 ## System Overview
 
 ```mermaid
