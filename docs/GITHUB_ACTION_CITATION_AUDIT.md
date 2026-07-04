@@ -59,7 +59,7 @@ jobs:
           output-dir: reports/citation-batch
           manifest: reports/citation-batch/manifest.json
           fail-on: contradicted
-          warn-on: unverifiable,weakly_verified,irrelevant,partially_supported,unsupported,unsupported_input,unmatched_input
+          warn-on: unverifiable,weakly_verified,irrelevant,partially_supported,unsupported,unsupported_by_cited_source,not_enough_evidence,overclaimed_causation,overclaimed_absolute,overclaimed_quantified_effect,overclaimed_scope,overclaimed_hedge,overclaimed_range_endpoint,unsupported_input,unmatched_input
           artifact-name: ai-judge-citation-batch
 ```
 
@@ -70,6 +70,7 @@ For demo-only workflows that intentionally include contradicted examples, set `f
 Launch behavior is report-first:
 
 - `contradicted` should fail strict CI.
+- `unsupported` claim support, `unsupported_by_cited_source`, and `overclaimed_*` failure codes should at least warn; promote them to `fail-on` for publication gates.
 - `unverifiable` should warn first, because it means evidence is missing, not false.
 - `irrelevant` should usually fail for publishable docs.
 - `weakly_verified` should require reviewer attention.
@@ -111,5 +112,5 @@ Batch manifests use `citation_audit_batch.v1` and include per-file report paths,
 PDF, Doc, and Docx files appear in `skipped_inputs` with parser statuses such as `pdf_parser_pending` or `docx_parser_pending`; unmatched globs appear as `unmatched_input`. To make CI fail when a requested document was not audited, include those statuses in `fail-on`:
 
 ```yaml
-fail-on: contradicted,unsupported_input,unmatched_input
+fail-on: contradicted,unsupported_by_cited_source,overclaimed_causation,overclaimed_absolute,overclaimed_quantified_effect,overclaimed_scope,overclaimed_hedge,overclaimed_range_endpoint,unsupported_input,unmatched_input
 ```

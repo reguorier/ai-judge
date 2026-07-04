@@ -58,6 +58,26 @@ The answer text goes here. Source: https://example.com/source
 | `unverifiable` | Current external evidence is insufficient; this is not the same as false. |
 | `contradicted` | External evidence explicitly refutes the citation or claim. |
 
+## Claim-source support verdicts
+
+Citation verification and exact claim support are separate. A source can be
+`verified` and `relevant` while the generated claim still fails the stricter
+claim-source verdict.
+
+| Verdict | Meaning |
+|---|---|
+| `supported` | The source span supports the concrete generated claim. |
+| `contradicted` | The source span refutes the generated claim. |
+| `not_enough_evidence` | The audit lacks a usable source span or enough isolated evidence. |
+| `unsupported_by_cited_source` | The source exists, but does not support the exact claim. |
+
+Hard cases now covered by deterministic fixtures:
+
+- source says associated/correlated, answer says causes
+- source reports adults/subset, answer applies it to all patients/users
+- source gives a range, answer reports one endpoint as a precise value
+- source says may reduce, answer says reduces
+
 ## Run the benchmark
 
 The Eval4SD minimum experiment is pinned by:
@@ -85,7 +105,7 @@ PYTHONPATH=. python3 tools/run_citation_bench.py \
 
 The hard set focuses on edge cases that matter in public demos: implied references, plausible but unsupported reports, contradicted sources, sources that exist but do not support the claim, and real sources whose limited findings are overclaimed as causation, absolutes, or inflated percentages.
 
-The overclaimed-support demos are the key governance cases: the citation can stay `verified`, the source can stay `relevant`, and the exact claim can still be `contradicted` because the source supports a weaker proposition than the answer states.
+The overclaimed-support demos are the key governance cases: the citation can stay `verified`, the source can stay `relevant`, and the exact claim can still be `unsupported` because the source supports a weaker proposition than the answer states. `contradicted` is reserved for evidence that explicitly refutes the claim; both statuses map to RAGChecker-style non-entailment for aggregate faithfulness.
 
 ## Run a batch audit
 
@@ -101,7 +121,7 @@ Use a stricter input policy in CI when every requested file must be audited:
 
 ```bash
 PYTHONPATH=. python cli/main.py audit-batch "docs/**/*" \
-  --fail-on contradicted,unsupported_input,unmatched_input
+  --fail-on contradicted,unsupported_by_cited_source,overclaimed_causation,overclaimed_absolute,overclaimed_quantified_effect,overclaimed_scope,overclaimed_hedge,overclaimed_range_endpoint,unsupported_input,unmatched_input
 ```
 
 ## Pro path

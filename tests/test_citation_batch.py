@@ -45,6 +45,31 @@ The 2026 Example Citation Index says citation errors are solved. Source: https:/
     )
 
 
+def _write_overclaimed_causation_case(path: Path) -> None:
+    path.write_text(
+        """# Overclaimed Causation Batch Case
+
+## Question
+Does the cited source prove the AI review program caused lower churn?
+
+## AI Answer
+The AI review program caused a 22% reduction in customer churn. Source: https://example.com/research/ai-review-churn-2026
+
+## External Evidence
+```json
+[
+  {
+    "url": "https://example.com/research/ai-review-churn-2026",
+    "title": "AI review usage and churn study",
+    "snippet": "The study reports an association between AI review usage and churn. It explicitly states the analysis is observational and does not establish causation."
+  }
+]
+```
+""",
+        encoding="utf-8",
+    )
+
+
 def test_expand_batch_inputs_accepts_directory_and_supported_files(tmp_path: Path):
     _write_verified_case(tmp_path / "one.md")
     (tmp_path / "ignore.txt").write_text("nope", encoding="utf-8")
@@ -157,4 +182,52 @@ def test_run_audit_batch_can_fail_on_unsupported_input_policy(tmp_path: Path):
     assert manifest["skipped_count"] == 1
     assert manifest["failed_count"] == 1
     assert manifest["warning_count"] == 0
+    assert manifest["exit_code"] == 1
+
+
+def test_run_audit_batch_can_fail_on_claim_support_failure_code(tmp_path: Path):
+    input_path = tmp_path / "overclaim.md"
+    _write_overclaimed_causation_case(input_path)
+
+    manifest = run_audit_batch(
+        [input_path],
+        out_dir=tmp_path / "batch",
+        batch_id="batch-overclaim-test",
+        fail_on=["overclaimed_causation"],
+        warn_on=["unsupported"],
+        generated_at="2026-07-03T00:00:00+00:00",
+    )
+
+    result = manifest["results"][0]
+
+    assert result["overall_status"] == "verified"
+    assert result["overall_claim_support"] == "unsupported"
+    assert result["overall_support_verdict"] == "unsupported_by_cited_source"
+    assert result["support_verdict_counts"]["unsupported_by_cited_source"] == 1
+    assert result["claim_support_failure_counts"]["overclaimed_causation"] == 1
+    assert "overclaimed_causation" in result["policy_statuses"]
+    assert result["failed"] is True
+    assert manifest["failed_count"] == 1
+    assert manifest["exit_code"] == 1
+
+
+def test_run_audit_batch_can_fail_on_claim_source_support_verdict(tmp_path: Path):
+    input_path = tmp_path / "overclaim.md"
+    _write_overclaimed_causation_case(input_path)
+
+    manifest = run_audit_batch(
+        [input_path],
+        out_dir=tmp_path / "batch",
+        batch_id="batch-claim-source-verdict-test",
+        fail_on=["unsupported_by_cited_source"],
+        warn_on=[],
+        generated_at="2026-07-04T00:00:00+00:00",
+    )
+
+    result = manifest["results"][0]
+
+    assert result["overall_support_verdict"] == "unsupported_by_cited_source"
+    assert "unsupported_by_cited_source" in result["policy_statuses"]
+    assert result["failed"] is True
+    assert manifest["failed_count"] == 1
     assert manifest["exit_code"] == 1

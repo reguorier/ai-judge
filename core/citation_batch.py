@@ -29,6 +29,8 @@ DEFAULT_WARN_ON = {
     "irrelevant",
     "partially_supported",
     "unsupported",
+    "unsupported_by_cited_source",
+    "not_enough_evidence",
     "unsupported_input",
     "unmatched_input",
 }
@@ -88,6 +90,7 @@ def run_audit_batch(
     out_dir: str | Path,
     manifest_path: str | Path | None = None,
     allow_network: bool = False,
+    evidence_fetcher: str | None = None,
     reviewers: list[str] | None = None,
     fail_on: Iterable[str] | None = None,
     warn_on: Iterable[str] | None = None,
@@ -114,6 +117,7 @@ def run_audit_batch(
         verdict = run_audit_file(
             input_path,
             allow_network=allow_network,
+            evidence_fetcher=evidence_fetcher,
             run_id=audit_id,
             reviewers=reviewers,
         )
@@ -122,6 +126,7 @@ def run_audit_batch(
         write_audit_outputs(verdict, html_path, fmt="html")
         write_audit_outputs(verdict, json_path, fmt="json")
         summary = verdict.get("summary") or {}
+        broker = ((verdict.get("grand_judge") or {}).get("evidence_broker") or {})
         statuses = _policy_statuses(summary)
         failed = bool(statuses & selected_fail)
         warned = bool(statuses & selected_warn)
@@ -133,12 +138,18 @@ def run_audit_batch(
             "json": str(json_path),
             "overall_status": summary.get("overall_status"),
             "overall_claim_support": summary.get("overall_claim_support"),
+            "overall_support_verdict": summary.get("overall_support_verdict"),
+            "support_verdict_counts": summary.get("support_verdict_counts") or {},
+            "claim_support_pass_rate": summary.get("claim_support_pass_rate", 0.0),
+            "claim_support_failure_counts": summary.get("claim_support_failure_counts") or {},
+            "retrieved2response_counts": summary.get("retrieved2response_counts") or {},
             "trust_gate": summary.get("trust_gate"),
             "certification_id": summary.get("certification_id"),
             "certification_hash": summary.get("certification_hash"),
             "replay_ledger_hash": summary.get("replay_ledger_hash"),
             "item_count": summary.get("item_count", 0),
             "gap_count": summary.get("gap_count", 0),
+            "fetch_monitor": broker.get("fetch_monitor") or {},
             "policy_statuses": sorted(statuses),
             "failed": failed,
             "warning": warned and not failed,
@@ -162,6 +173,7 @@ def run_audit_batch(
             "fail_on": sorted(selected_fail),
             "warn_on": sorted(selected_warn),
             "allow_network": bool(allow_network),
+            "evidence_fetcher": evidence_fetcher,
             "reviewers": reviewers or ["gemini", "chatgpt", "deepseek", "qwen"],
         },
         "results": results,
@@ -187,7 +199,7 @@ def render_batch_index_html(manifest: dict[str, Any]) -> str:
             "<tr>"
             f"<td><a href=\"{_e(Path(str(item.get('html') or '')).name)}\">{_e(item.get('title') or item.get('input'))}</a></td>"
             f"<td><span class=\"pill {state}\">{_e(item.get('overall_status'))}</span></td>"
-            f"<td>{_e(item.get('overall_claim_support'))}</td>"
+            f"<td>{_e(item.get('overall_support_verdict') or item.get('overall_claim_support'))}</td>"
             f"<td>{_e(item.get('trust_gate'))}</td>"
             f"<td>{_e(item.get('certification_id'))}</td>"
             f"<td>{_e(item.get('gap_count'))}</td>"
@@ -245,7 +257,7 @@ def render_batch_index_html(manifest: dict[str, Any]) -> str:
   </header>
   <main>
     <table>
-      <thead><tr><th>File</th><th>Status</th><th>Claim Support</th><th>Trust Gate</th><th>Certification</th><th>Gaps</th></tr></thead>
+      <thead><tr><th>File</th><th>Status</th><th>Claim-Source Verdict</th><th>Trust Gate</th><th>Certification</th><th>Gaps</th></tr></thead>
       <tbody>{''.join(rows) or '<tr><td colspan="6">No supported input files found.</td></tr>'}</tbody>
     </table>
     <h2>Skipped Inputs</h2>
@@ -272,11 +284,20 @@ def _policy_statuses(summary: dict[str, Any]) -> set[str]:
     statuses = {
         str(summary.get("overall_status") or ""),
         str(summary.get("overall_claim_support") or ""),
+        str(summary.get("overall_support_verdict") or ""),
         str(summary.get("trust_gate") or ""),
     }
     statuses.update(str(key) for key, count in (summary.get("counts") or {}).items() if _positive_count(count))
     statuses.update(
         str(key) for key, count in (summary.get("claim_support_counts") or {}).items() if _positive_count(count)
+    )
+    statuses.update(
+        str(key) for key, count in (summary.get("support_verdict_counts") or {}).items() if _positive_count(count)
+    )
+    statuses.update(
+        str(key)
+        for key, count in (summary.get("claim_support_failure_counts") or {}).items()
+        if key != "none" and _positive_count(count)
     )
     return {item for item in statuses if item}
 

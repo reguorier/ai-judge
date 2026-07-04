@@ -342,6 +342,11 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--json", dest="json_output", help="Write machine-readable JSON audit report")
     audit.add_argument("--md", help="Write Markdown audit report")
     audit.add_argument("--allow-network", action="store_true", help="Allow Evidence Broker to fetch cited URLs")
+    audit.add_argument(
+        "--evidence-fetcher",
+        choices=["urllib", "auto", "scrapling-http", "scrapling-dynamic", "scrapling-stealth"],
+        help="Network evidence fetcher used with --allow-network (default: AI_JUDGE_EVIDENCE_FETCHER or urllib)",
+    )
     audit.add_argument("--reviewers", default="gemini,chatgpt,deepseek,qwen", help="Comma-separated blind-reviewer labels")
     audit.add_argument("--run-id", help="Stable audit ID for reproducible demos")
     audit.set_defaults(func=cmd_audit)
@@ -351,11 +356,22 @@ def build_parser() -> argparse.ArgumentParser:
     audit_batch.add_argument("--out", default="reports/citation-batch", help="Output directory")
     audit_batch.add_argument("--manifest", help="Manifest JSON path (default: <out>/manifest.json)")
     audit_batch.add_argument("--allow-network", action="store_true", help="Allow Evidence Broker to fetch cited URLs")
+    audit_batch.add_argument(
+        "--evidence-fetcher",
+        choices=["urllib", "auto", "scrapling-http", "scrapling-dynamic", "scrapling-stealth"],
+        help="Network evidence fetcher used with --allow-network (default: AI_JUDGE_EVIDENCE_FETCHER or urllib)",
+    )
     audit_batch.add_argument("--reviewers", default="gemini,chatgpt,deepseek,qwen", help="Comma-separated blind-reviewer labels")
     audit_batch.add_argument("--fail-on", default="contradicted", help="Comma-separated statuses that fail the batch")
     audit_batch.add_argument(
         "--warn-on",
-        default="unverifiable,weakly_verified,irrelevant,partially_supported,unsupported,unsupported_input,unmatched_input",
+        default=(
+            "unverifiable,weakly_verified,irrelevant,partially_supported,unsupported,"
+            "unsupported_by_cited_source,not_enough_evidence,"
+            "overclaimed_causation,overclaimed_absolute,overclaimed_quantified_effect,"
+            "overclaimed_scope,overclaimed_hedge,overclaimed_range_endpoint,"
+            "unsupported_input,unmatched_input"
+        ),
         help="Comma-separated statuses that mark warnings",
     )
     audit_batch.add_argument("--batch-id", help="Stable batch ID for reproducible demos")
@@ -378,6 +394,7 @@ def cmd_audit(args: argparse.Namespace) -> int:
     verdict = run_audit_file(
         args.input,
         allow_network=bool(args.allow_network),
+        evidence_fetcher=args.evidence_fetcher,
         run_id=args.run_id,
         reviewers=reviewers,
     )
@@ -395,7 +412,11 @@ def cmd_audit(args: argparse.Namespace) -> int:
         print("Wrote:")
         for path in written:
             print(f"  {path}")
-    return 0 if summary.get("overall_status") not in {"contradicted"} else 1
+    return 0 if (
+        summary.get("overall_status") not in {"contradicted"}
+        and summary.get("overall_claim_support") not in {"contradicted"}
+        and summary.get("overall_support_verdict") not in {"contradicted"}
+    ) else 1
 
 
 def cmd_audit_batch(args: argparse.Namespace) -> int:
@@ -410,6 +431,7 @@ def cmd_audit_batch(args: argparse.Namespace) -> int:
         out_dir=args.out,
         manifest_path=args.manifest,
         allow_network=bool(args.allow_network),
+        evidence_fetcher=args.evidence_fetcher,
         reviewers=reviewers,
         fail_on=fail_on,
         warn_on=warn_on,

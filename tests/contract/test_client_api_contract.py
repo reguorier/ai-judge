@@ -162,6 +162,7 @@ class TestClientApiContract:
         assert "runDetail" in routes
         assert "runEvents" in routes
         assert "noiseAudit" in routes
+        assert "claimSourceSupport" in routes
         assert "modelStability" in routes
         assert "metaJudge" in routes
         assert "modelWeights" in routes
@@ -201,6 +202,55 @@ class TestClientApiContract:
 
         assert data["ok"] is True
         assert data["modelStability"]["profiles"][0]["seat"] == "xunfei"
+        assert "/Users/" not in json.dumps(data, ensure_ascii=False)
+
+    def test_claim_source_support_endpoint_returns_public_payload(self, monkeypatch, tmp_path):
+        """Claim-source support endpoint should expose verdict counts without leaking local paths."""
+        from product.client_api import _run_public_dto, client_blueprint
+        from product.run_orchestrator import create_client_run, load_summary, save_summary
+
+        monkeypatch.setenv("AI_JUDGE_REPORTS_ROOT", str(tmp_path / "reports"))
+        run = create_client_run(
+            question="报告里的 claim 是否被引用来源支撑？",
+            mode="deep_judge",
+            engine="web",
+            auto_complete=False,
+        )
+        summary = load_summary(run["run_id"])
+        summary.update({
+            "support_verdict_counts": {
+                "supported": 2,
+                "unsupported_by_cited_source": 1,
+                "contradicted": 0,
+                "not_enough_evidence": 1,
+            },
+            "overall_support_verdict": "unsupported_by_cited_source",
+            "claim_support_pass_rate": 0.5,
+            "claim_source_support_path": "/Users/audimacmini/private/claim_source_support.json",
+            "items": [
+                {
+                    "claim_id": "CLAIM-001",
+                    "support_verdict": "unsupported_by_cited_source",
+                    "support_failure_code": "overclaimed_hedge",
+                    "source_path": "/Users/audimacmini/private/source.txt",
+                }
+            ],
+        })
+        save_summary(summary)
+
+        import flask
+        app = flask.Flask(__name__)
+        app.register_blueprint(client_blueprint)
+
+        resp = app.test_client().get(f"/api/client/runs/{run['run_id']}/claim-source-support")
+        data = resp.get_json()
+        dto = _run_public_dto(run["run_id"])
+
+        assert resp.status_code == 200
+        assert data["ok"] is True
+        assert data["claimSourceSupport"]["overall_support_verdict"] == "unsupported_by_cited_source"
+        assert data["claimSourceSupport"]["support_verdict_counts"]["unsupported_by_cited_source"] == 1
+        assert any(artifact["kind"] == "claim_source_support" for artifact in dto["artifacts"])
         assert "/Users/" not in json.dumps(data, ensure_ascii=False)
 
     def test_run_dto_returns_valid_contract(self):

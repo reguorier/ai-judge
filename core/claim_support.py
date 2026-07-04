@@ -24,6 +24,13 @@ CLAIM_SUPPORT_STATUSES = (
     "unknown",
 )
 
+SUPPORT_VERDICTS = (
+    "supported",
+    "contradicted",
+    "not_enough_evidence",
+    "unsupported_by_cited_source",
+)
+
 SOURCE_RELEVANCE_STATUSES = (
     "relevant",
     "weakly_relevant",
@@ -36,6 +43,9 @@ SUPPORT_FAILURE_CODES = (
     "overclaimed_causation",
     "overclaimed_absolute",
     "overclaimed_quantified_effect",
+    "overclaimed_scope",
+    "overclaimed_hedge",
+    "overclaimed_range_endpoint",
     "missing_claim_evidence",
     "source_silent",
     "citation_unmatched",
@@ -77,7 +87,40 @@ _LIMITED_EVIDENCE_RE = re.compile(
     r"(部分|有限|试点|样本|子集|不能保证|无法保证|仍有风险|假阴性|不完整|结果不一|尚无定论)",
     re.IGNORECASE,
 )
+_ALL_POPULATION_RE = re.compile(
+    r"\b(all|every|everyone|entire population|all patients|all adults|all children|all users|"
+    r"whole population|general population|universal|universally)\b|"
+    r"(所有患者|全部患者|所有人|全部人群|所有用户|普遍适用|全人群)",
+    re.IGNORECASE,
+)
+_SCOPED_POPULATION_RE = re.compile(
+    r"\b(adults|adult patients|children|pediatric|elderly|older adults|women|men|pregnant|"
+    r"inpatients|outpatients|diabetic patients|sample|cohort|subset|participants aged)\b|"
+    r"(成人|成年人|儿童|老年|女性|男性|孕妇|住院患者|门诊患者|样本|队列|子集)",
+    re.IGNORECASE,
+)
+_ASSERTIVE_EFFECT_RE = re.compile(
+    r"\b(reduce|reduces|reduced|improve|improves|improved|increase|increases|increased|"
+    r"decrease|decreases|decreased|prevent|prevents|prevented|lower|lowers|lowered)\b|"
+    r"(减少|降低|提高|改善|增加|预防|阻止)",
+    re.IGNORECASE,
+)
+_HEDGED_EFFECT_RE = re.compile(
+    r"\b(may|might|could|can|possibly|potentially|suggests|is associated with|was associated with|"
+    r"tends to|appears to|not conclusive|uncertain)\s+"
+    r"(?:\w+\s+){0,4}?"
+    r"(reduce|reduces|reduced|improve|improves|improved|increase|increases|increased|"
+    r"decrease|decreases|decreased|prevent|prevents|prevented|lower|lowers|lowered)\b|"
+    r"(可能|或许|也许|提示|倾向于|尚不确定).{0,12}(减少|降低|提高|改善|增加|预防|阻止)",
+    re.IGNORECASE,
+)
+_RANGE_RE = re.compile(
+    r"(?<![\w.])(\d+(?:\.\d+)?)\s*(?:%|percent|percentage points?)?\s*(?:-|to|–|—|至|到)\s*"
+    r"(\d+(?:\.\d+)?)\s*(%|percent|percentage points?)?",
+    re.IGNORECASE,
+)
 _PERCENT_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*%")
+_NUMBER_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?![\w.])")
 
 
 def audit_claim_support(
@@ -102,20 +145,30 @@ def audit_claim_support(
     report = {
         "schema": "claim_support.v1",
         "status_schema": list(CLAIM_SUPPORT_STATUSES),
+        "support_verdict_schema": list(SUPPORT_VERDICTS),
         "source_relevance_schema": list(SOURCE_RELEVANCE_STATUSES),
         "failure_code_schema": list(SUPPORT_FAILURE_CODES),
         "item_count": len(items),
         "claim_support_counts": _counts(items, "claim_support", CLAIM_SUPPORT_STATUSES),
+        "support_verdict_counts": _counts(items, "support_verdict", SUPPORT_VERDICTS),
         "source_relevance_counts": _counts(items, "source_relevance", SOURCE_RELEVANCE_STATUSES),
         "support_failure_counts": _failure_counts(items),
+        "retrieved2response_counts": _retrieved2response_counts(items),
         "items": items,
         "explanation": (
             "Citation status, source relevance, and claim support are separate. "
             "A source can be real and relevant while failing to support the model's exact claim."
         ),
+        "ragchecker_note": (
+            "RAGChecker-style retrieved2response faithfulness is a reduced entailment signal. "
+            "AI Judge preserves unsupported and contradicted as richer audit metadata, then maps "
+            "both to non_entailment for aggregate faithfulness."
+        ),
         "audited_at": audited_at,
     }
     report["overall_claim_support"] = _overall_claim_support(report["claim_support_counts"], len(items))
+    report["overall_support_verdict"] = _overall_support_verdict(report["support_verdict_counts"], len(items))
+    report["claim_support_pass_rate"] = _support_pass_rate(report["support_verdict_counts"], len(items))
     report["claim_support_hash"] = _hash_payload(report)
     return report
 
@@ -142,17 +195,47 @@ def _audit_one_item(
         failure_code = "citation_unmatched"
         reason = "No isolated evidence item is available for claim-level support scoring."
     elif _overclaimed_causation(claim_text, evidence_text):
-        claim_support = "contradicted"
+        claim_support = "unsupported"
         failure_code = "overclaimed_causation"
-        reason = "The claim uses causal language, while the matched source reports association or explicitly disclaims causation."
+        reason = (
+            "The claim uses causal language, while the matched source reports association "
+            "or does not establish causation. The source is real and relevant, but it does not entail the causal claim."
+        )
     elif _overclaimed_absolute(claim_text, evidence_text):
-        claim_support = "contradicted"
+        claim_support = "unsupported"
         failure_code = "overclaimed_absolute"
-        reason = "The claim uses absolute language, while the matched source is limited, partial, or explicitly caveated."
+        reason = (
+            "The claim uses absolute language, while the matched source is limited, partial, "
+            "or caveated. The source is real and relevant, but it does not entail the absolute claim."
+        )
     elif _overclaimed_quantified_effect(claim_text, evidence_text):
-        claim_support = "contradicted"
+        claim_support = "unsupported"
         failure_code = "overclaimed_quantified_effect"
-        reason = "The claim states a larger quantified effect than the matched source supports."
+        reason = (
+            "The claim states a larger quantified effect than the matched source supports. "
+            "The source is real and relevant, but it does not entail the inflated number."
+        )
+    elif _overclaimed_scope(claim_text, evidence_text):
+        claim_support = "unsupported"
+        failure_code = "overclaimed_scope"
+        reason = (
+            "The claim generalizes the source population or scope beyond what the matched source studied. "
+            "The source is real and relevant, but it does not support the broader population claim."
+        )
+    elif _overclaimed_hedge(claim_text, evidence_text):
+        claim_support = "unsupported"
+        failure_code = "overclaimed_hedge"
+        reason = (
+            "The claim removes the source's hedge or uncertainty. The source says the effect may occur, "
+            "but the answer states it as a definite effect."
+        )
+    elif _overclaimed_range_endpoint(claim_text, evidence_text):
+        claim_support = "unsupported"
+        failure_code = "overclaimed_range_endpoint"
+        reason = (
+            "The claim reports one endpoint of a source range as a precise value. "
+            "The source is real and relevant, but it supports a range rather than the exact point claim."
+        )
     elif citation_status == "verified":
         claim_support = "supported"
         failure_code = "none"
@@ -170,6 +253,8 @@ def _audit_one_item(
         failure_code = "missing_claim_evidence"
         reason = "The citation is currently unverifiable, so claim-level support cannot be upgraded."
 
+    retrieved2response_signal = _retrieved2response_signal(claim_support)
+    support_verdict = _support_verdict(claim_support, failure_code)
     return {
         "claim_id": _claim_id(citation_item, claim_text),
         "citation_id": citation_item.get("citation_id"),
@@ -181,8 +266,11 @@ def _audit_one_item(
         "source_title": (evidence or {}).get("title"),
         "source_relevance": source_relevance,
         "claim_support": claim_support,
+        "support_verdict": support_verdict,
         "support_failure_code": failure_code,
         "support_reason": reason,
+        "retrieved2response": retrieved2response_signal,
+        "retrieved2response_entailment": _retrieved2response_entailment(retrieved2response_signal),
         "matched_evidence_hash": (citation_item.get("matched_evidence") or {}).get("evidence_hash")
         or (evidence or {}).get("evidence_hash"),
         "audited_at": audited_at,
@@ -312,8 +400,42 @@ def _overclaimed_quantified_effect(claim_text: str, evidence_text: str) -> bool:
     return max(claim_numbers) > max(evidence_numbers) + 5.0
 
 
+def _overclaimed_scope(claim_text: str, evidence_text: str) -> bool:
+    return bool(_ALL_POPULATION_RE.search(claim_text) and _SCOPED_POPULATION_RE.search(evidence_text))
+
+
+def _overclaimed_hedge(claim_text: str, evidence_text: str) -> bool:
+    if not _ASSERTIVE_EFFECT_RE.search(claim_text):
+        return False
+    return bool(_HEDGED_EFFECT_RE.search(evidence_text))
+
+
+def _overclaimed_range_endpoint(claim_text: str, evidence_text: str) -> bool:
+    claim_numbers = _numbers(claim_text)
+    if not claim_numbers:
+        return False
+    for low, high in _ranges(evidence_text):
+        for value in claim_numbers:
+            if value == low or value == high:
+                return True
+    return False
+
+
 def _percentages(text: str) -> list[float]:
     return [float(match.group(1)) for match in _PERCENT_RE.finditer(str(text or ""))]
+
+
+def _numbers(text: str) -> list[float]:
+    return [float(match.group(1)) for match in _NUMBER_RE.finditer(str(text or ""))]
+
+
+def _ranges(text: str) -> list[tuple[float, float]]:
+    ranges = []
+    for match in _RANGE_RE.finditer(str(text or "")):
+        left = float(match.group(1))
+        right = float(match.group(2))
+        ranges.append((min(left, right), max(left, right)))
+    return ranges
 
 
 def _counts(items: list[dict[str, Any]], key: str, schema: tuple[str, ...]) -> dict[str, int]:
@@ -336,6 +458,32 @@ def _failure_counts(items: list[dict[str, Any]]) -> dict[str, int]:
     return counts
 
 
+def _retrieved2response_signal(claim_support: str) -> str:
+    if claim_support == "supported":
+        return "entailment"
+    if claim_support in {"partially_supported", "unsupported", "contradicted"}:
+        return "non_entailment"
+    return "unknown"
+
+
+def _retrieved2response_entailment(signal: str) -> bool | None:
+    if signal == "entailment":
+        return True
+    if signal == "non_entailment":
+        return False
+    return None
+
+
+def _retrieved2response_counts(items: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {"entailment": 0, "non_entailment": 0, "unknown": 0}
+    for item in items:
+        signal = str(item.get("retrieved2response") or _retrieved2response_signal(str(item.get("claim_support") or "")))
+        if signal not in counts:
+            counts[signal] = 0
+        counts[signal] += 1
+    return counts
+
+
 def _overall_claim_support(counts: dict[str, int], item_count: int) -> str:
     if item_count <= 0:
         return "unknown"
@@ -348,6 +496,34 @@ def _overall_claim_support(counts: dict[str, int], item_count: int) -> str:
     if counts.get("supported", 0) or counts.get("partially_supported", 0):
         return "partially_supported"
     return "unknown"
+
+
+def _support_verdict(claim_support: str, failure_code: str) -> str:
+    if claim_support == "supported":
+        return "supported"
+    if claim_support == "contradicted" or failure_code == "source_contradicts_claim":
+        return "contradicted"
+    if failure_code in {"citation_unmatched", "missing_claim_evidence"} or claim_support == "unknown":
+        return "not_enough_evidence"
+    return "unsupported_by_cited_source"
+
+
+def _overall_support_verdict(counts: dict[str, int], item_count: int) -> str:
+    if item_count <= 0:
+        return "not_enough_evidence"
+    if counts.get("contradicted", 0):
+        return "contradicted"
+    if counts.get("unsupported_by_cited_source", 0):
+        return "unsupported_by_cited_source"
+    if counts.get("not_enough_evidence", 0):
+        return "not_enough_evidence"
+    return "supported"
+
+
+def _support_pass_rate(counts: dict[str, int], item_count: int) -> float:
+    if item_count <= 0:
+        return 0.0
+    return round(float(counts.get("supported", 0)) / float(item_count), 4)
 
 
 def _claim_id(citation_item: dict[str, Any], claim_text: str) -> str:

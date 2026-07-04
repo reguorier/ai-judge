@@ -56,6 +56,7 @@ def run_citation_audit(
     title: str = "AI Judge Citation Audit",
     external_evidence: list[dict[str, Any]] | dict[str, Any] | None = None,
     allow_network: bool = False,
+    evidence_fetcher: str | None = None,
     run_id: str | None = None,
     reviewers: list[str] | None = None,
     generated_at: str | None = None,
@@ -74,6 +75,7 @@ def run_citation_audit(
         raw_answers=raw_answers,
         user_evidence=external_evidence,
         allow_network=allow_network,
+        fetch_strategy=evidence_fetcher,
         generated_at=created_at,
     )
     grand_report = run_grand_judge_mvp(
@@ -108,6 +110,7 @@ def run_citation_audit(
         "question": question,
         "answer": answer,
         "allow_network": bool(allow_network),
+        "evidence_fetcher": evidence_fetcher,
         "grand_judge": grand_report,
         "human_review_status": human_review_status(grand_report),
         "created_at": created_at,
@@ -125,6 +128,7 @@ def run_audit_file(
     input_path: str | Path,
     *,
     allow_network: bool = False,
+    evidence_fetcher: str | None = None,
     run_id: str | None = None,
     reviewers: list[str] | None = None,
 ) -> dict[str, Any]:
@@ -136,6 +140,7 @@ def run_audit_file(
         title=str(data.get("title") or Path(input_path).stem),
         external_evidence=data.get("external_evidence") or data.get("evidence") or [],
         allow_network=allow_network,
+        evidence_fetcher=evidence_fetcher,
         run_id=run_id,
         reviewers=reviewers,
     )
@@ -157,12 +162,17 @@ def build_audit_summary(verdict: dict[str, Any]) -> dict[str, Any]:
         "item_count": citation.get("item_count", 0),
         "counts": counts,
         "claim_support_counts": claim_support.get("claim_support_counts") or {},
+        "support_verdict_counts": claim_support.get("support_verdict_counts") or {},
+        "overall_support_verdict": claim_support.get("overall_support_verdict", "not_enough_evidence"),
+        "claim_support_pass_rate": claim_support.get("claim_support_pass_rate", 0.0),
         "claim_support_failure_counts": claim_support.get("support_failure_counts") or {},
+        "retrieved2response_counts": claim_support.get("retrieved2response_counts") or {},
         "unverifiable_reason_counts": citation.get("unverifiable_reason_counts") or {},
         "evidence_provenance_counts": (grand.get("evidence_broker") or {}).get("counts", {}).get("provenance", {}),
         "trust_gate": metrics.get("trust_gate", "needs_external_evidence"),
         "groundedness_proxy": metrics.get("groundedness_proxy", 0.0),
         "gap_count": (grand.get("evidence_gap_queue") or {}).get("open_count", 0),
+        "fetch_monitor": (grand.get("evidence_broker") or {}).get("fetch_monitor") or {},
         "unverifiable_explanation": citation.get("unverifiable_explanation"),
     }
 
@@ -210,15 +220,17 @@ def render_audit_markdown(verdict: dict[str, Any]) -> str:
         "",
         "## Claim Support",
         "",
-        "| id | claim support | source relevance | failure | claim span |",
-        "|---|---|---|---|---|",
+        "| id | support verdict | claim support | source relevance | RAGChecker signal | failure | claim span |",
+        "|---|---|---|---|---|---|---|",
     ])
     for item in claim_support.get("items") or []:
         lines.append(
-            "| {id} | `{support}` | `{relevance}` | `{failure}` | {claim} |".format(
+            "| {id} | `{verdict}` | `{support}` | `{relevance}` | `{signal}` | `{failure}` | {claim} |".format(
                 id=_md(item.get("claim_id")),
+                verdict=_md(item.get("support_verdict")),
                 support=_md(item.get("claim_support")),
                 relevance=_md(item.get("source_relevance")),
+                signal=_md(item.get("retrieved2response")),
                 failure=_md(item.get("support_failure_code")),
                 claim=_md(item.get("claim_span")),
             )
@@ -260,6 +272,8 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
             f"<td>{_e(item.get('claim_span'))}</td>"
             f"<td><span class=\"pill status-{_slug(item.get('source_relevance'))}\">{_e(item.get('source_relevance'))}</span></td>"
             f"<td><span class=\"pill status-{_slug(item.get('claim_support'))}\">{_e(item.get('claim_support'))}</span></td>"
+            f"<td><span class=\"pill status-{_slug(item.get('support_verdict'))}\">{_e(item.get('support_verdict'))}</span></td>"
+            f"<td><span class=\"pill status-{_slug(item.get('retrieved2response'))}\">{_e(item.get('retrieved2response'))}</span></td>"
             f"<td>{_e(item.get('support_failure_code'))}</td>"
             f"<td>{_e(item.get('support_reason'))}</td>"
             "</tr>"
@@ -311,12 +325,12 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     pre {{ white-space:pre-wrap; background:#0f1b24; color:#e9f1f6; border-radius:8px; padding:16px; overflow:auto; }}
     .pill {{ display:inline-flex; align-items:center; min-height:24px; padding:2px 8px; border-radius:999px; font-weight:700; font-size:12px; background:#e8eef3; }}
     .status-verified {{ color:var(--good); background:#dcfae6; }}
-    .status-supported,.status-relevant {{ color:var(--good); background:#dcfae6; }}
+    .status-supported,.status-relevant,.status-entailment {{ color:var(--good); background:#dcfae6; }}
     .status-weakly-verified {{ color:var(--warn); background:#fff3d6; }}
-    .status-partially-supported,.status-weakly-relevant {{ color:var(--warn); background:#fff3d6; }}
+    .status-partially-supported,.status-weakly-relevant,.status-unsupported,.status-non-entailment {{ color:var(--warn); background:#fff3d6; }}
     .status-unverifiable {{ color:#344054; background:#edf2f7; }}
     .status-unknown {{ color:#344054; background:#edf2f7; }}
-    .status-irrelevant,.status-unsupported,.status-contradicted {{ color:var(--bad); background:#fee4e2; }}
+    .status-irrelevant,.status-contradicted {{ color:var(--bad); background:#fee4e2; }}
     .note {{ color:var(--muted); }}
   </style>
 </head>
@@ -326,7 +340,8 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     <div class="sub">AI Judge Citation Audit checks AI-generated claims against isolated external evidence. Model-mentioned candidate sources do not verify themselves.</div>
     <div class="grid">
       <div class="card"><div class="label">Overall</div><div class="value">{_e(summary.get('overall_status'))}</div></div>
-      <div class="card"><div class="label">Claim Support</div><div class="value">{_e(summary.get('overall_claim_support'))}</div></div>
+      <div class="card"><div class="label">Claim-Source Verdict</div><div class="value">{_e(summary.get('overall_support_verdict'))}</div></div>
+      <div class="card"><div class="label">Support Pass Rate</div><div class="value">{_e(summary.get('claim_support_pass_rate'))}</div></div>
       <div class="card"><div class="label">Trust Gate</div><div class="value">{_e(summary.get('trust_gate'))}</div></div>
       <div class="card"><div class="label">Certification</div><div class="value">{_e(summary.get('certification_id'))}</div></div>
       <div class="card"><div class="label">Open Gaps</div><div class="value">{_e(summary.get('gap_count'))}</div></div>
@@ -341,8 +356,8 @@ def render_audit_html(verdict: dict[str, Any]) -> str:
     <table><thead><tr><th>ID</th><th>Citation</th><th>Status</th><th>Reason</th><th>Reason Code</th><th>Relevance</th></tr></thead><tbody>{''.join(citation_rows) or '<tr><td colspan="6">No citation items.</td></tr>'}</tbody></table>
     <p class="note">{_e(summary.get('unverifiable_explanation'))}</p>
     <h2>Claim Support</h2>
-    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Failure</th><th>Reason</th></tr></thead><tbody>{''.join(claim_support_rows) or '<tr><td colspan="6">No claim-support items.</td></tr>'}</tbody></table>
-    <p class="note">A verified citation can still fail claim support when the source is relevant but does not prove the exact generated claim.</p>
+    <table><thead><tr><th>ID</th><th>Claim Span</th><th>Source Relevance</th><th>Claim Support</th><th>Support Verdict</th><th>RAGChecker Signal</th><th>Failure</th><th>Reason</th></tr></thead><tbody>{''.join(claim_support_rows) or '<tr><td colspan="8">No claim-support items.</td></tr>'}</tbody></table>
+    <p class="note">A verified citation can still fail claim support when the source is relevant but does not prove the exact generated claim. Unsupported and contradicted both reduce to RAGChecker-style non-entailment for aggregate faithfulness.</p>
     <h2>Evidence Broker</h2>
     <table><thead><tr><th>ID</th><th>Layer</th><th>Provenance</th><th>Retrieval</th><th>Source</th></tr></thead><tbody>{''.join(evidence_rows) or '<tr><td colspan="5">No evidence items.</td></tr>'}</tbody></table>
     <h2>Evidence Gap Queue</h2>

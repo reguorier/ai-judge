@@ -23,6 +23,17 @@ from product.run_orchestrator import archive_client_run, followup_client_run, ge
 DEFAULT_SMOKE_QUESTION = "请判断当前 AI Judge 是否应该继续开发 Dashboard？"
 
 
+def _claim_source_counts(run: dict) -> dict:
+    for candidate in (run.get("claim_source_support"), run.get("claim_support_audit"), run):
+        if isinstance(candidate, dict) and isinstance(candidate.get("support_verdict_counts"), dict):
+            return {
+                "counts": candidate.get("support_verdict_counts") or {},
+                "overall": candidate.get("overall_support_verdict", ""),
+                "pass_rate": candidate.get("claim_support_pass_rate", 0.0),
+            }
+    return {"counts": {}, "overall": "", "pass_rate": 0.0}
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Minimal report-first AI Judge client")
     parser.add_argument("--question", default="", help="Question to judge")
@@ -54,6 +65,18 @@ def main(argv: list[str] | None = None) -> int:
             f"{run.get('noise_score')}/100 "
             f"level={run.get('noise_level', 'unknown')} "
             f"action={run.get('noise_recommended_action', 'unknown')}"
+        )
+    claim_source = _claim_source_counts(run)
+    if claim_source["counts"]:
+        counts = claim_source["counts"]
+        print(
+            "claim_source_support: "
+            f"overall={claim_source.get('overall') or 'unknown'} "
+            f"pass_rate={claim_source.get('pass_rate', 0.0)} "
+            f"supported={counts.get('supported', 0)} "
+            f"unsupported_by_cited_source={counts.get('unsupported_by_cited_source', 0)} "
+            f"contradicted={counts.get('contradicted', 0)} "
+            f"not_enough_evidence={counts.get('not_enough_evidence', 0)}"
         )
     if run.get("status") == "completed":
         report = get_client_report(str(run["run_id"]))

@@ -123,12 +123,87 @@ _INTERNAL_PATH_FIELDS = frozenset({
     "fdjp_artifact_path",
 })
 
+_CLAIM_SOURCE_SUPPORT_PUBLIC_FIELDS = frozenset({
+    "schema",
+    "support_verdict_schema",
+    "failure_code_schema",
+    "generated_at",
+    "claim_count",
+    "source_count",
+    "item_count",
+    "support_verdict_counts",
+    "overall_support_verdict",
+    "claim_support_pass_rate",
+    "items",
+    "explanation",
+    "artifact_hash",
+})
+
 
 def _has_local_path(value: str) -> bool:
     """Check if a string contains any local absolute path pattern."""
     if not isinstance(value, str):
         return False
     return bool(_LOCAL_PATH_PATTERN.search(value))
+
+
+def _sanitize_public_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _sanitize_public_value(item)
+            for key, item in value.items()
+            if key not in _INTERNAL_PATH_FIELDS
+        }
+    if isinstance(value, list):
+        return [_sanitize_public_value(item) for item in value]
+    if isinstance(value, str) and _has_local_path(value):
+        return ""
+    return value
+
+
+def _extract_claim_source_support(payload: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    candidates = [
+        payload.get("claim_source_support"),
+        payload.get("claim_support_audit"),
+        (payload.get("grand_judge") or {}).get("claim_support_audit") if isinstance(payload.get("grand_judge"), dict) else None,
+        payload,
+    ]
+    for candidate in candidates:
+        if isinstance(candidate, dict) and isinstance(candidate.get("support_verdict_counts"), dict):
+            public = {
+                key: value
+                for key, value in candidate.items()
+                if key in _CLAIM_SOURCE_SUPPORT_PUBLIC_FIELDS
+            }
+            return _sanitize_public_value(public)
+    return {}
+
+
+def _claim_source_support_from_file(run_id: str, summary: dict[str, Any]) -> dict[str, Any]:
+    candidates: list[Path] = []
+    raw_path = str(summary.get("claim_source_support_path") or summary.get("claim_support_audit_path") or "")
+    if raw_path:
+        candidates.append(Path(raw_path))
+    candidates.append(default_reports_root() / "runs" / run_id / "claim_source_support.json")
+    candidates.append(default_reports_root() / "runs" / run_id / "claim_support_audit.json")
+
+    for path in candidates:
+        try:
+            if path.exists() and path.is_file():
+                return _extract_claim_source_support(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+    return {}
+
+
+def _claim_source_support_payload(run_id: str) -> dict[str, Any]:
+    summary = load_summary(run_id)
+    embedded = _extract_claim_source_support(summary)
+    if embedded:
+        return embedded
+    return _claim_source_support_from_file(run_id, summary)
 
 
 def _sanitize_summary(summary: dict[str, Any]) -> dict[str, Any]:
@@ -181,6 +256,17 @@ def _run_public_dto(run_id: str) -> dict[str, Any]:
             "filename": "noise_audit",
             "route": f"/api/client/runs/{run_id}/noise-audit",
             "kind": "noise_audit",
+            "contentType": "application/json",
+        })
+    if (
+        _extract_claim_source_support(clean)
+        or summary.get("claim_source_support_path")
+        or summary.get("claim_support_audit_path")
+    ):
+        artifacts.append({
+            "filename": "claim_source_support",
+            "route": f"/api/client/runs/{run_id}/claim-source-support",
+            "kind": "claim_source_support",
             "contentType": "application/json",
         })
     if clean.get("model_stability_profile_count") is not None:
@@ -431,6 +517,7 @@ def get_capabilities():
             "runEvents": "/api/client/runs/:id/events",
             "runReport": "/api/client/runs/:id/report",
             "noiseAudit": "/api/client/runs/:id/noise-audit",
+            "claimSourceSupport": "/api/client/runs/:id/claim-source-support",
             "modelStability": "/api/client/model-stability",
             "metaJudge": "/api/client/runs/:id/meta-judge",
             "modelWeights": "/api/client/model-weights",
@@ -667,6 +754,12 @@ def get_events(run_id: str):
             yield f"event: artifact\ndata: {json.dumps({'runId': run_id, 'filename': 'report.html', 'route': f'/api/client/runs/{run_id}/report'})}\n\n"
         if summary.get("noise_score") is not None:
             yield f"event: noise_audit\ndata: {json.dumps({'runId': run_id, 'score': summary.get('noise_score'), 'level': summary.get('noise_level'), 'recommendedAction': summary.get('noise_recommended_action')})}\n\n"
+        if (
+            _extract_claim_source_support(summary)
+            or summary.get("claim_source_support_path")
+            or summary.get("claim_support_audit_path")
+        ):
+            yield f"event: claim_source_support\ndata: {json.dumps({'runId': run_id, 'route': f'/api/client/runs/{run_id}/claim-source-support'})}\n\n"
 
         # 4) terminal
         terminal_status = "completed" if status in {"completed", "partial_completed"} else ("failed" if status == "failed" else "running")
@@ -861,6 +954,19 @@ def get_noise_audit(run_id: str):
         except Exception as exc:
             return _json_error(f"noise audit read failed: {exc}", 500, run_id=run_id)
     return _json_error("NOISE_AUDIT_NOT_FOUND", 404, run_id=run_id)
+
+
+@client_blueprint.get("/runs/<run_id>/claim-source-support")
+def get_claim_source_support(run_id: str):
+    try:
+        payload = _claim_source_support_payload(run_id)
+    except FileNotFoundError as exc:
+        return _json_error(str(exc), 404)
+    except Exception as exc:
+        return _json_error(f"claim-source support read failed: {exc}", 500, run_id=run_id)
+    if payload:
+        return jsonify({"ok": True, "claimSourceSupport": payload})
+    return _json_error("CLAIM_SOURCE_SUPPORT_NOT_FOUND", 404, run_id=run_id)
 
 
 @client_blueprint.get("/runs/<run_id>/meta-judge")
