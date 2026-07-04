@@ -467,6 +467,33 @@
     color: var(--muted);
   }
 
+  .link-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .link-list a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .link-list span {
+    color: var(--quiet);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
   footer {
     padding: 42px 0 60px;
     color: var(--quiet);
@@ -484,11 +511,12 @@
 
     .nav-links {
       width: 100%;
-      overflow-x: auto;
+      flex-wrap: wrap;
+      overflow-x: visible;
       padding-bottom: 4px;
+      gap: 12px 16px;
     }
 
-    .status-strip,
     .grid-2,
     .grid-3,
     .workflow,
@@ -496,8 +524,13 @@
       grid-template-columns: 1fr;
     }
 
+    .status-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .hero {
-      padding-top: 48px;
+      padding-top: 40px;
+      padding-bottom: 22px;
     }
 
     h1 {
@@ -530,7 +563,20 @@
     }
 
     .button {
-      width: 100%;
+      flex: 1 1 170px;
+    }
+
+    .status-item {
+      min-height: 86px;
+      padding: 12px;
+    }
+
+    .status-item strong {
+      font-size: 18px;
+    }
+
+    .status-item span {
+      font-size: 12px;
     }
 
     section {
@@ -551,6 +597,7 @@
         <a href="#workflow">Workflow</a>
         <a href="#boundary">Boundary</a>
         <a href="#demo">Demo</a>
+        <a href="#contribute">Contribute</a>
         <a href="#contact">Access</a>
       </div>
     </nav>
@@ -570,7 +617,6 @@
         <a class="button" href="https://github.com/reguorier/ai-judge">GitHub showcase</a>
       </div>
       <p class="hero-note">
-        Demo URL: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit<br>
         Public materials show the trust protocol, public demos, sanitized examples, and benchmark evidence.
         Production runtime code, browser bridge code, model-seat orchestration, and private user artifacts stay closed.
       </p>
@@ -677,10 +723,35 @@
 Open: https://huggingface.co/spaces/reguorier/ai-judge-citation-audit
 Read: docs/TRY_AI_JUDGE_IN_3_MINUTES.md
 Inspect: citation-bench/citation-bench-100.jsonl
-Inspect: citation-bench/citation-bench-hard-11.jsonl</pre>
+Inspect: citation-bench/citation-bench-hard-11.jsonl
+Verify: python3 scripts/verify_public_snapshot.py</pre>
       <div class="inline-shot">
         <img src="../assets/citation-audit-space-output.png" alt="AI Judge citation audit output in the public live demo">
         <p class="caption">Public demo output: citation status, isolated evidence, failure reason, and report artifacts without exposing the private orchestration layer.</p>
+      </div>
+    </section>
+
+    <section class="shell" id="contribute">
+      <div class="section-head">
+        <h2>Contribute a case, not private code.</h2>
+        <p class="lede">The public repo should collect hard public-safe examples and workflow demand. Runtime reliability work stays private.</p>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <span class="tag good">Best input</span>
+          <h3>A small failure case</h3>
+          <p>Submit a generated claim, a public source or sanitized evidence summary, the expected label, and the exact support gap.</p>
+        </div>
+        <div class="panel">
+          <span class="tag warn">Do not post</span>
+          <h3>Private artifacts</h3>
+          <p>Keep customer facts, raw transcripts, browser screenshots, cookies, credentials, private emails, and generated evidence packs out of public issues.</p>
+        </div>
+      </div>
+      <div class="link-list" aria-label="Contribution links">
+        <a href="https://github.com/reguorier/ai-judge/issues/new?template=benchmark_case.yml">Open benchmark case issue <span>citation, contradiction, overclaim</span></a>
+        <a href="https://github.com/reguorier/ai-judge/issues/new?template=boundary_case.yml">Open boundary issue <span>unverifiable vs contradicted</span></a>
+        <a href="https://github.com/reguorier/ai-judge/issues/new?template=workflow_request.yml">Open workflow request <span>batch, PDF, Docx, CI, reports</span></a>
       </div>
     </section>
 
@@ -692,6 +763,7 @@ Inspect: citation-bench/citation-bench-hard-11.jsonl</pre>
         </div>
         <div class="button-row">
           <a class="button primary" href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Open demo</a>
+          <a class="button" href="../CONTRIBUTING.md">Contribute a case</a>
           <a class="button" href="../docs/PUBLIC_PRIVATE_BOUNDARY.md">Read boundary</a>
         </div>
       </div>

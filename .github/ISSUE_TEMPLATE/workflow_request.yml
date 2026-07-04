@@ -1,0 +1,45 @@
+name: Workflow request
+description: Describe a real public-safe workflow that would justify product work.
+title: "Workflow request: "
+labels:
+  - launch feedback
+  - help wanted
+body:
+  - type: dropdown
+    id: workflow_type
+    attributes:
+      label: Workflow type
+      options:
+        - Markdown batch audit
+        - PDF audit
+        - Docx audit
+        - CI / pull request check
+        - agent trace audit
+        - report-review handoff
+        - other public-safe workflow
+    validations:
+      required: true
+  - type: textarea
+    id: job
+    attributes:
+      label: Job to be done
+      description: What would AI Judge need to check before a human reuses the answer?
+      placeholder: We need to audit...
+    validations:
+      required: true
+  - type: textarea
+    id: input_shape
+    attributes:
+      label: Input shape
+      description: Describe public-safe input size, file types, and sources.
+      placeholder: 20 Markdown reports with citations, no private content...
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Useful output
+      description: What report or machine-readable result would make this workflow usable?
+      placeholder: HTML report plus JSON failure list...
+    validations:
+      required: true

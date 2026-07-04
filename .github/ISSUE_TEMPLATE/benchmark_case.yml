@@ -1,0 +1,68 @@
+name: Public benchmark case
+description: Submit a public-safe citation, claim-support, or overclaim case.
+title: "Benchmark case: "
+labels:
+  - citation audit feedback
+  - good first benchmark case
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for adding a hard case. Keep private documents, customer facts,
+        raw transcripts, screenshots, credentials, and account data out of this issue.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question or claim being tested
+      description: What was the AI answer trying to prove?
+      placeholder: Does the cited source support the claim that...
+    validations:
+      required: true
+  - type: textarea
+    id: answer
+    attributes:
+      label: Generated answer
+      description: Paste the short public-safe answer text and citation.
+      placeholder: The answer claims...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Public source or sanitized evidence
+      description: Add a public URL, public excerpt, or sanitized evidence summary.
+      placeholder: The source actually says...
+    validations:
+      required: true
+  - type: dropdown
+    id: expected_status
+    attributes:
+      label: Expected citation status
+      options:
+        - verified
+        - weakly_verified
+        - irrelevant
+        - unverifiable
+        - contradicted
+    validations:
+      required: true
+  - type: dropdown
+    id: claim_support
+    attributes:
+      label: Expected claim-support result
+      options:
+        - supported
+        - partially_supported
+        - unsupported
+        - contradicted
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why this is a hard case
+      description: Explain the exact support gap in one or two sentences.
+      placeholder: The source supports association, but the answer claims causation.
+    validations:
+      required: true

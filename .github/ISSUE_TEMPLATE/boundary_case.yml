@@ -1,0 +1,44 @@
+name: Unverifiable vs contradicted boundary
+description: Report a case where the label boundary is easy to confuse.
+title: "Boundary case: "
+labels:
+  - citation audit feedback
+  - help wanted
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the difficult question is whether a claim is merely
+        unverifiable from isolated evidence or directly contradicted.
+  - type: textarea
+    id: answer
+    attributes:
+      label: Generated answer and citation
+      placeholder: The model said...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Isolated evidence
+      placeholder: The available source/evidence says...
+    validations:
+      required: true
+  - type: dropdown
+    id: proposed_label
+    attributes:
+      label: Proposed label
+      options:
+        - unverifiable
+        - contradicted
+        - irrelevant
+        - weakly_verified
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Why the boundary is ambiguous
+      placeholder: It might be unverifiable because..., but it might be contradicted because...
+    validations:
+      required: true

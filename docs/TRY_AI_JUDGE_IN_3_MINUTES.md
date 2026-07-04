@@ -80,19 +80,41 @@ Current expected snapshot:
 The hard benchmark keeps its legacy filename, but now contains 13 launch cases.
 The newest cases include claim-support expectations and failure-code checks.
 
-## 5. What To Contribute
+## 5. Run The Public Snapshot Check
+
+If you cloned this repository, verify the public snapshot without installing
+the private runtime:
+
+```bash
+python3 scripts/verify_public_snapshot.py
+```
+
+Expected output:
+
+```text
+public snapshot verified
+benchmarks: 100 citation cases, 13 hard claim-support cases
+reports: citation batch manifest and artifacts linked
+```
+
+The script checks benchmark JSONL parsing, report manifest links, required
+public files, local README/HTML links, and the absence of private runtime
+directories.
+
+## 6. What To Contribute
 
 The fastest useful contribution is not a feature request. It is one public-safe
 hard case.
 
 | Link | Useful input |
 |---|---|
-| https://github.com/reguorier/ai-judge/issues/2 | A fabricated, weak, irrelevant, unverifiable, contradicted, or overclaimed citation case. |
-| https://github.com/reguorier/ai-judge/issues/3 | A boundary case where `unverifiable` and `contradicted` are easy to confuse. |
-| https://github.com/reguorier/ai-judge/issues/4 | A real batch/PDF/Docx/CI workflow that would justify Pro work. |
-| https://github.com/reguorier/ai-judge/issues/5 | A public-safe demo example that deserves an HTML/JSON audit report. |
+| Benchmark case issue form | A fabricated, weak, irrelevant, unverifiable, contradicted, or overclaimed citation case. |
+| Boundary issue form | A case where `unverifiable` and `contradicted` are easy to confuse. |
+| Workflow request issue form | A real batch/PDF/Docx/CI/report-review workflow that would justify product work. |
+| Pull request | A public-safe demo example, docs fix, or benchmark fixture update. |
 
 Please keep private material out of public issues. A sanitized summary is enough.
+Read [`CONTRIBUTING.md`](../CONTRIBUTING.md) before publishing examples.
 
 ## What This Is Not
 

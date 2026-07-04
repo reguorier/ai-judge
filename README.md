@@ -19,6 +19,7 @@
   <a href="https://huggingface.co/spaces/reguorier/ai-judge-citation-audit">Live Citation Audit</a> ·
   <a href="docs/TRY_AI_JUDGE_IN_3_MINUTES.md">3-Minute Proof</a> ·
   <a href="product/landing.html">Public Showcase Page</a> ·
+  <a href="CONTRIBUTING.md">Contribute A Case</a> ·
   <a href="docs/PUBLIC_PRIVATE_BOUNDARY.md">Public / Private Boundary</a> ·
   <a href="docs/ARC_AGENT_TRACE_AUDIT.md">Agent Trace Audit</a>
 </p>
@@ -30,6 +31,21 @@
 This repository is the public-facing doorway for AI Judge: product positioning, public demos, sanitized examples, benchmark descriptions, and a lightweight explanation of the trust protocol.
 
 The private repository remains the engineering source of truth for the production runtime. Browser/CDP bridge code, model-seat orchestration, local operator flows, customer facts, raw transcripts, generated evidence packs, and commercial workflow code are not part of the public surface.
+
+## Start Here From GitHub
+
+If you only have one minute, use this order:
+
+| Step | Action | Why it matters |
+|---|---|---|
+| 1 | Open the [live citation audit](https://huggingface.co/spaces/reguorier/ai-judge-citation-audit). | See the product without installing anything. |
+| 2 | Read the [3-minute proof](docs/TRY_AI_JUDGE_IN_3_MINUTES.md). | Understand the exact support boundary. |
+| 3 | Inspect [`examples/real-source-overclaimed-causation.md`](examples/real-source-overclaimed-causation.md). | See a real-source / wrong-claim failure. |
+| 4 | Open [`reports/citation-batch/index.html`](reports/citation-batch/index.html). | Review the static report gallery. |
+
+If the boundary is useful to you, star or watch the repository to follow new
+public benchmark cases. The fastest contribution is a public-safe failure case,
+not a feature request.
 
 ## What You Can Understand In 60 Seconds
 
@@ -96,6 +112,36 @@ The latest private line is report-first and closed-core:
 | `examples/` | Sanitized examples for public explanation. |
 | `docs/PUBLIC_PRIVATE_BOUNDARY.md` | The publication boundary for future updates. |
 | `docs/PUBLIC_EXPORT_MANIFEST.md` | The allowlist for clean public exports. |
+| `.github/ISSUE_TEMPLATE/` | Structured public-safe contribution prompts. |
+
+## Contribute A Hard Case
+
+AI Judge becomes more useful when the public benchmark contains realistic
+failure cases. Good cases are small, sanitized, and specific:
+
+| Case type | Good input |
+|---|---|
+| Fake or missing citation | A plausible source the model cited but cannot verify. |
+| Real but irrelevant source | A URL exists, but supports a different topic. |
+| Contradicted claim | External evidence directly refutes the answer. |
+| Overclaimed support | A real source supports a weaker claim than the answer made. |
+| Workflow demand | A concrete batch, PDF, Docx, CI, or report-review use case. |
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), then open a structured issue.
+Keep private documents, customer facts, raw transcripts, credentials, and
+account screenshots out of public issues.
+
+## Local Public Snapshot Check
+
+This public repository is intentionally static. To verify the public snapshot:
+
+```bash
+python3 scripts/verify_public_snapshot.py
+```
+
+The check parses benchmark JSONL files, validates report manifests and local
+links, confirms required public files exist, and guards against private runtime
+directories leaking into the public showcase.
 
 ## What Stays Private
 
@@ -116,6 +162,8 @@ Before publishing any branch, release, or artifact, read [`docs/PUBLIC_PRIVATE_B
 - [Live Hugging Face Space](https://huggingface.co/spaces/reguorier/ai-judge-citation-audit)
 - [3-Minute Proof](docs/TRY_AI_JUDGE_IN_3_MINUTES.md)
 - [Public Showcase Page](product/landing.html)
+- [Contributing Guide](CONTRIBUTING.md)
+- [GitHub Conversion Checklist](docs/GITHUB_CONVERSION_CHECKLIST.md)
 - [Claim Span Roadmap](docs/CLAIM_SPAN_ROADMAP.md)
 - [Agent Trace Audit](docs/ARC_AGENT_TRACE_AUDIT.md)
 - [Public Export Manifest](docs/PUBLIC_EXPORT_MANIFEST.md)
