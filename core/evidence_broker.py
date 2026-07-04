@@ -34,6 +34,7 @@ def build_evidence_broker_report(
     allow_network: bool = False,
     generated_at: str | None = None,
     max_fetches: int = 6,
+    fetch_strategy: str | None = None,
 ) -> dict[str, Any]:
     """Create an external-evidence layer for citation validation."""
     created_at = generated_at or datetime.now(timezone.utc).isoformat()
@@ -66,6 +67,7 @@ def build_evidence_broker_report(
         "created_at": created_at,
         "question": question,
         "allow_network": bool(allow_network),
+        "fetch_strategy": fetch_strategy or "urllib",
         "source_policy": {
             "candidate_source": "模型答案中提到的来源，只能作为待检索候选，不能直接验证模型自己。",
             "user_supplied": "用户或外部系统提供的隔离证据，可进入 citation_validator。",

@@ -53,10 +53,21 @@ def human_review_status(grand_report: dict[str, Any]) -> dict[str, Any]:
         }
     citation = grand_report.get("citation_verification") or {}
     counts = citation.get("counts") or {}
-    required = bool(counts.get("contradicted") or counts.get("unverifiable"))
+    claim_support = grand_report.get("claim_support_audit") or {}
+    support_counts = claim_support.get("claim_support_counts") or {}
+    required = bool(
+        counts.get("contradicted")
+        or counts.get("unverifiable")
+        or support_counts.get("contradicted")
+        or support_counts.get("unsupported")
+    )
     return {
         "status": "required" if required else "optional",
-        "reason": "存在 contradicted/unverifiable 引用，发布前建议人工签名。" if required else "引用状态较稳，可选人工签名。",
+        "reason": (
+            "存在 contradicted/unverifiable 引用或 unsupported claim support，发布前建议人工签名。"
+            if required
+            else "引用状态和 claim support 较稳，可选人工签名。"
+        ),
     }
 
 
